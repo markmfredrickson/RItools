@@ -8,10 +8,12 @@ importFrom("xtable", xtable)
 importClassesFrom("SparseM", "matrix.csr")
 importMethodsFrom("SparseM", "t", "%*%","as.matrix")
 
-# Generics and functions defined in this package
-export(
-       "xBalance"
-       )
+### export every thing while developing randomization distribution functions
+### # Generics and functions defined in this package
+### export(
+###        "xBalance"
+###        )
+exportPattern("^[[:alpha:]]+")
 
 S3method(print,xbal)
 S3method(plot,xbal)
