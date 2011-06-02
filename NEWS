@@ -1,0 +1,16 @@
+CHANGES in RItools v. 0.1-11
+
+NEW FEATURES
+* the null SD of the difference in adjusted means is now reportable as "adj.means.diffs.sd"
+
+* report="all" provides all relevant statistics
+* Entering "args(xBalance)" is now useful as a reminder of report= options.
+
+DEPRECATED & DEFUNCT
+* The default imputation method for missing data is the median. Before 0.1-9 it was the mean. To use the mean, use impfn=mean.default.
+* Passing strata=NULL to xBalance is depracated, as it can be easy to do inadvertently, with a misspelling of a non-null intended argument.  For no stratification, use list(unstrat=NULL), as is now the default.
+
+BUG FIXES
+* display, align, etc arguments to xtable.xbal() have been enabled.
+* In xBalance, when specifying a stratification using a formula with several variables, as in "~x+y", the stratification you get is now interaction(x,y) rather than just y.  
+

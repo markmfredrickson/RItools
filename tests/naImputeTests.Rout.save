@@ -1,0 +1,284 @@
+
+R version 2.11.1 (2010-05-31)
+Copyright (C) 2010 The R Foundation for Statistical Computing
+ISBN 3-900051-07-0
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+[Previously saved workspace restored]
+
+> require("RItools")
+Loading required package: RItools
+Package SparseM (0.85) loaded.
+	   To cite, see citation("SparseM")
+
+> data(nuclearplants)
+> 
+> testdata<-nuclearplants
+> 
+> testdata$cum.n.fac <- factor(ifelse(c(T,T,T,F),testdata$cum.n,NA))
+> testdata$pt.log <- as.logical(testdata$pt)
+> testdata$pt.log[c(3,4)] <- NA
+> testdata$pt.na <- testdata$pt
+> testdata$pt.na[3:4] <- NA
+> testdata$date.mod <- testdata$date
+> testdata$date.mod[1:2] <- NA
+> ##Previous versions imputed with the mean, so for testing purposes, for now, we use the mean here.
+> RItools:::naImpute(cost~cap+date+cum.n+as.logical(pt),testdata,impfn=mean.default)
+    cost  date t1 t2  cap pr ne ct bw cum.n pt cum.n.fac pt.log pt.na date.mod
+H 460.05 68.58 14 46  687  0  1  0  0    14  0        14  FALSE     0       NA
+I 452.99 67.33 10 73 1065  0  0  1  0     1  0         1  FALSE     0       NA
+A 443.22 67.33 10 85 1065  1  0  1  0     1  0         1     NA    NA    67.33
+J 652.32 68.00 11 67 1065  0  1  1  0    12  0      <NA>     NA    NA    68.00
+B 642.23 68.00 11 78 1065  1  1  1  0    12  0        14  FALSE     0    68.00
+K 345.39 67.92 13 51  514  0  1  1  0     3  0         1  FALSE     0    67.92
+L 272.37 68.17 12 50  822  0  0  0  0     5  0         1  FALSE     0    68.17
+M 317.21 68.42 14 59  457  0  0  0  0     1  0      <NA>  FALSE     0    68.42
+C 457.12 68.42 15 55  822  1  0  0  0     5  0        14  FALSE     0    68.42
+N 690.19 68.33 12 71  792  0  1  1  1     2  0         1  FALSE     0    68.33
+O 350.63 68.58 12 64  560  0  0  0  0     3  0         1  FALSE     0    68.58
+P 402.59 68.75 13 47  790  0  1  0  0     6  0      <NA>  FALSE     0    68.75
+Q 412.18 68.42 15 62  530  0  0  1  0     2  0        14  FALSE     0    68.42
+R 495.58 68.92 17 52 1050  0  0  0  0     7  0         1  FALSE     0    68.92
+S 394.36 68.92 13 65  850  0  0  0  1    16  0         1  FALSE     0    68.92
+T 423.32 68.42 11 67  778  0  0  0  0     3  0      <NA>  FALSE     0    68.42
+U 712.27 69.50 18 60  845  0  1  0  0    17  0        14  FALSE     0    69.50
+D 289.66 68.42 15 76  530  1  0  1  0     2  0         1  FALSE     0    68.42
+V 881.24 69.17 15 67 1090  0  0  0  0     1  0         1  FALSE     0    69.17
+E 490.88 68.92 16 59 1050  1  0  0  0     8  0      <NA>  FALSE     0    68.92
+W 567.79 68.75 11 70  913  0  0  1  1    15  0        14  FALSE     0    68.75
+F 665.99 70.92 22 57  828  1  1  0  0    20  0         1  FALSE     0    70.92
+X 621.45 69.67 16 59  786  0  0  1  0    18  0         1  FALSE     0    69.67
+G 608.80 70.08 19 58  821  1  0  0  0     3  0      <NA>  FALSE     0    70.08
+Y 473.64 70.42 19 44  538  0  0  1  0    19  0        14  FALSE     0    70.42
+Z 697.14 71.08 20 57 1130  0  0  1  0    21  0         1  FALSE     0    71.08
+d 207.51 67.25 13 63  745  0  0  0  0     8  1         1   TRUE     1    67.25
+e 288.48 67.17  9 48  821  0  0  1  0     7  1      <NA>   TRUE     1    67.17
+f 284.88 67.83 12 63  886  0  0  0  1    11  1        14   TRUE     1    67.83
+a 280.36 67.83 12 71  886  1  0  0  1    11  1         1   TRUE     1    67.83
+b 217.38 67.25 13 72  745  1  0  0  0     8  1         1   TRUE     1    67.25
+c 270.71 67.83  7 80  886  1  0  0  1    11  1      <NA>   TRUE     1    67.83
+> 
+> RItools:::naImpute(cost~cap+date.mod+cum.n+as.logical(pt),testdata,impfn=mean.default)
+    cost  date t1 t2 pr ne ct bw cum.n.fac pt.log pt.na  cap date.mod cum.n pt
+H 460.05 68.58 14 46  0  1  0  0        14  FALSE     0  687   68.623    14  0
+I 452.99 67.33 10 73  0  0  1  0         1  FALSE     0 1065   68.623     1  0
+A 443.22 67.33 10 85  1  0  1  0         1     NA    NA 1065   67.330     1  0
+J 652.32 68.00 11 67  0  1  1  0      <NA>     NA    NA 1065   68.000    12  0
+B 642.23 68.00 11 78  1  1  1  0        14  FALSE     0 1065   68.000    12  0
+K 345.39 67.92 13 51  0  1  1  0         1  FALSE     0  514   67.920     3  0
+L 272.37 68.17 12 50  0  0  0  0         1  FALSE     0  822   68.170     5  0
+M 317.21 68.42 14 59  0  0  0  0      <NA>  FALSE     0  457   68.420     1  0
+C 457.12 68.42 15 55  1  0  0  0        14  FALSE     0  822   68.420     5  0
+N 690.19 68.33 12 71  0  1  1  1         1  FALSE     0  792   68.330     2  0
+O 350.63 68.58 12 64  0  0  0  0         1  FALSE     0  560   68.580     3  0
+P 402.59 68.75 13 47  0  1  0  0      <NA>  FALSE     0  790   68.750     6  0
+Q 412.18 68.42 15 62  0  0  1  0        14  FALSE     0  530   68.420     2  0
+R 495.58 68.92 17 52  0  0  0  0         1  FALSE     0 1050   68.920     7  0
+S 394.36 68.92 13 65  0  0  0  1         1  FALSE     0  850   68.920    16  0
+T 423.32 68.42 11 67  0  0  0  0      <NA>  FALSE     0  778   68.420     3  0
+U 712.27 69.50 18 60  0  1  0  0        14  FALSE     0  845   69.500    17  0
+D 289.66 68.42 15 76  1  0  1  0         1  FALSE     0  530   68.420     2  0
+V 881.24 69.17 15 67  0  0  0  0         1  FALSE     0 1090   69.170     1  0
+E 490.88 68.92 16 59  1  0  0  0      <NA>  FALSE     0 1050   68.920     8  0
+W 567.79 68.75 11 70  0  0  1  1        14  FALSE     0  913   68.750    15  0
+F 665.99 70.92 22 57  1  1  0  0         1  FALSE     0  828   70.920    20  0
+X 621.45 69.67 16 59  0  0  1  0         1  FALSE     0  786   69.670    18  0
+G 608.80 70.08 19 58  1  0  0  0      <NA>  FALSE     0  821   70.080     3  0
+Y 473.64 70.42 19 44  0  0  1  0        14  FALSE     0  538   70.420    19  0
+Z 697.14 71.08 20 57  0  0  1  0         1  FALSE     0 1130   71.080    21  0
+d 207.51 67.25 13 63  0  0  0  0         1   TRUE     1  745   67.250     8  1
+e 288.48 67.17  9 48  0  0  1  0      <NA>   TRUE     1  821   67.170     7  1
+f 284.88 67.83 12 63  0  0  0  1        14   TRUE     1  886   67.830    11  1
+a 280.36 67.83 12 71  1  0  0  1         1   TRUE     1  886   67.830    11  1
+b 217.38 67.25 13 72  1  0  0  0         1   TRUE     1  745   67.250     8  1
+c 270.71 67.83  7 80  1  0  0  1      <NA>   TRUE     1  886   67.830    11  1
+  date.mod.NA
+H        TRUE
+I        TRUE
+A       FALSE
+J       FALSE
+B       FALSE
+K       FALSE
+L       FALSE
+M       FALSE
+C       FALSE
+N       FALSE
+O       FALSE
+P       FALSE
+Q       FALSE
+R       FALSE
+S       FALSE
+T       FALSE
+U       FALSE
+D       FALSE
+V       FALSE
+E       FALSE
+W       FALSE
+F       FALSE
+X       FALSE
+G       FALSE
+Y       FALSE
+Z       FALSE
+d       FALSE
+e       FALSE
+f       FALSE
+a       FALSE
+b       FALSE
+c       FALSE
+> 
+> RItools:::naImpute(cost~cap+date+cum.n.fac+as.logical(pt),testdata,impfn=mean.default)
+    cost t1 t2 pr ne ct bw cum.n pt.log pt.na date.mod  cap  date cum.n.fac pt
+H 460.05 14 46  0  1  0  0    14  FALSE     0       NA  687 68.58        14  0
+I 452.99 10 73  0  0  1  0     1  FALSE     0       NA 1065 67.33         1  0
+A 443.22 10 85  1  0  1  0     1     NA    NA    67.33 1065 67.33         1  0
+J 652.32 11 67  0  1  1  0    12     NA    NA    68.00 1065 68.00       .NA  0
+B 642.23 11 78  1  1  1  0    12  FALSE     0    68.00 1065 68.00        14  0
+K 345.39 13 51  0  1  1  0     3  FALSE     0    67.92  514 67.92         1  0
+L 272.37 12 50  0  0  0  0     5  FALSE     0    68.17  822 68.17         1  0
+M 317.21 14 59  0  0  0  0     1  FALSE     0    68.42  457 68.42       .NA  0
+C 457.12 15 55  1  0  0  0     5  FALSE     0    68.42  822 68.42        14  0
+N 690.19 12 71  0  1  1  1     2  FALSE     0    68.33  792 68.33         1  0
+O 350.63 12 64  0  0  0  0     3  FALSE     0    68.58  560 68.58         1  0
+P 402.59 13 47  0  1  0  0     6  FALSE     0    68.75  790 68.75       .NA  0
+Q 412.18 15 62  0  0  1  0     2  FALSE     0    68.42  530 68.42        14  0
+R 495.58 17 52  0  0  0  0     7  FALSE     0    68.92 1050 68.92         1  0
+S 394.36 13 65  0  0  0  1    16  FALSE     0    68.92  850 68.92         1  0
+T 423.32 11 67  0  0  0  0     3  FALSE     0    68.42  778 68.42       .NA  0
+U 712.27 18 60  0  1  0  0    17  FALSE     0    69.50  845 69.50        14  0
+D 289.66 15 76  1  0  1  0     2  FALSE     0    68.42  530 68.42         1  0
+V 881.24 15 67  0  0  0  0     1  FALSE     0    69.17 1090 69.17         1  0
+E 490.88 16 59  1  0  0  0     8  FALSE     0    68.92 1050 68.92       .NA  0
+W 567.79 11 70  0  0  1  1    15  FALSE     0    68.75  913 68.75        14  0
+F 665.99 22 57  1  1  0  0    20  FALSE     0    70.92  828 70.92         1  0
+X 621.45 16 59  0  0  1  0    18  FALSE     0    69.67  786 69.67         1  0
+G 608.80 19 58  1  0  0  0     3  FALSE     0    70.08  821 70.08       .NA  0
+Y 473.64 19 44  0  0  1  0    19  FALSE     0    70.42  538 70.42        14  0
+Z 697.14 20 57  0  0  1  0    21  FALSE     0    71.08 1130 71.08         1  0
+d 207.51 13 63  0  0  0  0     8   TRUE     1    67.25  745 67.25         1  1
+e 288.48  9 48  0  0  1  0     7   TRUE     1    67.17  821 67.17       .NA  1
+f 284.88 12 63  0  0  0  1    11   TRUE     1    67.83  886 67.83        14  1
+a 280.36 12 71  1  0  0  1    11   TRUE     1    67.83  886 67.83         1  1
+b 217.38 13 72  1  0  0  0     8   TRUE     1    67.25  745 67.25         1  1
+c 270.71  7 80  1  0  0  1    11   TRUE     1    67.83  886 67.83       .NA  1
+> 
+> RItools:::naImpute(cost~cap+date+cum.n+pt.log,testdata,impfn=mean.default)
+    cost t1 t2 pr ne ct bw pt cum.n.fac pt.na date.mod  cap  date cum.n pt.log
+H 460.05 14 46  0  1  0  0  0        14     0       NA  687 68.58    14  FALSE
+I 452.99 10 73  0  0  1  0  0         1     0       NA 1065 67.33     1  FALSE
+A 443.22 10 85  1  0  1  0  0         1    NA    67.33 1065 67.33     1  FALSE
+J 652.32 11 67  0  1  1  0  0      <NA>    NA    68.00 1065 68.00    12  FALSE
+B 642.23 11 78  1  1  1  0  0        14     0    68.00 1065 68.00    12  FALSE
+K 345.39 13 51  0  1  1  0  0         1     0    67.92  514 67.92     3  FALSE
+L 272.37 12 50  0  0  0  0  0         1     0    68.17  822 68.17     5  FALSE
+M 317.21 14 59  0  0  0  0  0      <NA>     0    68.42  457 68.42     1  FALSE
+C 457.12 15 55  1  0  0  0  0        14     0    68.42  822 68.42     5  FALSE
+N 690.19 12 71  0  1  1  1  0         1     0    68.33  792 68.33     2  FALSE
+O 350.63 12 64  0  0  0  0  0         1     0    68.58  560 68.58     3  FALSE
+P 402.59 13 47  0  1  0  0  0      <NA>     0    68.75  790 68.75     6  FALSE
+Q 412.18 15 62  0  0  1  0  0        14     0    68.42  530 68.42     2  FALSE
+R 495.58 17 52  0  0  0  0  0         1     0    68.92 1050 68.92     7  FALSE
+S 394.36 13 65  0  0  0  1  0         1     0    68.92  850 68.92    16  FALSE
+T 423.32 11 67  0  0  0  0  0      <NA>     0    68.42  778 68.42     3  FALSE
+U 712.27 18 60  0  1  0  0  0        14     0    69.50  845 69.50    17  FALSE
+D 289.66 15 76  1  0  1  0  0         1     0    68.42  530 68.42     2  FALSE
+V 881.24 15 67  0  0  0  0  0         1     0    69.17 1090 69.17     1  FALSE
+E 490.88 16 59  1  0  0  0  0      <NA>     0    68.92 1050 68.92     8  FALSE
+W 567.79 11 70  0  0  1  1  0        14     0    68.75  913 68.75    15  FALSE
+F 665.99 22 57  1  1  0  0  0         1     0    70.92  828 70.92    20  FALSE
+X 621.45 16 59  0  0  1  0  0         1     0    69.67  786 69.67    18  FALSE
+G 608.80 19 58  1  0  0  0  0      <NA>     0    70.08  821 70.08     3  FALSE
+Y 473.64 19 44  0  0  1  0  0        14     0    70.42  538 70.42    19  FALSE
+Z 697.14 20 57  0  0  1  0  0         1     0    71.08 1130 71.08    21  FALSE
+d 207.51 13 63  0  0  0  0  1         1     1    67.25  745 67.25     8   TRUE
+e 288.48  9 48  0  0  1  0  1      <NA>     1    67.17  821 67.17     7   TRUE
+f 284.88 12 63  0  0  0  1  1        14     1    67.83  886 67.83    11   TRUE
+a 280.36 12 71  1  0  0  1  1         1     1    67.83  886 67.83    11   TRUE
+b 217.38 13 72  1  0  0  0  1         1     1    67.25  745 67.25     8   TRUE
+c 270.71  7 80  1  0  0  1  1      <NA>     1    67.83  886 67.83    11   TRUE
+  pt.log.NA
+H     FALSE
+I     FALSE
+A      TRUE
+J      TRUE
+B     FALSE
+K     FALSE
+L     FALSE
+M     FALSE
+C     FALSE
+N     FALSE
+O     FALSE
+P     FALSE
+Q     FALSE
+R     FALSE
+S     FALSE
+T     FALSE
+U     FALSE
+D     FALSE
+V     FALSE
+E     FALSE
+W     FALSE
+F     FALSE
+X     FALSE
+G     FALSE
+Y     FALSE
+Z     FALSE
+d     FALSE
+e     FALSE
+f     FALSE
+a     FALSE
+b     FALSE
+c     FALSE
+> 
+> ##Assess use of the median explicitly
+> dat1a<-RItools:::naImpute(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata)
+> 
+> all(dat1a$date.mod[is.na(testdata$date.mod)]==median(testdata$date.mod,na.rm=TRUE))
+[1] TRUE
+> all(dat1a$pt.log[is.na(testdata$pt.log)]==(median(dat1a$pt.log,na.rm=TRUE)>.5)) 
+[1] TRUE
+> all(dat1a$pt.na[is.na(testdata$pt.na)]==(median(dat1a$pt.na,na.rm=TRUE))) 
+[1] TRUE
+> 
+> 
+> ##Check that it works using mean.default() instead of median()
+> dat1b<-RItools:::naImpute(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata,impfn=mean.default)
+> 
+> all(dat1b$date.mod[is.na(testdata$date.mod)]==mean(testdata$date.mod,na.rm=TRUE))
+[1] TRUE
+> all(dat1b$pt.log[is.na(testdata$pt.log)]==(mean(dat1b$pt.log,na.rm=TRUE)>.5)) 
+[1] TRUE
+> all(dat1b$pt.na[is.na(testdata$pt.na)]==(mean(dat1b$pt.na,na.rm=TRUE))) 
+[1] TRUE
+> 
+> ##Check that the factor columns are appropriate.
+> test.mm<-model.matrix(pr~date.mod+cum.n.fac+pt.log+pt.na-1,model.frame(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata,na.action=NULL))
+> dat2<-RItools:::naImpute(pr~date.mod+cum.n.fac1+cum.n.fac14+pt.logTRUE+pt.na,data.frame(test.mm),impfn=mean.default)
+> all(dat2$cum.n.fac1[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac1,na.rm=TRUE))) 
+[1] TRUE
+> all(dat2$cum.n.fac14[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac14,na.rm=TRUE))) 
+[1] TRUE
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+> proc.time()
+   user  system elapsed 
+  0.966   0.064   1.026 

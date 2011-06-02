@@ -1,0 +1,32 @@
+;; RefTeX parse info file
+;; File: /Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex
+;; User: jwbowers (Jake Bowers)
+
+(set reftex-docstruct-symbol '(
+
+
+(xr nil "\\\\\\\\\\\\")
+
+(index-tags)
+
+(is-multi nil)
+
+(bibview-cache)
+
+(master-dir . "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/")
+
+(label-numbers)
+
+(bof "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex")
+
+(toc "toc" "    1 Checking Balance" "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex" nil 2 "1" "\\section{Checking Balance}" 3969)
+
+(toc "toc" "    2 Matching" "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex" nil 2 "2" "\\section{Matching}" 6838)
+
+(toc "toc" "    3 Estimating Effects" "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex" nil 2 "3" "\\section{Estimating Effects}" 6838)
+
+(bib "/Users/jwbowers/Documents/BIB/trunk/big.bib")
+
+(eof "/Users/jwbowers/Documents/PROJECTS/RITOOLS/trunk/RItools/inst/doc/RItools.tex")
+))
+

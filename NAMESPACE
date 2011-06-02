@@ -1,0 +1,20 @@
+
+importFrom("lattice", levelplot)
+importFrom("graphics", image)
+importFrom("utils", head, tail)
+importFrom("grid", grid.rect, gpar, grob)
+importFrom("stats", deviance, formula, coef)
+importFrom("xtable", xtable)
+importClassesFrom("SparseM", "matrix.csr")
+importMethodsFrom("SparseM", "t", "%*%","as.matrix")
+
+# Generics and functions defined in this package
+export(
+       "xBalance"
+       )
+
+S3method(print,xbal)
+S3method(plot,xbal)
+S3method(xtable,xbal)
+S3method(formula,xbal)
+
