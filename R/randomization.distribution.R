@@ -344,6 +344,45 @@ parameterizedRandomizationDistribution <- function(
   
   return(rd)
 }
+
+setClass("ParameterizedRandomizationDistributionSummary",
+  representation(
+    randomizationDistribution = "ParameterizedRandomizationDistribution",
+    point.estimate = "data.frame"))
+
+setMethod("summary", "ParameterizedRandomizationDistribution", function(object, 
+  p.value.function = general.two.sided.p.value, ...) {
+
+  # point estimate(s)
+  pvs <- p.values(object, p.value.function)
+  maxp <- max(pvs$p)
+  point.estimate <- pvs[pvs$p == maxp, ]
+  rownames(point.estimate) <- NULL
+  
+  # observed test statistic is in the PRD object 
+
+  return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
+    point.estimate = point.estimate))
+})
+
+setMethod("show", "ParameterizedRandomizationDistributionSummary", function(object) {
+  
+  cat("Observed Test Statistic: ")
+  cat(object@randomizationDistribution@observed.test.stat)
+  cat("\n")
+
+  # save and show the call to x@randomizationDistribution
+  cat("Hodges-Lehmann Point Estimate(s):\n")
+  print(object@point.estimate)
+
+
+  invisible(object)
+})
+
+setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
+  show(summary(object))
+})
+
 #### clippings, to be put into a front end
 
 #   # check inputs
