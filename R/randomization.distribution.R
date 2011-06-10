@@ -351,10 +351,11 @@ parameterizedRandomizationDistribution <- function(
 setClass("ParameterizedRandomizationDistributionSummary",
   representation(
     randomizationDistribution = "ParameterizedRandomizationDistribution",
-    point.estimate = "data.frame"))
+    point.estimate = "data.frame",
+    showCall = "logical"))
 
 setMethod("summary", "ParameterizedRandomizationDistribution", function(object, 
-  p.value.function = general.two.sided.p.value, ...) {
+  p.value.function = general.two.sided.p.value, showCall = T, ...) {
 
   # point estimate(s)
   pvs <- p.values(object, p.value.function)
@@ -365,14 +366,16 @@ setMethod("summary", "ParameterizedRandomizationDistribution", function(object,
   # observed test statistic is in the PRD object 
 
   return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
-    point.estimate = point.estimate))
+    point.estimate = point.estimate, showCall = showCall))
 })
 
 setMethod("show", "ParameterizedRandomizationDistributionSummary", function(object) {
-  dc <- deparse(object@randomizationDistribution@call)
-  cat("Call: ", dc[1], "\n")
-  cat(paste("      ", dc[-1] , "\n", sep = ""))
-  cat("\n")
+  if (object@showCall) {
+    dc <- deparse(object@randomizationDistribution@call)
+    cat("Call: ", dc[1], "\n")
+    cat(paste("      ", dc[-1] , "\n", sep = ""))
+    cat("\n")
+  }
 
   cat("Observed Test Statistic: ")
   cat(object@randomizationDistribution@observed.test.stat)
