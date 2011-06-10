@@ -315,7 +315,9 @@ randomizationDistributionEngine <- function(
 
 # front end as per Ben's recommendation. parameters are specified, not fns.
 setClass("ParameterizedRandomizationDistribution",
-  representation(params = "data.frame"),
+  representation(
+    call = "call",
+    params = "data.frame"),
   contains = "RandomizationDistribution")
 
 parameterizedRandomizationDistribution <- function(
@@ -341,7 +343,8 @@ parameterizedRandomizationDistribution <- function(
 
   rd <- as(rds[[1]], "ParameterizedRandomizationDistribution")
   rd@params <- parameter.space
-  
+  rd@call <- match.call()
+
   return(rd)
 }
 
@@ -366,10 +369,14 @@ setMethod("summary", "ParameterizedRandomizationDistribution", function(object,
 })
 
 setMethod("show", "ParameterizedRandomizationDistributionSummary", function(object) {
-  
+  dc <- deparse(object@randomizationDistribution@call)
+  cat("Call: ", dc[1], "\n")
+  cat(paste("      ", dc[-1] , "\n", sep = ""))
+  cat("\n")
+
   cat("Observed Test Statistic: ")
   cat(object@randomizationDistribution@observed.test.stat)
-  cat("\n")
+  cat("\n\n")
 
   # save and show the call to x@randomizationDistribution
   cat("Hodges-Lehmann Point Estimate(s):\n")
