@@ -257,7 +257,8 @@ setClass("RandomizationDistribution",
                  treatment = "numeric", # 1/0 vector 
                  blocks = "numeric", # indicator vector
                  samples = "numeric", # number of samples
-                 distribution = "matrix"))
+                 distribution = "matrix",
+                 sharp.null = "vector"))
 
 # are the observed treatment and blocks necessary? Should I include data as
 # well? What about ... arguments to the rDE() function?
@@ -298,6 +299,13 @@ randomizationDistributionEngine <- function(
                                    m(data, z, blocks, ...),
                                    z, blocks, ...)})})
 
+    # every model has the same sharp null: the identity function
+    f <- function(data, z, blocks) { data }
+    sharp.null <- apply(randomizations, 2, function(z) {
+      z <- expand.z(z)
+      test.statistic(f(data, z, blocks), z, blocks, ...)
+    })
+    
     distributions[[i]] <- new("RandomizationDistribution",
       test.statistic = test.statistic,
       observed.test.stat = test.statistic(data, treatment, blocks, ...),
@@ -305,7 +313,8 @@ randomizationDistributionEngine <- function(
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks),
       samples = samples,
-      distribution = this.distrib)   
+      distribution = this.distrib,   
+      sharp.null = sharp.null)
   }
   # temporary hack until I can get the intialize() method working
   names(distributions) <- names(models)
@@ -352,7 +361,8 @@ setClass("ParameterizedRandomizationDistributionSummary",
   representation(
     randomizationDistribution = "ParameterizedRandomizationDistribution",
     point.estimate = "data.frame",
-    showCall = "logical"))
+    showCall = "logical",
+    sharp.null.p = "numeric"))
 
 setMethod("summary", "ParameterizedRandomizationDistribution", function(object, 
   p.value.function = general.two.sided.p.value, showCall = T, ...) {
@@ -363,10 +373,12 @@ setMethod("summary", "ParameterizedRandomizationDistribution", function(object,
   point.estimate <- pvs[pvs$p == maxp, ]
   rownames(point.estimate) <- NULL
   
-  # observed test statistic is in the PRD object 
+  # observed test statistic is in the PRD object but we compute p-value against
+  # the sharp null here
+  sharp.null.p <- p.value.function(object@observed.test.stat, object@sharp.null)
 
   return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
-    point.estimate = point.estimate, showCall = showCall))
+    point.estimate = point.estimate, showCall = showCall, sharp.null.p = sharp.null.p))
 })
 
 setMethod("show", "ParameterizedRandomizationDistributionSummary", function(object) {
@@ -377,9 +389,13 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
     cat("\n")
   }
 
-  cat("Observed Test Statistic: ")
-  cat(object@randomizationDistribution@observed.test.stat)
-  cat("\n\n")
+  tmp <- matrix(c(object@randomizationDistribution@observed.test.stat, object@sharp.null.p), 
+    nrow = 1, byrow = T)
+
+  rownames(tmp) <- c("Observed Test Statistic")
+  colnames(tmp) <- c("Value", "Pr(>x)")
+  printCoefmat(tmp, has.Pvalue = T, P.values = T) 
+  cat("\n")
 
   # save and show the call to x@randomizationDistribution
   cat("Hodges-Lehmann Point Estimate(s):\n")
