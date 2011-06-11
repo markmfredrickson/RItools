@@ -342,10 +342,13 @@ parameterizedRandomizationDistribution <- function(
   stopifnot(inherits(parameters, "list"))
 
   parameter.space <- do.call(expand.grid, parameters)
-
+  
   functions <- apply(parameter.space, 1, function(params) {
     force(params)
-    do.call(moe, as.list(params))})
+    function(data, z, blocks) {
+      do.call(moe, c(list(data, z, blocks), params))
+    }
+  })
 
   rds <- randomizationDistributionEngine(data, treatment, models=list(c(test.stat,
   functions)), blocks, samples)
