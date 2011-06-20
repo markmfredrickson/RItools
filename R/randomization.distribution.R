@@ -450,41 +450,17 @@ setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
 ###################################################
 ### Using distributions
 ###################################################
-# computes a one sided p-value, to compute double sided p-value you must
-# use twice, with lower.tail set to TRUE, and propbably manually
-# transforming your value to the equivalent lower tail value
+
 simple.p.value <- function(value, distribution, lower.tail = FALSE) {
-  sapply(distribution, function(d) {
-    if (lower.tail) {
-      length(d[d <= value]) / length(d) ##?is this better than mean(d<=value)
-    } else { 
-      length(d[d >= value]) / length(d)
-    }
-  })
+  if (lower.tail) {
+    mean(distribution <= value)
+  } else { 
+    mean(distribution >= value)
+  }
 }
 
-manual.symmetric.p.value <- function(value, distribution, pivot = 0) {
-  lower.weight <- simple.p.value(value, distribution)
-  upper.weight <- simple.p.value(pivot - value, distribution, lower.tail = F)
-  return(lower.weight + upper.weight)
-}
-
-auto.symmetric.p.value <- function(value, distribution) {
-  sapply(distribution, function(d) {
-    pivot <- mean(d)
-    if (pivot > value) {
-      lowerv <- value
-      upperv <- pivot + abs(pivot - value)
-    } else {
-      upperv <- value
-      lowerv <- pivot - abs(pivot - value)
-    }
-
-    upper.weight <- length(d[d >= upperv]) / length(d)
-    lower.weight <- length(d[d <= lowerv]) / length(d)
-    return(upper.weight + lower.weight)
-  }) 
-}
+upper.p.value <- simple.p.value # just an alias
+lower.p.value <- function(value, distribution) { simple.p.value(value, distribution, TRUE) }
 
 ##There is some debate about two-sided p-values. I've been going with Rosenbaum 2009, Chapter 2, Footnote 2
 
