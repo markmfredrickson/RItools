@@ -237,8 +237,6 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
 # each distribution is with respect to a given test statistic
 setClass("RandomizationDistribution",
   representation(test.statistic = "function",
-                 observed.test.stat = "numeric", # applying the test stat to
-                                                 # the data
                  models.of.effect = "list", # of functions
                  treatment = "numeric", # 1/0 vector 
                  blocks = "numeric", # indicator vector
@@ -289,15 +287,24 @@ randomizationDistributionEngine <- function(
       apply(adjusted.data, 2, function(d) { 
         test.statistic(d, z, blocks, ...)})})
 
+    # the format of a distribution is an m x k + 1 matrix, where
+    # m is the number of models tested, and k is the number of randomizations
+    # the extra column is the first column: test statistics under adjustment
+    # to be used by the p-value functions
+    adjusted.stats <- apply(adjusted.data, 2, function(d) { 
+      test.statistic(d, treatment, blocks, ...)})
+    this.distrib <- cbind(adjusted.stats, this.distrib)
+
     # every model has the same sharp null: no adjustment to the data
     sharp.null <- apply(randomizations, 2, function(z) {
       z <- expand.z(z)
       test.statistic(data, z, blocks, ...)
     })
+    sharp.null <- c(test.statistic(data, treatment, blocks, ...),
+                    sharp.null)
     
     distributions[[i]] <- new("RandomizationDistribution",
       test.statistic = test.statistic,
-      observed.test.stat = test.statistic(data, treatment, blocks, ...),
       models.of.effect = moes,
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks),
@@ -367,7 +374,7 @@ setMethod("summary", "ParameterizedRandomizationDistribution", function(object,
   
   # observed test statistic is in the PRD object but we compute p-value against
   # the sharp null here
-  sharp.null.p <- p.value.function(object@observed.test.stat, object@sharp.null)
+  sharp.null.p <- p.value.function(object@sharp.null[1], object@sharp.null[-1])
 
   return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
     point.estimate = point.estimate, showCall = showCall, sharp.null.p = sharp.null.p))
@@ -381,7 +388,7 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
     cat("\n")
   }
 
-  tmp <- matrix(c(object@randomizationDistribution@observed.test.stat, object@sharp.null.p), 
+  tmp <- matrix(c(object@randomizationDistribution@sharp.null[1], object@sharp.null.p), 
     nrow = 1, byrow = T)
 
   rownames(tmp) <- c("Observed Test Statistic")
@@ -478,8 +485,8 @@ p.values <- function(object, p.value.function = general.two.sided.p.value) {
   pvs <- vector("numeric", k)
 
   for (i in 1:k) {
-    pvs[i] <- p.value.function(object@observed.test.stat,
-      object@distribution[i,])
+    pvs[i] <- p.value.function(object@distribution[i, 1],
+      object@distribution[i, -1])
   }
 
   return(as(cbind(object@params, p = pvs), "ParameterPvals"))
