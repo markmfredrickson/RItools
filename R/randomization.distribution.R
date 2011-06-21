@@ -86,12 +86,17 @@ rank.sum <- function(ys, z, blocks) {
 
 }
 
-
 paired.sgnrank.sum<-function(ys,z,blocks){ stopifnot(length(unique(z))==2) ##require binary treatment for now
   Y<-sapply(split(data.frame(r=ys,z=z),blocks),function(dat){with(dat,r[z==1]-r[z==0])})
   sgn<-as.numeric(Y>0) 
   q<-rank(abs(Y))
   sum(sgn*q)
+}
+
+mann.whitney.u <- function(ys, z, blocks) {
+  z <- as.logical(z)
+  ys.ranks <- rank(ys)
+  return(sum(ys.ranks[z]) - sum(ys.ranks[!z]))
 }
 
 
@@ -109,29 +114,9 @@ get.cis<-function(distobj,thelevels,p.value.function){ ##get several confidence 
 ### Modes of effect/hypotheses, residuals
 ###################################################
 
-# a helper function to create constant additive models of effect
-constant.additive.hypothesis.factory <- function(hypothesized.value) {
-  function(ys, z) { ys + (z * hypothesized.value) } ##This ia a problem. All of the math implies subtraction rather than addition. 
-}
-
-# a helper to create a list of constant hypos.
-constant.hypotheses <- function(range,factory=constant.additive.hypothesis.factory) {
-  n <- length(range)
-  functions <- vector("list", n)
-  for (i in 1:n) {
-    functions[[i]] <- factory(range[i])
-
-    # this is a bizarre bug: if we don't call the function on some
-    # data, the list will overwrite each i with the last value of i
-    # e.g. const.hyp(1:5) would equivalent to const.hyp(c(5,5,5,5,5))
-    # It is hard to tell if this is a bug in the list code or in how
-    # closures are generated (i.e. functions that save their environment,
-    # specifically the hypothesized.value variable in c.a.h.f()
-    functions[[i]](0,0) 
-  }
-  names(functions) <- range
-  return(functions)
-}
+constant.additive.model <- function(ys, z, b, tau) { 
+  ys - (z * tau)
+} 
 
 # the default model of effect for make.conf.interval
 sharp.null.hypothesis <- constant.additive.hypothesis.factory(0)
