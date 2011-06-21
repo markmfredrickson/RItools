@@ -119,9 +119,6 @@ constant.additive.model <- function(ys, z, b, tau) {
   ys - (z * tau)
 } 
 
-# the default model of effect for make.conf.interval
-sharp.null.hypothesis <- constant.additive.hypothesis.factory(0)
-
 # lm.residualizer take a formula of the form y ~ ..., with all values
 # included in the ... included in the data argument (a data.frame).
 # it returns a function that takes new y values and applies the model to them.
