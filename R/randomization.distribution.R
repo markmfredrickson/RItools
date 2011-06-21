@@ -114,7 +114,8 @@ get.cis<-function(distobj,thelevels,p.value.function){ ##get several confidence 
 ### Modes of effect/hypotheses, residuals
 ###################################################
 
-constant.additive.model <- function(ys, z, b, tau) { 
+constant.additive.model <- function(ys, z, b, tau) {
+  z <- as.numeric(z)
   ys - (z * tau)
 } 
 
@@ -277,18 +278,21 @@ randomizationDistributionEngine <- function(
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
     moes <- this.model[-1]
+    
+    # first, for each model, adjust the observed data with the observed
+    # treatment indicator
+    adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
 
+    # now iterate over the randomizations, using the adjusted data
     this.distrib <- apply(randomizations, 2, function(z) {
       z <- expand.z(z)
-      sapply(moes, function(m) { test.statistic(
-                                   m(data, z, blocks, ...),
-                                   z, blocks, ...)})})
+      apply(adjusted.data, 2, function(d) { 
+        test.statistic(d, z, blocks, ...)})})
 
-    # every model has the same sharp null: the identity function
-    f <- function(data, z, blocks) { data }
+    # every model has the same sharp null: no adjustment to the data
     sharp.null <- apply(randomizations, 2, function(z) {
       z <- expand.z(z)
-      test.statistic(f(data, z, blocks), z, blocks, ...)
+      test.statistic(data, z, blocks, ...)
     })
     
     distributions[[i]] <- new("RandomizationDistribution",
