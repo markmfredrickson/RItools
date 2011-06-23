@@ -15,12 +15,8 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
 
   # overall statistics
   total.treated <- sum(observed.treatment)
-  total.randomizations <- 0 # thers is a bug in BigIntegers that requires a loop. ??Contact them? Fix it?
-  for (i in 1:(nlevels(blocks))) {
-    total.randomizations = 
-      total.randomizations + lchoose(block.size[i], block.treated[i])
-    NULL
-  }
+  total.randomizations <- sum(lchoose(block.size, block.treated))
+
   # randomizations is a matrix (often abbreviated omega) of 
   # possible randomziations, for now ignoring blocks
   # it is generated either by direct enumeration (if small enough)
