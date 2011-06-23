@@ -228,17 +228,21 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
 # by default. if not specified the calls to moe() and residualizer() which are
 # effectively no-ops, could be avoided.
 
+# some utility classes
+setClassUnion("OptionalList", c("list", "NULL"))
+setClassUnion("OptionalMatrix", c("matrix", "NULL"))
+
 # the RandomizationDistribution object
 # for a single test statistic
 # results of a call to randomizationDistribution, along with some of the
 # each distribution is with respect to a given test statistic
 setClass("RandomizationDistribution",
   representation(test.statistic = "function",
-                 models.of.effect = "list", # of functions
+                 models.of.effect = "OptionalList", # of functions
                  treatment = "numeric", # 1/0 vector 
                  blocks = "numeric", # indicator vector
                  samples = "numeric", # number of samples
-                 distribution = "matrix",
+                 distribution = "OptionalMatrix",
                  sharp.null = "vector"))
 
 # are the observed treatment and blocks necessary? Should I include data as
@@ -248,7 +252,7 @@ setClass("RandomizationDistribution",
 randomizationDistributionEngine <- function(
   data,
   treatment,
-  models, # a list of list(testStatistic, moe1, moe2, ...) all functions
+  models = NULL, # a list of list(testStatistic, moe1, moe2, ...) all functions
   blocks = NULL,
   samples = 5000,
   ...) {
@@ -272,26 +276,31 @@ randomizationDistributionEngine <- function(
   for (i in 1:k) {
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
-    moes <- this.model[-1]
+    this.distrib <- NULL
+    moes <- NULL
+
+    if (length(this.model[-1]) > 0) {
+      moes <- this.model[-1]
     
-    # first, for each model, adjust the observed data with the observed
-    # treatment indicator
-    adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
+      # first, for each model, adjust the observed data with the observed
+      # treatment indicator
+      adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
 
-    # now iterate over the randomizations, using the adjusted data
-    this.distrib <- apply(randomizations, 2, function(z) {
-      z <- expand.z(z)
-      apply(adjusted.data, 2, function(d) { 
-        test.statistic(d, z, blocks, ...)})})
+      # now iterate over the randomizations, using the adjusted data
+      this.distrib <- apply(randomizations, 2, function(z) {
+        z <- expand.z(z)
+        apply(adjusted.data, 2, function(d) { 
+          test.statistic(d, z, blocks, ...)})})
 
-    # the format of a distribution is an m x k + 1 matrix, where
-    # m is the number of models tested, and k is the number of randomizations
-    # the extra column is the first column: test statistics under adjustment
-    # to be used by the p-value functions
-    adjusted.stats <- apply(adjusted.data, 2, function(d) { 
-      test.statistic(d, treatment, blocks, ...)})
-    this.distrib <- cbind(adjusted.stats, this.distrib)
-
+      # the format of a distribution is an m x k + 1 matrix, where
+      # m is the number of models tested, and k is the number of randomizations
+      # the extra column is the first column: test statistics under adjustment
+      # to be used by the p-value functions
+      adjusted.stats <- apply(adjusted.data, 2, function(d) { 
+        test.statistic(d, treatment, blocks, ...)})
+      this.distrib <- cbind(adjusted.stats, this.distrib)
+    }
+    
     # every model has the same sharp null: no adjustment to the data
     sharp.null <- apply(randomizations, 2, function(z) {
       z <- expand.z(z)
@@ -326,28 +335,47 @@ parameterizedRandomizationDistribution <- function(
   data,
   treatment,
   test.stat,
-  moe, # single function with signature f(data, z, blocks, param1, param2, etc.)
-  parameters, # list of name = values, name = values, ...
+  moe = NULL, # single function with signature f(data, z, blocks, param1, param2, etc.)
+  parameters = NULL, # list of name = values, name = values, ...
   blocks = NULL,
   samples = 5000) {
   
-  stopifnot(inherits(moe, "function"))
-  stopifnot(inherits(parameters, "list"))
+  # if either moe or parameters are present, both must be present
+  if ((!is.null(moe) & is.null(parameters)) | (is.null(moe) & !is.null(parameters))) {
+    stop("You must supply both parameters and a model effects if you supply either")
+  }
 
-  parameter.space <- do.call(expand.grid, parameters)
-  
-  functions <- apply(parameter.space, 1, function(params) {
-    force(params)
-    function(data, z, blocks) {
-      do.call(moe, c(list(data, z, blocks), params))
-    }
-  })
+  if (!is.null(moe) & !is.function(moe)) {
+    stop("moe must be a function")  
+  }
 
-  rds <- randomizationDistributionEngine(data, treatment, models=list(c(test.stat,
-  functions)), blocks, samples)
+  if (!is.null(parameters) & !is.list(parameters)) {
+    stop("Parameters must be a list")   
+  }
+
+  if (!is.null(parameters)) {
+    parameter.space <- do.call(expand.grid, parameters)
+    
+    functions <- apply(parameter.space, 1, function(params) {
+      force(params)
+      function(data, z, blocks) {
+        do.call(moe, c(list(data, z, blocks), params))
+      }
+    })
+
+    rds <- randomizationDistributionEngine(data, treatment, models = list(c(test.stat,
+      functions)), blocks, samples)
+  } else {
+    rds <- randomizationDistributionEngine(data, treatment, 
+      models = list(c(test.stat)), blocks, samples)
+  }
 
   rd <- as(rds[[1]], "ParameterizedRandomizationDistribution")
-  rd@params <- parameter.space
+
+  if (!is.null(parameters)) {
+    rd@params <- parameter.space
+  }
+
   rd@call <- match.call()
 
   return(rd)
