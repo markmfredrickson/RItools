@@ -1,44 +1,3 @@
-# require(gmp)
-
-# an arbitrarily exact n choose k algorithm
-# this could be replace by an approximation, as we only need to 
-# know if nCk is larger than samples, where samples is probably@#
-# a normal int or a long.
-# MF: are you aware that R provides "lchoose()", which unlike choose()
-# doesn't get choked up on big integers?  You might use lchoose()
-# and compare to log(samples). But maybe you knew that and have 
-# a reason not to. -BH
-bigchoose <- function(n, k) {
-  if (n < 1 || k < 1 || k > n) {
-    return(as.bigz(0))  
-  }
-
-  if (n == k) {
-    return(as.bigz(1))  
-  }
-
-  if( k > (n / 2)) {
-    k <- n - k;
-  }
-
-  numer <- as.bigz(1)
-  for (i in n:(n - k + 1)) {
-    numer <- numer * i
-  }
-
-  denom <- as.bigz(1)
-  for (i in 1:k) {
-    denom <- denom * i  
-  }
-
-  return(numer / denom)
-}
-stopifnot(choose(10, 3) == bigchoose(10, 3))
-stopifnot(bigchoose(3, 0) == 0)
-
-
-
-
 
 ###################################################
 ### Randomization distribution producing function
@@ -56,17 +15,17 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
 
   # overall statistics
   total.treated <- sum(observed.treatment)
-  total.randomizations <- 1 # thers is a bug in BigIntegers that requires a loop. ??Contact them? Fix it?
+  total.randomizations <- 0 # thers is a bug in BigIntegers that requires a loop. ??Contact them? Fix it?
   for (i in 1:(nlevels(blocks))) {
     total.randomizations = 
-      total.randomizations * bigchoose(block.size[i], block.treated[i])
+      total.randomizations + lchoose(block.size[i], block.treated[i])
     NULL
   }
   # randomizations is a matrix (often abbreviated omega) of 
   # possible randomziations, for now ignoring blocks
   # it is generated either by direct enumeration (if small enough)
   # or by drawing from the distribution of randomizations
-  if (total.randomizations > samples) {
+  if (total.randomizations > log(samples)) {
     randomizations <- matrix(nrow = total.treated, ncol = samples)
 
     for (i in 1:samples) {
@@ -88,7 +47,6 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
     
     # loop thru, creating a unique set of combinations
     exp.count <- dim(expansions)[1]
-    stopifnot(exp.count == total.randomizations)
 
     randomizations <- matrix(nrow = total.treated, ncol = exp.count)
     for(i in 1:exp.count) {
