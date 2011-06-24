@@ -99,9 +99,8 @@ randomizationDistributionEngine <- function(
   expand.z <- function(i) { a <- numeric(n); a[i] <- 1; return(a) }
 
   k <- length(models)
-  distributions <- vector("list", k)
-   
-  for (i in 1:k) {
+
+  distributions <- lapply(1:k, function(i) {
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
     this.distrib <- NULL
@@ -137,15 +136,16 @@ randomizationDistributionEngine <- function(
     sharp.null <- c(test.statistic(data, treatment, blocks, ...),
                     sharp.null)
     
-    distributions[[i]] <- new("RandomizationDistribution",
+    return(new("RandomizationDistribution",
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks),
       samples = samples,
       distribution = this.distrib,   
-      sharp.null = sharp.null)
-  }
+      sharp.null = sharp.null))
+  })
+
   # temporary hack until I can get the intialize() method working
   names(distributions) <- names(models)
 
