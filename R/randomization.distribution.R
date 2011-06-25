@@ -257,4 +257,22 @@ setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
 })
 
 
+############################## Helper Functions ##############################
 
+multicoreLoaded <- function() {
+  "multicore" %in% loadedNamespaces()  
+}
+
+getApplyFunction <- function() {
+  opt <- options("RItools-apply")[[1]]
+
+  if (!is.null(opt)) {
+    return(opt)  
+  }
+
+  if (multicoreLoaded()) {
+    return(mclapply) # yay speed!
+  }
+
+  return(lapply) # the safe default
+}
