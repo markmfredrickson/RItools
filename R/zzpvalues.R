@@ -1,5 +1,8 @@
 ################################################################################
 # P-value Generating/Displaying Functions
+#
+# zzpvalues.R is so named to come after randomization.distribution.R in the
+# concatentation of files when creating a package.
 ################################################################################
 
 ############################## P-Value Generators ##############################
