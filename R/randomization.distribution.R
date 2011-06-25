@@ -104,6 +104,8 @@ randomizationDistributionEngine <- function(
 
   k <- length(models)
 
+  apply.fn <- getApplyFunction()
+
   distributions <- lapply(1:k, function(i) {
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
@@ -114,7 +116,7 @@ randomizationDistributionEngine <- function(
     adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
 
     # now iterate over the randomizations, using the adjusted data
-    this.distrib <- lapply(randomizations, function(z) {
+    this.distrib <- apply.fn(randomizations, function(z) {
       z <- expand.z(z)
       apply(adjusted.data, 2, function(d) { 
         test.statistic(d, z, blocks, ...)})})
