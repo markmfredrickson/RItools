@@ -38,15 +38,16 @@ setClass("ParameterPvals", contains = "data.frame")
 p.values <- function(object, p.value.function = general.two.sided.p.value) {
   stopifnot(inherits(object, "ParameterizedRandomizationDistribution"))
 
-  k <- dim(object@distribution)[1] # total number of distributions to check
-  pvs <- vector("numeric", k)
+  k <- dim(object)[1] # total number of distributions to check
+  pvs <- vector("numeric")
 
+  # first row is the sharp null, that can be computed elsewhere
   for (i in 1:k) {
-    pvs[i] <- p.value.function(object@distribution[i, 1],
-      object@distribution[i, -1])
+    pvs[i] <- p.value.function(object[i, 1],
+      object[i, -1])
   }
 
-  return(as(cbind(object@params, p = pvs), "ParameterPvals"))
+  return(as(cbind(rbind(NA, object@params), p = pvs), "ParameterPvals"))
 }
 
 plot.ParameterPvals <- function(object, ...) {

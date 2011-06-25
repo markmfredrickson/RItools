@@ -61,7 +61,7 @@ produceRandomizations <- function(observed.treatment, blocks, samples) {
 
 # some utility classes
 setClassUnion("OptionalList", c("list", "NULL"))
-setClassUnion("OptionalMatrix", c("matrix", "NULL"))
+setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 
 # the RandomizationDistribution object
 # for a single test statistic
@@ -69,18 +69,20 @@ setClassUnion("OptionalMatrix", c("matrix", "NULL"))
 # each distribution is with respect to a given test statistic
 setClass("RandomizationDistribution",
   representation(test.statistic = "function",
-                 models.of.effect = "OptionalList", # of functions
+                 models.of.effect = "list", # first is always sharp null 
                  treatment = "numeric", # 1/0 vector 
-                 blocks = "numeric", # indicator vector
-                 samples = "numeric", # number of samples
-                 distribution = "OptionalMatrix",
-                 sharp.null = "vector"))
+                 blocks = "numeric"),
+  contains = "matrix")
+# the matrix has a conventional form.
+# The rows form the models tested, the columns are the samples
+# The first column is the test statistic applied to the observed data.
+# thus the number of samples is: dim(distrib)[2] - 1
 
 
 randomizationDistributionEngine <- function(
   data,
   treatment,
-  models = NULL, # a list of list(testStatistic, moe1, moe2, ...) all functions
+  models, # a list of list(testStatistic, moe1, moe2, ...) all functions
   blocks = NULL,
   samples = 5000,
   ...) {
@@ -94,56 +96,47 @@ randomizationDistributionEngine <- function(
   # vector of the size of the blocks. Rather than a vector indicating
   # treatment and a vector indicating block membership. keeping this signature
   # for now, but will think about it...
-  randomizations <- produceRandomizations(treatment, blocks, samples)
+  randomizations <- as.data.frame(produceRandomizations(treatment, blocks, samples))
   
   expand.z <- function(i) { a <- numeric(n); a[i] <- 1; return(a) }
+
+  sharp.null <- function(y, z, b) { data }
 
   k <- length(models)
 
   distributions <- lapply(1:k, function(i) {
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
-    this.distrib <- NULL
-    moes <- NULL
-
-    if (length(this.model[-1]) > 0) {
-      moes <- this.model[-1]
+    moes <- c(sharp.null, this.model[-1])
     
-      # first, for each model, adjust the observed data with the observed
-      # treatment indicator
-      adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
+    # first, for each model, adjust the observed data with the observed
+    # treatment indicator
+    adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
 
-      # now iterate over the randomizations, using the adjusted data
-      this.distrib <- apply(randomizations, 2, function(z) {
-        z <- expand.z(z)
-        apply(adjusted.data, 2, function(d) { 
-          test.statistic(d, z, blocks, ...)})})
-
-      # the format of a distribution is an m x k + 1 matrix, where
-      # m is the number of models tested, and k is the number of randomizations
-      # the extra column is the first column: test statistics under adjustment
-      # to be used by the p-value functions
-      adjusted.stats <- apply(adjusted.data, 2, function(d) { 
-        test.statistic(d, treatment, blocks, ...)})
-      this.distrib <- cbind(adjusted.stats, this.distrib)
-    }
-    
-    # every model has the same sharp null: no adjustment to the data
-    sharp.null <- apply(randomizations, 2, function(z) {
+    # now iterate over the randomizations, using the adjusted data
+    this.distrib <- lapply(randomizations, function(z) {
       z <- expand.z(z)
-      test.statistic(data, z, blocks, ...)
-    })
-    sharp.null <- c(test.statistic(data, treatment, blocks, ...),
-                    sharp.null)
+      apply(adjusted.data, 2, function(d) { 
+        test.statistic(d, z, blocks, ...)})})
+
+    # see http://www.biostat.wustl.edu/archives/html/s-news/2000-01/msg00169.html
+    # for a discussion of matrix + unlist vs. do.call + rbind
+    this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
+
+    # the format of a distribution is an m x k + 1 matrix, where
+    # m is the number of models tested, and k is the number of randomizations
+    # the extra column is the first column: test statistics under adjustment
+    # to be used by the p-value functions
+    adjusted.stats <- apply(adjusted.data, 2, function(d) { 
+      test.statistic(d, treatment, blocks, ...)})
+    this.distrib <- cbind(statistics = adjusted.stats, this.distrib)
     
-    return(new("RandomizationDistribution",
+    return(new("RandomizationDistribution", this.distrib,
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
-      blocks = as.numeric(blocks),
-      samples = samples,
-      distribution = this.distrib,   
-      sharp.null = sharp.null))
+      blocks = as.numeric(blocks)
+      ))
   })
 
   # temporary hack until I can get the intialize() method working
@@ -227,7 +220,7 @@ setMethod("summary", "ParameterizedRandomizationDistribution", function(object,
   
   # observed test statistic is in the PRD object but we compute p-value against
   # the sharp null here
-  sharp.null.p <- p.value.function(object@sharp.null[1], object@sharp.null[-1])
+  sharp.null.p <- p.value.function(object[1,1], object[1,-1])
 
   return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
     point.estimate = point.estimate, showCall = showCall, sharp.null.p = sharp.null.p))
@@ -241,7 +234,7 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
     cat("\n")
   }
 
-  tmp <- matrix(c(object@randomizationDistribution@sharp.null[1], object@sharp.null.p), 
+  tmp <- matrix(c(object@randomizationDistribution[1,1], object@sharp.null.p), 
     nrow = 1, byrow = T)
 
   rownames(tmp) <- c("Observed Test Statistic")
@@ -249,10 +242,12 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
   printCoefmat(tmp, has.Pvalue = T, P.values = T) 
   cat("\n")
 
-  # save and show the call to x@randomizationDistribution
-  cat("Hodges-Lehmann Point Estimate(s):\n")
-  print(object@point.estimate)
-
+  # if there is more than one distribution (ie. more than the sharp null)
+  # compute a point estimate
+  if (dim(object@randomizationDistribution)[1] > 1) {
+    cat("Hodges-Lehmann Point Estimate(s):\n")
+    print(object@point.estimate)
+  }
 
   invisible(object)
 })

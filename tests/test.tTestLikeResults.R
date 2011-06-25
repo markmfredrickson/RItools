@@ -36,7 +36,7 @@ test_that("Get same point estimate", {
   res.t.test.10 <- t.test(R[Z == 1], R[Z == 0], var.equal = T, mu = 10)
   res.t.test.9 <- t.test(R[Z == 1], R[Z == 0], var.equal = T, mu = 9)
 
-  pvs <- p.values(res.prd)
+  pvs <- na.omit(p.values(res.prd)) # ignore sharp null
   within(pvs[pvs$tau == 10, "p"], res.t.test.10$p.value)
   within(pvs[pvs$tau == 9, "p"], res.t.test.9$p.value)
 })
