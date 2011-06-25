@@ -77,7 +77,7 @@ confint.ParameterizedRandomizationDistribution <- function(
   pvs <- p.values(object, p.value.function) 
   
   reject <- (1 - pvs$p) > level
-  results <- cbind(object@params, reject)
+  results <- cbind(object@params, reject[-1]) # drop the null
    
   return(new("ParameterizedRandomizationDistributionConfInt", prd = object,
     rejections = results))
