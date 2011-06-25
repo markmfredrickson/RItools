@@ -27,3 +27,34 @@ test_that("Check multicore on/off", {
   options(opts)
   
 })
+
+# I am unable to change "locked bindings" of mclapply or lapply
+# so commenting this out for now.
+### test_that("mcapply called", {
+###   if ("multicore" %in% loadedNamespaces()) {
+###     unloadNamespace("multicore")  
+###   }
+### 
+###   expect_false(multicoreLoaded())
+###   expect_true(is.null(options("RItools-apply")[[1]]))
+### 
+###   set.seed(20110620)
+###   tau <- 10
+###   n <- 6
+###   Yc <- rnorm(n)
+###   Yt <- Yc + tau
+###   Z <- rep(0, n)
+###   Z[sample.int(n, n/2)] <- 1
+###   R <- Z * Yt + (1 - Z) * Yc
+### 
+###   library(multicore)
+###   old.mclapply <- mclapply
+###   called <- FALSE
+###   mclapply <<- function(...) { called <<- T ; error("Good!") }
+### 
+### 
+###   expect_error(parameterizedRandomizationDistribution(R, Z, mann.whitney.u))
+###   expect_true(called)
+###   
+###   mclapply <<- old.mclapply
+### })
