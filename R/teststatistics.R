@@ -41,7 +41,7 @@ harmonic.mean.difference <- function(ys, z, blocks) {
 
 mean.diff.noblocks<-function(ys, z, blocks) { 
   z <- as.numeric(z)
-  stopifnot(all(unique(z)==c(1,0))) # require binary treatment for now
+  stopifnot(all(sort(unique(z))==c(0,1))) # require binary treatment for now
   return((sum(ys*z)/sum(z))-(sum(ys*(1-z))/sum(1-z))) # I supect that arithmetic is faster than indexing.
 }
 ############################## Rank Based Functions ##############################
