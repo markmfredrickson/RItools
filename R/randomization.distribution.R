@@ -106,7 +106,7 @@ randomizationDistributionEngine <- function(
 
   apply.fn <- getApplyFunction()
 
-  distributions <- lapply(1:k, function(i) {
+  makedists <- function(i) {
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
     moes <- c(sharp.null, this.model[-1])
@@ -139,8 +139,11 @@ randomizationDistributionEngine <- function(
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks)
       ))
-  })
+  }
 
+   distributions <- lapply(1:k, function(i){
+     makedists(i)
+   })
   # temporary hack until I can get the intialize() method working
   names(distributions) <- names(models)
 
