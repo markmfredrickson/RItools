@@ -39,7 +39,11 @@ harmonic.mean.difference <- function(ys, z, blocks) {
   return((1/sum(h.b))*sum(h.b*d.b)) ##notice this is the same as "adj.diff" from xBalance, that should be the test
 }
 
-
+mean.diff.noblocks<-function(ys, z, blocks) { 
+  z <- as.numeric(z)
+  stopifnot(all(unique(z)==c(1,0))) # require binary treatment for now
+  return(mean(ys*z) - mean(ys*(1-z))) # I supect that arithmetic is faster than indexing.
+}
 ############################## Rank Based Functions ##############################
 
 rank.sum <- function(ys, z, blocks) {
