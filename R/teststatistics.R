@@ -23,6 +23,15 @@ mean.difference <- function(ys, z, blocks) {
   return(sum(block.weights * tcdiff))
 }
 
+mean.diff.lsfit<-function(ys,z,blocks){ ##Try using something that calls compiled code
+  ##Gives same answer as mean.difference for balanced blocks and should be like harmonic.mean.difference for unbalanced blocks.
+  lsfit(x=model.matrix(ys~z+blocks),y=ys,intercept=FALSE)[["coefficients"]][["z"]]
+}
+
+mean.diff.vect<-function(ys,z,blocks){
+ X<-model.matrix(ys~z+blocks)
+ solve(qr(X, LAPACK=TRUE), ys)[2] ## qr.coef(qr(X,LAPACK=TRUE),ys) ## to handle near singular X
+}
 
 harmonic.mean.difference <- function(ys, z, blocks) {
   z<-as.numeric(z)
