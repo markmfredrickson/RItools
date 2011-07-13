@@ -257,6 +257,19 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
   invisible(object)
 })
 
+point.estimate.fn <- function(object,p.value.function = general.two.sided.p.value,...) {
+  # extract point estimate(s)
+  pvs <- p.values(object, p.value.function)
+  maxp <- max(pvs$p)
+  point.estimate <- pvs[pvs$p == maxp, ]
+  rownames(point.estimate) <- NULL
+  return(point.estimate)
+}
+
+setGeneric("point",def=function(object,p.value.function = general.two.sided.p.value,...) { standardGeneric("point") })
+           
+setMethod("point", "ParameterizedRandomizationDistribution",   point.estimate.fn)
+
 setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
   show(summary(object))
 })

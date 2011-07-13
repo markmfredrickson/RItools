@@ -23,15 +23,13 @@ lower.p.value <- function(value, distribution) { simple.p.value(value, distribut
 ##"In general, if you want a two-sided P-value, compute both one-sided P-values, double the smaller one, and take the minimum of this value and 1. This approach views the two-sided P-value as a correction for testing twice [10]. Both the sample mean in the current section and Wilcoxon’s signed rank statistic in the next section have randomization distributions under the null hypothesis that are symmetric, and with a symmetric null distribution there is little ambiguity about the mean- ing of a two-sided P-value. When the null distribution is not symmetric, different definitions of a two-sided P-value can give slightly different answers. As discussed in [10], the view of a two- sided P-value as a correction for testing twice is one sensible approach in all cases. For related results, see [55]."
 
 general.two.sided.mid.p.value<-function(value,distribution){
-  sapply(distribution,function(dist){
-    high.mid<-mean(dist>value)+mean(dist==value)/2
-    low.mid<-mean(dist<value)+mean(dist==value)/2
+    high.mid<-mean(distribution>value)+mean(distribution==value)/2
+    low.mid<-mean(distribution<value)+mean(distribution==value)/2
     return(2*min(low.mid,high.mid)) ##don't worry about bounding by 1 for now
-  })
 }
 
 general.two.sided.p.value<-function(value,distribution){
-  min(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)))
+  max(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)),1)
 }
 
 ############################## Using RDs ##############################
