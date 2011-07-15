@@ -29,7 +29,7 @@ general.two.sided.mid.p.value<-function(value,distribution){
 }
 
 general.two.sided.p.value<-function(value,distribution){
-  max(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)),1)
+  min(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)),1)
 }
 
 ############################## Using RDs ##############################
