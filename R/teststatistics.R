@@ -76,6 +76,17 @@ mann.whitney.u <- function(ys, z, blocks) {
   return(sum(ys.ranks[z]) - sum(ys.ranks[!z]))
 }
 
+############################## Misc Statistics ##############################
+
+odds.ratio <- function(y, z, b) {
+  c11 <- sum(y == 1 & z == 1)
+  c10 <- sum(y == 1 & z == 0)
+  c01 <- sum(y == 0 & z == 1)
+  c00 <- sum(y == 0 & z == 0)
+  
+  return((c11 * c00) / (c10 * c01))
+}     
+
 
 
 
