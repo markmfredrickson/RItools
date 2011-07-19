@@ -1,2 +1,3 @@
 *.RCheck
 *.tar.gz
+.local
