@@ -57,8 +57,15 @@ plot.ParameterPvals <- function(object, ...) {
   width <- dim(object)[2]  
   params <- colnames(object)[1:(width - 1)] # TODO function to get
   # it from the PRD
-  fmla <- as.formula(paste("p ~ ", params[1], "+", params[2]))
-  levelplot(fmla, data = object, ...)
+
+  if (length(params) == 1) {
+    fmla <- as.formula(paste("p ~ ", params[1]))
+    return(xyplot(fmla, data = object, type = "l", ...))
+  }
+  if (length(params) == 2) {
+    fmla <- as.formula(paste("p ~ ", params[1], "+", params[2]))
+    return(levelplot(fmla, data = object, ...))
+  }
 }
 
 
