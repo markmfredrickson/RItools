@@ -281,6 +281,11 @@ multicoreLoaded <- function() {
   "multicore" %in% loadedNamespaces()  
 }
 
+snowLoaded <- function() {
+  "snow" %in% loadedNamespaces()  
+}
+
+
 getApplyFunction <- function() {
   opt <- options("RItools-apply")[[1]]
 
@@ -290,6 +295,10 @@ getApplyFunction <- function() {
 
   if (multicoreLoaded()) {
     return(mclapply) # yay speed!
+  }
+
+  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
+    return(function(x,fun){parLapply(cl,x,fun)}) # yay speed!
   }
 
   return(lapply) # the safe default
