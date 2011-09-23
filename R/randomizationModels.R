@@ -29,7 +29,7 @@ randomizationModel <- function(direct.effect, spillover.effect) {
   new("RandomizationModel", direct.effect = direct.effect, spillover.effect = spillover.effect)  
 }
 
-# the NRM extends the RM by prepending the number of treated neighbors
+# the NRM extends the RM by prepending the number of treated neighbors (ZS)
 # onto the arguments of the direct.effect and spillover.effect functions
 setClass("NetworkRandomizationModel",
   representation(S = "matrix"),
@@ -73,6 +73,28 @@ returnTau <- function(...) {
 returnZero <- function(...) {
   return(0)  
 }
+
+# I need to figure out how to handle Z, which is required for the direct.effect
+# and spillover.effect models.
+# 
+# plot.RandomizationModel <- function(object, params, ...) {
+#   library(lattice)
+#   
+#   pgrid <- do.call(expand.grid, params)
+# 
+#   primary <- pgrid[, 1]
+#   primary.name <- colnames(pgrid)[1]
+#   others <- pgrid[, -1]
+#   other.names <- colnames(pgrid)[-1] 
+# 
+#   xlim <- range(primary)
+#   
+#   direct.lines <- apply(others, 1, function(row) {      
+#     f <- function(x) { do.call(object@direct.effects, )}
+#   })
+#   
+#   
+# }
 
 ### Common Models ###
 
