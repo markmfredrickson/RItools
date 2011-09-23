@@ -43,27 +43,25 @@ networkRandomizationModel <- function(S, direct.effect, spillover.effect) {
 
 
 ### Functions ###
-setGeneric("modelOfEffect", function(model)
+setGeneric("modelOfEffect", function(model, R, Z, blocks = NULL, ...)
   standardGeneric("modelOfEffect"))
 
-model.effect.helper <- function(model, combine = `+`) {
-  function(R, Z, blocks, ...) {
-    tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, blocks, ...)))
-    combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, blocks, ...))) 
-  }  
+model.effect.helper <- function(model, combine, R, Z, blocks, ...) {
+  tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, blocks, ...)))
+  combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, blocks, ...))) 
 }
 
 setMethod("modelOfEffect", signature = c("RandomizationModel"),
-function(model) {
-  model.effect.helper(model, combine = `-`)
+function(model, R, Z, blocks = NULL, ...) {
+  model.effect.helper(model, combine = `-`, R, Z, blocks, ...)
 })
 
-setGeneric("observedData", function(model)
+setGeneric("observedData", function(model, R, Z, blocks = NULL, ...)
   standardGeneric("observedData"))
 
 setMethod("observedData", signature = c("RandomizationModel"),
-function(model) {
-  model.effect.helper(model, combine = `+`)
+function(model, R, Z, blocks = NULL, ...) {
+  model.effect.helper(model, combine = `+`, R, Z, blocks, ...)
 })
 
 # helper function for all the models that have a "tau" direct effect

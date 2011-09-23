@@ -16,7 +16,7 @@ test_that("Basics", {
   expected <- c(0, 4, 2, 7)
   
   expect_equal(
-    modelOfEffect(constant.additive.model)(expected, Z, blocks = NULL, tau =
+    modelOfEffect(constant.additive.model, expected, Z, blocks = NULL, tau =
       true.tau),
     uniformity)
   
@@ -36,14 +36,10 @@ test_that("Network models", {
       ifelse(ZS > 0, 1, 0)  
     })
 
-  moe <- modelOfEffect(sdsn.model)
-  
-  expect_equal(moe(expected.output, Z, blocks = NULL, tau = true.tau),
+  expect_equal(modelOfEffect(sdsn.model, expected.output, Z, blocks = NULL, tau = true.tau),
     uniformity)
 
-  od <- observedData(sdsn.model)
-
-  expect_equal(od(uniformity, Z, blocks = NULL, tau = true.tau),
+  expect_equal(observedData(sdsn.model, uniformity, Z, blocks = NULL, tau = true.tau),
     expected.output)
 
 })
