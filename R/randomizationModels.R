@@ -1,0 +1,75 @@
+################################################################################
+# Models for use in randomization distributions
+# 
+# All of our models take the same basic form:
+#
+# Observed Data - Z * f(treated neighbors, ... params ... ) - (1 - Z) *
+# g(treated neighbors, ... params)
+#
+# Model objects can encapsulate this basic using just
+# direct.effect and spillover.effect functions.
+# 
+# direct.effect <- function(Z, blocks, ... parameters ...)
+# spillover.effect <- function(Z, blocks, ... parameters ...)
+#
+# From these components, we can create modelsOfEffect (adjust observed data
+# into the uniformity trial given a randomization and given parameters) and
+# observedData (turning a uniformity trial into what we would expect given a
+# randomization and some parameters).
+#
+################################################################################
+
+### Models ###
+
+setClass("RandomizationModel",
+  representation(direct.effect = "function", 
+                 spillover.effect = "function"))
+
+randomizationModel <- function(direct.effect, spillover.effect) {
+  new("RandomizationModel", direct.effect, spillover.effect)  
+}
+
+# the NRM extends the RM by prepending the number of treated neighbors
+# onto the arguments of the direct.effect and spillover.effect functions
+setClass("NetworkRandomizationModel",
+  representation(S = "matrix"),
+  contains = "RandomizationModel")
+
+networkRandomizationModel <- function(S, direct.effect, spillover.effect) {
+  de <- function(Z, blocks, ...) { direct.effect(Z, blocks, ZS = as.vector(Z %*% S), ...) }
+  se <- function(Z, blocks, ...) { spillover.effect(Z, blocks, ZS = as.vector(Z %*% S), ...)}
+  new("NetworkRandomizationModel", direct.effect = de, spillover.effect = se, S = S)
+}
+
+
+### Functions ###
+setGeneric("modelOfEffect", function(model)
+  standardGeneric("modelOfEffect"))
+
+model.effect.helper <- function(model, combine = `+`) {
+  function(R, Z, blocks, ...) {
+    tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, blocks, ...)))
+    combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, blocks, ...))) 
+  }  
+}
+
+setMethod("modelOfEffect", signature = c("RandomizationModel"),
+function(model) {
+  model.effect.helper(model, combine = `-`)
+})
+
+setGeneric("observedData", function(model)
+  standardGeneric("observedData"))
+
+setMethod("observedData", signature = c("RandomizationModel"),
+function(model) {
+  model.effect.helper(model, combine = `+`)
+})
+
+# helper function for all the models that have a "tau" direct effect
+returnTau <- function(...) {
+  arguments <- match.call(expand.dots = TRUE)
+  return(arguments[["tau"]])
+}
+
+
