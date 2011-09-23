@@ -8,6 +8,18 @@ context("Randomization Model Tests")
 test_that("Basics", {
   # tau helper returns the passed in tau value:
   expect_equal(returnTau(beta = 1, 3, 4, tau = 5, 7, gamma = -3), 5)
+
+  # test the constant additive model
+  uniformity <- c(0, 1, 2, 4)
+  Z <- c(0, 1, 0, 1)
+  true.tau <- 3
+  expected <- c(0, 4, 2, 7)
+  
+  expect_equal(
+    modelOfEffect(constant.additive.model)(expected, Z, blocks = NULL, tau =
+      true.tau),
+    uniformity)
+  
 })
 
 test_that("Network models", {

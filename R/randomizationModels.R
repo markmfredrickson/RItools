@@ -26,7 +26,7 @@ setClass("RandomizationModel",
                  spillover.effect = "function"))
 
 randomizationModel <- function(direct.effect, spillover.effect) {
-  new("RandomizationModel", direct.effect, spillover.effect)  
+  new("RandomizationModel", direct.effect = direct.effect, spillover.effect = spillover.effect)  
 }
 
 # the NRM extends the RM by prepending the number of treated neighbors
@@ -72,4 +72,12 @@ returnTau <- function(...) {
   return(arguments[["tau"]])
 }
 
+returnZero <- function(...) {
+  return(0)  
+}
+
+### Common Models ###
+
+# Yt = Yc + Z * tau
+constant.additive.model <- randomizationModel(returnTau, returnZero)
 
