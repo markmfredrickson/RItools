@@ -101,3 +101,33 @@ returnZero <- function(...) {
 # Yt = Yc + Z * tau
 constant.additive.model <- randomizationModel(returnTau, returnZero)
 
+## The following models are parameterized with a network matrix S
+
+# the linear spillover model from Bowers and Fredrickson, 2011
+# Yt = Yc + Z * tau + (1 - Z) * min(tau, beta * Z^t %*% S)
+linear.spillover.fn <- function(Z, blocks, ZS, tau, beta) {
+  pmin(tau, beta * ZS) 
+}
+
+linear.spillover.model <- function(S) {
+  networkRandomizationModel(S, returnTau, linear.spillover.fn) 
+}
+
+# the inverse growth spillover model from Bowers and Fredrickson, 2011
+inverse.spillover.fn <- function(Z, blocks, ZS, tau1, tau2) {
+  # Growth curve: when tau2<0 effect is decreasing in the number of treated
+  # neighbors, 
+  # when tau2>0, effect is increasing in the number of treated neighbors, 
+  # tau2=0 means all same effect regardless of the neighborhood. 
+  # Limited to  effect no greater than tau1
+  tau1 * (1 - (1 / (1 + ZS ^(tau2))))
+}
+
+inverse.spillover.model <- function(S) {
+  networkRandomizationModel(S, returnTau, inverse.spillover.fn)
+}
+
+
+### Analyzing Operating Characteristics ###
+
+
