@@ -129,5 +129,44 @@ inverse.spillover.model <- function(S) {
 
 
 ### Analyzing Operating Characteristics ###
+# powerAnalysis: 
+#  model: a RandomizationModel object, e.g. constant.additive.model
+#  Z: an example randomization that will be used to to generate possible
+#    possible randomizations when combined with blocks (below)
+#  true.params: list(param.name = value, ...) representing the "true"
+#    parameters of this simulation  
+#  test.params: list(param.name = c(1,2,3...), ...) representing "false"
+#    values to test for rejection
+#  blocks: a vector of blocks of the units 
+#  uniformity: simulated data from a uniformity trial (i.e. all get control)
+#  test.samples: number of samples to draw from the randomization distribution
+#    when testing a hypothesis
+#  power.samples: number of datasets to generate simulated Z values
+analyzeModel <- function(model, Z, true.params, test.params,
+  test.statistic, uniformity = rnorm(length(Z)), blocks = rep(1, length(Z)), 
+  test.samples = 5000, power.samples = 1000, p.value = general.two.sided.p.value) {
+  
+  n <- length(Z)
+  Zs <- produceRandomizations(Z, blocks, power.samples)
+  Zs <- as.data.frame(apply(Zs, 2, function(idx) { x <- numeric(n); x[idx] <- 1; return(x) }))
 
-
+  total.time <- system.time(
+    simulation <- lapply(Zs, function(z) {
+      data <- do.call(observedData, append(list(model, uniformity, z, blocks), true.params))  
+      distributions <- parameterizedRandomizationDistribution(data,
+                                                              Z,
+                                                              test.statistic,
+                                                              function(...) {
+                                                                modelOfEffect(model,
+                                                                ...)
+                                                              },
+                                                              test.params,
+                                                              blocks,
+                                                              test.samples)
+      pvs <- p.values(distributions, p.value)
+      return(pvs)
+    })
+  )
+  
+  return(list(time = total.time, simulation = simulation))
+}
