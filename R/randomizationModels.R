@@ -148,13 +148,20 @@ inverse.spillover.model <- function(S) {
 #  test.params: list(param.name = c(1,2,3...), ...) representing "false"
 #    values to test for rejection
 #  blocks: a vector of blocks of the units 
-#  uniformity: simulated data from a uniformity trial (i.e. all get control)
+#  data: simulated data from a uniformity trial (i.e. all get control)
 #  test.samples: number of samples to draw from the randomization distribution
 #    when testing a hypothesis
 #  power.samples: number of datasets to generate simulated Z values
 analyzeModel <- function(model, Z, true.params, test.params,
-  test.statistic, uniformity = rnorm(length(Z)), blocks = rep(1, length(Z)), 
+  test.statistic, data = rnorm(length(Z)), blocks = rep(1, length(Z)), 
   test.samples = 5000, power.samples = 1000, p.value = general.two.sided.p.value) {
+
+  # Error Checking
+
+  if (!all(names(true.params) %in% names(test.params)) |
+      !all(names(test.params) %in% names(true.params))) {
+    stop("True and test param names do not match")  
+  }
   
   n <- length(Z)
   Zs <- produceRandomizations(Z, blocks, power.samples)
@@ -162,14 +169,11 @@ analyzeModel <- function(model, Z, true.params, test.params,
 
   total.time <- system.time(
     simulation <- lapply(Zs, function(z) {
-      data <- do.call(observedData, append(list(model, uniformity, z, blocks), true.params))  
+      data <- do.call(observedData, append(list(model, data, z, blocks), true.params))  
       distributions <- parameterizedRandomizationDistribution(data,
                                                               Z,
                                                               test.statistic,
-                                                              function(...) {
-                                                                modelOfEffect(model,
-                                                                ...)
-                                                              },
+                                                              model,
                                                               test.params,
                                                               blocks,
                                                               test.samples)
@@ -178,5 +182,13 @@ analyzeModel <- function(model, Z, true.params, test.params,
     })
   )
   
-  return(list(time = total.time, simulation = simulation))
+  return(list(time = total.time,
+              simulation = simulation,
+              test.params = test.params,
+              test.statistic = test.statistic,
+              data = data, 
+              blocks = blocks,
+              test.samples = test.samples,
+              power.samples = power.samples, 
+              p.value = p.value))
 }

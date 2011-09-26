@@ -68,3 +68,31 @@ test_that("functions", {
   
 })
 
+test_that("Model Analysis Functions", {
+  
+  Z <- c(1,0,1,0)
+  data <- c(1,2,3,4)
+
+  res.analysis <- analyzeModel(constant.additive.model,
+                               Z,
+                               list(tau = 3), 
+                               list(tau = 0:5),
+                               mean.diff.noblocks)
+
+  expect_equal(length(res.analysis$simulation), 6)
+
+  
+
+})
+
+test_that("Error checking", {
+  Z <- c(1,0,1,0)
+  data <- c(1,2,3,4)
+
+  expect_error(analyzeModel(constant.additive.model,
+                               Z,
+                               list(tau = 3), 
+                               list(tau = 0:5, beta = 1),
+                               mean.diff.noblocks))
+  
+})
