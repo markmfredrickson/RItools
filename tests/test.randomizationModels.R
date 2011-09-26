@@ -44,3 +44,27 @@ test_that("Network models", {
 
 })
 
+test_that("functions", {
+  # functions should work as modelsOfEffect and observedData first arguments
+  constant.additive.moe <- function(ys, z, b, tau) {
+    ys - (z * tau)
+  } 
+  constant.additive.obdata <- function(ys, z, b, tau) {
+    ys + (z * tau)
+  } 
+  
+  data <- 1:6
+  Z <- rep(c(1,0), 3)
+  true.tau <- 4
+
+  expect_equal(
+    modelOfEffect(constant.additive.model, data, Z, NULL, tau = true.tau),
+    modelOfEffect(constant.additive.moe, data, Z, null, tau = true.tau))
+
+  expect_equal(
+    observedData(constant.additive.model, data, Z, NULL, tau = true.tau),
+    observedData(constant.additive.obdata, data, Z, null, tau = true.tau))
+
+  
+})
+

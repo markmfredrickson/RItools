@@ -11,9 +11,7 @@
 ################################################################################
 
 
-constant.additive.model <- function(ys, z, b, tau) {
-  ys - (z * tau)
-} 
+
 
 constant.multiplicative.model <- function(ys, z, b, beta) {
   ys / ((z * beta) + (1 - z))  

@@ -18,9 +18,12 @@ test_that("Engine and pRD give same answers", {
   Z[sample.int(n, n/2)] <- 1
   R <- Z * Yt + (1 - Z) * Yc
 
+  constant.additive.fn <- function(ys, z, b, tau) {
+    ys - (z * tau)
+  } 
   set.seed(20110620)
   res.prd <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
-    constant.additive.model, list(tau = c(-10, 9, 10)))
+    constant.additive.fn, list(tau = c(-10, 9, 10)))
 
   # being extra explicit about model creation
   mm10 <- function(y, z, b) { constant.additive.model(y, z, b, -10) }
@@ -33,5 +36,30 @@ test_that("Engine and pRD give same answers", {
   # prd has some extra information, and we don't expect that to be the same
   # also, the return value of res.eng is a list, so we pull out the first item, just as pRD does.
   expect_identical(res.prd@.Data, res.eng[[1]]@.Data)
+
+})
+
+test_that("Using model objects", {
+  # constant.additive.model is already defined
+  set.seed(20110620)
+  tau <- 10
+  n <- 8 
+  Yc <- rnorm(n)
+  Yt <- Yc + tau
+  Z <- rep(0, n)
+  Z[sample.int(n, n/2)] <- 1
+  R <- Z * Yt + (1 - Z) * Yc
+
+  function.version <- function(...) {
+    modelOfEffect(constant.additive.model, ...)  
+  }
+
+  hypotheses <-  list(tau = c(7,8,9,10,11,12))
+  res.fn <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+    function.version, parameters = hypotheses)
+
+  res.model <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+    constant.additive.model, parameters = hypotheses)
+  
 })
 

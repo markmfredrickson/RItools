@@ -56,12 +56,22 @@ function(model, R, Z, blocks = NULL, ...) {
   model.effect.helper(model, combine = `-`, R, Z, blocks, ...)
 })
 
+setMethod("modelOfEffect", signature = c("function"),
+function(model, R, Z, blocks = NULL, ...) {
+  model(R, Z, blocks, ...)  
+})
+
 setGeneric("observedData", function(model, R, Z, blocks = NULL, ...)
   standardGeneric("observedData"))
 
 setMethod("observedData", signature = c("RandomizationModel"),
 function(model, R, Z, blocks = NULL, ...) {
   model.effect.helper(model, combine = `+`, R, Z, blocks, ...)
+})
+
+setMethod("observedData", signature = c("function"),
+function(model, R, Z, blocks = NULL, ...) {
+  model(R, Z, blocks, ...)  
 })
 
 # helper function for all the models that have a "tau" direct effect
