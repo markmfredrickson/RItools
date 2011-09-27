@@ -171,7 +171,7 @@ parameterizedRandomizationDistribution <- function(
     stop("You must supply both parameters and a model effects if you supply either")
   }
 
-  if (!hasMethod(modelOfEffect, class(moe))) {
+  if (!is.null(moe) & !hasMethod(modelOfEffect, class(moe))) {
     stop("moe object must have a 'modelOfEffect' method (a model or a function)")  
   }
 

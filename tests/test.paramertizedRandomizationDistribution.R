@@ -63,3 +63,18 @@ test_that("Using model objects", {
   
 })
 
+test_that("Moe can be NULL", {
+  set.seed(20110620)
+  tau <- 10
+  n <- 8 
+  Yc <- rnorm(n)
+  Yt <- Yc + tau
+  Z <- rep(0, n)
+  Z[sample.int(n, n/2)] <- 1
+  R <- Z * Yt + (1 - Z) * Yc
+
+  # this should not raise an error
+  res.prd <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks)
+  
+})
+
