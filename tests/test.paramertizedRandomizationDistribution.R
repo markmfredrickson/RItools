@@ -26,9 +26,9 @@ test_that("Engine and pRD give same answers", {
     constant.additive.fn, list(tau = c(-10, 9, 10)))
 
   # being extra explicit about model creation
-  mm10 <- function(y, z, b) { constant.additive.model(y, z, b, -10) }
-  m9 <- function(y, z, b) { constant.additive.model(y, z, b, 9) }
-  m10 <- function(y, z, b) { constant.additive.model(y, z, b, 10) }
+  mm10 <- function(y, z, b) { constant.additive.fn(y, z, b, -10) }
+  m9 <- function(y, z, b) { constant.additive.fn(y, z, b, 9) }
+  m10 <- function(y, z, b) { constant.additive.fn(y, z, b, 10) }
   
   set.seed(20110620)
   res.eng <- randomizationDistributionEngine(R, Z, list(list(mann.whitney.u, mm10, m9, m10)))
