@@ -76,6 +76,21 @@ mann.whitney.u <- function(ys, z, blocks) {
   return(sum(ys.ranks[z]) - sum(ys.ranks[!z]))
 }
 
+mean.rank.diff.strata<-function(ys, z, blocks){
+  ##average difference in ranks between control and treated obs
+  ##currently weighted equally across strata (i.e. good for pairs not good for other designs)
+  mean(
+       mapply(FUN = function(ys, z) {
+         R<-rank(ys)
+         mean(R*z)-mean(R*(1-z))
+         ##((R*z)/sum(z))-((R*(1-z))/sum(1-z))
+       },
+              ys = split(ys, blocks),
+              z = split(z, blocks))
+       )
+}
+
+
 ############################## Misc Statistics ##############################
 
 odds.ratio <- function(y, z, b) {
