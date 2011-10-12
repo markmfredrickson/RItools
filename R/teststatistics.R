@@ -104,4 +104,14 @@ odds.ratio <- function(y, z, b) {
 
 
 
+############################# d and d^2 stats ###############################
+
+d.stat <- function(y, z, b) {
+  tmp <- xBalance(z ~ y,
+           data = data.frame(y, z, b),
+           strata = list(b = ~b),
+           report = "adj.mean.diffs")
+
+  return(tmp$results[, "adj.diff",])
+}
 
