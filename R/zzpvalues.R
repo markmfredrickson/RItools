@@ -32,34 +32,7 @@ general.two.sided.p.value<-function(value,distribution){
   min(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)),1)
 }
 
-############################## Using RDs ##############################
-
-setClass("ParameterPvals", contains = "data.frame")
-
-p.values <- function(object, p.value.function = general.two.sided.p.value) {
-  stopifnot(inherits(object, "ParameterizedRandomizationDistribution"))
-
-  k <- dim(object)[1] # total number of distributions to check
-  pvs <- vector("numeric")
-
-  # first row is the sharp null, that can be computed elsewhere
-  for (i in 1:k) {
-    pvs[i] <- p.value.function(object[i, 1],
-      object[i, -1])
-  }
-
-  return(as(cbind(rbind(NA, object@params), p = pvs), "ParameterPvals"))
-}
-
-plot.ParameterPvals <- function(object, ...) {
-  library(lattice)
-  # for each pair of parameters, plot somethign like this:
-  width <- dim(object)[2]  
-  params <- colnames(object)[1:(width - 1)] # TODO function to get
-  # it from the PRD
-  fmla <- as.formula(paste("p ~ ", params[1], "+", params[2]))
-  levelplot(fmla, data = object, ...)
-}
+############################## Confidence Intervals ##############################
 
 
 ##The confidence interval function ought to refuse to provide levels that are not supported (see the behavior of wilcox.test when you ask for an exact CI but the discreteness of the randomization distribution does not allow it
@@ -72,12 +45,9 @@ setClass("ParameterizedRandomizationDistributionConfInt",
 confint.ParameterizedRandomizationDistribution <- function(
   object,
   param,
-  level = 0.95,
-  p.value.function = general.two.sided.p.value) {
+  level = 0.95) {
   
-  pvs <- p.values(object, p.value.function) 
-  
-  reject <- (1 - pvs$p) > level
+  reject <- (1 - object$p.value) > level
   results <- cbind(object@params, reject[-1]) # drop the null
    
   return(new("ParameterizedRandomizationDistributionConfInt", prd = object,

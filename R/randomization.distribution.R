@@ -227,6 +227,17 @@ parameterizedRandomizationDistribution <- function(
   return(rd)
 }
 
+plot.paramterizedRandomizationDistribution <- function(object, ...) {
+  library(lattice)
+
+  # for each pair of parameters, plot somethign like this:
+  width <- dim(object)[2]  
+  params <- colnames(object@params)
+  
+  fmla <- as.formula(paste("p.value ~ ", params[1], "+", params[2]))
+  levelplot(fmla, data = object, ...)
+}
+
 setClass("ParameterizedRandomizationDistributionSummary",
   representation(
     randomizationDistribution = "ParameterizedRandomizationDistribution",
@@ -234,21 +245,9 @@ setClass("ParameterizedRandomizationDistributionSummary",
     showCall = "logical",
     sharp.null.p = "numeric"))
 
-setMethod("summary", "ParameterizedRandomizationDistribution", function(object, 
-  p.value.function = general.two.sided.p.value, showCall = T, ...) {
-
-  # point estimate(s)
-  pvs <- p.values(object, p.value.function)
-  maxp <- max(pvs$p)
-  point.estimate <- pvs[pvs$p == maxp, ]
-  rownames(point.estimate) <- NULL
-  
-  # observed test statistic is in the PRD object but we compute p-value against
-  # the sharp null here
-  sharp.null.p <- p.value.function(object[1,1], object[1,-1])
-
+setMethod("summary", "ParameterizedRandomizationDistribution", function(object, showCall = T, ...) {
   return(new("ParameterizedRandomizationDistributionSummary", randomizationDistribution = object,
-    point.estimate = point.estimate, showCall = showCall, sharp.null.p = sharp.null.p))
+    point.estimate = point(object), showCall = showCall, sharp.null.p = object[1,2]))
 })
 
 setMethod("show", "ParameterizedRandomizationDistributionSummary", function(object) {
@@ -277,21 +276,15 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
   invisible(object)
 })
 
-point.estimate.fn <- function(object,p.value.function = general.two.sided.p.value,...) {
+setGeneric("point",
+  def = function(object) { standardGeneric("point") })
+           
+setMethod("point", "ParameterizedRandomizationDistribution", function(object) {
   # extract point estimate(s)
-  pvs <- p.values(object, p.value.function)
-  maxp <- max(pvs$p)
-  point.estimate <- pvs[pvs$p == maxp, ]
+  maxp <- max(object$p.value)
+  point.estimate <- object[object$p.value == maxp, ]
   rownames(point.estimate) <- NULL
   return(point.estimate)
-}
-
-setGeneric("point",def=function(object,p.value.function = general.two.sided.p.value,...) { standardGeneric("point") })
-           
-setMethod("point", "ParameterizedRandomizationDistribution",   point.estimate.fn)
-
-setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
-  show(summary(object))
 })
 
 

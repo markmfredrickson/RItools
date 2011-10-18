@@ -152,9 +152,10 @@ inverse.spillover.model <- function(S) {
 #  test.samples: number of samples to draw from the randomization distribution
 #    when testing a hypothesis
 #  power.samples: number of datasets to generate simulated Z values
+#  ... arguments to be passed to pRD (and probably then to the engine)
 analyzeModel <- function(model, Z, true.params, test.params,
   test.statistic, data = rnorm(length(Z)), blocks = rep(1, length(Z)), 
-  test.samples = 5000, power.samples = 1000, p.value = general.two.sided.p.value) {
+  test.samples = 5000, power.samples = 1000, ...) {
 
   # Error Checking
 
@@ -170,15 +171,13 @@ analyzeModel <- function(model, Z, true.params, test.params,
   total.time <- system.time(
     simulation <- lapply(Zs, function(z) {
       data <- do.call(observedData, append(list(model, data, z, blocks), true.params))  
-      distributions <- parameterizedRandomizationDistribution(data,
-                                                              Z,
-                                                              test.statistic,
-                                                              model,
-                                                              test.params,
-                                                              blocks,
-                                                              test.samples)
-      pvs <- p.values(distributions, p.value)
-      return(pvs)
+      return(parameterizedRandomizationDistribution(data,
+          Z,
+          test.statistic,
+          model,
+          parameters = test.params,
+          blocks = blocks,
+          samples = test.samples, ...))
     })
   )
   
@@ -189,6 +188,5 @@ analyzeModel <- function(model, Z, true.params, test.params,
               data = data, 
               blocks = blocks,
               test.samples = test.samples,
-              power.samples = power.samples, 
-              p.value = p.value))
+              power.samples = power.samples, ...))
 }
