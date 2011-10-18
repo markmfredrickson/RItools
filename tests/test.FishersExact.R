@@ -13,13 +13,13 @@ test_that("Lady Tasting Tea", {
   expect_equal(number.correct(lady.guess, actual.cups, NULL), 3)
   
   lady.distribution <- parameterizedRandomizationDistribution(lady.guess, actual.cups,
-    test.stat = number.correct)
+    test.stat = number.correct, p.value = upper.p.value, include.distribution = T)
 
-  pv <- upper.p.value(lady.distribution[1,1],
-    lady.distribution[1,-1])
-  expect_equal(pv, 17/70)
+  # sharp null p.value
+  expect_equal(lady.distribution[1,2], 17/70)
 
-  expect_equivalent(as.numeric(table(lady.distribution[1,-1])/70), 
+  expect_equivalent(
+    as.numeric(table(lady.distribution@distribution[1,])/70), 
     c(1/70, 16/70, 36/70, 16/70, 1/70))
   
 })
@@ -35,10 +35,8 @@ test_that("2x2 table style", {
   res <- parameterizedRandomizationDistribution(R, Z, test.stat = odds.ratio)
 
   res.fisher <- fisher.test(table(R, Z))
-
-  res.p <- general.two.sided.p.value(res[1,1], res[1,-1])
   
-  expect_equal(res.p, res.fisher$p.value)
+  expect_equal(res[1,2], res.fisher$p.value)
 
 
 })

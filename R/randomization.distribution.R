@@ -184,8 +184,7 @@ parameterizedRandomizationDistribution <- function(
   test.stat,
   moe = NULL, # single function with signature f(data, z, blocks, param1, param2, etc.)
   parameters = NULL, # list of name = values, name = values, ...
-  blocks = NULL,
-  samples = 5000) {
+  ...) {
   
   # if either moe or parameters are present, both must be present
   if ((!is.null(moe) & is.null(parameters)) | (is.null(moe) & !is.null(parameters))) {
@@ -211,10 +210,10 @@ parameterizedRandomizationDistribution <- function(
     })
 
     rds <- randomizationDistributionEngine(data, treatment, models = list(c(test.stat,
-      functions)), blocks, samples)
+      functions)), ...)
   } else {
     rds <- randomizationDistributionEngine(data, treatment, 
-      models = list(c(test.stat)), blocks, samples)
+      models = list(c(test.stat)), ...)
   }
 
   rd <- as(rds[[1]], "ParameterizedRandomizationDistribution")
