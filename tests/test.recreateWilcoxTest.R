@@ -28,29 +28,14 @@ test_that("Non-paired", {
   # entry in the sharp null object
   expect_equal(res.prd[[1,1]], res.wilcox$statistic[[1]])
 
-  s <- summary(res.prd)
-  expect_equal(res.wilcox$p.value, s@sharp.null.p)
+  expect_equal(res.wilcox$p.value, res.prd[1,2])
   
   res.wilcox.m10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = -10)
   res.wilcox.10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 10)
   res.wilcox.9 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 9)
 
-  pvs <- na.omit(p.values(res.prd)) # na.omit drops the sharp null, which complicates
-  
-  expect_equal(pvs[pvs$tau == 10, "p"], res.wilcox.10$p.value)
-  expect_equal(pvs[pvs$tau == -10, "p"], res.wilcox.m10$p.value)
-  expect_equal(pvs[pvs$tau == 9, "p"], res.wilcox.9$p.value)
-
-  # zeroing in on the point estimate
-  step <- 0.01
-  res.prd.intval <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
-    constant.additive.model, list(tau = seq(9,10.5, step)))
-
-  # this problem does not have a unique point estimate. Typical HL would then take the
-  # mid point of the interval. In our case, we'll take the mean and call it close enough.
-  s.intval <- summary(res.prd.intval)
-  thept <- mean(s.intval@point.estimate$tau)
-  expect_true(abs(thept - res.wilcox$estimate[[1]]) < step) # [[]] to remove name
+  expect_equal(res.prd[,2], c(res.wilcox$p.value, res.wilcox.m10$p.value, 
+      res.wilcox.9$p.value, res.wilcox.10$p.value))
 })
 
 test_that("Paired", {
@@ -80,28 +65,12 @@ test_that("Paired", {
   res.prd <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, 
     constant.additive.model, list(tau = c(-10, 9, 10)), B) 
 
-  s <- summary(res.prd)
-  expect_equal(res.wilcox$p.value, s@sharp.null.p)
-  
   res.wilcox.m10 <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = -10)
   res.wilcox.10 <-  wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 10)
   res.wilcox.9 <-   wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 9)
 
-  pvs <- na.omit(p.values(res.prd)) # na.omit drops the sharp null, which complicates
-  
-  expect_equal(pvs[pvs$tau == 10, "p"], res.wilcox.10$p.value)
-  expect_equal(pvs[pvs$tau == -10, "p"], res.wilcox.m10$p.value)
-  expect_equal(pvs[pvs$tau == 9, "p"], res.wilcox.9$p.value)
+  expect_equal(res.prd[,2], c(res.wilcox$p.value, res.wilcox.m10$p.value, 
+      res.wilcox.9$p.value, res.wilcox.10$p.value))
 
-  # zeroing in on the point estimate
-  step <- 0.01
-  res.prd.intval <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, ##mann.whitney.u, 
-    constant.additive.model, list(tau = seq(9,10.5, step)), B)
-
-  # this problem does not have a unique point estimate. Typical HL would then take the
-  # mid point of the interval. In our case, we'll take the mean and call it close enough.
-  s.intval <- summary(res.prd.intval)
-  thept <- mean(s.intval@point.estimate$tau)
-  expect_true(abs(thept - res.wilcox$estimate[[1]]) < 0.05) # [[]] to remove name
 })
 
