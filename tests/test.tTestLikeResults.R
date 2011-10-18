@@ -23,10 +23,8 @@ test_that("Get same point estimate", {
   
   # the t.test p-value is obscenely small, so just make sure that the null
   # pvalue is equal to the smallest real possible p (two tailed)
-
-  s <- summary(res.prd)
   minp <- 2 * 1/choose(n, n/2)
-  expect_equal(s@sharp.null.p, minp)
+  expect_equal(res.prd[1,2], minp)
 
   # this tolerance value is arbitrary, but there you are.
   within <- function(a, b, tol = 0.01) {
@@ -36,7 +34,6 @@ test_that("Get same point estimate", {
   res.t.test.10 <- t.test(R[Z == 1], R[Z == 0], var.equal = T, mu = 10)
   res.t.test.9 <- t.test(R[Z == 1], R[Z == 0], var.equal = T, mu = 9)
 
-  pvs <- na.omit(p.values(res.prd)) # ignore sharp null
-  within(pvs[pvs$tau == 10, "p"], res.t.test.10$p.value)
-  within(pvs[pvs$tau == 9, "p"], res.t.test.9$p.value)
+  within(res.prd[4,2], res.t.test.10$p.value)
+  within(res.prd[3,2], res.t.test.9$p.value)
 })
