@@ -70,6 +70,8 @@ setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 setClass("RandomizationDistribution",
   representation(test.statistic = "function",
                  models.of.effect = "list", # first is always sharp null 
+                 p.value = "function", # fn used to compute p-values
+                 samples = "numeric", # the number of samples run, not necessarily requested
                  treatment = "numeric", # 1/0 vector 
                  blocks = "numeric"),
   contains = "matrix")
@@ -85,6 +87,7 @@ randomizationDistributionEngine <- function(
   models, # a list of list(testStatistic, moe1, moe2, ...) all functions
   blocks = NULL,
   samples = 5000,
+  p.value = general.two.sided.p.value,
   ...) {
 
   n <- length(treatment)
@@ -137,7 +140,9 @@ randomizationDistributionEngine <- function(
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
-      blocks = as.numeric(blocks)
+      blocks = as.numeric(blocks),
+      samples = dim(randomizations)[2],
+      p.value = p.value
       ))
   }
 
