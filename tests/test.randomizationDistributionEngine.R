@@ -37,11 +37,11 @@ test_that("Basic usage", {
   expect_true(all(sapply(c("test.statistic", "p.value"),
                          function(s) { length(formals(slot(dst, s))) > 0 })))
 
-  # dst inherits from a matrix, and should have dim = c(models, samples + 1)
+  # dst inherits from a matrix, and should have dim = c(models, 2)
   # two models were tested (sharp null and tau1), there are choose(8,4) = 70 samples
-  # the extra in the sample column is for the observed test statistics (after adjustment)
-  # this case, there should be another value in the table with exactly the same value as we are enumerating.
-  expect_equal(dim(dst), c(2, 71))
+  # the first column is the observed statistic after adjustment, the second the p-value
+  # computed using the p.value argument (usually general.two.sided.p.value)
+  expect_equal(dim(dst), c(2, 2))
   expect_equal(dst@samples, 70)
 
   # since we didn't supply a p.value function, expect it equal to general.two.sided.p.value

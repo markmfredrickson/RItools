@@ -128,28 +128,29 @@ randomizationDistributionEngine <- function(
     # for a discussion of matrix + unlist vs. do.call + rbind
     this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
 
-    # the format of a distribution is an m x k + 1 matrix, where
-    # m is the number of models tested, and k is the number of randomizations
-    # the extra column is the first column: test statistics under adjustment
-    # to be used by the p-value functions
     adjusted.stats <- apply(adjusted.data, 2, function(d) { 
       test.statistic(d, treatment, blocks, ...)})
-    this.distrib <- cbind(statistics = adjusted.stats, this.distrib)
+
+    pvs <- vector("numeric")
+
+    for (i in 1:(k + 1)) { # k is number of models, plus 1 for sharp null
+      pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
+    }
     
-    return(new("RandomizationDistribution", this.distrib,
+    return(new("RandomizationDistribution", 
+      cbind(statistic = adjusted.stats, p.value = pvs), # inherits from matrix
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks),
       samples = dim(randomizations)[2],
-      p.value = p.value
-      ))
+      p.value = p.value))
   }
 
-   distributions <- lapply(1:k, function(i){
-     makedists(i)
-   })
-  # temporary hack until I can get the intialize() method working
+  distributions <- lapply(1:k, function(i){
+      makedists(i)
+  })
+# temporary hack until I can get the intialize() method working
   names(distributions) <- names(models)
 
   return(distributions)
