@@ -50,5 +50,22 @@ test_that("Basic usage", {
   # blocks should just be a vector of 1s, as we didn't supply any blocks
   expect_equal(dst@blocks, rep(1, 8))
   
+})
+
+test_that("Get entire distribution", {
+  Z <- rep(c(0,1), 4)
+  ys <- rnorm(8) + Z
+  
+  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+
+  models <- list(xyz = list(mean.difference, tau1)) # tests sharp null and tau1
+
+  # typically we don't return the entire distribution, only the p-values
+  res <- randomizationDistributionEngine(ys, Z, models, include.distribution = TRUE)
+ 
+  dst <- res$xyz
+  
+  # 2 models, choose(8, 4) = 70 randomizations
+  expect_equal(dim(dst@distribution), c(2, 70))
   
 })

@@ -73,7 +73,8 @@ setClass("RandomizationDistribution",
                  p.value = "function", # fn used to compute p-values
                  samples = "numeric", # the number of samples run, not necessarily requested
                  treatment = "numeric", # 1/0 vector 
-                 blocks = "numeric"),
+                 blocks = "numeric",
+                 distribution = "matrix"), # if requested, the raw data
   contains = "matrix")
 # the matrix has a conventional form.
 # The rows form the models tested, the columns are the samples
@@ -88,6 +89,7 @@ randomizationDistributionEngine <- function(
   blocks = NULL,
   samples = 5000,
   p.value = general.two.sided.p.value,
+  include.distribution = FALSE,
   ...) {
 
   n <- length(treatment)
@@ -133,18 +135,24 @@ randomizationDistributionEngine <- function(
 
     pvs <- vector("numeric")
 
-    for (i in 1:(k + 1)) { # k is number of models, plus 1 for sharp null
+    for (i in 1:(length(moes))) { 
       pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
     }
     
-    return(new("RandomizationDistribution", 
+    tmp <- new("RandomizationDistribution", 
       cbind(statistic = adjusted.stats, p.value = pvs), # inherits from matrix
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
       blocks = as.numeric(blocks),
       samples = dim(randomizations)[2],
-      p.value = p.value))
+      p.value = p.value)
+
+    if (include.distribution) {
+      tmp@distribution <- this.distrib  
+    }
+    
+    return(tmp)
   }
 
   distributions <- lapply(1:k, function(i){
