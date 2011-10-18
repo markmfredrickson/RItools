@@ -69,3 +69,20 @@ test_that("Get entire distribution", {
   expect_equal(dim(dst@distribution), c(2, 70))
   
 })
+
+test_that("Summaries of the distrib", {
+  Z <- rep(c(0,1), 4)
+  ys <- rnorm(8) + Z
+  
+  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+
+  models <- list(xyz = list(mean.difference, tau1)) # tests sharp null and tau1
+
+  res <- randomizationDistributionEngine(ys, Z, models,
+            summaries = list(mean = mean, var = var))
+
+  dst <- res$xyz
+  expect_equal(dim(dst), c(2,4))
+  expect_equal(colnames(dst), c("statistic", "p.value", "mean", "var"))
+    
+})

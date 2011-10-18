@@ -75,7 +75,7 @@ setClass("RandomizationDistribution",
                  treatment = "numeric", # 1/0 vector 
                  blocks = "numeric",
                  distribution = "matrix"), # if requested, the raw data
-  contains = "matrix")
+  contains = "data.frame")
 # the matrix has a conventional form.
 # The rows form the models tested, the columns are the samples
 # The first column is the test statistic applied to the observed data.
@@ -90,13 +90,14 @@ randomizationDistributionEngine <- function(
   samples = 5000,
   p.value = general.two.sided.p.value,
   include.distribution = FALSE,
+  summaries = list(),
   ...) {
 
   n <- length(treatment)
   if (is.null(blocks)) blocks <- rep(TRUE, n)
   blocks <- as.factor(blocks)
   stopifnot(n == length(treatment) && n == length(blocks))
-  
+ 
   # note: it might be better to pass total pool, number of treatment, and a
   # vector of the size of the blocks. Rather than a vector indicating
   # treatment and a vector indicating block membership. keeping this signature
@@ -139,8 +140,14 @@ randomizationDistributionEngine <- function(
       pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
     }
     
+    this.result <- data.frame(statistic = adjusted.stats, p.value = pvs)
+
+    if (length(summaries) > 0) {
+      this.result <- cbind(this.result, lapply(summaries, function(f) { apply(this.distrib, 1, f)}))
+    }
+    
     tmp <- new("RandomizationDistribution", 
-      cbind(statistic = adjusted.stats, p.value = pvs), # inherits from matrix
+      this.result, # RD inherits from data.frame
       test.statistic = test.statistic,
       models.of.effect = moes,
       treatment = as.numeric(treatment),
