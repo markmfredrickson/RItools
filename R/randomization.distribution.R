@@ -311,9 +311,11 @@ setGeneric("point",
   def = function(object) { standardGeneric("point") })
            
 setMethod("point", "ParameterizedRandomizationDistribution", function(object) {
+
+  combined <- cbind(object@params, object[-1,])
   # extract point estimate(s)
-  maxp <- max(object$p.value)
-  point.estimate <- object[object$p.value == maxp, ]
+  maxp <- max(combined$p.value)
+  point.estimate <- combined[combined$p.value == maxp, ]
   rownames(point.estimate) <- NULL
   return(point.estimate)
 })
