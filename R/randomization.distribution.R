@@ -227,15 +227,30 @@ parameterizedRandomizationDistribution <- function(
   return(rd)
 }
 
-plot.paramterizedRandomizationDistribution <- function(object, ...) {
+plot.ParameterizedRandomizationDistribution <- function(object, type = 'o', ...) {
   library(lattice)
-
-  # for each pair of parameters, plot somethign like this:
-  width <- dim(object)[2]  
-  params <- colnames(object@params)
   
-  fmla <- as.formula(paste("p.value ~ ", params[1], "+", params[2]))
-  levelplot(fmla, data = object, ...)
+  pnames <- colnames(object@params)
+  np <- length(pnames)
+  
+  if (np == 0) {
+    stop("Cannot plot sharp null only")
+  }
+
+  data <- cbind(object@params, object[-1,])
+
+  if (np == 1) {
+    fmla <- as.formula(paste("p.value ~ ", pnames[1]))
+    return(xyplot(fmla, data = data, type = type, ...)) # drop the sharp.null
+  }
+  
+  if (np == 2) {
+    fmla <- as.formula(paste("p.value ~ ", pnames[1], "+", pnames[2]))
+    return(levelplot(fmla, data = data, ...)) 
+  }
+  
+  # this point, np > 2
+  stop("Cannot plot parameters > 2 models (yet)")
 }
 
 setClass("ParameterizedRandomizationDistributionSummary",

@@ -78,3 +78,48 @@ test_that("Moe can be NULL", {
   
 })
 
+test_that("Plotting", {
+  # these tests mostly just test for existence, to make sure things don't break  
+  # for correct presentation, these should be tested by hand.
+  
+  # one param model
+  set.seed(20110620)
+  tau <- 10
+  n <- 8 
+  Yc <- rnorm(n)
+  Yt <- Yc + tau
+  Z <- rep(0, n)
+  Z[sample.int(n, n/2)] <- 1
+  R <- Z * Yt + (1 - Z) * Yc
+
+  hypotheses <-  list(tau = c(7,8,9,10,11,12))
+
+  res.one <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+    constant.additive.model, parameters = hypotheses)
+
+  a <- plot(res.one)
+  expect_equal(a$panel, "panel.xyplot")
+  
+  # two param model
+   
+  gamma <- 4
+  Yt <- Yc/gamma + tau
+  R <- Z * Yt + (1 - Z) * Yc
+
+  hypotheses <- list(tau = 5:15, gamma = 0:5)
+
+  model2 <- function(y, z, b, tau, gamma) {
+    ifelse(!!z, y * gamma - tau, y)  
+  }
+
+  res.two <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+    model2, parameters = hypotheses)
+
+  a <- plot(res.two)
+  expect_equal(a$panel, "panel.levelplot")
+
+  # can't plot sharp nulls
+  res.sn <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks)
+  expect_error(plot(res.sn), "Cannot plot sharp null only")
+
+})
