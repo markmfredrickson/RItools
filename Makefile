@@ -10,7 +10,8 @@ interactive: .local/RItools
 
 autotest: .local/RItools/
 	R -q -e "library(RItools, lib.loc = '.local')" \
-			 -e "library(testthat)" \
+			 -e "library(SparseM)"  \
+		   -e "library(testthat)" \
 			 -e "auto_test_package('.')"
 
 
