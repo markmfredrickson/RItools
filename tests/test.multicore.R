@@ -56,7 +56,10 @@ test_that("Runs work in all systems", {
     constant.additive.model, list(tau = seq(8, 12, .25))))
 
   expect_equal(res.nomulti, res.multi)
-  expect_true(time.mul[[3]] < time.nm[[3]]) # elapsed time
+  
+  # This fails about 1/2 the time on a 2 core box
+  # it is not a requirement that mcapply be faster (though it would be nice)
+  # expect_true(time.mul[[3]] < time.nm[[3]]) # elapsed time
 
   opts <- options("RItools-apply" = mclapply)
   
