@@ -131,6 +131,16 @@ test_that("Multiple backends", {
 
   expect_equal(dim(dst), c(2,3))
   expect_equal(colnames(dst), c("statistic", "p.value", "z"))
+
+  # now for the wilcox.test backend
+  res.wt <- randomizationDistributionEngine(ys, Z, list(wt = list(wilcox.test, tau1)),  
+                                            samples = 1)
+
+  dst <- res.wt$wt
+
+  expect_equal(dim(dst), c(2,2))
+  expect_equal(colnames(dst), c("statistic", "p.value"))
+
   
 
 })
