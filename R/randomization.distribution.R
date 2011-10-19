@@ -118,8 +118,24 @@ randomizationDistributionEngine <- function(
     moes <- c(sharp.null, this.model[-1])
     
     # first, for each model, adjust the observed data with the observed
-    # treatment indicator
+    # treatment
     adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
+
+    # check if there is a backend function for this test.statistic
+    backend <- attr(test.statistic, "randomizationEngine")
+
+    # there is a backend! use it
+    if (!is.null(backend)) {
+      # basically, pass the adjusted data and everything else
+      # to the backend and let it return a RandomizationDistribution
+      # or subclass (probably a good idea)
+      # backends may not honor samples, p.value, or summaries
+      return(backend(adjusted.data, treatment, blocks, 
+                              samples, p.value, summaries, ...))  
+    }
+  
+    # no backend, so use the standard approach
+    # Possible todo: pull this out into its own "backend" function
 
     # now iterate over the randomizations, using the adjusted data
     this.distrib <- apply.fn(randomizations, function(z) {

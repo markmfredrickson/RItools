@@ -86,3 +86,39 @@ test_that("Summaries of the distrib", {
   expect_equal(colnames(dst), c("statistic", "p.value", "mean", "var"))
     
 })
+
+test_that("Multiple backends", {
+  # the engine has two steps: 
+  # - a front end that adjusts data consistent with a model
+  # - a backend that computes the null distribution of this data
+  # typically we use the re-sampling backend that shuffles Z
+  # we could use xBalance and Wilcox test as well, as they are valid
+  # randomization tests, provided we provide them the adjusted data
+  # this section includes tests for this functionality.
+
+
+  # xBalance and wilox.test are a test statistic of central tendancy, but
+  # that does not imply the model need be a location shift. 
+  # we will use a location shift, though it could be any model
+
+  n <- 200 # pick a bigger n than any of our other tests, as this should be fast
+  Z <- rep(c(0,1), n/2)
+  B <- rep(1:4, n/4)
+  ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effect
+
+  # the model, a location shift
+  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+
+  # first, let's test if we can get a backend called.
+  # any object with the "randomizationEngine" attr calls the attribute
+  # this is how we'll extend exising functions (e.g. xBalance and wilcox.test)
+  
+  test.backend <- function(...) { stop("Backend called") }
+  test.backend.test.stat <- "hello!"
+  attr(test.backend.test.stat, "randomizationEngine") <- test.backend
+
+  expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(test.backend.test.stat, tau1))),
+    "Backend called")
+
+
+})
