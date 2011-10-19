@@ -124,12 +124,13 @@ test_that("Multiple backends", {
   # samples should be ignored, set low to keep the test short if there is an error
   res.xb <- randomizationDistributionEngine(ys, Z, list(xb = list(xBalance, tau1)), 
                                             blocks = B,
-                                            samples = 1) 
+                                            samples = 1,
+                                            summaries = "z.scores") 
  
   dst <- res.xb$xb
 
-  expect_equal(dim(dst), c(2,2))
-  expect_equal(colnames(dst), c("statistic", "p.value"))
+  expect_equal(dim(dst), c(2,3))
+  expect_equal(colnames(dst), c("statistic", "p.value", "z"))
   
 
 })
