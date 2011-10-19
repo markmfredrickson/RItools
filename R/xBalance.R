@@ -158,3 +158,43 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
   
   return(msmn)
 }
+
+
+#################### randomizationDistributionEngine Backend ####################
+
+.xBalanceBackEnd <- function(
+  adjusted.data,
+  treatment, 
+  blocks, 
+  summaries, ...) {
+
+  if (length(levels(blocks)) > 1) {
+    strata <- blocks  
+  } else {
+    strata <- NULL  
+  }
+
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  # set
+
+  tmp <- apply(adjusted.data, 2, function(y) {
+    df <- data.frame(z = treatment, y = y)
+
+    # ignoring blocks for now
+    res <- xBalance(z ~ y, 
+                  data = df,
+                  report = c("std.diffs", "p.values"))
+    return(res$results[,,])
+  })
+
+  tmp <- as.data.frame(t(tmp))
+  colnames(tmp) <- c("statistic", 'p.value', colnames(tmp[-(1:2)]))
+
+  return(new("RandomizationDistribution", 
+      tmp, # RD inherits from data.frame
+      test.statistic = xBalance,
+      treatment = as.numeric(treatment),
+      blocks = as.numeric(blocks)))
+}
+
+attr(xBalance, "randomizationEngine") <- .xBalanceBackEnd

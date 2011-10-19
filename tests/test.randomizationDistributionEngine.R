@@ -103,7 +103,7 @@ test_that("Multiple backends", {
 
   n <- 200 # pick a bigger n than any of our other tests, as this should be fast
   Z <- rep(c(0,1), n/2)
-  B <- rep(1:4, n/4)
+  B <- rep(1:4, each =  n/4)
   ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effect
 
   # the model, a location shift
@@ -120,5 +120,16 @@ test_that("Multiple backends", {
   expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(test.backend.test.stat, tau1))),
     "Backend called")
 
+  # now on to the fun stuff!
+  # samples should be ignored, set low to keep the test short if there is an error
+  res.xb <- randomizationDistributionEngine(ys, Z, list(xb = list(xBalance, tau1)), 
+                                            blocks = B,
+                                            samples = 1) 
+ 
+  dst <- res.xb$xb
+
+  expect_equal(dim(dst), c(2,2))
+  expect_equal(colnames(dst), c("statistic", "p.value"))
+  
 
 })
