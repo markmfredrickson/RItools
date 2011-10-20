@@ -123,16 +123,5 @@ test_that("Multiple backends", {
   expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(test.backend, tau1))), 
     "Not asymptotic")
  
-  # known fails until wilcox backend ported to new object system
-  # now for the wilcox.test backend
-  # res.wt <- randomizationDistributionEngine(ys, Z, list(wt = list(wilcox.test, tau1)),  
-  #                                          samples = 1)
-
-  # dst <- res.wt$wt
-
-  # expect_equal(dim(dst), c(2,2))
-  # expect_equal(colnames(dst), c("statistic", "p.value"))
-
-  
-
+ 
 })
