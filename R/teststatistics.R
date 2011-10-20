@@ -128,7 +128,7 @@ setClass("AsymptoticTestStatistic",
     strata <- NULL  
   }
 
-  report <- unlist(c("std.diffs", "p.values", summaries))
+  report <- unlist(c("adj.mean.diffs", "p.values", summaries))
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.data, 2, function(y) {
     df <- data.frame(z = treatment, y = y)
@@ -144,7 +144,7 @@ setClass("AsymptoticTestStatistic",
   tmp <- as.data.frame(t(tmp))
   tcnms <- colnames(tmp)
 
-  positions <- match(c("std.diff", "p"), tcnms)
+  positions <- match(c("adj.diff", "p"), tcnms)
   important <- tmp[,positions]
   requested <- tmp[, -positions, drop = F]
   

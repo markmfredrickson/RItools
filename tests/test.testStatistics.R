@@ -35,6 +35,15 @@ test_that("Harmonic Mean Difference", {
   expect_equal(dim(dst), c(2,3))
   expect_equal(colnames(dst), c("statistic", "p.value", "z"))
 
+  # now use the exact version and check our results
+  # by default type = "exact"
+  res.exact <- randomizationDistributionEngine(ys, Z, 
+                                            list(xb = list(harmonic.mean.difference, tau1)), 
+                                            blocks = B,
+                                            samples = 1)
 
+  dst.x <- res.exact$xb
+
+  expect_equal(dst$statistic, dst.x$statistic)
 
 })
