@@ -91,6 +91,7 @@ randomizationDistributionEngine <- function(
   p.value = general.two.sided.p.value,
   include.distribution = FALSE,
   summaries = list(),
+  type = "exact",
   ...) {
 
   n <- length(treatment)
@@ -122,15 +123,13 @@ randomizationDistributionEngine <- function(
     adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
 
     # check if there is a backend function for this test.statistic
-    backend <- attr(test.statistic, "randomizationEngine")
-
-    # there is a backend! use it
-    if (!is.null(backend)) {
+    if (type == "asymptotic" &&
+        inherits(test.statistic, "AsymptoticTestStatistic")) {
       # basically, pass the adjusted data and everything else
       # to the backend and let it return a RandomizationDistribution
       # or subclass (probably a good idea)
       # backends may not honor samples, p.value, or summaries
-      return(backend(adjusted.data, treatment, blocks, 
+      return(test.statistic@asymptotic(adjusted.data, treatment, blocks, 
                               samples, p.value, summaries, ...))  
     }
   

@@ -7,6 +7,11 @@
 # - b: an indicator for the blocking factor, may contain only one level
 #
 # The function should return a scalar real value
+#
+# A test statistic may also be a AsymptoticTestStatistic, a class that descends from
+# a function. This class includes a `asymptotic` slot which is a backend function for
+# the randomizationDistributionEngine. For example, the harmonic.mean.difference test
+# statistic can use xBalance for the asymptotic results.
 ################################################################################
 
 ############################### Mean Differences ###############################
@@ -33,20 +38,6 @@ mean.diff.vect<-function(ys,z,blocks){
  solve(qr(X, LAPACK=TRUE), ys)[2] ## qr.coef(qr(X,LAPACK=TRUE),ys) ## to handle near singular X
 }
 
-harmonic.mean.difference <- function(ys, z, blocks) {
-  z<-as.numeric(z)
-  stopifnot(length(unique(z))==2) # require binary treatment for now
-
-  h.fn <- function(n,m){(m*(n-m))/n} # harmonic weighting function
-  
-  d.b.fn<-function(ys,z,blocks){ ##blockwise mean diffs function is this better or worse that above?
-    mapply(function(r,z){mean(ys[z==1])-mean(ys[z==0])},split(ys,blocks),split(z,blocks))
-  } 
-
-  h.b<-tapply(z,blocks,function(z){h.fn(n=length(z),m=sum(z))})
-  d.b<-d.b.fn(ys=ys,z=z,blocks=blocks)
-  return((1/sum(h.b))*sum(h.b*d.b)) ##notice this is the same as "adj.diff" from xBalance, that should be the test
-}
 
 mean.diff.noblocks<-function(ys, z, blocks) { 
   z <- as.numeric(z)
@@ -114,4 +105,81 @@ d.stat <- function(y, z, b) {
 
   return(tmp$results[, "adj.diff",])
 }
+
+###################### Asymptotics ######################
+
+setClass("AsymptoticTestStatistic",
+  representation = c(asymptotic = "function"),
+  contains = "function")
+
+
+### Harmonic Mean Difference -- uses xBalance for asymptotics ###
+
+.xBalanceBackEnd <- function(
+  adjusted.data,
+  treatment, 
+  blocks, 
+  samples, p.value, # these will be ignored
+  summaries, ...) {
+
+  if (length(levels(blocks)) > 1) {
+    strata <- blocks  
+  } else {
+    strata <- NULL  
+  }
+
+  report <- unlist(c("std.diffs", "p.values", summaries))
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.data, 2, function(y) {
+    df <- data.frame(z = treatment, y = y)
+
+    # ignoring blocks for now
+    res <- xBalance(z ~ y, 
+                  data = df,
+                  report = report,
+                  strata = blocks)
+    return(res$results[,,])
+  })
+
+  tmp <- as.data.frame(t(tmp))
+  tcnms <- colnames(tmp)
+
+  positions <- match(c("std.diff", "p"), tcnms)
+  important <- tmp[,positions]
+  requested <- tmp[, -positions, drop = F]
+  
+  colnames(important) <- c("statistic", 'p.value')
+  colnames(requested) <- tcnms[-positions]
+
+  return(new("RandomizationDistribution", 
+      cbind(important, requested), # RD inherits from data.frame
+      test.statistic = xBalance,
+      treatment = as.numeric(treatment),
+      blocks = as.numeric(blocks)))
+}
+
+
+# a little helper function
+.h.weights <- function(n, m) {
+  (m * (n-m)) / n
+}
+
+harmonic.mean.difference <- new("AsymptoticTestStatistic",
+# the main implementation
+function(ys, z, blocks) {
+  z <- as.numeric(z)
+  stopifnot(length(unique(z)) == 2) # require binary treatment for now
+
+  f <- function(r,z) {
+    mean(r[z==1]) - mean(r[z==0])
+  }
+
+  h.b <- tapply(z, blocks, function(z) { .h.weights(length(z), sum(z))})
+  d.b <- mapply(f, split(ys,blocks), split(z,blocks))  
+  
+  # notice this is the same as "adj.diff" from xBalance
+  # tests/test.testStatistic.R a demonstration
+  return((1/sum(h.b)) * sum(h.b * d.b)) 
+}, asymptotic = .xBalanceBackEnd)
+
 
