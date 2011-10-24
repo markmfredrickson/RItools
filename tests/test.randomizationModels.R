@@ -81,8 +81,12 @@ test_that("Model Analysis Functions", {
 
   expect_equal(length(res.analysis$simulation), 6)
 
-  
+  expect_is(res.analysis$simulation[[1]], "ParameterizedRandomizationDistribution")
 
+  res.ts <- testSize(res.analysis) # using "auto" alphas should give back 0.333, 0.666, and 1
+  expect_equal(dim(res.ts), c(3,2))
+  # all alphas should be achieved
+  expect_true(all(res.ts[,1] <= res.ts[,2]))
 })
 
 test_that("Error checking", {

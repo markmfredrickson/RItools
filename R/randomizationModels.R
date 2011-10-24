@@ -183,10 +183,42 @@ analyzeModel <- function(model, Z, true.params, test.params,
   
   return(list(time = total.time,
               simulation = simulation,
+              true.params = true.params,
               test.params = test.params,
               test.statistic = test.statistic,
               data = data, 
               blocks = blocks,
               test.samples = test.samples,
               power.samples = power.samples, ...))
+}
+
+# given the results of analyzeModel, what can we say?
+
+testSize <- function(analysis, alpha = NULL, tol = .Machine$double.eps ^ 0.5) {
+  # unpack the analysis object into some useful components
+  true.params <- analysis$true.params
+  sims <- analysis$simulation # a list of pRD objects
+  
+  smash <- sapply(sims, function(s) { s$p.value })
+
+  # if alpha is not passed, use all unique p-values found in the
+  # simulation
+  if (is.null(alpha)) {
+    alpha <- sort(unique(as.vector(smash)))
+  }
+
+  # what were the p-values listed for the true paramers?
+  # the additional false is for the null model which is the first row of every pRD obj
+  pspace <- sims[[1]]@params
+  psnames <- names(pspace)
+  idx <- c(FALSE, apply(pspace, 1,function(x){ identical(as.numeric(x), as.numeric(true.params[psnames]))}))
+
+  p.truths <- smash[idx,]
+   
+  res <- t(sapply(alpha, function(a) { 
+    c(nominal.alpha = a, realized.alpha = mean((p.truths - a) <= tol))
+  }))
+
+  return(res)
+
 }
