@@ -15,6 +15,13 @@ xBalance.make.stratwts <- function(stratum.weights,ss.df,goodstrat.df,zz,data,no
     names(swt.ls) <- names(ss.df)
   }
 
+  if (is.list(stratum.weights) & !is.function(stratum.weights)) {
+    swt.ls <- stratum.weights
+    names(swt.ls) <- names(ss.df)
+  }
+
+  
+
 
 ### change names yere!
 
