@@ -278,7 +278,7 @@ setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
 ############################## Helper Functions ##############################
 
 multicoreLoaded <- function() {
-  "multicore" %in% loadedNamespaces()  
+   any(c("multicore","parallel") %in% loadedNamespaces()) ##( "multicore" %in% loadedNamespaces()   )
 }
 
 snowLoaded <- function() {
