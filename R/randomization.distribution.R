@@ -276,6 +276,7 @@ setMethod("show", "ParameterizedRandomizationDistribution", function(object) {
 
 
 ############################## Helper Functions ##############################
+## We default to using mclapply when mclapply is available, either via the parallel package in 2.14 or the multicore package. Although parLapply is available in the parallel package, it is slower than multicore on a multi-core machine. Users can bypass this automatic check and default choice using options("RItools-apply"=function(x,fun){parLapply(cl,x,fun)}) assuming that cl is the name of the cluster.
 
 multicoreLoaded <- function() {
    any(c("multicore","parallel") %in% loadedNamespaces()) ##( "multicore" %in% loadedNamespaces()   )

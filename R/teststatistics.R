@@ -13,8 +13,8 @@
 
 mean.difference <- function(ys, z, blocks) { 
   # z is usually a vector of 1s and 0s. make it logical
-  z <- as.logical(z) 
-
+  z <- as.logical(z)
+  
   tmeans <- aggregate(ys[z], by = list(blocks[z, drop=F]), mean)$x 
   cmeans <- aggregate(ys[!z], by = list(blocks[!z, drop=F]), mean)$x
   tcdiff <- tmeans - cmeans
