@@ -42,3 +42,11 @@ givenParams <- function(model, ...) {
   }
 }
 
+### Min Max Model
+### Given lower and lower bounds a and b, create a new model that limits
+### within those bounds
+min.max.model <- function(model, lower = -Infinity, upper = Infinity) {
+  function(...) {
+    pmin(upper, pmax(model(...), lower))
+  }
+}
