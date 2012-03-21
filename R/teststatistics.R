@@ -233,3 +233,13 @@ quantileAbsoluteDifference <- function(quantiles) {
     max(abs(quantile(z1, quantiles) - quantile(z0, quantiles)))    
   }
 }
+
+
+### Subset/subgroup Analysis
+### using a logical vector, limit the test statistic to a smaller group
+
+subsetStatistic <- function(statistic, ...) {
+  function(y, z, b) {
+    statistic(subset(y, ...), subset(z, ...), b)
+  }
+}

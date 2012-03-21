@@ -92,3 +92,13 @@ test_that("Quintile Differences", {
   expect_equal(quartile.difference(y, z, NULL), 0.5)
 
 })
+
+test_that("Subgroup Analysis", {
+  y <- c(1:5, 2:6)
+  z <- c(rep(0,5), rep(1,5))
+  x <- c(rep(1,8), 0,0)
+
+  xdiff <- subsetStatistic(mean.diff.noblocks, x == 1)
+  
+  expect_equal(xdiff(y, z, NULL), 0)
+})
