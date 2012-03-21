@@ -26,11 +26,11 @@ test_that("Basic usage", {
   expect_is(dst, "RandomizationDistribution")
   
   # this test is pretty minimal as R automatically fills in non-null values (such as empty vectors)
-  expect_true(all(sapply(c("test.statistic", "models.of.effect", "treatment", "blocks", "samples", "p.value"),
+  expect_true(all(sapply(c("test.statistic", "models.of.effect", "z", "blocks", "samples", "p.value"),
                          function(s) { !(is.null(slot(dst, s)))})))
 
   # these should all have at least one value, more for treatment and blocks
-  expect_true(all(sapply(c("treatment", "blocks", "samples", "models.of.effect"),
+  expect_true(all(sapply(c("z", "blocks", "samples", "models.of.effect"),
                          function(s) { length(slot(dst, s)) > 0 })))
 
   # the "null" function supplied by R automatically has no arguments. These should all take a few args.

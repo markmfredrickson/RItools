@@ -72,7 +72,7 @@ setClass("RandomizationDistribution",
                  models.of.effect = "list", # first is always sharp null 
                  p.value = "function", # fn used to compute p-values
                  samples = "numeric", # the number of samples run, not necessarily requested
-                 treatment = "numeric", # 1/0 vector 
+                 z  = "numeric", # 1/0 vector 
                  blocks = "numeric",
                  distribution = "matrix"), # if requested, the raw data
   contains = "data.frame")
@@ -83,8 +83,8 @@ setClass("RandomizationDistribution",
 
 
 randomizationDistributionEngine <- function(
-  data,
-  treatment,
+  y,
+  z,
   models, # a list of list(testStatistic, moe1, moe2, ...) all functions
   blocks = NULL,
   samples = 5000,
@@ -94,20 +94,20 @@ randomizationDistributionEngine <- function(
   type = "exact",
   ...) {
 
-  n <- length(treatment)
+  n <- length(z)
   if (is.null(blocks)) blocks <- rep(TRUE, n)
   blocks <- as.factor(blocks)
-  stopifnot(n == length(treatment) && n == length(blocks))
+  stopifnot(n == length(z) && n == length(blocks))
  
-  # note: it might be better to pass total pool, number of treatment, and a
+  # note: it might be better to pass total pool, number of z, and a
   # vector of the size of the blocks. Rather than a vector indicating
-  # treatment and a vector indicating block membership. keeping this signature
+  # z and a vector indicating block membership. keeping this signature
   # for now, but will think about it...
-  randomizations <- as.data.frame(produceRandomizations(treatment, blocks, samples))
+  randomizations <- as.data.frame(produceRandomizations(z, blocks, samples))
   
   expand.z <- function(i) { a <- numeric(n); a[i] <- 1; return(a) }
 
-  sharp.null <- function(y, z, b) { data }
+  sharp.null <- function(y, z, b) { y }
 
   k <- length(models)
 
@@ -118,36 +118,36 @@ randomizationDistributionEngine <- function(
     test.statistic <- this.model[[1]]
     moes <- c(sharp.null, this.model[-1])
     
-    # first, for each model, adjust the observed data with the observed
-    # treatment
-    adjusted.data <- sapply(moes, function(m) m(data, treatment, blocks, ...))
+    # first, for each model, adjust the observed y with the observed
+    # z
+    adjusted.y <- sapply(moes, function(m) m(y, z, blocks, ...))
 
     # check if there is a backend function for this test.statistic
     if (type == "asymptotic" &&
         inherits(test.statistic, "AsymptoticTestStatistic")) {
-      # basically, pass the adjusted data and everything else
+      # basically, pass the adjusted y and everything else
       # to the backend and let it return a RandomizationDistribution
       # or subclass (probably a good idea)
       # backends may not honor samples, p.value, or summaries
-      return(test.statistic@asymptotic(adjusted.data, treatment, blocks, 
+      return(test.statistic@asymptotic(adjusted.y, z, blocks, 
                               samples, p.value, summaries, ...))  
     }
   
     # no backend, so use the standard approach
     # Possible todo: pull this out into its own "backend" function
 
-    # now iterate over the randomizations, using the adjusted data
+    # now iterate over the randomizations, using the adjusted y
     this.distrib <- apply.fn(randomizations, function(z) {
       z <- expand.z(z)
-      apply(adjusted.data, 2, function(d) { 
+      apply(adjusted.y, 2, function(d) { 
         test.statistic(d, z, blocks, ...)})})
 
     # see http://www.biostat.wustl.edu/archives/html/s-news/2000-01/msg00169.html
     # for a discussion of matrix + unlist vs. do.call + rbind
     this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
 
-    adjusted.stats <- apply(adjusted.data, 2, function(d) { 
-      test.statistic(d, treatment, blocks, ...)})
+    adjusted.stats <- apply(adjusted.y, 2, function(d) { 
+      test.statistic(d, z, blocks, ...)})
 
     pvs <- vector("numeric")
 
@@ -165,7 +165,7 @@ randomizationDistributionEngine <- function(
       this.result, # RD inherits from data.frame
       test.statistic = test.statistic,
       models.of.effect = moes,
-      treatment = as.numeric(treatment),
+      z = as.numeric(z),
       blocks = as.numeric(blocks),
       samples = dim(randomizations)[2],
       p.value = p.value)
@@ -194,10 +194,10 @@ setClass("ParameterizedRandomizationDistribution",
   contains = "RandomizationDistribution")
 
 parameterizedRandomizationDistribution <- function(
-  data,
-  treatment,
+  y,
+  z,
   test.stat,
-  moe = NULL, # single function with signature f(data, z, blocks, param1, param2, etc.)
+  moe = NULL, # single function with signature f(y, z, blocks, param1, param2, etc.)
   parameters = NULL, # list of name = values, name = values, ...
   ...) {
   
@@ -219,15 +219,15 @@ parameterizedRandomizationDistribution <- function(
     
     functions <- apply(parameter.space, 1, function(params) {
       force(params)
-      function(data, z, blocks) {
-        do.call(modelOfEffect, c(list(moe, data, z, blocks), params))
+      function(y, z, blocks) {
+        do.call(modelOfEffect, c(list(moe, y, z, blocks), params))
       }
     })
 
-    rds <- randomizationDistributionEngine(data, treatment, models = list(c(test.stat,
+    rds <- randomizationDistributionEngine(y, z, models = list(c(test.stat,
       functions)), ...)
   } else {
-    rds <- randomizationDistributionEngine(data, treatment, 
+    rds <- randomizationDistributionEngine(y, z, 
       models = list(c(test.stat)), ...)
   }
 

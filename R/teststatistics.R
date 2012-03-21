@@ -148,7 +148,7 @@ setClass("AsymptoticTestStatistic",
   return(new("RandomizationDistribution", 
       cbind(important, requested), # RD inherits from data.frame
       test.statistic = xBalance,
-      treatment = as.numeric(treatment),
+      z = as.numeric(treatment),
       blocks = as.numeric(blocks)))
 }
 
@@ -204,7 +204,7 @@ function(ys, z, blocks) {
   return(new("RandomizationDistribution", 
       tmp, # RD inherits from data.frame
       test.statistic = wilcox.test,
-      treatment = as.numeric(treatment),
+      z = as.numeric(treatment),
       blocks = as.numeric(blocks)))
 }
 
