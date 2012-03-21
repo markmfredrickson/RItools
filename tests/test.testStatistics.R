@@ -79,4 +79,16 @@ test_that("Wilcox.test", {
 
 })
 
+test_that("Quintile Differences", {
 
+  y <- c(1:5, 2:6)
+  z <- c(rep(0,5), rep(1,5))
+
+  median.difference <- quantileAbsoluteDifference(0.5)
+  expect_equal(median.difference(y, z, NULL), 1)
+
+  y <- c(1,2,3,4,5, 1,2,3.5,4,5)
+  quartile.difference <- quantileAbsoluteDifference(c(0, 0.25, 0.5, 0.75, 1))
+  expect_equal(quartile.difference(y, z, NULL), 0.5)
+
+})

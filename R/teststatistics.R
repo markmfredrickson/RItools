@@ -221,3 +221,15 @@ function(ys, z, blocks) {
   return(sum(r[seq_along(x)]) - n.x * (n.x + 1)/2)
 }, asymptotic = .wilcoxBackEnd)
 
+### Quantile Differences
+### Similar to the KS test -- but evaluates differences at discrete points of
+### the eCDF
+
+quantileAbsoluteDifference <- function(quantiles) {
+  function(y, z, b) {
+    z1 <- ecdf(y[z == 1])
+    z0 <- ecdf(y[z == 0])
+
+    max(abs(quantile(z1, quantiles) - quantile(z0, quantiles)))    
+  }
+}
