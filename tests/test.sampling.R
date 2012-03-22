@@ -50,3 +50,14 @@ test_that("simpleRandomSample for fixed number of treated within blocks", {
   expect_error(simpleRandomSampler(total = c(2,3), b = c(1,1,2,2,2)))
   expect_error(simpleRandomSampler(z = c(1,0,0,1,0,0), treated = c(1,1)))
 })
+
+test_that("multinomialSampler for independent bernoulli draws", {
+
+  sampler <- independentProbabilitySampler(4) 
+
+  # max 2^4 = 16 randomizations (including all zero and all one)
+  expect_equal(dim(sampler(100)$samples)[2], 16)
+  expect_equal(dim(sampler(4)$samples)[2], 4)
+  expect_equal(sum(sampler(100)$samples), 32)
+  
+})

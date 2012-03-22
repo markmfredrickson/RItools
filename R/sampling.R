@@ -3,6 +3,8 @@
 # simple random sampling, srs with blocks, multinomial sampling, etc.)
 ################################################################################
 
+### simple random samples: draw from all randomizations within a fixed number
+### of treated units within blocks
 
 simpleRandomSampler <- function(total, treated, z, b) {
   
@@ -113,4 +115,35 @@ simpleRandomSampler <- function(total, treated, z, b) {
 
     return(list(weight = 1, samples = tmp))    
   } # end inner function
+}
+
+
+### independentProbabilitySampler
+### Draw from the 2^n possible randomizations for n units with probability
+### vector p (e.g. where each unit gets its own, possibly biased, coin flip)
+
+independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
+  
+  function(samples) {
+
+    if (log(samples, base = 2) > n) {
+      # enumerate
+      zs <- matrix(0, nrow = n, ncol = 2^n)
+
+      # this seems a little convoluted, but it does the job
+      indexes <- sapply(1:n, function(k) { combn(n, k) })
+      matrices <- lapply(indexes, function(idxgrp) {
+        apply(idxgrp, 2, function(i) { a <- numeric(n); a[i] <- 1; a })
+      })
+      
+      zs <- cbind(do.call(cbind, matrices), 0)
+
+    } else {
+      # generating a matrix of zero and ones is pretty easy. just compare to the
+      # p matrix over and over.
+      zs <- 0 + matrix(runif(n * samples) < p, nrow = n, ncol = samples)
+    }
+
+    return(list(weight = 1, samples = zs))
+  }
 }
