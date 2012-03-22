@@ -3,62 +3,6 @@
 ### Randomization distribution producing function
 ###################################################
 
-
-produceRandomizations <- function(observed.treatment, blocks, samples) {
-  if(!is.factor(blocks)){blocks<-factor(blocks)}
-  # block size and the number of treated per block
-  block.size <- table(blocks)
-  block.treated <- aggregate(observed.treatment, list(blocks), sum)$x
-  # these offsets will be needed later to turn relative into absolute indices
-  block.starts <- append(0, cumsum(block.size))
-  block.starts <- block.starts[1:(length(block.starts) - 1)]
-
-  # overall statistics
-  total.treated <- sum(observed.treatment)
-  total.randomizations <- sum(lchoose(block.size, block.treated))
-
-  # randomizations is a matrix (often abbreviated omega) of 
-  # possible randomziations, for now ignoring blocks
-  # it is generated either by direct enumeration (if small enough)
-  # or by drawing from the distribution of randomizations
-  if (total.randomizations > log(samples)) {
-    randomizations <- matrix(nrow = total.treated, ncol = samples)
-
-    for (i in 1:samples) {
-      raw.draws <- mapply(sample.int, block.size, block.treated, SIMPLIFY = F)
-      randomizations[, i] <- unlist(mapply(function(b,o) { b + o }, raw.draws, block.starts))
-    NULL }
-  } else { # small enough to figured exactly 
-    # we first get all the block level samples (these vary in size
-    block.combinations <- mapply(combn, block.size, block.treated, SIMPLIFY = F)
-        
-    block.combinations <- mapply(function(b,o) { b + o }, block.combinations, block.starts, SIMPLIFY = FALSE)
-    # then all the indexes we need to get unique permutations of block.combs
-    expansions <- 
-      expand.grid(
-        mapply(seq, 
-               rep(1, length(block.size)), 
-               sapply(block.combinations, function(b) { dim(b)[2] }),
-               SIMPLIFY = F))
-    
-    # loop thru, creating a unique set of combinations
-    exp.count <- dim(expansions)[1]
-
-    randomizations <- matrix(nrow = total.treated, ncol = exp.count)
-    for(i in 1:exp.count) {
-      # from each block, grab the combination indexed by the row in expansions
-      # combine all such items into a row in randomizations
-      randomizations[,i] <- unlist(
-        mapply(function(block, i) { block[, i] }, 
-               block.combinations, 
-               expansions[i,]))
-      NULL
-    }
-  }
-
-  return(randomizations)
-}
-
 # some utility classes
 setClassUnion("OptionalList", c("list", "NULL"))
 setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
@@ -86,7 +30,8 @@ randomizationDistributionEngine <- function(
   y,
   z,
   models, # a list of list(testStatistic, moe1, moe2, ...) all functions
-  blocks = NULL,
+  blocks = rep(1, length(z)),
+  sampler = simpleRandomSampler(z = z, b = blocks),
   samples = 5000,
   p.value = general.two.sided.p.value,
   include.distribution = FALSE,
@@ -103,10 +48,8 @@ randomizationDistributionEngine <- function(
   # vector of the size of the blocks. Rather than a vector indicating
   # z and a vector indicating block membership. keeping this signature
   # for now, but will think about it...
-  randomizations <- as.data.frame(produceRandomizations(z, blocks, samples))
+  randomizations <- sampler(samples)
   
-  expand.z <- function(i) { a <- numeric(n); a[i] <- 1; return(a) }
-
   sharp.null <- function(y, z, b) { y }
 
   k <- length(models)
@@ -137,8 +80,7 @@ randomizationDistributionEngine <- function(
     # Possible todo: pull this out into its own "backend" function
 
     # now iterate over the randomizations, using the adjusted y
-    this.distrib <- apply.fn(randomizations, function(z) {
-      z <- expand.z(z)
+    this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
       apply(adjusted.y, 2, function(d) { 
         test.statistic(d, z, blocks, ...)})})
 
@@ -167,7 +109,7 @@ randomizationDistributionEngine <- function(
       models.of.effect = moes,
       z = as.numeric(z),
       blocks = as.numeric(blocks),
-      samples = dim(randomizations)[2],
+      samples = dim(randomizations$samples)[2],
       p.value = p.value)
 
     if (include.distribution) {

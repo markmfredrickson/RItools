@@ -165,8 +165,8 @@ analyzeModel <- function(model, Z, true.params, test.params,
   }
   
   n <- length(Z)
-  Zs <- produceRandomizations(Z, blocks, power.samples)
-  Zs <- as.data.frame(apply(Zs, 2, function(idx) { x <- numeric(n); x[idx] <- 1; return(x) }))
+  Zs <- as.data.frame(simpleRandomSampler(z = Z, b =
+  blocks)(power.samples)$samples) #, power.samples)
 
   total.time <- system.time(
     simulation <- lapply(Zs, function(z) {
