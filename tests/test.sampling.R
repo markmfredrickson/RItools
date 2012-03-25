@@ -59,5 +59,9 @@ test_that("multinomialSampler for independent bernoulli draws", {
   expect_equal(dim(sampler(100)$samples)[2], 16)
   expect_equal(dim(sampler(4)$samples)[2], 4)
   expect_equal(sum(sampler(100)$samples), 32)
+  expect_true(all(sampler(100)$weight == 1))
   
+  unequal.sampler <- independentProbabilitySampler(2, c(0.25, 0.5))
+  expect_true(all(unequal.sampler(10)$weight %in% c(0.75 * 0.5, 0.25 * 0.5))) 
+
 })

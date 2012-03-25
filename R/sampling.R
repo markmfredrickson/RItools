@@ -126,12 +126,12 @@ independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
   
   function(samples) {
 
-    if (log(samples, base = 2) > n) {
+    if (log(samples, base = 2) >= n) {
       # enumerate
       zs <- matrix(0, nrow = n, ncol = 2^n)
 
       # this seems a little convoluted, but it does the job
-      indexes <- sapply(1:n, function(k) { combn(n, k) })
+      indexes <- lapply(1:n, function(k) { combn(n, k) })
       matrices <- lapply(indexes, function(idxgrp) {
         apply(idxgrp, 2, function(i) { a <- numeric(n); a[i] <- 1; a })
       })
@@ -144,6 +144,16 @@ independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
       zs <- 0 + matrix(runif(n * samples) < p, nrow = n, ncol = samples)
     }
 
-    return(list(weight = 1, samples = zs))
+    # probablility of seeing a 1 is p, the probability of seeing a zero is 1 -
+    # p, so the total probability of draw is:
+    # (when p == 0.5, save some computation now and during p-value
+    # computation)
+    if (all(p == 0.5)) {
+      weight <- 1
+    } else {
+      weight <- apply(p * zs + (1 - p) * (1 - zs), 2, prod)    
+    }
+
+    return(list(weight = weight, samples = zs))
   }
 }
