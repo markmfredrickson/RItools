@@ -68,6 +68,7 @@ plot.ParameterPvals <- function(object, ...) {
   }
 }
 
+############################## Confidence Intervals ##############################
 
 ##The confidence interval function ought to refuse to provide levels that are not supported (see the behavior of wilcox.test when you ask for an exact CI but the discreteness of the randomization distribution does not allow it
 
@@ -79,12 +80,9 @@ setClass("ParameterizedRandomizationDistributionConfInt",
 confint.ParameterizedRandomizationDistribution <- function(
   object,
   param,
-  level = 0.95,
-  p.value.function = general.two.sided.p.value) {
+  level = 0.95) {
   
-  pvs <- p.values(object, p.value.function) 
-  
-  reject <- (1 - pvs$p) > level
+  reject <- (1 - object$p.value) > level
   results <- cbind(object@params, reject[-1]) # drop the null
    
   return(new("ParameterizedRandomizationDistributionConfInt", prd = object,

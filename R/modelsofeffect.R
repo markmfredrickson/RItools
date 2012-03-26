@@ -11,9 +11,7 @@
 ################################################################################
 
 
-constant.additive.model <- function(ys, z, b, tau) {
-  ys - (z * tau)
-} 
+
 
 constant.multiplicative.model <- function(ys, z, b, beta) {
   ys / ((z * beta) + (1 - z))  
@@ -37,3 +35,18 @@ constant.multiplicative.model <- function(ys, z, b, beta) {
 ###   }
 ### }
 
+givenParams <- function(model, ...) {
+  dots <- match.call(expand.dots = FALSE)[["..."]]
+  function(y, z, b, ...) {
+    do.call(model, c(list(y, z, b, ...), dots))
+  }
+}
+
+### Min Max Model
+### Given lower and lower bounds a and b, create a new model that limits
+### within those bounds
+min.max.model <- function(model, lower = -Infinity, upper = Infinity) {
+  function(...) {
+    pmin(upper, pmax(model(...), lower))
+  }
+}
