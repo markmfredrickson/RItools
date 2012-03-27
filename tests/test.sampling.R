@@ -49,6 +49,14 @@ test_that("simpleRandomSample for fixed number of treated within blocks", {
   # but let's not allow it either
   expect_error(simpleRandomSampler(total = c(2,3), b = c(1,1,2,2,2)))
   expect_error(simpleRandomSampler(z = c(1,0,0,1,0,0), treated = c(1,1)))
+
+  # blocks as factors
+  bf <- simpleRandomSampler(z = c(1,0,0,1), b = as.factor(c("a", "b", "a", "b")))
+  expect_equal(dim(bf(100)$samples), c(4, 4))
+  expect_true(all(colSums(bf(100)$samples[c(1,3),]) == 1))
+
+  # NAs are an error. The user is responsible for cleaning NAs before sampling.
+  expect_error(simpleRandomSampler(z = c(1,0,0,1,0), b = c(1,2,1,2,NA)), "NAs")
 })
 
 test_that("multinomialSampler for independent bernoulli draws", {

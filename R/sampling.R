@@ -7,13 +7,24 @@
 ### of treated units within blocks
 
 simpleRandomSampler <- function(total, treated, z, b) {
-  
+  naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
+
   if (!missing(b)) {
+    # since b is passed, it must be free of NA values 
+    if (any(is.na(b))) {
+      naError()
+    }
+
     total <- table(b)
     reordering <- as.vector(sapply(unique(b), function(nm) { which(nm == b) }))
   }
 
   if (!missing(z) && !missing(b)) {
+    # b is checked above, check z for NAs
+    if (any(is.na(z))) {
+      naError()  
+    }
+    
     treated <- aggregate(z, list(b), sum)$x    
   }
 
@@ -29,6 +40,11 @@ simpleRandomSampler <- function(total, treated, z, b) {
     tmp <- c(0, cumsum(total)[1:(length(total) - 1)]) + 1
     tmp1 <- cumsum(total)
     treated <- mapply(function(a,b) { sum(z[a:b]) }, tmp, tmp1)
+  }
+
+  # both total and treated exist by now, so check them for NAs
+  if (any(is.na(total)) || any(is.na(treated))) {
+    naError()  
   }
 
   if (!all(total > treated)) {
