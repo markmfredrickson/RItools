@@ -75,21 +75,23 @@ ans <-
 	if ("chisquare.test"%in%report)
 	{
 		pst.svd <- svd(tmat*sqrt(dv))
+                ##  tmat*sqrt(dv) is element-wise multiplication of the  column vector sqrt(dv) with each
+                ##  column in tmat: i.e. apply(tmat,2,function(x){x*sqrt(dv)})
 		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
 		Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this? 
 		if (all(Positive)) 
-		{ytl <- pst.svd$v *
-		matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
-		} else{if (!any(Positive))
+		{ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*")
+                 ##ytl <- pst.svd$v *  matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
+               } else{if (!any(Positive))
 			ytl <- array(0, dim(mm)[2:1] )
-		else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
-		matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
-
+               else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
+                 matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
+                
 		mvz <- drop(crossprod(zz, tmat)%*%ytl)
-
+                
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
-
+                
 	} else csq <- DF <- 0
 
 	list(dfr=ans,chisq=c('chisquare'=csq,'df'=DF))
