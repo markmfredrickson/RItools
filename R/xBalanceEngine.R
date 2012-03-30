@@ -57,11 +57,12 @@ ans <-
 
 	msmn <- xBalance.make.stratum.mean.matrix(ss, (mm*swt$wtratio))
 
-	tmat <- (mm*swt$wtratio - msmn)
+	tmat <- (mm*swt$wtratio - msmn) ## centered data
 
-	dv <- unsplit(tapply(zz,ss,var), ##sample variance of treatment
-		      ss)
-	ssvar <- apply(dv*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
+	dv <- unsplit(tapply(zz,ss,var), ss) ##sample variance of treatment
+
+	ssvar <- apply(dv*tmat*tmat, 2, sum)
+        ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
 
 	##report (1/h)s^2. Since ssvar=(h)*s^2 multiply by (1/h)^2 to get (1/h)s^2.
 	if ('adj.mean.diffs.null.sd' %in% report) ans[['adj.diff.null.sd']] <- sqrt(ssvar*(1/wtsum)^2) 
@@ -73,8 +74,8 @@ ans <-
 				   2*pnorm(abs(ssn/sqrt(ssvar)),lower=FALSE))
 
 	if ("chisquare.test"%in%report)
-	{
-		pst.svd <- svd(tmat*sqrt(dv))
+          {require(svd)
+		pst.svd <- propack.svd(tmat*sqrt(dv)) ## recall cov(X*sqrt(a))=a*cov(X) and dv is a constant
                 ##  tmat*sqrt(dv) is element-wise multiplication of the  column vector sqrt(dv) with each
                 ##  column in tmat: i.e. apply(tmat,2,function(x){x*sqrt(dv)})
 		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
@@ -87,7 +88,7 @@ ans <-
                else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
                  matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
                 
-		mvz <- drop(crossprod(zz, tmat)%*%ytl)
+		mvz <- drop(crossprod(zz, tmat)%*%ytl) ## crossprod(zz, tmat) gives sums of cols of tmat for zz==1
                 
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
