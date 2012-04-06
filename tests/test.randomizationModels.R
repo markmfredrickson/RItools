@@ -16,7 +16,7 @@ test_that("Basics", {
   expected <- c(0, 4, 2, 7)
   
   expect_equal(
-    modelOfEffect(constant.additive.model, expected, Z, blocks = NULL, tau =
+    modelOfEffect(constant.additive.model, expected, Z, tau =
       true.tau),
     uniformity)
   
@@ -32,14 +32,14 @@ test_that("Network models", {
   true.tau <- 3
   expected.output <- c(1, 4, 3, 4)
   sdsn.model <- networkRandomizationModel(S, returnTau, 
-    function(Z, blocks, ZS, tau) {
+    function(Z, ZS, tau) {
       ifelse(ZS > 0, 1, 0)  
     })
 
-  expect_equal(modelOfEffect(sdsn.model, expected.output, Z, blocks = NULL, tau = true.tau),
+  expect_equal(modelOfEffect(sdsn.model, expected.output, Z, tau = true.tau),
     uniformity)
 
-  expect_equal(observedData(sdsn.model, uniformity, Z, blocks = NULL, tau = true.tau),
+  expect_equal(observedData(sdsn.model, uniformity, Z, tau = true.tau),
     expected.output)
 
 })
@@ -77,7 +77,7 @@ test_that("Model Analysis Functions", {
                                Z,
                                list(tau = 3), 
                                list(tau = 0:5),
-                               mean.diff.noblocks)
+                               mean.difference)
 
   expect_equal(length(res.analysis$simulation), 6)
 
@@ -97,6 +97,6 @@ test_that("Error checking", {
                                Z,
                                list(tau = 3), 
                                list(tau = 0:5, beta = 1),
-                               mean.diff.noblocks))
+                               mean.difference))
   
 })

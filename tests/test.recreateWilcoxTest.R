@@ -47,23 +47,18 @@ test_that("Paired", {
   Yc <- rnorm(n)
   Yt <- Yc + tau
   Z <- rep(c(0,1), n/2) ; z <- as.logical(Z) # for convenience, create a logical version
-  ##Z[sample.int(n, n/2)] <- 1
   R <- Z * Yt + (1 - Z) * Yc
   B <- gl(nB,2)
   
   expect_equal(sum(Z), 6)
-  # This next is fine but requires that R be sorted by pair. Alternative is to preprocess to pair the data first
-  # R.paired <-sapply(split(data.frame(R=R,Z=Z),B),function(dat){
-  #  with(dat,R[Z==1]-R[Z==0])
-  # })
-  # res.wilcox <- wilcox.test(R.paired, exact = T, conf.int = T)
   res.wilcox <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T)
 
   # make sure the test statistic is correct on the observed data
-  expect_equal(paired.sgnrank.sum(R, Z, B), res.wilcox$stat[[1]])
+  expect_equal(paired.sgnrank.sum(R, Z), res.wilcox$stat[[1]])
 
   res.prd <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, 
-    constant.additive.model, list(tau = c(-10, 9, 10)), B) 
+    constant.additive.model, list(tau = c(-10, 9, 10)),
+    sampler = simpleRandomSampler(z = Z, b = B)) 
 
   res.wilcox.m10 <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = -10)
   res.wilcox.10 <-  wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 10)

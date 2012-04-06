@@ -9,8 +9,8 @@
 # Model objects can encapsulate this basic using just
 # direct.effect and spillover.effect functions.
 # 
-# direct.effect <- function(Z, blocks, ... parameters ...)
-# spillover.effect <- function(Z, blocks, ... parameters ...)
+# direct.effect <- function(Z, ... parameters ...)
+# spillover.effect <- function(Z, ... parameters ...)
 #
 # From these components, we can create modelsOfEffect (adjust observed data
 # into the uniformity trial given a randomization and given parameters) and
@@ -36,42 +36,42 @@ setClass("NetworkRandomizationModel",
   contains = "RandomizationModel")
 
 networkRandomizationModel <- function(S, direct.effect, spillover.effect) {
-  de <- function(Z, blocks, ...) { direct.effect(Z, blocks, ZS = as.vector(Z %*% S), ...) }
-  se <- function(Z, blocks, ...) { spillover.effect(Z, blocks, ZS = as.vector(Z %*% S), ...)}
+  de <- function(Z, ...) { direct.effect(Z, ZS = as.vector(Z %*% S), ...) }
+  se <- function(Z, ...) { spillover.effect(Z, ZS = as.vector(Z %*% S), ...)}
   new("NetworkRandomizationModel", direct.effect = de, spillover.effect = se, S = S)
 }
 
 
 ### Functions ###
-setGeneric("modelOfEffect", function(model, R, Z, blocks = NULL, ...)
+setGeneric("modelOfEffect", function(model, R, Z, ...)
   standardGeneric("modelOfEffect"))
 
-model.effect.helper <- function(model, combine, R, Z, blocks, ...) {
-  tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, blocks, ...)))
-  combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, blocks, ...))) 
+model.effect.helper <- function(model, combine, R, Z, ...) {
+  tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, ...)))
+  combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, ...))) 
 }
 
 setMethod("modelOfEffect", signature = c("RandomizationModel"),
-function(model, R, Z, blocks = NULL, ...) {
-  model.effect.helper(model, combine = `-`, R, Z, blocks, ...)
+function(model, R, Z, ...) {
+  model.effect.helper(model, combine = `-`, R, Z, ...)
 })
 
 setMethod("modelOfEffect", signature = c("function"),
-function(model, R, Z, blocks = NULL, ...) {
-  model(R, Z, blocks, ...)  
+function(model, R, Z, ...) {
+  model(R, Z, ...)  
 })
 
-setGeneric("observedData", function(model, R, Z, blocks = NULL, ...)
+setGeneric("observedData", function(model, R, Z, ...)
   standardGeneric("observedData"))
 
 setMethod("observedData", signature = c("RandomizationModel"),
-function(model, R, Z, blocks = NULL, ...) {
-  model.effect.helper(model, combine = `+`, R, Z, blocks, ...)
+function(model, R, Z, ...) {
+  model.effect.helper(model, combine = `+`, R, Z, ...)
 })
 
 setMethod("observedData", signature = c("function"),
-function(model, R, Z, blocks = NULL, ...) {
-  model(R, Z, blocks, ...)  
+function(model, R, Z, ...) {
+  model(R, Z, ...)  
 })
 
 # helper function for all the models that have a "tau" direct effect
@@ -115,7 +115,7 @@ constant.additive.model <- randomizationModel(returnTau, returnZero)
 
 # the linear spillover model from Bowers and Fredrickson, 2011
 # Yt = Yc + Z * tau + (1 - Z) * min(tau, beta * Z^t %*% S)
-linear.spillover.fn <- function(Z, blocks, ZS, tau, beta) {
+linear.spillover.fn <- function(Z, ZS, tau, beta) {
   pmin(tau, beta * ZS) 
 }
 
@@ -124,7 +124,7 @@ linear.spillover.model <- function(S) {
 }
 
 # the inverse growth spillover model from Bowers and Fredrickson, 2011
-inverse.spillover.fn <- function(Z, blocks, ZS, tau1, tau2) {
+inverse.spillover.fn <- function(Z, ZS, tau1, tau2) {
   # Growth curve: when tau2<0 effect is decreasing in the number of treated
   # neighbors, 
   # when tau2>0, effect is increasing in the number of treated neighbors, 
@@ -142,19 +142,18 @@ inverse.spillover.model <- function(S) {
 # powerAnalysis: 
 #  model: a RandomizationModel object, e.g. constant.additive.model
 #  Z: an example randomization that will be used to to generate possible
-#    possible randomizations when combined with blocks (below)
+#    possible randomizations 
 #  true.params: list(param.name = value, ...) representing the "true"
 #    parameters of this simulation  
 #  test.params: list(param.name = c(1,2,3...), ...) representing "false"
 #    values to test for rejection
-#  blocks: a vector of blocks of the units 
 #  data: simulated data from a uniformity trial (i.e. all get control)
 #  test.samples: number of samples to draw from the randomization distribution
 #    when testing a hypothesis
 #  power.samples: number of datasets to generate simulated Z values
 #  ... arguments to be passed to pRD (and probably then to the engine)
 analyzeModel <- function(model, Z, true.params, test.params,
-  test.statistic, data = rnorm(length(Z)), blocks = rep(1, length(Z)), 
+  test.statistic, data = rnorm(length(Z)), 
   test.samples = 5000, power.samples = 1000, ...) {
 
   # Error Checking
@@ -165,18 +164,16 @@ analyzeModel <- function(model, Z, true.params, test.params,
   }
   
   n <- length(Z)
-  Zs <- as.data.frame(simpleRandomSampler(z = Z, b =
-  blocks)(power.samples)$samples) #, power.samples)
+  Zs <- as.data.frame(simpleRandomSampler(z = Z, b = rep(1, length(Z)))(power.samples)$samples) #, power.samples)
 
   total.time <- system.time(
     simulation <- lapply(Zs, function(z) {
-      data <- do.call(observedData, append(list(model, data, z, blocks), true.params))  
+      data <- do.call(observedData, append(list(model, data, z), true.params))  
       return(parameterizedRandomizationDistribution(data,
           Z,
           test.statistic,
           model,
           parameters = test.params,
-          blocks = blocks,
           samples = test.samples, ...))
     })
   )
@@ -187,7 +184,6 @@ analyzeModel <- function(model, Z, true.params, test.params,
               test.params = test.params,
               test.statistic = test.statistic,
               data = data, 
-              blocks = blocks,
               test.samples = test.samples,
               power.samples = power.samples, ...))
 }

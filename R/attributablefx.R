@@ -32,7 +32,6 @@ attributableEffects <- function(
   data,
   treatment,
   test.stat,
-  blocks = NULL,
   samples = 5000,
   min.a = min.attributable.effects(data, treatment),
   max.a = max.attributable.effects(data, treatment),
@@ -47,6 +46,6 @@ attributableEffects <- function(
     test.stat,
     additive.attributable.effect,
     parameters = list(a = seq(min.a, max.a, step)),
-    blocks, samples)
+    samples)
   
 }

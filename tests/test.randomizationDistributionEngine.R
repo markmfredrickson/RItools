@@ -10,7 +10,7 @@ test_that("Basic usage", {
   Z <- rep(c(0,1), 4)
   ys <- rnorm(8) + Z
   
-  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+  tau1 <- function(y, z) { modelOfEffect(constant.additive.model, ys, z, tau = 1)}
 
   models <- list(xyz = list(mean.difference, tau1)) # tests sharp null and tau1
 
@@ -26,11 +26,11 @@ test_that("Basic usage", {
   expect_is(dst, "RandomizationDistribution")
   
   # this test is pretty minimal as R automatically fills in non-null values (such as empty vectors)
-  expect_true(all(sapply(c("test.statistic", "models.of.effect", "z", "blocks", "samples", "p.value"),
+  expect_true(all(sapply(c("test.statistic", "models.of.effect", "z", "samples", "p.value"),
                          function(s) { !(is.null(slot(dst, s)))})))
 
-  # these should all have at least one value, more for treatment and blocks
-  expect_true(all(sapply(c("z", "blocks", "samples", "models.of.effect"),
+  # these should all have at least one value, more for treatment 
+  expect_true(all(sapply(c("z", "samples", "models.of.effect"),
                          function(s) { length(slot(dst, s)) > 0 })))
 
   # the "null" function supplied by R automatically has no arguments. These should all take a few args.
@@ -47,16 +47,13 @@ test_that("Basic usage", {
   # since we didn't supply a p.value function, expect it equal to general.two.sided.p.value
   expect_equal(general.two.sided.p.value, dst@p.value)
 
-  # blocks should just be a vector of 1s, as we didn't supply any blocks
-  expect_equal(dst@blocks, rep(1, 8))
-  
 })
 
 test_that("Get entire distribution", {
   Z <- rep(c(0,1), 4)
   ys <- rnorm(8) + Z
   
-  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+  tau1 <- function(y, z) { modelOfEffect(constant.additive.model, ys, z, tau = 1)}
 
   models <- list(xyz = list(mean.difference, tau1)) # tests sharp null and tau1
 
@@ -74,7 +71,7 @@ test_that("Summaries of the distrib", {
   Z <- rep(c(0,1), 4)
   ys <- rnorm(8) + Z
   
-  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+  tau1 <- function(y, z) { modelOfEffect(constant.additive.model, ys, z, tau = 1)}
 
   models <- list(xyz = list(mean.difference, tau1)) # tests sharp null and tau1
 
@@ -105,14 +102,14 @@ test_that("Multiple backends", {
   Z <- rep(c(0,1), n/2)
   B <- rep(1:4, each =  n/4)
   ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effect
-  tau1 <- function(y, z, b) { modelOfEffect(constant.additive.model, ys, z, b, tau = 1)}
+  tau1 <- function(y, z) { modelOfEffect(constant.additive.model, ys, z, tau = 1)}
  
   # first, let's test if we can get a backend called.
   # any object with the "randomizationEngine" attr calls the attribute
   # this is how we'll extend exising functions (e.g. xBalance and wilcox.test)
   
   test.backend <- new("AsymptoticTestStatistic", 
-    function(y,z,b) { stop("Not asymptotic") },
+    function(y,z) { stop("Not asymptotic") },
     asymptotic = function(...) { stop("Backend called")})
 
   expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(test.backend, tau1)), type = "asymptotic"),

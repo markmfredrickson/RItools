@@ -18,7 +18,7 @@ test_that("Engine and pRD give same answers", {
   Z[sample.int(n, n/2)] <- 1
   R <- Z * Yt + (1 - Z) * Yc
 
-  constant.additive.fn <- function(ys, z, b, tau) {
+  constant.additive.fn <- function(ys, z, tau) {
     ys - (z * tau)
   } 
   set.seed(20110620)
@@ -26,10 +26,10 @@ test_that("Engine and pRD give same answers", {
     constant.additive.fn, list(tau = c(-10, 9, 10)))
 
   # being extra explicit about model creation
-  mm10 <- function(y, z, b) { constant.additive.fn(y, z, b, -10) }
-  m9 <- function(y, z, b) { constant.additive.fn(y, z, b, 9) }
-  m10 <- function(y, z, b) { constant.additive.fn(y, z, b, 10) }
-  
+  mm10 <- function(y, z) { constant.additive.fn(y, z, -10) }
+  m9 <- function(y, z) { constant.additive.fn(y, z, 9) }
+  m10 <- function(y, z) { constant.additive.fn(y, z, 10) }
+ 
   set.seed(20110620)
   res.eng <- randomizationDistributionEngine(R, Z, list(list(mann.whitney.u, mm10, m9, m10)))
 
@@ -55,10 +55,10 @@ test_that("Using model objects", {
   }
 
   hypotheses <-  list(tau = c(7,8,9,10,11,12))
-  res.fn <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+  res.fn <- parameterizedRandomizationDistribution(R, Z, mean.difference, 
     function.version, parameters = hypotheses)
 
-  res.model <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+  res.model <- parameterizedRandomizationDistribution(R, Z, mean.difference,
     constant.additive.model, parameters = hypotheses)
   
 })
@@ -74,7 +74,7 @@ test_that("Moe can be NULL", {
   R <- Z * Yt + (1 - Z) * Yc
 
   # this should not raise an error
-  res.prd <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks)
+  res.prd <- parameterizedRandomizationDistribution(R, Z, mean.difference)
   
 })
 
@@ -94,7 +94,7 @@ test_that("Plotting", {
 
   hypotheses <-  list(tau = c(7,8,9,10,11,12))
 
-  res.one <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+  res.one <- parameterizedRandomizationDistribution(R, Z, mean.difference,
     constant.additive.model, parameters = hypotheses)
 
   a <- plot(res.one)
@@ -112,14 +112,14 @@ test_that("Plotting", {
     ifelse(!!z, y * gamma - tau, y)  
   }
 
-  res.two <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks,
+  res.two <- parameterizedRandomizationDistribution(R, Z, mean.difference,
     model2, parameters = hypotheses)
 
   a <- plot(res.two)
   expect_equal(a$panel, "panel.levelplot")
 
   # can't plot sharp nulls
-  res.sn <- parameterizedRandomizationDistribution(R, Z, mean.diff.noblocks)
+  res.sn <- parameterizedRandomizationDistribution(R, Z, mean.difference)
   expect_error(plot(res.sn), "Cannot plot sharp null only")
 
 })
