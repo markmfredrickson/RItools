@@ -15,34 +15,53 @@ test_that("Basics", {
   true.tau <- 3
   expected <- c(0, 4, 2, 7)
   
+  expect_true(inherits(constant.additive.model, "function"))
   expect_equal(
-    modelOfEffect(constant.additive.model, expected, Z, tau =
-      true.tau),
+    constant.additive.model(expected, Z, tau = true.tau),
     uniformity)
   
 })
 
-test_that("Network models", {
-  # super duper simple network model
-  # get an effect of 1 if any neighbors, zero otherwise
-  # network: 1 <-> 2, 2 <-> 3, 4 has no neighbors
-  S <- matrix(c(0,1,0,0, 1,0,1,0, 0,1,0,0, 0,0,0,0), nrow = 4)
-  uniformity <- c(0,1,2,4)
-  Z <- c(0, 1, 0, 0)
-  true.tau <- 3
-  expected.output <- c(1, 4, 3, 4)
-  sdsn.model <- networkRandomizationModel(S, returnTau, 
-    function(Z, ZS, tau) {
-      ifelse(ZS > 0, 1, 0)  
-    })
+test_that("Level Effect Models", {
+  # level effect models have an effect for each level of Z
+  uniformity <- 1:4
+  Z <- 0:3 # start from level 0 not 1
+  
+  # the effect of each level 1 to 4
+  f1 <- function(x) 3 * x
+  f2 <- sqrt
+  f3 <- cos
+  f4 <- sin
 
-  expect_equal(modelOfEffect(sdsn.model, expected.output, Z, tau = true.tau),
-    uniformity)
+  y <- c(f1(1), f2(2), f3(3), f4(4))
 
-  expect_equal(observedData(sdsn.model, uniformity, Z, tau = true.tau),
-    expected.output)
+  model <- LevelEffectModel(c(f1,f2,f3,f4))
 
+  expect_equal(model(y, z), uniformity)
+  
 })
+
+# test_that("Network models", {
+#   # super duper simple network model
+#   # get an effect of 1 if any neighbors, zero otherwise
+#   # network: 1 <-> 2, 2 <-> 3, 4 has no neighbors
+#   S <- matrix(c(0,1,0,0, 1,0,1,0, 0,1,0,0, 0,0,0,0), nrow = 4)
+#   uniformity <- c(0,1,2,4)
+#   Z <- c(0, 1, 0, 0)
+#   true.tau <- 3
+#   expected.output <- c(1, 4, 3, 4)
+#   sdsn.model <- networkRandomizationModel(S, returnTau, 
+#     function(Z, ZS, tau) {
+#       ifelse(ZS > 0, 1, 0)  
+#     })
+# 
+#   expect_equal(sdsn.model(expected.output, Z, tau = true.tau),
+#     uniformity)
+# 
+#   expect_equal(invertModel(sdsn.model, uniformity, Z, tau = true.tau),
+#     expected.output)
+# 
+# })
 
 test_that("functions", {
   # functions should work as modelsOfEffect and observedData first arguments
@@ -58,12 +77,12 @@ test_that("functions", {
   true.tau <- 4
 
   expect_equal(
-    modelOfEffect(constant.additive.model, data, Z, NULL, tau = true.tau),
-    modelOfEffect(constant.additive.moe, data, Z, null, tau = true.tau))
+    constant.additive.model(data, Z, tau = true.tau),
+    constant.additive.moe(data, Z, null, tau = true.tau))
 
   expect_equal(
-    observedData(constant.additive.model, data, Z, NULL, tau = true.tau),
-    observedData(constant.additive.obdata, data, Z, null, tau = true.tau))
+    invertModel(constant.additive.model, data, Z, tau = true.tau),
+    constant.additive.obdata(data, Z, null, tau = true.tau))
 
   
 })

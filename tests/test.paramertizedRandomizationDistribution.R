@@ -50,8 +50,8 @@ test_that("Using model objects", {
   Z[sample.int(n, n/2)] <- 1
   R <- Z * Yt + (1 - Z) * Yc
 
-  function.version <- function(...) {
-    modelOfEffect(constant.additive.model, ...)  
+  function.version <- function(y,z,tau) {
+    y - z * tau
   }
 
   hypotheses <-  list(tau = c(7,8,9,10,11,12))

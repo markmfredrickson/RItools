@@ -21,58 +21,79 @@
 
 ### Models ###
 
-setClass("RandomizationModel",
-  representation(direct.effect = "function", 
-                 spillover.effect = "function"))
 
-randomizationModel <- function(direct.effect, spillover.effect) {
-  new("RandomizationModel", direct.effect = direct.effect, spillover.effect = spillover.effect)  
+## The most generic type of model is a "UniformityModel" which is a function
+## that takes y and z (and possibly parameters) and returns the uniformity trial
+## the @inverse slot contains a function that given the uniformity trial data, z, and params
+## returns the observed data implied by the model.
+setClass("UniformityModel", 
+  contains = "function",
+  representation(inverse = "function"))
+
+UniformityModel <- function(f, inv) { new("UniformityModel", f, inverse = inv)}
+
+## apply the inverse of the model to the uniformity trial data to see what
+## we would observe given z and parameters
+invertModel <- function(m, y_0, z, ...) {
+  m@inverse(y_0, z, ...)  
 }
+
+## levelEffectModel: for each level in Z, applies a specific function to create uniformity
+## each function is itself a model.
+## the goal here is to generalize out the y - z_1 * tau1 - z_2 * tau2 - ... idea for arbitrary fns
+## setClass("LevelEffectModel",
+##   contains = "UniformityModel",
+##   representation(levelFunctions = "list"))
+## 
+## LevelEffectModel <- function(effects) {
+##   if(!inherits(effects, "list") && !(all(sapply(effects, function(x) { inherits(x, "function")})))) {
+##     stop("All effects must be functions")
+##   }
+##   
+##   if (is.null(names(effects))) {
+##     names(effects) <- 0:(length(effects) - 1)  
+##   }
+## 
+##   nms <- names(effects)
+## 
+##   if (all(sapply(effects, function(x) { inherits(x) }))) {
+##     return( UniformityModel(
+##       function(y, z, ...) {
+##         for (i in 1:length(effects)) {
+##           lvl <- nms[i]
+##           y <- y - effects[[i]](y, as.numeric(z == lvl), ...)  
+##         }
+##         y 
+##       },
+##       function(y_0, z, ...) {
+##         for (i in 1:length(effects)) {
+##           lvl <- nms[i]
+##           y_0 <- y_0 + (z == lvl) * effects[[i]](y, ...)  
+##         }
+##         y_0
+##       }))
+##   }
+##   
+## }
 
 # the NRM extends the RM by prepending the number of treated neighbors (ZS)
 # onto the arguments of the direct.effect and spillover.effect functions
-setClass("NetworkRandomizationModel",
-  representation(S = "matrix"),
-  contains = "RandomizationModel")
+# setClass("NetworkRandomizationModel",
+#   representation(S = "matrix"),
+#   contains = "RandomizationModel")
+# 
+# networkRandomizationModel <- function(S, direct.effect, spillover.effect) {
+#   de <- function(Z, ...) { direct.effect(Z, ZS = as.vector(Z %*% S), ...) }
+#   se <- function(Z, ...) { spillover.effect(Z, ZS = as.vector(Z %*% S), ...)}
+#   new("NetworkRandomizationModel", direct.effect = de, spillover.effect = se, S = S)
+# }
 
-networkRandomizationModel <- function(S, direct.effect, spillover.effect) {
-  de <- function(Z, ...) { direct.effect(Z, ZS = as.vector(Z %*% S), ...) }
-  se <- function(Z, ...) { spillover.effect(Z, ZS = as.vector(Z %*% S), ...)}
-  new("NetworkRandomizationModel", direct.effect = de, spillover.effect = se, S = S)
-}
-
-
-### Functions ###
-setGeneric("modelOfEffect", function(model, R, Z, ...)
-  standardGeneric("modelOfEffect"))
 
 model.effect.helper <- function(model, combine, R, Z, ...) {
   tmp <- combine(R, Z * do.call(model@direct.effect, list(Z, ...)))
   combine(tmp, (1 - Z) * do.call(model@spillover.effect, list(Z, ...))) 
 }
 
-setMethod("modelOfEffect", signature = c("RandomizationModel"),
-function(model, R, Z, ...) {
-  model.effect.helper(model, combine = `-`, R, Z, ...)
-})
-
-setMethod("modelOfEffect", signature = c("function"),
-function(model, R, Z, ...) {
-  model(R, Z, ...)  
-})
-
-setGeneric("observedData", function(model, R, Z, ...)
-  standardGeneric("observedData"))
-
-setMethod("observedData", signature = c("RandomizationModel"),
-function(model, R, Z, ...) {
-  model.effect.helper(model, combine = `+`, R, Z, ...)
-})
-
-setMethod("observedData", signature = c("function"),
-function(model, R, Z, ...) {
-  model(R, Z, ...)  
-})
 
 # helper function for all the models that have a "tau" direct effect
 returnTau <- function(...) {
@@ -109,33 +130,34 @@ returnZero <- function(...) {
 ### Common Models ###
 
 # Yt = Yc + Z * tau
-constant.additive.model <- randomizationModel(returnTau, returnZero)
+constant.additive.model <- UniformityModel(function(y, z, tau) { y - z * tau }, 
+                                           function(y_0, z, tau) { y_0 + z * tau})
 
 ## The following models are parameterized with a network matrix S
-
+## network models are commented out for now
 # the linear spillover model from Bowers and Fredrickson, 2011
 # Yt = Yc + Z * tau + (1 - Z) * min(tau, beta * Z^t %*% S)
-linear.spillover.fn <- function(Z, ZS, tau, beta) {
-  pmin(tau, beta * ZS) 
-}
-
-linear.spillover.model <- function(S) {
-  networkRandomizationModel(S, returnTau, linear.spillover.fn) 
-}
-
-# the inverse growth spillover model from Bowers and Fredrickson, 2011
-inverse.spillover.fn <- function(Z, ZS, tau1, tau2) {
-  # Growth curve: when tau2<0 effect is decreasing in the number of treated
-  # neighbors, 
-  # when tau2>0, effect is increasing in the number of treated neighbors, 
-  # tau2=0 means all same effect regardless of the neighborhood. 
-  # Limited to  effect no greater than tau1
-  tau1 * (1 - (1 / (1 + ZS ^(tau2))))
-}
-
-inverse.spillover.model <- function(S) {
-  networkRandomizationModel(S, returnTau, inverse.spillover.fn)
-}
+# linear.spillover.fn <- function(Z, ZS, tau, beta) {
+#   pmin(tau, beta * ZS) 
+# }
+# 
+# linear.spillover.model <- function(S) {
+#   networkRandomizationModel(S, returnTau, linear.spillover.fn) 
+# }
+# 
+# # the inverse growth spillover model from Bowers and Fredrickson, 2011
+# inverse.spillover.fn <- function(Z, ZS, tau1, tau2) {
+#   # Growth curve: when tau2<0 effect is decreasing in the number of treated
+#   # neighbors, 
+#   # when tau2>0, effect is increasing in the number of treated neighbors, 
+#   # tau2=0 means all same effect regardless of the neighborhood. 
+#   # Limited to  effect no greater than tau1
+#   tau1 * (1 - (1 / (1 + ZS ^(tau2))))
+# }
+# 
+# inverse.spillover.model <- function(S) {
+#   networkRandomizationModel(S, returnTau, inverse.spillover.fn)
+# }
 
 
 ### Analyzing Operating Characteristics ###

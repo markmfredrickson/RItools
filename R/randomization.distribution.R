@@ -1,4 +1,3 @@
-
 ###################################################
 ### Randomization distribution producing function
 ###################################################
@@ -138,8 +137,8 @@ parameterizedRandomizationDistribution <- function(
     stop("You must supply both parameters and a model effects if you supply either")
   }
 
-  if (!is.null(moe) & !hasMethod(modelOfEffect, class(moe))) {
-    stop("moe object must have a 'modelOfEffect' method (a model or a function)")  
+  if (!is.null(moe) & !inherits(moe, "function")) {
+    stop("moe object must be a function")  
   }
 
   if (!is.null(parameters) & !is.list(parameters)) {
@@ -152,7 +151,7 @@ parameterizedRandomizationDistribution <- function(
     functions <- apply(parameter.space, 1, function(params) {
       force(params)
       function(y, z) {
-        do.call(modelOfEffect, c(list(moe, y, z), params))
+        do.call(moe, c(list(y, z), params))
       }
     })
 

@@ -56,7 +56,7 @@ test_that("Wilcox.test", {
   Z <- rep(c(0,1), n/2)
   B <- rep(1:4, each =  n/4)
   ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effecto
-  tau1 <- function(y, z) { modelOfEffect(constant.additive.model, ys, z, tau = 1) }
+  tau1 <- function(y, z) { constant.additive.model(ys, z, tau = 1) }
   
   res.wt <- randomizationDistributionEngine(ys, 
                                             Z, 
