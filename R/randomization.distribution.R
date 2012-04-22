@@ -359,3 +359,59 @@ parameterizedXBalanceTest <- function(
 
   
 
+######################## ks Based Tests #################################
+
+
+parameterizedKSTest <- function(
+  data,
+  treatment,
+  moe = NULL, # single function with signature f(data, z, blocks, param1, param2, etc.)
+  parameters = NULL, # list of name = values, name = values, ...
+  blocks = NULL,
+  samples = 5000) {
+  
+  # if either moe or parameters are present, both must be present
+  if ((!is.null(moe) & is.null(parameters)) | (is.null(moe) & !is.null(parameters))) {
+    stop("You must supply both parameters and a model effects if you supply either")
+  }
+
+  if (!is.null(moe) & !is.function(moe)) {
+    stop("moe must be a function")  
+  }
+
+  if (!is.null(parameters) & !is.list(parameters)) {
+    stop("Parameters must be a list")   
+  }
+
+  if (!is.null(parameters)) {
+    parameter.space <- do.call(expand.grid, parameters)
+    
+    functions <- apply(parameter.space, 1, function(params) {
+      force(params)
+      function(data, z, blocks) {
+        do.call(moe, c(list(data, z, blocks), params))
+      }
+    })
+  
+    adjusted.data <- lapply(functions, 
+      function(f) { f(data, treatment, blocks) })
+
+    ##df <- data.frame(Z = treatment, unadjusted = data, adjusted.data)
+
+    theks<-sapply(data.frame(unadjusted=data,adjusted.data),function(adjY){
+	ks.test(adjY[treatment==1],adjY[treatment==0])$p.value
+      })
+
+    output <- cbind(rbind(NA, parameter.space), p.value = theks)
+
+  } else {
+	  theks<-ks.test(Y[Z==1],Y[Z==0])$p.value
+	  output <- data.frame(NA, p.value = theks)
+  }
+
+  return(output)
+}
+    
+
+  
+
