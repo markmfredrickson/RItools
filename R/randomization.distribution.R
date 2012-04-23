@@ -295,6 +295,7 @@ getApplyFunction <- function() {
   }
 
   if (multicoreLoaded()) {
+    options("mc.cores"=detectCores())
     return(mclapply) # yay speed!
   }
 
@@ -397,10 +398,11 @@ parameterizedKSTest <- function(
       function(f) { f(data, treatment, blocks) })
 
     ##df <- data.frame(Z = treatment, unadjusted = data, adjusted.data)
+    apply.fn <- getApplyFunction()
 
-    theks<-sapply(data.frame(unadjusted=data,adjusted.data),function(adjY){
+    theks<-simplify2array(apply.fn(data.frame(unadjusted=data,adjusted.data),function(adjY){
 	ks.test(adjY[treatment==1],adjY[treatment==0])$p.value
-      })
+      }))
 
     output <- cbind(rbind(NA, parameter.space), p.value = theks)
 
