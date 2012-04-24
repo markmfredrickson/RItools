@@ -68,8 +68,7 @@ randomizationDistributionEngine <- function(
           # to the backend and let it return a RandomizationDistribution
           # or subclass (probably a good idea)
           # backends may not honor samples, p.value, or summaries
-          return(test.statistic@asymptotic(adjusted.y, z,  
-                              samples, p.value, summaries, ...))
+          return(test.statistic@asymptotic(adjusted.y, z))
         }
 
       stop("No asymptotic backend exists for the test statistic")

@@ -162,9 +162,7 @@ setClass("AsymptoticTestStatistic",
 
 .wilcoxBackEnd <- function(
   adjusted.data,
-  treatment, 
-  samples, p.value, summaries, # these will be ignored
-  ...) {
+  treatment) {
   
   
   # adjusted.data should be a matrix, where each column is an adjusted data
