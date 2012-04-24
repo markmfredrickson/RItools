@@ -38,8 +38,14 @@ randomizationDistributionEngine <- function(
 
   n <- length(z)
  
-  randomizations <- sampler(samples) # a list with $weight and $samples args
-  
+  if (!(type %in% c("exact", "asymptotic"))) {
+    stop("'type' argument must be either 'asymptotic' or 'exact'")  
+  }
+
+  if(type == "exact") {
+    randomizations <- sampler(samples) # a list with $weight and $samples args  
+  }
+
   sharp.null <- function(y, z) { y }
 
   k <- length(models)

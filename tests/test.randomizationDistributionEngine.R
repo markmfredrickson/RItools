@@ -124,5 +124,16 @@ test_that("Multiple backends", {
 
   ts <- function(y, z) { 1 }
   expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(ts)), type = "asymptotic"), "asymptotic") # use sharp null)
+
+  # should not call the sampler
+  safeBackEnd <- new("AsymptoticTestStatistic", 
+    function(y,z) { return(TRUE)},
+    asymptotic = function(...) { return(FALSE) }) 
+  
+  dummySampler <- function(n) { stop("Oops!") }
+  randomizationDistributionEngine(ys, Z, list(xb = list(safeBackEnd)), type = "asymptotic", sampler = dummySampler)
+
+  # only valid types are exact and asymptotic
+  expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(safeBackEnd)), type = "foo"), "'asymptotic' or 'exact'")
  
 })
