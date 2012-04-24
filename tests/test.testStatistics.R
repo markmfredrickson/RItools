@@ -103,3 +103,45 @@ test_that("Subgroup Analysis", {
   
   expect_equal(xdiff(y, z), 0)
 })
+
+test_that("KS Test Statistic", {
+  
+  y <- c(seq(1,11, by = 2), seq(10,20, by = 2))
+  z <- c(rep(0,6), rep(1,6))
+  
+  ### Agree with an exact computation from ks.test
+  res.ks <- ks.test(y[z == 1], y[z == 0])
+
+  expect_equal(as.numeric(res.ks$statistic), ksTestStatistic(y, z))
+
+  res.ksfn <- parameterizedRandomizationDistribution(y, z, ksTestStatistic, p.value = upper.p.value)
+
+  expect_equivalent(res.ks$statistic, res.ksfn$statistic)
+  expect_equal(res.ks$p.value, res.ksfn$p.value)
+
+  ### Next tests making sure that we can flip things around and get the right values
+  res.ks.flip <- ks.test(y[z == 0], y[z == 1])
+
+  expect_equal(as.numeric(res.ks.flip$statistic), ksTestStatistic(y, rev(z)))
+
+  res.ksfn.flip <- parameterizedRandomizationDistribution(y, rev(z), ksTestStatistic, p.value = upper.p.value)
+  
+
+  expect_equivalent(res.ks.flip$statistic, res.ksfn.flip$statistic)
+  expect_equal(res.ks.flip$p.value, res.ksfn.flip$p.value)
+
+  ### Compare the backend results to calling ks.test explicity for large data. Should be the same
+
+  set.seed(20120423)
+  y0 <- rnorm(10000)
+  z <- rep(c(0,1), 5000)
+  y <- y0 + 0.05 * z
+
+  res.ks.asym <- ks.test(y[z == 1], y[z == 0], exact = F) # be sure to use asymptotics
+  res.ksfn.asym <- parameterizedRandomizationDistribution(y, z, ksTestStatistic, type = "asymptotic")
+  
+  expect_equivalent(res.ks.asym$statistic, res.ksfn.asym$statistic)
+  expect_equal(res.ks.asym$p.value, res.ksfn.asym$p.value)
+
+
+})

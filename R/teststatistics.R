@@ -206,6 +206,52 @@ quantileAbsoluteDifference <- function(quantiles) {
   }
 }
 
+### The ksTestStatistic with ks.test as a potential backend
+
+# this borrowed from ks.test
+.ksBackEnd <- function(
+  adjusted.y,
+  z) {
+
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.y, 2, function(y) {
+    res <- ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
+    return(res[c("statistic", "p.value")])
+  })
+
+  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+  colnames(tmp) <- c("statistic", "p.value")
+
+  return(new("RandomizationDistribution", 
+      tmp, # RD inherits from data.frame
+      test.statistic = ks.test,
+      z = as.numeric(z)))
+}
+
+ksTestStatistic <- new("AsymptoticTestStatistic",
+function(y, z) {
+  # next borrowed from KS test
+  # first, set up using the KS test var names
+  x <- y[z == 1]
+  y <- y[z == 0]
+
+  x <- x[!is.na(x)]
+  n <- length(x)
+
+  y <- y[!is.na(y)]
+  n.x <- as.double(n)
+  n.y <- length(y)
+
+  n <- n.x * n.y/(n.x + n.y)
+  w <- c(x, y)
+  z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+  if (length(unique(w)) < (n.x + n.y)) {
+    z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]
+  }
+
+  return(max(abs(z)))
+}, asymptotic = .ksBackEnd)
+
 
 ### Subset/subgroup Analysis
 ### using a logical vector, limit the test statistic to a smaller group
