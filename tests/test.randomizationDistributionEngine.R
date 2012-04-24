@@ -120,5 +120,9 @@ test_that("Multiple backends", {
   expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(test.backend, tau1))), 
     "Not asymptotic")
  
+  # real errors for non asym test stats
+
+  ts <- function(y, z) { 1 }
+  expect_error(randomizationDistributionEngine(ys, Z, list(xb = list(ts)), type = "asymptotic"), "asymptotic") # use sharp null)
  
 })

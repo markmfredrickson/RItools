@@ -56,14 +56,17 @@ randomizationDistributionEngine <- function(
     adjusted.y <- sapply(moes, function(m) m(y, z, ...))
 
     # check if there is a backend function for this test.statistic
-    if (type == "asymptotic" &&
-        inherits(test.statistic, "AsymptoticTestStatistic")) {
-      # basically, pass the adjusted y and everything else
-      # to the backend and let it return a RandomizationDistribution
-      # or subclass (probably a good idea)
-      # backends may not honor samples, p.value, or summaries
-      return(test.statistic@asymptotic(adjusted.y, z,  
-                              samples, p.value, summaries, ...))  
+    if (type == "asymptotic") {
+        if (inherits(test.statistic, "AsymptoticTestStatistic")) {
+          # basically, pass the adjusted y and everything else
+          # to the backend and let it return a RandomizationDistribution
+          # or subclass (probably a good idea)
+          # backends may not honor samples, p.value, or summaries
+          return(test.statistic@asymptotic(adjusted.y, z,  
+                              samples, p.value, summaries, ...))
+        }
+
+      stop("No asymptotic backend exists for the test statistic")
     }
   
     # no backend, so use the standard approach
