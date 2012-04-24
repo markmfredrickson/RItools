@@ -262,11 +262,11 @@ setMethod("point", "ParameterizedRandomizationDistribution", function(object) {
 ############################## Helper Functions ##############################
 
 multicoreLoaded <- function() {
-  "multicore" %in% loadedNamespaces()  
+   any(c("multicore","parallel") %in% loadedNamespaces()) ##( "multicore" %in% loadedNamespaces()   )
 }
 
-snowLoaded <- function() {
-  "snow" %in% loadedNamespaces()  
+snowLoaded <- function() { ## if a cluster named cl has been started
+  length(find("cl"))==1 ##"snow" %in% loadedNamespaces()  
 }
 
 
@@ -278,6 +278,7 @@ getApplyFunction <- function() {
   }
 
   if (multicoreLoaded()) {
+    options("mc.cores"=detectCores())
     return(mclapply) # yay speed!
   }
 
