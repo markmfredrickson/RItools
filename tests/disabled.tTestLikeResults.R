@@ -1,5 +1,5 @@
 ################################################################################
-# Testing the parameterizedRandomizationDistribution against t.test
+# Testing the RItest against t.test
 ################################################################################
 
 library(testthat)
@@ -18,7 +18,7 @@ test_that("Get same point estimate", {
 
   res.t.test <- t.test(R[Z == 1], R[Z == 0], var.equal = T)
   
-  res.prd <- parameterizedRandomizationDistribution(R, Z, mean.difference, 
+  res.prd <- RItest(R, Z, mean.difference, 
     constant.additive.model, list(tau = c(-10, 9, 10)))
   
   # the t.test p-value is obscenely small, so just make sure that the null

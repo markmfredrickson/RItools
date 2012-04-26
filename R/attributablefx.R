@@ -41,7 +41,7 @@ attributableEffects <- function(
     stop("Argument \'data\' must be numeric 0/1")
   }
 
-  parameterizedRandomizationDistribution(data, 
+  RItest(data, 
     treatment,
     test.stat,
     additive.attributable.effect,

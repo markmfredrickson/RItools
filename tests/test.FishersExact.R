@@ -12,7 +12,7 @@ test_that("Lady Tasting Tea", {
   number.correct <- function(guesses, z, blocks) { sum(z == guesses) / 2 }
   expect_equal(number.correct(lady.guess, actual.cups, NULL), 3)
   
-  lady.distribution <- parameterizedRandomizationDistribution(lady.guess, actual.cups,
+  lady.distribution <- RItest(lady.guess, actual.cups,
     test.stat = number.correct, p.value = upper.p.value, include.distribution = T)
 
   # sharp null p.value
@@ -32,7 +32,7 @@ test_that("2x2 table style", {
   Z <- rep(c(0,1), n/2)
   R <- Z * Yt + (1 - Z) * Yc
   
-  res <- parameterizedRandomizationDistribution(R, Z, test.stat = odds.ratio)
+  res <- RItest(R, Z, test.stat = odds.ratio)
 
   res.fisher <- fisher.test(table(R, Z))
   

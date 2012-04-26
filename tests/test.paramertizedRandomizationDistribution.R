@@ -22,7 +22,7 @@ test_that("Engine and pRD give same answers", {
     ys - (z * tau)
   } 
   set.seed(20110620)
-  res.prd <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
+  res.prd <- RItest(R, Z, mann.whitney.u, 
     constant.additive.fn, list(tau = c(-10, 9, 10)))
 
   # being extra explicit about model creation
@@ -55,10 +55,10 @@ test_that("Using model objects", {
   }
 
   hypotheses <-  list(tau = c(7,8,9,10,11,12))
-  res.fn <- parameterizedRandomizationDistribution(R, Z, mean.difference, 
+  res.fn <- RItest(R, Z, mean.difference, 
     function.version, parameters = hypotheses)
 
-  res.model <- parameterizedRandomizationDistribution(R, Z, mean.difference,
+  res.model <- RItest(R, Z, mean.difference,
     constant.additive.model, parameters = hypotheses)
   
 })
@@ -74,7 +74,7 @@ test_that("Moe can be NULL", {
   R <- Z * Yt + (1 - Z) * Yc
 
   # this should not raise an error
-  res.prd <- parameterizedRandomizationDistribution(R, Z, mean.difference)
+  res.prd <- RItest(R, Z, mean.difference)
   
 })
 
@@ -94,7 +94,7 @@ test_that("Plotting", {
 
   hypotheses <-  list(tau = c(7,8,9,10,11,12))
 
-  res.one <- parameterizedRandomizationDistribution(R, Z, mean.difference,
+  res.one <- RItest(R, Z, mean.difference,
     constant.additive.model, parameters = hypotheses)
 
   a <- plot(res.one)
@@ -112,14 +112,14 @@ test_that("Plotting", {
     ifelse(!!z, y * gamma - tau, y)  
   }
 
-  res.two <- parameterizedRandomizationDistribution(R, Z, mean.difference,
+  res.two <- RItest(R, Z, mean.difference,
     model2, parameters = hypotheses)
 
   a <- plot(res.two)
   expect_equal(a$panel, "panel.levelplot")
 
   # can't plot sharp nulls
-  res.sn <- parameterizedRandomizationDistribution(R, Z, mean.difference)
+  res.sn <- RItest(R, Z, mean.difference)
   expect_error(plot(res.sn), "Cannot plot sharp null only")
 
 })

@@ -1,5 +1,5 @@
 ################################################################################
-# Testing the parameterizedRandomizationDistribution against wilcox.test
+# Testing the RItest against wilcox.test
 ################################################################################
 
 library(testthat)
@@ -20,7 +20,7 @@ test_that("Non-paired", {
 
   res.wilcox <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T)
 
-  res.prd <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
+  res.prd <- RItest(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = c(-10, 9, 10)))
 
   # the wilcox stat is named "W", but is otherwise the same
@@ -56,7 +56,7 @@ test_that("Paired", {
   # make sure the test statistic is correct on the observed data
   expect_equal(paired.sgnrank.sum(R, Z), res.wilcox$stat[[1]])
 
-  res.prd <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, 
+  res.prd <- RItest(R, Z, paired.sgnrank.sum, 
     constant.additive.model, list(tau = c(-10, 9, 10)),
     sampler = simpleRandomSampler(z = Z, b = B)) 
 

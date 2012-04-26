@@ -114,7 +114,7 @@ test_that("KS Test Statistic", {
 
   expect_equal(as.numeric(res.ks$statistic), ksTestStatistic(y, z))
 
-  res.ksfn <- parameterizedRandomizationDistribution(y, z, ksTestStatistic, p.value = upper.p.value)
+  res.ksfn <- RItest(y, z, ksTestStatistic, p.value = upper.p.value)
 
   expect_equivalent(res.ks$statistic, res.ksfn$statistic)
   expect_equal(res.ks$p.value, res.ksfn$p.value)
@@ -124,7 +124,7 @@ test_that("KS Test Statistic", {
 
   expect_equal(as.numeric(res.ks.flip$statistic), ksTestStatistic(y, rev(z)))
 
-  res.ksfn.flip <- parameterizedRandomizationDistribution(y, rev(z), ksTestStatistic, p.value = upper.p.value)
+  res.ksfn.flip <- RItest(y, rev(z), ksTestStatistic, p.value = upper.p.value)
   
 
   expect_equivalent(res.ks.flip$statistic, res.ksfn.flip$statistic)
@@ -138,7 +138,7 @@ test_that("KS Test Statistic", {
   y <- y0 + 0.05 * z
 
   res.ks.asym <- ks.test(y[z == 1], y[z == 0], exact = F) # be sure to use asymptotics
-  res.ksfn.asym <- parameterizedRandomizationDistribution(y, z, ksTestStatistic, type = "asymptotic")
+  res.ksfn.asym <- RItest(y, z, ksTestStatistic, type = "asymptotic")
   
   expect_equivalent(res.ks.asym$statistic, res.ksfn.asym$statistic)
   expect_equal(res.ks.asym$p.value, res.ksfn.asym$p.value)

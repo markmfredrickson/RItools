@@ -7,7 +7,7 @@
 # - b: a blocking indicator (may be a single level)
 # 
 # Additional arguments are considered population parameters of the model.
-# See parameterizedRandomizationDistribution for more details.
+# See RItest for more details.
 ################################################################################
 
 

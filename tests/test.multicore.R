@@ -46,13 +46,13 @@ test_that("Runs work in all systems", {
   R <- Z * Yt + (1 - Z) * Yc
 
   set.seed(123456)
-  time.nm <- system.time(res.nomulti <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
+  time.nm <- system.time(res.nomulti <- RItest(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = seq(8, 12, .25))))
 
   library(parallel)
   
   set.seed(123456)
-  time.mul <- system.time(res.multi <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
+  time.mul <- system.time(res.multi <- RItest(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = seq(8, 12, .25))))
 
   expect_equal(res.nomulti, res.multi)
@@ -64,7 +64,7 @@ test_that("Runs work in all systems", {
   opts <- options("RItools-apply" = mclapply)
   
   set.seed(123456)
-  res.explicit <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
+  res.explicit <- RItest(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = seq(8, 12, .25)))
   
   expect_equal(res.nomulti, res.explicit)
@@ -97,7 +97,7 @@ test_that("Runs work in all systems", {
 ###   mclapply <<- function(...) { called <<- T ; error("Good!") }
 ### 
 ### 
-###   expect_error(parameterizedRandomizationDistribution(R, Z, mann.whitney.u))
+###   expect_error(RItest(R, Z, mann.whitney.u))
 ###   expect_true(called)
 ###   
 ###   mclapply <<- old.mclapply

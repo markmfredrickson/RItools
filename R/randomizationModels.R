@@ -191,7 +191,7 @@ analyzeModel <- function(model, Z, true.params, test.params,
   total.time <- system.time(
     simulation <- lapply(Zs, function(z) {
       data <- do.call(observedData, append(list(model, data, z), true.params))  
-      return(parameterizedRandomizationDistribution(data,
+      return(RItest(data,
           Z,
           test.statistic,
           model,

@@ -132,7 +132,7 @@ setClass("ParameterizedRandomizationDistribution",
     params = "data.frame"),
   contains = "RandomizationDistribution")
 
-parameterizedRandomizationDistribution <- function(
+RItest <- function(
   y,
   z,
   test.stat,

@@ -1,5 +1,5 @@
 ################################################################################
-# Testing the parameterizedRandomizationDistribution against wilcox.test and xBalance for paired data vs aligned data
+# Testing the RItest against wilcox.test and xBalance for paired data vs aligned data
 ################################################################################
 
 library(testthat)
@@ -72,7 +72,7 @@ paired.constant.additive.model<-function(ys,z,b,tau){ ##where z is really V_b=Z_
   xbal2<-xBalance(Z~R.aligned,strata=list(unstrt=NULL,B=~B),report="all",data=data.frame(Z,R,B))
 
   ##Now for our code
-  res.means<-parameterizedRandomizationDistribution(R, Z, test.stat=mean.diff.vect, #mann.whitney.u, 
+  res.means<-RItest(R, Z, test.stat=mean.diff.vect, #mann.whitney.u, 
     moe=constant.additive.model, parameters=list(tau = c(-10, 9, 10)),blocks=B,
                                                     ) ##works for both R and R.aligned
 ### To what should we compare this??
@@ -82,7 +82,7 @@ paired.constant.additive.model<-function(ys,z,b,tau){ ##where z is really V_b=Z_
   res.wilcox <- wilcox.test(R.paired, exact = T, conf.int = T)
   ##notice that because of sorting by B and Z res.wilcox is same as wilcox.test(R[Z==1],R[Z==0],exact=T,conf.int=T,paired=TRUE),
 
-  res.prd <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, #mann.whitney.u, 
+  res.prd <- RItest(R, Z, paired.sgnrank.sum, #mann.whitney.u, 
     constant.additive.model, list(tau = c(-10, 9, 10)),blocks=B) ##works for both R and R.aligned
 
   # the wilcox stat is named "W", but is otherwise the same
@@ -105,7 +105,7 @@ paired.constant.additive.model<-function(ys,z,b,tau){ ##where z is really V_b=Z_
 
   # zeroing in on the point estimate
   step <- 0.01
-  res.prd.intval <- parameterizedRandomizationDistribution(R, Z, paired.sgnrank.sum, ##mann.whitney.u, 
+  res.prd.intval <- RItest(R, Z, paired.sgnrank.sum, ##mann.whitney.u, 
     constant.additive.model, list(tau = seq(9,10.5, step)),blocks=B)
 
   # this problem does not have a unique point estimate. Typical HL would then take the
