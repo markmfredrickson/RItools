@@ -1,25 +1,25 @@
 ################################################################################
-# Multicore/mclapply tests
+# Parallel package and mclapply tests
 ################################################################################
 
 library(testthat)
 
 context("Mulicore package use")
 
-test_that("Check multicore on/off", {
+test_that("Check parallel on/off", {
 
-  if ("multicore" %in% loadedNamespaces()) {
-    unloadNamespace("multicore")  
+  if ("parallel" %in% loadedNamespaces()) {
+    unloadNamespace("parallel")  
   }
 
-  expect_false(multicoreLoaded())
+  expect_false(parallelLoaded())
 
   expect_true(is.null(options("RItools-apply")[[1]]))
   expect_equal(getApplyFunction(), lapply)
 
-  library(multicore)
+  library(parallel)
 
-  expect_true(multicoreLoaded())
+  expect_true(parallelLoaded())
   expect_equal(getApplyFunction(), mclapply)
 
   opts <- options("RItools-apply" = sum) # really bad choice :-)
@@ -30,11 +30,11 @@ test_that("Check multicore on/off", {
 
 test_that("Runs work in all systems", {
   
-  if ("multicore" %in% loadedNamespaces()) {
-    unloadNamespace("multicore")  
+  if ("parallel" %in% loadedNamespaces()) {
+    unloadNamespace("parallel")  
   }
 
-  expect_false(multicoreLoaded())
+  expect_false(parallelLoaded())
   
   set.seed(20110620)
   tau <- 10
@@ -49,7 +49,7 @@ test_that("Runs work in all systems", {
   time.nm <- system.time(res.nomulti <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = seq(8, 12, .25))))
 
-  library(multicore)
+  library(parallel)
   
   set.seed(123456)
   time.mul <- system.time(res.multi <- parameterizedRandomizationDistribution(R, Z, mann.whitney.u, 
@@ -75,11 +75,11 @@ test_that("Runs work in all systems", {
 # I am unable to change "locked bindings" of mclapply or lapply
 # so commenting this out for now.
 ### test_that("mcapply called", {
-###   if ("multicore" %in% loadedNamespaces()) {
-###     unloadNamespace("multicore")  
+###   if ("parallel" %in% loadedNamespaces()) {
+###     unloadNamespace("parallel")  
 ###   }
 ### 
-###   expect_false(multicoreLoaded())
+###   expect_false(parallelLoaded())
 ###   expect_true(is.null(options("RItools-apply")[[1]]))
 ### 
 ###   set.seed(20110620)
@@ -91,7 +91,7 @@ test_that("Runs work in all systems", {
 ###   Z[sample.int(n, n/2)] <- 1
 ###   R <- Z * Yt + (1 - Z) * Yc
 ### 
-###   library(multicore)
+###   library(parallel)
 ###   old.mclapply <- mclapply
 ###   called <- FALSE
 ###   mclapply <<- function(...) { called <<- T ; error("Good!") }
