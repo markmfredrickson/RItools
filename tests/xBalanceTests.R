@@ -260,6 +260,17 @@ xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF, strata=list(nostrata
 
 
 #####################################################
+######  handling factor with no levels strata=argument  ###
+#####################################################
+try(xBalance(pr ~ date,
+             strata=data.frame(nastrat=factor(rep(NA,nrow(testdata))) ),
+             data=testdata), FALSE)
+
+xBalance(pr ~ date,
+         strata=data.frame(nostrata=factor(rep('a',nrow(testdata))),
+           nastrat=factor(rep(NA,nrow(testdata))) ),
+         data=testdata)
+#####################################################
 ######             WISHLIST                       ###
 #####################################################
 ###
