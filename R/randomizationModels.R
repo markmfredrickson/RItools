@@ -129,6 +129,9 @@ returnZero <- function(...) {
 
 ### Common Models ###
 
+# World's simplest model, the sharp null of no effects
+sharp.null.model <- UniformityModel(function(y, z) { y }, function(y, z) { y })
+
 # Yt = Yc + Z * tau
 constant.additive.model <- UniformityModel(function(y, z, tau) { y - z * tau }, 
                                            function(y_0, z, tau) { y_0 + z * tau})
