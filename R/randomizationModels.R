@@ -177,40 +177,33 @@ constant.additive.model <- UniformityModel(function(y, z, tau) { y - z * tau },
 #    when testing a hypothesis
 #  power.samples: number of datasets to generate simulated Z values
 #  ... arguments to be passed to pRD (and probably then to the engine)
-analyzeModel <- function(model, Z, true.params, test.params,
-  test.statistic, data = rnorm(length(Z)), 
-  test.samples = 5000, power.samples = 1000, ...) {
 
-  # Error Checking
+compareModels <- function(models, # a list of (one param) models to try 
+                          repetitions, # how many times to create data
+                          test.statistic,                          
+                          uniformity, 
+                          sampler,
+                          ...) {
+  
+  Zs <- sampler(repetitions)
 
-  if (!all(names(true.params) %in% names(test.params)) |
-      !all(names(test.params) %in% names(true.params))) {
-    stop("True and test param names do not match")  
+  if (missing(uniformity)) {
+    uniformity <- rnorm(length(Zs$samples[,1]))  
   }
-  
-  n <- length(Z)
-  Zs <- as.data.frame(simpleRandomSampler(z = Z, b = rep(1, length(Z)))(power.samples)$samples) #, power.samples)
 
-  total.time <- system.time(
-    simulation <- lapply(Zs, function(z) {
-      data <- do.call(observedData, append(list(model, data, z), true.params))  
-      return(RItest(data,
-          Z,
-          test.statistic,
-          model,
-          parameters = test.params,
-          samples = test.samples, ...))
+  results <- apply(Zs$samples, 2, function(z) {
+
+    data <- lapply(models, function(m) { invertModel(m, uniformity, z)})
+
+    test <- lapply(data, function(d) {
+      randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
+        sampler = sampler, ...) # all other args passed along, e.g. samples  
     })
-  )
-  
-  return(list(time = total.time,
-              simulation = simulation,
-              true.params = true.params,
-              test.params = test.params,
-              test.statistic = test.statistic,
-              data = data, 
-              test.samples = test.samples,
-              power.samples = power.samples, ...))
+
+    return(test)
+  })
+
+  return(results)
 }
 
 # given the results of analyzeModel, what can we say?
