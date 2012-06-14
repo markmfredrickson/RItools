@@ -22,11 +22,13 @@ test_that("testing a single model", {
                        uniformity = c(1,0,1,0,0,1),
                        p.value = upper.p.value)
 
-  # result should be a list of reptitions length
-  expect_equal(length(res), 20)
+  expect_equal(class(res), "array") 
+  expect_equal(dim(res), c(1,1,20))
 
   # collect the p-values
-  pvs <- sapply(res, function(r) { r$sharp[[1]][2, "p.value"]})
+  pvs <- res[1,1,]
   expect_equal(as.numeric(table(pvs)), c(1, 9, 9, 1))
+
+  expect_equal(names(pvs), as.character(1:20))
   
 })

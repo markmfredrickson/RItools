@@ -183,6 +183,7 @@ compareModels <- function(models, # a list of (one param) models to try
                           test.statistic,                          
                           uniformity, 
                           sampler,
+                          summary.column = "p.value",
                           ...) {
   
   Zs <- sampler(repetitions)
@@ -191,19 +192,28 @@ compareModels <- function(models, # a list of (one param) models to try
     uniformity <- rnorm(length(Zs$samples[,1]))  
   }
 
-  results <- apply(Zs$samples, 2, function(z) {
+  results <- lapply(as.data.frame(Zs$samples), function(z) {
 
     data <- lapply(models, function(m) { invertModel(m, uniformity, z)})
 
-    test <- lapply(data, function(d) {
-      randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
+    test <- sapply(data, function(d) {
+      tmp <- randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
         sampler = sampler, ...) # all other args passed along, e.g. samples  
-    })
 
+      tmp[[1]][-1, summary.column, drop = F] # drop the sharp null row
+    })
+    
+    test <- as.matrix(test)
+    colnames(test) <- names(models)
+    rownames(test) <- names(models)
     return(test)
   })
 
-  return(results)
+  names(results) <- 1:repetitions
+
+  require(abind)
+
+  return(abind(results, along = 3))
 }
 
 # given the results of analyzeModel, what can we say?
