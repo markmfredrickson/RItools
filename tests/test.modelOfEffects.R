@@ -14,6 +14,11 @@ test_that("givenParams helper", {
   mymodel.two <- givenParams(mymodel, q = 2)
   expect_equal(mymodel.two(Y, Z, NULL, h = 1), c(0,3,4,3))
 
+  # use the constant.additive.model which is a UniformityModel object
+  add2 <- givenParams(constant.additive.model, tau = 2)
+  expect_equal(c(0,0,0), add2(c(2,0,2), c(1,0,1)))
+  expect_equal(c(2,0,2), invertModel(add2, c(0,0,0), c(1,0,1)))
+
 })
 
 test_that("min.max.model meta model", {

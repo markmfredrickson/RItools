@@ -38,6 +38,29 @@ invertModel <- function(m, y_0, z, ...) {
   m@inverse(y_0, z, ...)  
 }
 
+setGeneric("givenParams", function(model, ...)
+  standardGeneric("givenParams"))
+
+setMethod("givenParams", "function",
+function(model, ...) {
+  dots <- match.call(expand.dots = FALSE)[["..."]]
+  function(y, z, b, ...) {
+    do.call(model, c(list(y, z, b, ...), dots))
+  }
+})
+
+setMethod("givenParams", "UniformityModel",
+function(model, ...) {
+  dots <- match.call(expand.dots = FALSE)[["..."]]
+  UniformityModel(
+    function(y, z, ...) {
+      do.call(model, c(list(y, z, ...), dots))
+    },
+    function(y0, z, ...) {
+      do.call(invertModel, c(list(model, y0, z), dots))  
+    })
+})
+
 ## levelEffectModel: for each level in Z, applies a specific function to create uniformity
 ## each function is itself a model.
 ## the goal here is to generalize out the y - z_1 * tau1 - z_2 * tau2 - ... idea for arbitrary fns
