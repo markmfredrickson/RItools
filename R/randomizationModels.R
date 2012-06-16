@@ -216,19 +216,16 @@ compareModels <- function(models, # a list of (one param) models to try
   }
 
   results <- lapply(as.data.frame(Zs$samples), function(z) {
-
     data <- lapply(models, function(m) { invertModel(m, uniformity, z)})
 
-    test <- sapply(data, function(d) {
+    test <- lapply(data, function(d) {
       tmp <- randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
         sampler = sampler, ...) # all other args passed along, e.g. samples  
 
       tmp[[1]][-1, summary.column, drop = F] # drop the sharp null row
     })
     
-    test <- as.matrix(test)
-    colnames(test) <- names(models)
-    rownames(test) <- names(models)
+    test <- matrix(unlist(test), nrow = length(models), dimnames = list(names(models), names(models)))
     return(test)
   })
 
