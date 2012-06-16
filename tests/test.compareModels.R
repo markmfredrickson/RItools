@@ -54,3 +54,18 @@ test_that("two model comparison", {
   expect_equal(as.numeric(table(pvs)), c(1, 9, 9, 1))
 
 })
+
+test_that("parameterized model comparisons", {
+  sampler <- simpleRandomSampler(treated = 3, total = 6)  
+  res <- parameterizedCompareModels(
+    models = list(list(sharp.null.model), 
+                  list(constant.additive.model, tau = 1:3)),
+    repetitions = 20,
+    test.statistic = ksTestStatistic,
+    type = "asymptotic",
+    uniformity = c(0,0,0,0,0,0),
+    sampler = sampler)
+
+  expect_equal(dim(res), c(4,4,20))
+  
+})

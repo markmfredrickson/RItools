@@ -236,6 +236,25 @@ compareModels <- function(models, # a list of (one param) models to try
   return(abind(results, along = 3))
 }
 
+parameterizedCompareModels <- function(models, ...) {
+  unparameterized <- lapply(models, function(l) {
+    m <- l[[1]]
+    params <- l[-1]
+
+    if (length(params) > 0) {
+      parameter.space <- do.call(expand.grid, params)
+    return(apply(parameter.space, 1, function(ps) {
+        force(ps)
+        do.call(givenParams, c(list(m), ps))
+        }))
+    } else {
+      return(m)  
+    }
+  }) 
+  
+  compareModels(unlist(unparameterized), ...)
+}
+
 # given the results of analyzeModel, what can we say?
 
 testSize <- function(analysis, alpha = NULL, tol = .Machine$double.eps ^ 0.5) {
