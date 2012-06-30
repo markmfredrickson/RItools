@@ -96,67 +96,65 @@ setClass("AsymptoticTestStatistic",
   contains = "function")
 
 
-# turning this off until blocking is added back in
-# ### Harmonic Mean Difference -- uses xBalance for asymptotics ###
-# 
-# .xBalanceBackEnd <- function(
-#   adjusted.data,
-#   treatment, 
-#   samples, p.value, # these will be ignored
-#   summaries, ...) {
-# 
-#   report <- unlist(c("adj.mean.diffs", "p.values", summaries))
-#   # adjusted.data should be a matrix, where each column is an adjusted data
-#   tmp <- apply(adjusted.data, 2, function(y) {
-#     df <- data.frame(z = treatment, y = y)
-# 
-#     # ignoring blocks for now
-#     res <- xBalance(z ~ y, 
-#                   data = df,
-#                   report = report)
-#     return(res$results[,,])
-#   })
-# 
-#   tmp <- as.data.frame(t(tmp))
-#   tcnms <- colnames(tmp)
-# 
-#   positions <- match(c("adj.diff", "p"), tcnms)
-#   important <- tmp[,positions]
-#   requested <- tmp[, -positions, drop = F]
-#   
-#   colnames(important) <- c("statistic", 'p.value')
-#   colnames(requested) <- tcnms[-positions]
-# 
-#   return(new("RandomizationDistribution", 
-#       cbind(important, requested), # RD inherits from data.frame
-#       test.statistic = xBalance,
-#       z = as.numeric(treatment),
-#       ))
-# }
-# 
-# 
-# # a little helper function
-# .h.weights <- function(n, m) {
-#   (m * (n-m)) / n
-# }
-# 
-# harmonic.mean.difference <- new("AsymptoticTestStatistic",
-# # the main implementation
-# function(ys, z) {
-#   z <- as.numeric(z)
-#   stopifnot(length(unique(z)) == 2) # require binary treatment for now
-# 
-#   f <- function(r,z) {
-#     mean(r[z==1]) - mean(r[z==0])
-#   }
-# 
-#   h.b <- tapply(z, blocks, function(z) { .h.weights(length(z), sum(z))})
-#   d.b <- mapply(f, split(ys,blocks), split(z,blocks))  
-#   
-#   # notice this is the same as "adj.diff" from xBalance
-#   # tests/test.testStatistic.R a demonstration
-#   return((1/sum(h.b)) * sum(h.b * d.b)) 
-# }, asymptotic = .xBalanceBackEnd)
+### Harmonic Mean Difference -- uses xBalance for asymptotics ###
+
+.xBalanceBackEnd <- function(
+  adjusted.data,
+  treatment) {
+
+  report <- c("adj.mean.diffs", "p.values")
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.data, 2, function(y) {
+    df <- data.frame(z = treatment, y = y)
+
+    # ignoring blocks for now
+    res <- xBalance(z ~ y, 
+                  data = df,
+                  report = report)
+    return(res$results[,,])
+  })
+
+  tmp <- as.data.frame(t(tmp))
+  tcnms <- colnames(tmp)
+
+  positions <- match(c("adj.diff", "p"), tcnms)
+  results <- tmp[,positions]
+  
+  colnames(results) <- c("statistic", 'p.value')
+
+  return(new("RandomizationDistribution", 
+      results,
+      test.statistic = xBalance,
+      z = as.numeric(treatment)))
+}
+
+
+# a little helper function
+.h.weights <- function(n, m) {
+  (m * (n-m)) / n
+}
+
+harmonic.mean.difference <- new("AsymptoticTestStatistic",
+# the main implementation
+function(ys, z) {
+  z <- as.numeric(z)
+  stopifnot(length(unique(z)) == 2) # require binary treatment for now
+
+  f <- function(r,z) {
+    mean(r[z==1]) - mean(r[z==0])
+  }
+
+  return(f(ys, z)) # just one block for now
+  # use this when blocking is included again.
+  # h.b <- tapply(z, blocks, function(z) { .h.weights(length(z), sum(z))})
+  # d.b <- mapply(f, split(ys,blocks), split(z,blocks))  
+  
+  # notice this is the same as "adj.diff" from xBalance
+  # tests/test.testStatistic.R a demonstration
+  # return((1/sum(h.b)) * sum(h.b * d.b)) 
+  # end of stuff to turn on when blocking enabled
+
+}, asymptotic = .xBalanceBackEnd)
 
 ### Mann-Whitney U, with wilcox.test as a backend ###
 
