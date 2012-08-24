@@ -16,7 +16,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
     }
 
     total <- table(b)
-    reordering <- as.vector(sapply(unique(b), function(nm) { which(nm == b) }))
+    reordering <- as.vector(unlist(lapply(unique(b), function(nm) { which(nm == b) })))
   }
 
   if (!missing(z) && !missing(b)) {
