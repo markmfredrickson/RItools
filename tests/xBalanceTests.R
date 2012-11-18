@@ -200,8 +200,8 @@ xBalance(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 #####################################################
 if (require('xtable'))
   {
-xtable(xb0)
-xtable(xb0, caption="Caption!", label="thetable", digits=1,
+  xtablea <- xtable(xb0)
+  xtableb <- xtable(xb0, caption="Caption!", label="thetable", digits=1,
        align=rep('l', prod(dim(xb0$result)[2:3])+1),
        display=c('s', rep(c(rep('fg',5), 's'),2)) #,col.labels= do this one later
        )
