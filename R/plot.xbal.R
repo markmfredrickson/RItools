@@ -5,10 +5,24 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     which.vars=dimnames(x$results)[["vars"]],thevarlabs=which.vars,
                     thexlab="Standardized Differences",
                     thecols=rainbow(length(which.strata)),
-                    thesymbols=c(19,22,23,24,25)[1:length(which.strata)],...){
+                    thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
+                    absolute = FALSE,
+                    ...){
+
   if (!(which.stats %in% dimnames(x$results)[["stat"]])){
     stop(paste(which.stats,' not among results recorded in xbal object.'))}
+  
+  tmp <- !(which.vars %in% dimnames(x$results)[["vars"]])
+  if (any(tmp)) {
+    stop(paste("Unknown variable(s):", paste(which.vars[tmp], collapse = ",")))
+  }
+
   theresults<-x$results[which.vars,which.stats,which.strata,drop=FALSE]
+
+  if (absolute) {
+    theresults <- abs(theresults) 
+  }
+
   ypos<-seq(length=length(which.vars))
   xrange<-range(theresults[,which.stats,],na.rm=TRUE)
   xrange<-xrange+xrange*adjustxaxis
