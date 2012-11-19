@@ -1,4 +1,4 @@
-R = R_LIBS=./local R
+R = R_LIBS=.local R
 
 R: .local/RItools/INSTALLED
 	$(R) -q --no-save 
