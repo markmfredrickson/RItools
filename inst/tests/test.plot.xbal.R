@@ -45,6 +45,12 @@ test_that("Basic plot", {
   # but including other variables is an error
   expect_error(plot(xb, which.vars = c("X1", "X2", "X3", "X4", "X5")), "Unknown variable\\(s\\): X5")
 
+  # the order the data based on the selected variable
+  plot(xb, ordered = T)
+  expect_true(!identical(p1, dev.capture()))
+  # note: the order should change when absolute = T, but we can't really test it as the plot is then different for two reasons
+  # one way to test this would be to have a helper function that creates an array for something else to plot -- and the intermediate data could be checked
+
   # just a sanity check to make sure that the previous dev.capture tests worked
   plot(xb)
   expect_identical(p1, dev.capture())

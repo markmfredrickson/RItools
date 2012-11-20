@@ -7,6 +7,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     thecols=rainbow(length(which.strata)),
                     thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
                     absolute = FALSE,
+                    ordered = FALSE,
                     ...){
 
   if (!(which.stats %in% dimnames(x$results)[["stat"]])){
@@ -18,12 +19,20 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   }
 
   theresults<-x$results[which.vars,which.stats,which.strata,drop=FALSE]
+  ypos <- seq(length=length(which.vars))
 
   if (absolute) {
     theresults <- abs(theresults) 
   }
 
-  ypos<-seq(length=length(which.vars))
+  if(ordered) {
+    # the data are ordered using the first statistic in the first stratifying factor
+    tmp <- order(theresults[,1,1, drop = T])  
+    theresults <- theresults[tmp, , , drop = FALSE]
+    thevarlabs <- thevarlabs[tmp]
+  } 
+   
+  
   xrange<-range(theresults[,which.stats,],na.rm=TRUE)
   xrange<-xrange+xrange*adjustxaxis
 
@@ -58,7 +67,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   plot(xrange,range(ypos),axes=FALSE,pch=19,col="blue",
        ylab="",xlab=thexlab,type="n",...)
   for(i in which.strata){
-    points(theresults[which.vars,which.stats,i],ypos,col=thecols[i],pch=thesymbols[i])
+    points(theresults[,which.stats,i],ypos,col=thecols[i],pch=thesymbols[i])
     }
   if(segments&length(which.strata)>1){ ##segments are mainly useful for drawing the eye to changes in balance along a single variable across more than 1 stratification
     for(j in ypos){
