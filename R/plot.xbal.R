@@ -1,7 +1,7 @@
 plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     mar=c(3,3,2,0)+0.1,mgp=c(1.5,.5,0),tck=-.01,
                     which.strata=dimnames(x$results)[["strata"]],thestratalabs=which.strata,
-                    which.stats="std.diff", ##dimnames(x$results)[["stat"]],
+                    which.stat="std.diff", ##dimnames(x$results)[["stat"]],
                     which.vars=dimnames(x$results)[["vars"]],thevarlabs=which.vars,
                     thexlab="Standardized Differences",
                     thecols=rainbow(length(which.strata)),
@@ -10,36 +10,29 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     ordered = FALSE,
                     ...){
 
-  if (!(which.stats %in% dimnames(x$results)[["stat"]])){
-    stop(paste(which.stats,' not among results recorded in xbal object.'))}
-  
-  tmp <- !(which.vars %in% dimnames(x$results)[["vars"]])
-  if (any(tmp)) {
-    stop(paste("Unknown variable(s):", paste(which.vars[tmp], collapse = ",")))
-  }
+  # the helper .plot.xbal turns xb and the many of the arguments into a
+  # an ordered variables by stratas table. The colnames are the labeled stratifications
+  # the rownames are the labeled variables
+  theresults <- .plot.xbal(x, 
+                           which.strata,
+                           thestratalabs,
+                           which.stat,
+                           which.vars,
+                           thevarlabs,
+                           absolute,
+                           ordered)
+  nvars <- dim(theresults)[1]
+  nstrata <- dim(theresults)[2]
+  varlabels <- rownames(theresults)
 
-  theresults<-x$results[which.vars,which.stats,which.strata,drop=FALSE]
-  ypos <- seq(length=length(which.vars))
-
-  if (absolute) {
-    theresults <- abs(theresults) 
-  }
-
-  if(ordered) {
-    # the data are ordered using the first statistic in the first stratifying factor
-    tmp <- order(theresults[,1,1, drop = T])  
-    theresults <- theresults[tmp, , , drop = FALSE]
-    thevarlabs <- thevarlabs[tmp]
-  } 
-   
-  
-  xrange<-range(theresults[,which.stats,],na.rm=TRUE)
-  xrange<-xrange+xrange*adjustxaxis
+  ypos <- seq(length.out = nvars)
+  xrange <- range(theresults, na.rm = TRUE)
+  xrange <- xrange + xrange * adjustxaxis
 
   ##Setup the margin, adjust for the lengths of the labels.
   par(mar=mar,tck=tck,mgp=mgp) ##set default margins
   mymai<-par('mai')
-  mymai[2]<-max(c(strwidth(thevarlabs,units="inches"),mymai[2]))
+  mymai[2]<-max(c(strwidth(varlabels ,units="inches"),mymai[2]))
   ##Setup the plotting region
   par(mai=mymai)
 
@@ -67,16 +60,16 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   plot(xrange,range(ypos),axes=FALSE,pch=19,col="blue",
        ylab="",xlab=thexlab,type="n",...)
   for(i in which.strata){
-    points(theresults[,which.stats,i],ypos,col=thecols[i],pch=thesymbols[i])
+    points(theresults[,i],ypos,col=thecols[i],pch=thesymbols[i])
     }
   if(segments&length(which.strata)>1){ ##segments are mainly useful for drawing the eye to changes in balance along a single variable across more than 1 stratification
     for(j in ypos){
-      segments(min(theresults[j,which.stats,which.strata]),j,
-               max(theresults[j,which.stats,which.strata]),j,col=gray(.7),lwd=.5) 
+      segments(min(theresults[j,]),j,
+               max(theresults[j,]),j,col=gray(.7),lwd=.5) 
     }
   }
   axis(1,at=pretty(seq(xrange[1],xrange[2],length=5)))
-  axis(2,labels=thevarlabs,at=ypos,las=2,tick=FALSE)
+  axis(2,labels=varlabels,at=ypos,las=2,tick=FALSE)
   lines(c(0,0),range(ypos)+c(-.025*length(ypos),.025*length(ypos)),col="grey",lwd=1)
   ##segments(0,min(ypos),0,max(ypos),col="grey",lwd=1)
   if(legend){
@@ -87,3 +80,50 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
            bty="n")
   }
 }
+
+.plot.xbal <- function(x, 
+                       which.strata,
+                       thestratalabs,
+                       which.stat,
+                       which.vars,
+                       thevarlabs,
+                       absolute,
+                       ordered) {
+
+  if (!(which.stat %in% dimnames(x$results)[["stat"]])){
+    stop(paste(which.stat,' not among results recorded in xbal object.'))}
+  
+  if (length(which.stat) > 1) {
+    stop("Only one statistic allowed per-plot")
+  }
+
+  tmp <- !(which.vars %in% dimnames(x$results)[["vars"]])
+  if (any(tmp)) {
+    stop(paste("Unknown variable(s):", paste(which.vars[tmp], collapse = ",")))
+  }
+
+  theresults <- x$results[which.vars, which.stat, which.strata, drop=FALSE]
+  # theresults are still an array, but there is guaranteed only one statistic
+  # so we can cast to a data.frame to get a vars by strata table
+  theresults <- as.data.frame(theresults)
+  
+  # we assume that the labels are in the same order as the which.xxx vars
+  # and add potentially pretty labels to the rows and columns
+  rownames(theresults) <- thevarlabs
+  colnames(theresults) <- thestratalabs
+  
+
+  if (absolute) {
+    theresults <- abs(theresults) 
+  }
+
+  if(ordered) {
+    # the data are ordered using the  statistic in the first stratifying factor
+    tmp <- order(theresults[,1])  
+    theresults <- theresults[tmp,, drop = FALSE]
+  } 
+
+  return(theresults)
+}
+
+ 

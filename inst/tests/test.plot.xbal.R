@@ -56,3 +56,73 @@ test_that("Basic plot", {
   expect_identical(p1, dev.capture())
 })
 
+test_that("Helper function", {
+  set.seed(20121119)
+  Z <- rep(c(0,1), 10)
+  df <- data.frame(Z = Z,
+                   X1 = rnorm(20, mean = Z*2),
+                   X2 = rnorm(20, mean = Z*3),
+                   X3 = rnorm(20, mean = Z * -1),
+                   X4 = rnorm(20, mean = Z * -0.5))
+
+  xb <- xBalance(Z ~ ., data = df, strata = data.frame(raw = factor('none'), other = as.factor(rep(c(1,0), each = 10))))
+
+  lbls <- c("X One", "X Two", "X Three", "X Four")
+  res <-  .plot.xbal(xb, 
+                    which.strata = c("raw", "other"),
+                    thestratalabs = c("Unstratified", 
+                                      "Some Other Strata"),
+                    which.stat = "std.diff",
+                    which.vars = c("X1", "X2", "X3", "X4"),
+                    thevarlabs = lbls ,
+                    absolute = F,
+                    ordered = F)
+
+  expect_equal(dim(res), c(4,2))
+  expect_equal(rownames(res), lbls)
+  expect_equal(colnames(res), c("Unstratified", "Some Other Strata"))
+
+  res.ordered <-  .plot.xbal(xb, 
+                    which.strata = c("raw", "other"),
+                    thestratalabs = c("Unstratified", 
+                                      "Some Other Strata"),
+                    which.stat = "std.diff",
+                    which.vars = c("X1", "X2", "X3", "X4"),
+                    thevarlabs = lbls ,
+                    absolute = F,
+                    ordered = T)
+
+  expect_false(identical(res, res.ordered))
+  expect_equal(dim(res.ordered), c(4,2))
+  expect_equal(rownames(res.ordered), lbls[c(3,4,1,2)])
+
+  res.pos <-  .plot.xbal(xb, 
+                    which.strata = c("raw", "other"),
+                    thestratalabs = c("Unstratified", 
+                                      "Some Other Strata"),
+                    which.stat = "std.diff",
+                    which.vars = c("X1", "X2", "X3", "X4"),
+                    thevarlabs = lbls ,
+                    absolute = T,
+                    ordered = T)
+
+  expect_false(identical(res.pos, res.ordered))
+  expect_equal(dim(res.pos), c(4,2))
+  # the row order of the final two variables should flip when taking abs
+  expect_equal(rownames(res.pos), lbls[c(4,3,1,2)])
+  expect_true(all(res.pos >= 0))
+
+  # repeating with a single strata
+  
+  res.singlestrat <-  .plot.xbal(xb, 
+                    which.strata = c("raw"),
+                    thestratalabs = c("Unstratified"),
+                    which.stat = "std.diff",
+                    which.vars = c("X1", "X2", "X3", "X4"),
+                    thevarlabs = lbls ,
+                    absolute = F,
+                    ordered = T)
+
+  expect_equal(dim(res.singlestrat), c(4,1)) # should be a column data.frame, not a vector
+
+})
