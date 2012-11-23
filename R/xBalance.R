@@ -1,10 +1,11 @@
 xBalance <- function(fmla, strata=list(unstrat=NULL),
                      data,
-                     report=c("std.diffs","z.scores","adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
-                       "chisquare.test","p.values", "all")[1:2],
+                     report=c("all", "std.diffs","z.scores","adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
+                       "chisquare.test","p.values")[1],
 #                     include.means=FALSE, chisquare.test=FALSE,
                      stratum.weights=harmonic, na.rm=FALSE,
-                     covariate.scaling=NULL, normalize.weights=TRUE,impfn=median)
+                     covariate.scaling=NULL, normalize.weights=TRUE,impfn=median,
+                     groups = NULL)
 {
   stopifnot(class(fmla)=="formula",
             all(report %in% c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
@@ -42,6 +43,32 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
     stop("LHS of fmla should be logical or numeric")
   if (any(is.na(zz))) stop('NAs on LHS of fmla not allowed.')
 ### End extract treatment var
+
+## Investigate the grouping variables
+
+all.variables <- attr(tfmla, "term.labels")
+
+if (is.null(groups)) {
+  groups <- list("All" = all.variables)
+} else {
+
+  if (any(0 == sapply(groups, length))) {
+    stop("Empty groups not permitted.")
+  }
+
+  vars.in.groups <- unique(unlist(groups))
+  unknown.vars <- !(vars.in.groups %in% all.variables)
+
+  if (zzname %in% vars.in.groups) {
+    stop("Treatment variable is not permitted in groups.")
+  }
+
+  if (any(unknown.vars)) {
+    stop(paste("Unknown variable(s):", paste(vars.in.groups[unknown.vars], collapse = ", ")))
+  }
+
+  groups <- append(list("All" = all.variables), groups)
+}
   
 mm1 <- xBalance.makeMM(tfmla,data)
 
@@ -122,6 +149,13 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
 
   if ("chisquare.test" %in% report)
   {
+    ans$groups <- array(dim = c(length(RES), # number of strata
+                                3, # chi.squared stat, deg. freedom, p.value
+                                length(groups)),
+                        dimnames = list(strata  = names(RES),
+                                        tests = c("chisquare", "df", "p.value"),
+                                        groups = names(groups)))
+    
     ans$overall <- data.frame(chisquare=numeric(length(RES)),
                               df=numeric(length(RES)),
                               p.value=numeric(length(RES)),
