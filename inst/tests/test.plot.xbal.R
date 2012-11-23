@@ -54,6 +54,8 @@ test_that("Basic plot", {
   # just a sanity check to make sure that the previous dev.capture tests worked
   plot(xb)
   expect_identical(p1, dev.capture())
+
+  dev.off()
 })
 
 test_that("Helper function", {
@@ -125,4 +127,24 @@ test_that("Helper function", {
 
   expect_equal(dim(res.singlestrat), c(4,1)) # should be a column data.frame, not a vector
 
+})
+
+test_that("Generic balance plots", {
+  # the balanceplot function takes a matrix and plots it in the expected fashion
+  # this serves as a compliment to the .xbal.plot function
+
+  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
+                    dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
+                                    c("Stratification 1", "Stratification 2")))
+
+  x11() # this might be more common than quartz
+  expect_true(dev.capabilities()$capture)
+
+  balanceplot(testmat)
+  p1 <- dev.capture()
+  balanceplot(testmat) 
+  p2 <- dev.capture()
+  expect_identical(p1,p2)
+
+  dev.off()
 })

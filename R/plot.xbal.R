@@ -82,6 +82,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 .plot.xbal <- function(x, 
+                       
                        which.strata,
                        thestratalabs,
                        which.stat,
@@ -126,4 +127,26 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   return(theresults)
 }
 
- 
+#' @export
+balanceplot <- function(x, ...) {
+  nvars <- dim(x)[1]
+  nstrat <- dim(x)[2]
+
+  xrange <- range(x, na.rm = TRUE)
+  xrange <- xrange + xrange * 0.25
+  ypos <- 1:nvars
+  
+  plot(xrange, 
+       range(ypos),
+       axes = FALSE,
+       pch = 19,
+       col = "blue",
+       ylab = "",
+       xlab = "Balance",
+       type="n",
+       ...)
+
+  for(i in 1:nstrat) {
+    points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+  }
+} 
