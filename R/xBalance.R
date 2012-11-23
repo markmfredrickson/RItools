@@ -128,6 +128,7 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
                                             mm1[gs.df[[nm]],,drop=FALSE],
                                             report, swt.ls[[nm]], 
                                             s.p, normalize.weights,zzname)
+                                            
                             }
                 )
   names(RES) <- names(ss.df)
@@ -136,39 +137,40 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ans <- list() ##the overall function still returns a list because of the overall test info.
   ##results is an array of variables by balance statistics by stratification.
   ##here assuming that the variables and statistics are the same across stratifications (including unstratified).
-  ans$results<-array(dim=c(vars=nrow(RES[[1]][["dfr"]]),stat=ncol(RES[[1]][["dfr"]]),strata=length(RES)),
-                     dimnames=list(vars=rownames(RES[[1]][["dfr"]]),stat=colnames(RES[[1]][["dfr"]]),strata=names(RES)))
+  ans$results<-array(dim = c(vars = nrow(RES[[1]][["dfr"]]),
+                             stat = ncol(RES[[1]][["dfr"]]),
+                             strata = length(RES)),
+                     dimnames = list(vars = rownames(RES[[1]][["dfr"]]),
+                                     stat = colnames(RES[[1]][["dfr"]]),
+                                     strata = names(RES)))
+
+  # groups is also an array, this time the first index is the strata, the 2nd are the chisquare test info, 3rd are any groups
+  ans$groups <- array(dim = c(length(RES), # number of strata
+                               3, # chi.squared stat, deg. freedom, p.value
+                               length(groups)),
+                      dimnames = list(strata  = names(RES), 
+                                      tests = c("chisquare", "df", "p.value"), 
+                                      groups = names(groups)))
+
+  # we populate both arrays by iterating through the strata
   for(i in names(RES)){
-    ##print(i);print(RES[[i]][["dfr"]])
-    ans$results[,,i]<-as.matrix(RES[[i]][["dfr"]])
+    tmp <- RES[[i]]
+    ans$results[,,i] <- as.matrix(tmp[["dfr"]])
+
+    for (j in names(groups)) {
+      ans$groups[i, 'chisquare', j] <- tmp$chisq['chisquare']
+      ans$groups[i, 'df', j]        <- tmp$chisq['df']
+      ans$groups[i, 'p.value', j]   <- pchisq(tmp$chisq['chisquare'],
+                                              df = tmp$chisq['df'],
+                                              lower = FALSE)
+    }
+
   }
-  ##dimnames(ans)[["stat"]][grep("Tx",dimnames(ans)[["stat"]])]<-c("adj.mean.strata=0","adj.mean.strata=1")
-  ##ans$by.variable <- do.call(cbind, lapply(RES, function(x) x[['dfr']]) )
-  ##colnames(ans$by.variable) <- nms
+  ans$overall <- as.data.frame(ans$groups[,,1, drop = F]) # for backwared compatiblity, will probably be removed in future versions
+  colnames(ans$overall) <- c("chisquare", "df", "p.value")
+
   attr(ans, "fmla") <- formula(tfmla)
 
-  if ("chisquare.test" %in% report)
-  {
-    ans$groups <- array(dim = c(length(RES), # number of strata
-                                3, # chi.squared stat, deg. freedom, p.value
-                                length(groups)),
-                        dimnames = list(strata  = names(RES),
-                                        tests = c("chisquare", "df", "p.value"),
-                                        groups = names(groups)))
-    
-    ans$overall <- data.frame(chisquare=numeric(length(RES)),
-                              df=numeric(length(RES)),
-                              p.value=numeric(length(RES)),
-                              row.names=names(RES))
-  for (nn in names(RES))
-  {
-   ans$overall[nn,'chisquare'] <- RES[[nn]]$chisq['chisquare']
-   ans$overall[nn,'df'] <- RES[[nn]]$chisq['df']
-   ans$overall[nn,'p.value'] <- pchisq(RES[[nn]]$chisq['chisquare'],
-                                       df=RES[[nn]]$chisq['df'],
-                                       lower=FALSE)
-  }
-}
   class(ans) <- c("xbal", "list")
   ans
 }
