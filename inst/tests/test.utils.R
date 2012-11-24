@@ -13,6 +13,7 @@ test_that("xbal formula method", {
 
   xb <- xBalance(Z ~ X, data = df)
 
-  expect_identical(Z ~ X, as.formula(xb))
+  # we expect to have a no intercept formula
+  expect_equal(Z ~ X - 1, as.formula(xb))
 })
 

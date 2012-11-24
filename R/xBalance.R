@@ -22,6 +22,11 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
       ) stop("For balance against multiple alternative stratifications,\n please make 'strata' either a data frame or a list containing formulas or NULL entries.")
   if("all" %in% report){report<-c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
                               "std.diffs","z.scores","p.values")}
+
+  # set up the formula to have no intercept
+  tmp <- as.character(fmla)
+  fmla <- as.formula(paste(tmp[2], " ~ ", tmp[3], " - 1", sep = ""))
+
 ### NA Handling ##  
   if (na.rm==TRUE)
     {
@@ -32,6 +37,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
     tfmla <- attr(data, 'terms')
   }
 ### End NA handling ###
+  
 
 ###Extract the treatment var
   if (!attr(tfmla, "response")>0) 
@@ -70,7 +76,14 @@ if (is.null(groups)) {
   groups <- append(list("All" = all.variables), groups)
 }
   
-mm1 <- xBalance.makeMM(tfmla,data)
+# NB: I've tried without the explicit model.frame call, but weird errors would pop up)
+mf <- model.frame(tfmla, data, na.action = na.pass)
+for(i in colnames(mf)) {
+  if (is.logical(mf[,i])) {
+    mf[,i] <- as.numeric(mf[,i])
+  }
+}
+mm1 <- model.matrix(tfmla, mf)
 
 ### Prepare ss.df, data frame of strata
   if (is.null(strata)) ss.df <- data.frame(unstrat=factor(numeric(length(zz))))

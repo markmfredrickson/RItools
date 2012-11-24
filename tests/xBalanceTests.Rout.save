@@ -335,18 +335,18 @@ Loading required package: xtable
 > 
 > xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data = testdata, 
 +     na.rm = FALSE,impfn=mean.default) ##first using the mean to match up with previous versions
-            strata   unstrat                                                                   
-            stat        pr=0      pr=1  adj.diff adj.diff.null.sd  std.diff      z             
-vars                                                                                           
-date               6.85e+01  6.85e+01  1.52e-02         2.81e-01  2.03e-02  5.41e-02           
-t1                 1.36e+01  1.40e+01  3.64e-01         1.29e+00  1.06e-01  2.83e-01           
-t2                 5.93e+01  6.91e+01  9.78e+00         3.96e+00  1.03e+00  2.47e+00  *        
-cap                8.05e+02  8.70e+02  6.46e+01         7.22e+01  3.40e-01  8.95e-01           
-ne                 2.73e-01  2.00e-01  -7.27e-02        1.68e-01  -1.63e-01 -4.33e-01          
-ct                 4.55e-01  3.00e-01  -1.55e-01        1.90e-01  -3.08e-01 -8.12e-01          
-bw                 1.82e-01  2.00e-01  1.82e-02         1.51e-01  4.51e-02  1.20e-01           
-cum.n              8.73e+00  8.10e+00  -6.27e-01        2.41e+00  -9.76e-02 -2.60e-01          
-date.NATRUE        4.55e-01  5.55e-17  -4.55e-01        1.80e-01  -1.07e+00 -2.53e+00 *        
+        strata   unstrat                                                                   
+        stat        pr=0      pr=1  adj.diff adj.diff.null.sd  std.diff      z             
+vars                                                                                       
+date           6.85e+01  6.85e+01  1.52e-02         2.81e-01  2.03e-02  5.41e-02           
+t1             1.36e+01  1.40e+01  3.64e-01         1.29e+00  1.06e-01  2.83e-01           
+t2             5.93e+01  6.91e+01  9.78e+00         3.96e+00  1.03e+00  2.47e+00  *        
+cap            8.05e+02  8.70e+02  6.46e+01         7.22e+01  3.40e-01  8.95e-01           
+ne             2.73e-01  2.00e-01  -7.27e-02        1.68e-01  -1.63e-01 -4.33e-01          
+ct             4.55e-01  3.00e-01  -1.55e-01        1.90e-01  -3.08e-01 -8.12e-01          
+bw             1.82e-01  2.00e-01  1.82e-02         1.51e-01  4.51e-02  1.20e-01           
+cum.n          8.73e+00  8.10e+00  -6.27e-01        2.41e+00  -9.76e-02 -2.60e-01          
+date.NA        4.55e-01  5.55e-17  -4.55e-01        1.80e-01  -1.07e+00 -2.53e+00 *        
 ---Overall Test---
         chisquare df p.value
 unstrat      17.3  9  0.0443
@@ -523,4 +523,4 @@ Signif. codes:  0 '***' 0.001 '** ' 0.01 '*  ' 0.05 '.  ' 0.1 '   ' 1
 > 
 > proc.time()
    user  system elapsed 
-  0.870   0.043   0.896 
+  0.862   0.044   0.886 
