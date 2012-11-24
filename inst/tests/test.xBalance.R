@@ -37,6 +37,11 @@ test_that("Groups", {
   expect_equal(xb.grp$groups[1, "df", "XY"], 2)
   expect_equal(xb.grp$groups[1, "df", "YW"], 2)
 
+  # now, re-run xbalance using only X and Y to see if the "All" results match the "XY" results from previous
+  xb.xy <- xBalance(Z ~ X + Y, data = df, strata = data.frame(factor("none"), df$S))
+  expect_identical(xb.grp$groups[,,"XY"], xb.xy$groups[,,"All"])
+
+
   # Error checking
   expect_error(xBalance(Z ~ X + Y, data = df, groups = list("XW" = c("X", "W"))),
                "Unknown variable")

@@ -1,6 +1,6 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights,zzname)
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights,zzname, group.indices)
 {##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
-
+# group.indices: A list of groups (probably with "All" as the first), each is a logical vector to subset the model.matrix
 	cnms <-
 		c(
 		  if ('adj.means'%in%report) c(paste(zzname,"0",sep="="),paste(zzname,"1",sep="=")) else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
@@ -72,25 +72,37 @@ ans <-
 		ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
 				   2*pnorm(abs(ssn/sqrt(ssvar)),lower=FALSE))
 
-	if ("chisquare.test"%in%report)
-	{
-		pst.svd <- svd(tmat*sqrt(dv))
-		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
-		Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this? 
-		if (all(Positive)) 
-		{ytl <- pst.svd$v *
-		matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
-		} else{if (!any(Positive))
-			ytl <- array(0, dim(mm)[2:1] )
-		else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
-		matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
+  group.tests <- lapply(group.indices, function(grp) {
+    group.tmat <- tmat[, grp, drop = FALSE]
+    group.mm.dim <- dim(mm[, grp, drop = FALSE])
 
-		mvz <- drop(crossprod(zz, tmat)%*%ytl)
+		pst.svd <- svd(group.tmat * sqrt(dv))
 
+		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps) * pst.svd$d[1], 0)
+		Positive[is.na(Positive)] <- FALSE
+    
+		if (all(Positive)) {
+      ytl <- pst.svd$v *
+		         matrix(1 / pst.svd$d, 
+                    nrow = group.mm.dim[2],
+                    ncol = length(pst.svd$d), byrow=T)
+
+		} else {
+      if (!any(Positive)) {
+			  ytl <- array(0, group.mm.dim[2:1] )
+      } else {
+        ytl <- pst.svd$v[, Positive, drop = FALSE] * 
+               matrix(1 / pst.svd$d[Positive],
+                      ncol = sum(Positive),
+                      nrow = group.mm.dim[2],byrow=TRUE)
+      }
+    }
+
+		mvz <- drop(crossprod(zz, group.tmat) %*% ytl)
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
+    list("chisquare" = csq, "df" = DF)
+	})
 
-	} else csq <- DF <- 0
-
-	list(dfr=ans,chisq=c('chisquare'=csq,'df'=DF))
+	list(dfr = ans, groups = group.tests)
 }

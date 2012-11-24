@@ -85,6 +85,18 @@ for(i in colnames(mf)) {
 }
 mm1 <- model.matrix(tfmla, mf)
 
+# the groups variable is a list of list of variables
+# this next few lines converts the variable names into the column indices of the variables in the model matrix
+# a categorial variable, for example, should expand into several indices, one for each dummy
+# likewise for splines or other unusual expansions
+
+group.indices <- lapply(groups, function(x) {
+  # x should be a character vector.
+  idx <- match(x, all.variables)
+  return(attr(mm1, "assign") %in% idx)
+})
+
+
 ### Prepare ss.df, data frame of strata
   if (is.null(strata)) ss.df <- data.frame(unstrat=factor(numeric(length(zz))))
       
@@ -140,7 +152,7 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
                                             zz[gs.df[[nm]]],
                                             mm1[gs.df[[nm]],,drop=FALSE],
                                             report, swt.ls[[nm]], 
-                                            s.p, normalize.weights,zzname)
+                                            s.p, normalize.weights, zzname, group.indices)
                                             
                             }
                 )
@@ -166,16 +178,17 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
                                       groups = names(groups)))
 
   # we populate both arrays by iterating through the strata
-  for(i in names(RES)){
+  for(i in names(RES)) {
     tmp <- RES[[i]]
     ans$results[,,i] <- as.matrix(tmp[["dfr"]])
 
     for (j in names(groups)) {
-      ans$groups[i, 'chisquare', j] <- tmp$chisq['chisquare']
-      ans$groups[i, 'df', j]        <- tmp$chisq['df']
-      ans$groups[i, 'p.value', j]   <- pchisq(tmp$chisq['chisquare'],
-                                              df = tmp$chisq['df'],
-                                              lower = FALSE)
+      xxx <- tmp$groups[[j]]
+      ans$groups[i, 'chisquare', j] <- xxx$chisquare
+      ans$groups[i, 'df', j]        <- xxx$df
+      ans$groups[i, 'p.value', j]   <- pchisq(xxx$chisquare,
+                                              df = xxx$df,
+                                              lower.tail = FALSE)
     }
 
   }
