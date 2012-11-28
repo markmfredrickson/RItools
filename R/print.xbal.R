@@ -100,7 +100,6 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       }
     }
     
-  browser()
   ChiSignif <- signifier(groups[,"p.value",])
   groups.table <- format(groups)
   groups.table <- abind(groups.table, ChiSignif, along = 2)
