@@ -56,3 +56,30 @@ test_that("Groups", {
 
 })
 
+test_that("Creating model matrices", {
+  # create a quick xBalance result
+  n <- 100
+  df <- data.frame(Z = rep(c(1,0), n/2),
+                   X = rnorm(n),
+                   Y = rnorm(n),
+                   W = rep(c(T,F), each = n/2),
+                   K = as.factor(letters[sample.int(3, n, replace = T)]),
+                   S = as.factor(rep(c("A", "B"), each = n/2)))
+
+  f <- Z ~ X * K + W + S
+
+  mm <- make_nice_model_matrix(f, model.frame(f, df))
+
+  expect_true(!("(Intercept)" %in% colnames(mm)))
+  expect_equal(dim(mm), c(100, 9)) # 3 for each K level, 3 for X * K interactions, 1 for X, 1 for W = TRUE, 1 for S = B
+  expect_true(all(c("K = a", "K = b", "K = c", "X:K = a", "X:K = b", "X:K = c", 
+                    "X", "W", "S") %in% colnames(mm)))
+  
+  # the assignnames attribute should match the columns to the name of each variable in the original formula/model.frame
+  # this will be used to create and use groups
+  expect_equal(length(unique(attr(mm, "assignnames"))), 5)
+  vars <- c("X", "K", "W", "S", "X:K")
+  assignnames <- attr(mm, "assignnames")
+  expect_true(all(vars %in% assignnames) && all(assignnames %in% vars))
+
+})

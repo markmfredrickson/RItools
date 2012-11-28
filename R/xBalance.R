@@ -78,6 +78,7 @@ if (is.null(groups)) {
   
 # NB: I've tried without the explicit model.frame call, but weird errors would pop up)
 mf <- model.frame(tfmla, data, na.action = na.pass)
+
 for(i in colnames(mf)) {
   if (is.logical(mf[,i])) {
     mf[,i] <- as.numeric(mf[,i])
@@ -232,4 +233,48 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
   msmn <- as.matrix(msmn)
   
   return(msmn)
+}
+
+# Creates a "nice" model matrix that has the following properties:
+# - all logicals and 2 level factors are just convert to 0/1 numerics
+# - all factors with 3 or more levels are given "X = a", "X = b" labels
+# - no intercept is included.
+# It otherwise returns a standard model matrix with an additional "assignnames" property 
+# that maps the usual "assign" attribute to the actual lables of the variables, not just their
+# indices.
+#
+# @param fmla A formula object (either Z ~ X, ~ X or the result of a terms() call)
+# @param mf A model.frame() object. Requiring it to be passed so that 
+# @return A model.matrix like object.
+make_nice_model_matrix <- function(fmla, mf) {
+
+  tf <- terms(fmla, data = mf)
+  
+  # do a little "pre-processing" of the data so that two level stuff just gets single item
+  mf <- lapply(mf, function(x) {
+    if (is.logical(x)) {
+      return(as.numeric(x))
+    }
+    if (is.factor(x) && nlevels(x) == 2) {
+      return(as.numeric(x))
+    }
+    
+    # don't change it
+    return(x)
+  })
+
+  mm <- model.matrix(tf, mf, contrasts.arg = lapply(Filter(is.factor, mf), make_nice_contrasts)) 
+  oldassign <- attr(mm, "assign")
+
+  mm <- mm[,-1] # drop the intercept
+  attr(mm, "assign") <- oldassign[-1] # also drop intercept
+  attr(mm, "assignnames") <- attr(tf, "term.labels")[attr(mm, "assign")]
+
+  return(mm)
+}
+
+make_nice_contrasts <- function(x) {
+  structure(diag(nlevels(x)),
+            dimnames = list(paste(" =", levels(x)),
+                            paste(" =", levels(x))))
 }
