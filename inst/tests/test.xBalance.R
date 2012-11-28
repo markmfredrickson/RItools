@@ -89,4 +89,28 @@ test_that("Creating model matrices", {
   expect_is(mm.1, "matrix")
   expect_equal(dim(mm.1), c(100,1))
 
+  # NAs should be allowed to pass through
+  df.NA <- df
+  df.NA[1:5, "X"] <- NA
+  
+  mf.NA <- model.frame(Z ~ X, data = df.NA, na.action = na.pass)
+  expect_equal(dim(mf.NA), c(100, 2))
+
+  mm.NA <- make_nice_model_matrix(terms(Z ~ X), mf.NA)
+  expect_equal(dim(mm.NA), c(100, 1))
+
+  # expressions in the LHS and RHS
+  f.lhs <- terms(I(W > 0) ~ X)
+  f.rhs <- terms(Z ~ I(X^2))
+
+  mf.lhs <- model.frame(f.lhs, df)
+  mf.rhs <- model.frame(f.rhs, df)
+
+  mm.lhs <- make_nice_model_matrix(f.lhs, mf.lhs)
+  mm.rhs <- make_nice_model_matrix(f.rhs, mf.rhs)
+
+  expect_equal(colnames(mm.lhs), "X")
+  expect_equal(colnames(mm.rhs), "I(X^2)")
+
 })
+

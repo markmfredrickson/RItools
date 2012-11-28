@@ -238,19 +238,16 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
 make_nice_model_matrix <- function(tf, mf) {
 
   # do a little "pre-processing" of the data so that two level stuff just gets single item
-  mf <- lapply(mf, function(x) {
-    if (is.logical(x)) {
-      return(as.numeric(x))
+  for(i in colnames(mf)) {
+    if (is.logical(mf[,i]) || (is.factor(mf[,i]) && nlevels(mf[,i]) == 2)) {
+      mf[,i] <- as.numeric(mf[,i])
     }
-    if (is.factor(x) && nlevels(x) == 2) {
-      return(as.numeric(x))
-    }
-    
-    # don't change it
-    return(x)
+  }
+  
+  mm <- withOptions(list(na.action = na.pass), function() {
+    model.matrix(tf, mf, contrasts.arg = lapply(Filter(is.factor, mf), make_nice_contrasts)) 
   })
 
-  mm <- model.matrix(tf, mf, contrasts.arg = lapply(Filter(is.factor, mf), make_nice_contrasts)) 
   oldassign <- attr(mm, "assign")
 
   mm <- mm[, -1, drop = F] # drop the intercept
