@@ -41,10 +41,23 @@ test_that("Groups", {
   xb.xy <- xBalance(Z ~ X + Y, data = df, strata = data.frame(factor("none"), df$S))
   expect_identical(xb.grp$groups[,,"XY"], xb.xy$groups[,,"All"])
 
+  # using regular expressions to capture larger numbers of variables
+  xb.any_x <- xBalance(Z ~ X + exp(X) + Y, data = df, groups = list("Xes" = c("X")))
+  xb.x_expx <- xBalance(Z ~ X + exp(X), data = df)
+  expect_identical(xb.any_x$groups[,,"Xes"], xb.x_expx$groups[,,'All'])
+
+  # using regular expressions to capture categorical contributions
+  xb.all_k <- xBalance(Z ~ K, data = df, groups = list("K" = "K"))
+  expect_identical(xb.all_k$groups[,,"K"], xb.all_k$groups[,,"All"])
+
+  # excluding log(X)
+  xb.xonly <- xBalance(Z ~ X, data = df)
+  xb.no_expx <- xBalance(Z ~ X + exp(X), data = df, groups = list("No log(X)" = "^X$"))
+  expect_identical(xb.no_expx$groups[,,"No log(X)"], xb.xonly$groups[,,"All"])
 
   # Error checking
-  expect_error(xBalance(Z ~ X + Y, data = df, groups = list("XW" = c("X", "W"))),
-               "Unknown variable")
+  expect_error(xBalance(Z ~ X + Y, data = df, groups = list("XW" = c("W"))),
+               "did not match any variables")
 
   expect_error(xBalance(Z ~ X + Y, data = df, groups = list("XZ" = c("X", "Z"))),
                "Treatment")

@@ -50,9 +50,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
 
 all.variables <- attr(tfmla, "term.labels")
 
-if (is.null(groups)) {
-  groups <- list("All" = all.variables)
-} else {
+if (!is.null(groups)) {
 
   if (any(0 == sapply(groups, length))) {
     stop("Empty groups not permitted.")
@@ -65,11 +63,6 @@ if (is.null(groups)) {
     stop("Treatment variable is not permitted in groups.")
   }
 
-  if (any(unknown.vars)) {
-    stop(paste("Unknown variable(s):", paste(vars.in.groups[unknown.vars], collapse = ", ")))
-  }
-
-  groups <- append(list("All" = all.variables), groups)
 }
   
 # NB: I've tried without the explicit model.frame call, but weird errors would pop up)
@@ -81,10 +74,17 @@ mm1 <- make_nice_model_matrix(tfmla, mf)
 # a categorial variable, for example, should expand into several indices, one for each dummy
 # likewise for splines or other unusual expansions
 
-group.indices <- lapply(groups, function(x) {
+group.indices <- lapply(groups, function(regexes) {
   # x should be a character vector.
-  return(attr(mm1, "assignnames") %in% x)
+  return(unique(unlist(sapply(regexes, function(r) { grep(x = attr(mm1, "assignnames"), patt = r) }))))
 })
+
+group.indices <- append(list("All" = 1:(dim(mm1)[2])), group.indices)
+tmp <- sapply(group.indices, length)
+if (any(tmp == 0)) {
+  badnames <- names(group.indices)[tmp == 0]
+  stop("The following groups did not match any variables: ", badnames) 
+}
 
 
 ### Prepare ss.df, data frame of strata
@@ -162,17 +162,17 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   # groups is also an array, this time the first index is the strata, the 2nd are the chisquare test info, 3rd are any groups
   ans$groups <- array(dim = c(length(RES), # number of strata
                                3, # chi.squared stat, deg. freedom, p.value
-                               length(groups)),
+                               length(group.indices)),
                       dimnames = list(strata  = names(RES), 
                                       tests = c("chisquare", "df", "p.value"), 
-                                      groups = names(groups)))
+                                      groups = names(group.indices)))
 
   # we populate both arrays by iterating through the strata
   for(i in names(RES)) {
     tmp <- RES[[i]]
     ans$results[,,i] <- as.matrix(tmp[["dfr"]])
 
-    for (j in names(groups)) {
+    for (j in names(group.indices)) {
       xxx <- tmp$groups[[j]]
       ans$groups[i, 'chisquare', j] <- xxx$chisquare
       ans$groups[i, 'df', j]        <- xxx$df
