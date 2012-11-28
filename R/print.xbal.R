@@ -100,7 +100,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       }
     }
     
-  ChiSignif <- signifier(groups[,"p.value",])
+  ChiSignif <- signifier(groups[,"p.value",, drop = F])
+  colnames(ChiSignif)[1] <- " "
   groups.table <- format(groups)
   groups.table <- abind(groups.table, ChiSignif, along = 2)
    
@@ -111,7 +112,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       cat("--- Group Tests ---\n")
       for (i in dimnames(groups.table)[[3]]) {
         cat("\nGroup:", i, "\n")
-        print(ftable(groups.table[,,i, drop = TRUE]))
+        print(ftable(adrop(groups.table[,,i, drop = FALSE], drop = 3)))
       }
       if(show.signif.stars&!show.pvals){
         cat("---\nSignif. codes: ", attr(ChiSignif,"legend"), "\n")

@@ -66,10 +66,11 @@ test_that("Creating model matrices", {
                    K = as.factor(letters[sample.int(3, n, replace = T)]),
                    S = as.factor(rep(c("A", "B"), each = n/2)))
 
-  f <- Z ~ X * K + W + S
+  f <- terms(Z ~ X * K + W + S, data = df)
 
   mm <- make_nice_model_matrix(f, model.frame(f, df))
 
+  expect_is(mm, "matrix")
   expect_true(!("(Intercept)" %in% colnames(mm)))
   expect_equal(dim(mm), c(100, 9)) # 3 for each K level, 3 for X * K interactions, 1 for X, 1 for W = TRUE, 1 for S = B
   expect_true(all(c("K = a", "K = b", "K = c", "X:K = a", "X:K = b", "X:K = c", 
@@ -81,5 +82,11 @@ test_that("Creating model matrices", {
   vars <- c("X", "K", "W", "S", "X:K")
   assignnames <- attr(mm, "assignnames")
   expect_true(all(vars %in% assignnames) && all(assignnames %in% vars))
+
+
+  # make sure that results are matrices, even when using a single var
+  mm.1 <- make_nice_model_matrix(Z ~ X, model.frame(Z ~ X, df))
+  expect_is(mm.1, "matrix")
+  expect_equal(dim(mm.1), c(100,1))
 
 })

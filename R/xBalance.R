@@ -23,10 +23,6 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   if("all" %in% report){report<-c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
                               "std.diffs","z.scores","p.values")}
 
-  # set up the formula to have no intercept
-  tmp <- as.character(fmla)
-  fmla <- as.formula(paste(tmp[2], " ~ ", tmp[3], " - 1", sep = ""))
-
 ### NA Handling ##  
   if (na.rm==TRUE)
     {
@@ -77,14 +73,8 @@ if (is.null(groups)) {
 }
   
 # NB: I've tried without the explicit model.frame call, but weird errors would pop up)
-mf <- model.frame(tfmla, data, na.action = na.pass)
-
-for(i in colnames(mf)) {
-  if (is.logical(mf[,i])) {
-    mf[,i] <- as.numeric(mf[,i])
-  }
-}
-mm1 <- model.matrix(tfmla, mf)
+mf <- model.frame(tfmla, data = data, na.action = na.pass)
+mm1 <- make_nice_model_matrix(tfmla, mf)
 
 # the groups variable is a list of list of variables
 # this next few lines converts the variable names into the column indices of the variables in the model matrix
@@ -93,8 +83,7 @@ mm1 <- model.matrix(tfmla, mf)
 
 group.indices <- lapply(groups, function(x) {
   # x should be a character vector.
-  idx <- match(x, all.variables)
-  return(attr(mm1, "assign") %in% idx)
+  return(attr(mm1, "assignnames") %in% x)
 })
 
 
@@ -243,13 +232,11 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
 # that maps the usual "assign" attribute to the actual lables of the variables, not just their
 # indices.
 #
-# @param fmla A formula object (either Z ~ X, ~ X or the result of a terms() call)
+# @param tf A "terms" object, as applied to a formula and some data
 # @param mf A model.frame() object. Requiring it to be passed so that 
 # @return A model.matrix like object.
-make_nice_model_matrix <- function(fmla, mf) {
+make_nice_model_matrix <- function(tf, mf) {
 
-  tf <- terms(fmla, data = mf)
-  
   # do a little "pre-processing" of the data so that two level stuff just gets single item
   mf <- lapply(mf, function(x) {
     if (is.logical(x)) {
@@ -266,7 +253,7 @@ make_nice_model_matrix <- function(fmla, mf) {
   mm <- model.matrix(tf, mf, contrasts.arg = lapply(Filter(is.factor, mf), make_nice_contrasts)) 
   oldassign <- attr(mm, "assign")
 
-  mm <- mm[,-1] # drop the intercept
+  mm <- mm[, -1, drop = F] # drop the intercept
   attr(mm, "assign") <- oldassign[-1] # also drop intercept
   attr(mm, "assignnames") <- attr(tf, "term.labels")[attr(mm, "assign")]
 

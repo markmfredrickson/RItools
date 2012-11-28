@@ -14,6 +14,6 @@ test_that("xbal formula method", {
   xb <- xBalance(Z ~ X, data = df)
 
   # we expect to have a no intercept formula
-  expect_equal(Z ~ X - 1, as.formula(xb))
+  expect_equal(Z ~ X, as.formula(xb))
 })
 
