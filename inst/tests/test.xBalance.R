@@ -47,8 +47,13 @@ test_that("Groups", {
   expect_identical(xb.any_x$groups[,,"Xes"], xb.x_expx$groups[,,'All'])
 
   # using regular expressions to capture categorical contributions
-  xb.all_k <- xBalance(Z ~ K, data = df, groups = list("K" = "K"))
+  # also, just use the variable name to name the gorup
+  xb.all_k <- xBalance(Z ~ K, data = df, groups = list("K"))
   expect_identical(xb.all_k$groups[,,"K"], xb.all_k$groups[,,"All"])
+
+  # double check that a group with multiple names will be pasted together
+  xb.pasted_groups <- xBalance(Z ~ X * Y, data = df, groups = list(c("X", "Y")))
+  expect_identical(dimnames(xb.pasted_groups$groups)[[3]], c("All", "X, Y"))
 
   # excluding log(X)
   xb.xonly <- xBalance(Z ~ X, data = df)
@@ -65,7 +70,6 @@ test_that("Groups", {
   expect_error(xBalance(Z ~ X + Y, data = df, groups = list("Empty" = c())),
                "Empty group")
 
-  # more tests/features: variables that expand into dummies/etc, passing groups in fmla or letting items of `groups` be little forumlae
 
 })
 

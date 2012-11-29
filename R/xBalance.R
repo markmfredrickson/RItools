@@ -63,6 +63,17 @@ if (!is.null(groups)) {
     stop("Treatment variable is not permitted in groups.")
   }
 
+  # for any group that doesn't have an explicit name, use the content of the group
+  namer <- function(x) { paste(x, collapse = ", ") }
+
+  if (is.null(names(groups))) {
+    names(groups) <- sapply(groups, namer)
+  }
+
+  # this is the case for lists like list(c(1,2,3), foo = c(4,5,6))
+  badnames <- names(groups) == ""
+  names(groups)[badnames] <- sapply(groups[badnames], namer)
+
 }
   
 # NB: I've tried without the explicit model.frame call, but weird errors would pop up)
