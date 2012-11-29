@@ -1,11 +1,45 @@
-print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
-                        which.stats=dimnames(x$results)[["stat"]],
-                        which.vars=dimnames(x$results)[["vars"]],
+#' Display the results of \code{xBalance} call.
+#'
+#' @param x An object of class \code{"xbal"} --- the result of a call to
+#'   \code{\link{xBalance}} 
+#' @param which.strata The stratification candidates to include in the
+#'   printout. Default is all. 
+#' @param which.stats The test statistics to include. Default is all those
+#'   requested from the call to \code{\link{xBalance}}. 
+#' @param which.vars The variables for which test information should be
+#'   displayed. Default is all. 
+#' @param which.groups The group level tests to display. Default is all.
+#' @param digits To how many digits should the results be displayed?
+#' @param printme Print the table to the console? 
+#' @param show.signif.stars Use stars to indicate z-statistics larger than
+#'   conventional thresholds. 
+#' @param show.pvals Instead of stars, use p-values to summarize the
+#'   information in the z-statistics. 
+#' @param horizontal Display the results for different candidate
+#'   stratifications side-by-side (Default, \code{TRUE}), or as a list for each
+#'   stratification (\code{FALSE}).
+#' @param ... Ignored
+#'
+#' @return A \code{list} with components: 
+#'    \item{vartable}{The formatted table of variable-by-variable statistics
+#'    for each stratification.} \item{grptable}{The formatted table of group
+#'    level statistics for each stratification}
+#'
+#' @example inst/examples/print.xbal.R
+#' @S3method print xbal
+#' @method print xbal
+
+print.xbal <- function (x, 
+                        which.strata = dimnames(x$results)[["strata"]],
+                        which.stats = dimnames(x$results)[["stat"]],
+                        which.vars = dimnames(x$results)[["vars"]],
                         which.groups = dimnames(x$groups)[["groups"]],
-                        digits = NULL, printme=TRUE,
-                        show.signif.stars=getOption("show.signif.stars"),
-                        show.pvals=!show.signif.stars,
-                        horizontal=TRUE,...)
+                        digits = NULL, 
+                        printme = TRUE,
+                        show.signif.stars = getOption("show.signif.stars"),
+                        show.pvals = !show.signif.stars,
+                        horizontal = TRUE, ...)
+
 { ##Notes: right now we've decided that you can't print both signif stars and p-values. make a choice.
 
   # withOptions will allow us to safely reset the digits

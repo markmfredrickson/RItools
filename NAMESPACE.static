@@ -13,7 +13,6 @@ export(
        "xBalance"
        )
 
-S3method(print,xbal)
 S3method(plot,xbal)
 S3method(xtable,xbal)
 S3method(formula,xbal)
