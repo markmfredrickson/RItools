@@ -113,7 +113,7 @@ select <- function(xbal,
   }
 
   res <- xbal$results[which.vars, which.stats, which.strata, drop = F] 
-  grp <- xbal$groups[which.strata, which.tests, , drop = F] 
+  grp <- xbal$groups[which.strata, which.tests, which.groups, drop = F] 
 
   return(list(results = res, groups = grp))  
 }

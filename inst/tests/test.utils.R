@@ -54,15 +54,6 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   expect_equivalent(dim(xb.noneU$results), c(18, 7, 2))
   expect_equivalent(dim(xb.noneU$groups), c(2, 3, 4))
 
-  # for vars, only limit the results table (for now)
-  # eventually, change these tests to limit to groups that contain the
-  # variables
-  # use exact variable names -- possibly use regexes later
-  xb.XY <- select(xb, which.vars = c("X", "Y"))
-  
-  expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
-  expect_equivalent(dim(xb.XY$groups), c(3, 3, 4))
-
   # stat and test selection only limits the results and groups tables
   # repectively
 
@@ -75,6 +66,21 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   expect_equivalent(dim(xb.zp$results), c(18, 2, 3))
   expect_equivalent(dim(xb.chip$groups), c(3, 2, 4))
 
-    
+  # for vars and groups, we might want the arguments to interact more directly
+  # e.g. selecting vars only returns groups that include the vars
+  # e.g. selecting groups only returns the variables contained in those groups
+
+  # for vars, only limit the results table (for now)
+  # use exact variable names -- possibly use regexes later
+  xb.XY <- select(xb, which.vars = c("X", "Y"))
+  
+  expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
+  expect_equivalent(dim(xb.XY$groups), c(3, 3, 4))
+
+  # likewise, for now which.groups only limits the groups table
+  xb.Interactions <- select(xb, which.groups = c("Interactions"))
+
+  expect_equivalent(xb.Interactions$results, xb$results)
+  expect_equivalent(dim(xb.Interactions$groups), c(3, 3, 1))
 })
 
