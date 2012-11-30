@@ -196,10 +196,39 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ans$overall <- as.data.frame(ans$groups[,,1, drop = F]) # for backwared compatiblity, will probably be removed in future versions
   colnames(ans$overall) <- c("chisquare", "df", "p.value")
 
-  attr(ans, "fmla") <- formula(tfmla)
+  xbalobj <- make_xbal(ans$results, ans$groups)
 
-  class(ans) <- c("xbal", "list")
-  ans
+  # we add this attribute here as xbals return in other ways (e.g. subet) are no longer directly the result of a fmla 
+  # also: future proofing when xBalance is a generic function and not always dependent on a formula
+  attr(xbalobj, "fmla") <- formula(tfmla)
+
+  return(xbalobj)
+}
+
+# A helper function to create xbal objects.
+#
+# @param variables A 3d array of vars by stat by strata
+# @param groups A 3d array of strata by test by group
+make_xbal <- function(variables, groups) {
+
+  if (is.null(dimnames(variables)) |
+      !(all(names(dimnames(variables)) == c("vars", "stat", "strata")))) {
+
+    stop("The variables 'dimnames' must be c('vars', 'stat', 'strata').")
+
+  }
+
+  if (is.null(dimnames(groups)) |
+      !(all(names(dimnames(groups)) == c("strata", "tests", "groups")))) {
+
+    stop("The 'dimnames' must be c('strata', 'tests', 'groups').")
+
+  }
+
+  x <- list(results = variables, groups = groups)
+  class(x) <- c("xbal", "list")
+  
+  return(x)
 }
 
 xBalance.make.stratum.mean.matrix <- function(ss, mm) {

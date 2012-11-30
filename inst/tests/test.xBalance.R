@@ -6,6 +6,33 @@ library("testthat")
 
 context("xBalance main function")
 
+test_that("make_xbal creation function", {
+
+  results <- array(0, dim = c(10, 5, 3))
+  groups <- array(0, dim = c(3, 2, 5))
+
+  expect_error(make_xbal(results, groups), 'dimnames')
+ 
+  dimnames(results) <- list(vars = paste("X", letters[1:10]),
+                            stat = paste("Stat", letters[1:5]),
+                            strata = paste("Strata", letters[1:3]))
+
+  dimnames(groups) <-  list(strata = paste("Strata", letters[1:3]),
+                            tests = paste("Test", letters[1:2]),
+                            groups = paste("Group", letters[1:5]))
+
+  xb <- make_xbal(results, groups)
+
+  expect_is(xb, "xbal")
+  expect_is(xb, "list")
+
+  expect_true(all(c("results", "groups") %in% names(xb)))
+
+  expect_equal(names(dimnames(xb$results)), c("vars", "stat", "strata"))
+  expect_equal(names(dimnames(xb$groups)), c("strata", "tests", "groups"))
+
+})
+
 test_that("Groups", {
 
   # create a quick xBalance result
@@ -64,6 +91,8 @@ test_that("Groups", {
   xb.xonly <- xBalance(Z ~ X, data = df)
   xb.no_expx <- xBalance(Z ~ X + exp(X), data = df, groups = list("No log(X)" = "^X$"))
   expect_identical(xb.no_expx$groups[,,"No log(X)"], xb.xonly$groups[,,"All"])
+
+  ### xBal objects include variable to group 
 
   # Error checking
   expect_error(xBalance(Z ~ X + Y, data = df, groups = list("XW" = c("W"))),
