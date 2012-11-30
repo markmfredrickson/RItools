@@ -72,48 +72,52 @@ withOptions <- function(optionsToChange, fun) {
 #' If any of the arguments are not specified, all the of relevant items are
 #' included.
 #'
-#' @param xbal The \code{xbal} object, the result of a call to
+#' @param x The \code{xbal} object, the result of a call to
 #' \code{\link{xBalance}}
-#' @param which.vars The variable names to select.
-#' @param which.strata The strata names to select.
-#' @param which.stats The names of the variable level statistics to select.
-#' @param which.groups The names of the groups to select.
-#' @param which.tests The names of the group level tests to select.
+#' @param vars The variable names to select.
+#' @param strata The strata names to select.
+#' @param stats The names of the variable level statistics to select.
+#' @param groups The names of the groups to select.
+#' @param tests The names of the group level tests to select.
+#' @param ... Other arguments (ignored)
 #'
 #' @return A \code{xbal} object with just the appropriate items selected.
-#' @export
-select <- function(xbal, 
-                   which.vars   = NULL, 
-                   which.strata = NULL, 
-                   which.stats  = NULL, 
-                   which.groups = NULL,
-                   which.tests  = NULL) {
+#'
+#' @S3method subset xbal
+#' @method subset xbal
+subset.xbal <- function(x, 
+                        vars   = NULL, 
+                        strata = NULL, 
+                        stats  = NULL, 
+                        groups = NULL,
+                        tests  = NULL,
+                        ...) {
 
-  res.dmns <- dimnames(xbal$results)
-  grp.dmns <- dimnames(xbal$groups)
+  res.dmns <- dimnames(x$results)
+  grp.dmns <- dimnames(x$groups)
 
-  if (is.null(which.strata)) {
-    which.strata <- res.dmns$strata
+  if (is.null(strata)) {
+    strata <- res.dmns$strata
   }
 
-  if (is.null(which.vars)) {
-    which.vars <- res.dmns$vars
+  if (is.null(vars)) {
+    vars <- res.dmns$vars
   }
 
-  if (is.null(which.stats)) {
-    which.stats <- res.dmns$stat
+  if (is.null(stats)) {
+    stats <- res.dmns$stat
   }
 
-  if (is.null(which.groups)) {
-    which.groups <- grp.dmns$groups
+  if (is.null(groups)) {
+    groups <- grp.dmns$groups
   }
 
-  if (is.null(which.tests)) {
-    which.tests <- grp.dmns$tests
+  if (is.null(tests)) {
+    tests <- grp.dmns$tests
   }
 
-  res <- xbal$results[which.vars, which.stats, which.strata, drop = F] 
-  grp <- xbal$groups[which.strata, which.tests, which.groups, drop = F] 
+  res <- x$results[vars, stats, strata, drop = F] 
+  grp <- x$groups[strata, tests, groups, drop = F] 
 
   return(list(results = res, groups = grp))  
 }
