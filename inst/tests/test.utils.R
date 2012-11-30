@@ -76,9 +76,12 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   
   expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
   expect_equivalent(dim(xb.XY$groups), c(3, 3, 4))
+  expect_true(all(rownames(xb.XY$vargrp) %in% c("X", "Y")))
 
   # likewise, for now groups only limits the groups table
   xb.Interactions <- subset(xb, groups = c("Interactions"))
+  expect_equal(colnames(xb.Interactions$vargrp), "Interactions")
+
 
   expect_equivalent(xb.Interactions$results, xb$results)
   expect_equivalent(dim(xb.Interactions$groups), c(3, 3, 1))

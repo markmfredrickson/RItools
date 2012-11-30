@@ -10,8 +10,9 @@ test_that("make_xbal creation function", {
 
   results <- array(0, dim = c(10, 5, 3))
   groups <- array(0, dim = c(3, 2, 5))
+  vargrps <- matrix(FALSE, nrow = 10, ncol = 5) # variables by groups
 
-  expect_error(make_xbal(results, groups), 'dimnames')
+  expect_error(make_xbal(results, groups, vargrps), 'dimnames')
  
   dimnames(results) <- list(vars = paste("X", letters[1:10]),
                             stat = paste("Stat", letters[1:5]),
@@ -21,7 +22,12 @@ test_that("make_xbal creation function", {
                             tests = paste("Test", letters[1:2]),
                             groups = paste("Group", letters[1:5]))
 
-  xb <- make_xbal(results, groups)
+  expect_error(make_xbal(results, groups, vargrps), "match")
+
+  dimnames(vargrps) <- list(vars = paste("X", letters[1:10]),
+                            groups = paste("Group", letters[1:5]))
+
+  xb <- make_xbal(results, groups, vargrps)
 
   expect_is(xb, "xbal")
   expect_is(xb, "list")
@@ -91,6 +97,10 @@ test_that("Groups", {
   xb.xonly <- xBalance(Z ~ X, data = df)
   xb.no_expx <- xBalance(Z ~ X + exp(X), data = df, groups = list("No log(X)" = "^X$"))
   expect_identical(xb.no_expx$groups[,,"No log(X)"], xb.xonly$groups[,,"All"])
+
+  # checking the vargrps element: a variable to groups matching
+  expect_true(all(xb.grp$vargrp[,"All"]))
+  expect_equal(rownames(xb.grp$vargrp)[xb.grp$vargrp[,"XY"]], c("X", "Y"))
 
   ### xBal objects include variable to group 
 

@@ -196,7 +196,23 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ans$overall <- as.data.frame(ans$groups[,,1, drop = F]) # for backwared compatiblity, will probably be removed in future versions
   colnames(ans$overall) <- c("chisquare", "df", "p.value")
 
-  xbalobj <- make_xbal(ans$results, ans$groups)
+  # vargrps is a variables by groups matrix (mode logical) indicating if a particular variable is in a group
+  vnames <- dimnames(ans$results)$vars
+  nvars <- length(vnames)
+  
+  # we are about to assume the variable order of the results object is the same as the column order of the model matrix
+  # let's at least throw an error if this assumption fails
+  stopifnot(identical(vnames, colnames(mm1)))
+
+  # if we get here, we can use the group.indices to create the model matrix
+  # NB: this inline function is basically the same as expand.z used in RItest. when the branches get integrated, perhaps it would be good to 
+  # integrate these solutions, and/or find some ways of speeding them up (via more direct matrix operations)
+  # both solutions might also benenfit from a sparse implementation
+  vargrps <- matrix(sapply(group.indices, function(x) { z <- rep(F, nvars) ; z[x] <- TRUE ; return(z)}), nrow = nvars)
+  rownames(vargrps) <- vnames
+  colnames(vargrps) <- names(group.indices)
+
+  xbalobj <- make_xbal(ans$results, ans$groups, vargrps)
 
   # we add this attribute here as xbals return in other ways (e.g. subet) are no longer directly the result of a fmla 
   # also: future proofing when xBalance is a generic function and not always dependent on a formula
@@ -209,7 +225,11 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
 #
 # @param variables A 3d array of vars by stat by strata
 # @param groups A 3d array of strata by test by group
-make_xbal <- function(variables, groups) {
+# @param vargrp A matrix of variables (rows) by groups (columns) of mode
+# logical. If [i,j] == TRUE implies variable i is in group j. Otherwise, FALS
+#
+# @return \code{xbal} object, a subclass of list.
+make_xbal <- function(variables, groups, vargrp) {
 
   if (is.null(dimnames(variables)) |
       !(all(names(dimnames(variables)) == c("vars", "stat", "strata")))) {
@@ -225,7 +245,17 @@ make_xbal <- function(variables, groups) {
 
   }
 
-  x <- list(results = variables, groups = groups)
+  # we use intersect here to be agnostic of variable order: 
+  # the important part is that the same names exist in all the objects
+
+  bothvars <- intersect(dimnames(variables)$vars, rownames(vargrp))
+  bothgrps <- intersect(dimnames(groups)$groups, colnames(vargrp))
+
+  if (!(identical(c(length(bothvars), length(bothgrps)), dim(vargrp)))) {
+    stop("Names in the 'vargrps' argument do not match the names in the 'variables' and 'groups' arguments.")
+  }
+
+  x <- list(results = variables, groups = groups, vargrp = vargrp)
   class(x) <- c("xbal", "list")
   
   return(x)

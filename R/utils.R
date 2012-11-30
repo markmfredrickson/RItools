@@ -117,7 +117,8 @@ subset.xbal <- function(x,
   }
 
   res <- x$results[vars, stats, strata, drop = F] 
-  grp <- x$groups[strata, tests, groups, drop = F] 
+  grp <- x$groups[strata, tests, groups, drop = F]
+  vargrp <- x$vargrp[vars, groups, drop = F]
 
-  return(make_xbal(res, grp))  
+  return(make_xbal(res, grp, vargrp))  
 }
