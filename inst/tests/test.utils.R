@@ -49,11 +49,32 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   # variables
   xb.noneU <- select(xb, which.strata = c("none", "U"))
   
-  expect_equal(dim(xb$results)[["strata"]], 3)
-  expect_equal(dim(xb$groups)[["strata"]], 3)
-  expect_equal(dim(xb.noneU$results)[["strata"]], 2)
-  expect_equal(dim(xb.noneU$groups)[["strata"]], 2)
-   
+  expect_equivalent(dim(xb$results), c(18, 7, 3))
+  expect_equivalent(dim(xb$groups), c(3, 3, 4))
+  expect_equivalent(dim(xb.noneU$results), c(18, 7, 2))
+  expect_equivalent(dim(xb.noneU$groups), c(2, 3, 4))
 
+  # for vars, only limit the results table (for now)
+  # eventually, change these tests to limit to groups that contain the
+  # variables
+  # use exact variable names -- possibly use regexes later
+  xb.XY <- select(xb, which.vars = c("X", "Y"))
+  
+  expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
+  expect_equivalent(dim(xb.XY$groups), c(3, 3, 4))
+
+  # stat and test selection only limits the results and groups tables
+  # repectively
+
+  xb.zp <- select(xb, which.stats = c("z", "p"))
+  xb.chip <- select(xb, which.tests = c("chisquare", "p.value"))
+
+  expect_equivalent(xb.zp$groups, xb$groups)
+  expect_equivalent(xb.chip$results, xb$results)
+
+  expect_equivalent(dim(xb.zp$results), c(18, 2, 3))
+  expect_equivalent(dim(xb.chip$groups), c(3, 2, 4))
+
+    
 })
 

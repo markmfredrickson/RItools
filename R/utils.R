@@ -76,30 +76,44 @@ withOptions <- function(optionsToChange, fun) {
 #' \code{\link{xBalance}}
 #' @param which.vars The variable names to select.
 #' @param which.strata The strata names to select.
-#' @param which.stats The names of the statistics to select.
+#' @param which.stats The names of the variable level statistics to select.
 #' @param which.groups The names of the groups to select.
+#' @param which.tests The names of the group level tests to select.
 #'
 #' @return A \code{xbal} object with just the appropriate items selected.
 #' @export
-select <- function(xbal, which.vars, which.strata, which.stats, which.groups) {
+select <- function(xbal, 
+                   which.vars   = NULL, 
+                   which.strata = NULL, 
+                   which.stats  = NULL, 
+                   which.groups = NULL,
+                   which.tests  = NULL) {
+
   res.dmns <- dimnames(xbal$results)
   grp.dmns <- dimnames(xbal$groups)
 
-  # if (missing(which.vars) | is.null(which.vars)) {
-  #   which.vars <- res.dmns[["vars"]]
-  # }
-
-  if (missing(which.strata) | is.null(which.strata)) {
-    which.vars <- res.dmns[["strata"]]
+  if (is.null(which.strata)) {
+    which.strata <- res.dmns$strata
   }
 
+  if (is.null(which.vars)) {
+    which.vars <- res.dmns$vars
+  }
 
-  res <- xbal$results[, , which.strata, drop = F] 
-  grp <- xbal$groups[which.strata, , , drop = F] 
+  if (is.null(which.stats)) {
+    which.stats <- res.dmns$stat
+  }
 
-  # the nams of the dimensions get lost if they are not set explicitly
-  names(dim(res)) <- names(dim(xbal$results))
-  names(dim(grp)) <- names(dim(xbal$groups))
+  if (is.null(which.groups)) {
+    which.groups <- grp.dmns$groups
+  }
+
+  if (is.null(which.tests)) {
+    which.tests <- grp.dmns$tests
+  }
+
+  res <- xbal$results[which.vars, which.stats, which.strata, drop = F] 
+  grp <- xbal$groups[which.strata, which.tests, , drop = F] 
 
   return(list(results = res, groups = grp))  
 }
