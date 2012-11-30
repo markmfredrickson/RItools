@@ -82,6 +82,24 @@ withOptions <- function(optionsToChange, fun) {
 #' @return A \code{xbal} object with just the appropriate items selected.
 #' @export
 select <- function(xbal, which.vars, which.strata, which.stats, which.groups) {
-  
-return(list(results = c(), groups = c()))  
+  res.dmns <- dimnames(xbal$results)
+  grp.dmns <- dimnames(xbal$groups)
+
+  # if (missing(which.vars) | is.null(which.vars)) {
+  #   which.vars <- res.dmns[["vars"]]
+  # }
+
+  if (missing(which.strata) | is.null(which.strata)) {
+    which.vars <- res.dmns[["strata"]]
+  }
+
+
+  res <- xbal$results[, , which.strata, drop = F] 
+  grp <- xbal$groups[which.strata, , , drop = F] 
+
+  # the nams of the dimensions get lost if they are not set explicitly
+  names(dim(res)) <- names(dim(xbal$results))
+  names(dim(grp)) <- names(dim(xbal$groups))
+
+  return(list(results = res, groups = grp))  
 }
