@@ -20,14 +20,19 @@ test_that("Groups", {
   xb <- xBalance(Z ~ X + Y + W, data = df, strata = data.frame(factor("none"), df$S))
 
   expect_is(xb$groups, "array")
-  expect_equal(dim(xb$groups), c(2, 3, 1))
+  expect_equivalent(dim(xb$groups), c(2, 3, 1))
   expect_true(!any(is.na(xb$groups)))
   
+  # the results and groups should have named dimensions
+  expect_true(all(c("vars", "strata", "stat") %in% names(dim(xb$results))))
+  expect_true(all(c("tests", "strata", "groups") %in% names(dim(xb$groups))))
+
   xb.grp <- xBalance(Z ~ X + Y + W, data = df, strata = data.frame(factor("none"), df$S), 
                      groups = list("XY" = c("X", "Y"), "YW" = c("Y", "W")))
 
+
   # groups is an array of strata by test by groups (including "all")
-  expect_equal(dim(xb.grp$groups), c(2, 3, 3))
+  expect_equivalent(dim(xb.grp$groups), c(2, 3, 3))
   expect_true(!any(is.na(xb.grp$groups)))
 
   # first off, the groups should have different values for the chisquared tests

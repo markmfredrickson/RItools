@@ -67,3 +67,21 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
+#' Select variables, strata, groups, and statistics from a \code{xbal} object
+#'
+#' If any of the arguments are not specified, all the of relevant items are
+#' included.
+#'
+#' @param xbal The \code{xbal} object, the result of a call to
+#' \code{\link{xBalance}}
+#' @param which.vars The variable names to select.
+#' @param which.strata The strata names to select.
+#' @param which.stats The names of the statistics to select.
+#' @param which.groups The names of the groups to select.
+#'
+#' @return A \code{xbal} object with just the appropriate items selected.
+#' @export
+select <- function(xbal, which.vars, which.strata, which.stats, which.groups) {
+  
+return(list(results = c(), groups = c()))  
+}

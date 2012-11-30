@@ -171,9 +171,9 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
                                      strata = names(RES)))
 
   # groups is also an array, this time the first index is the strata, the 2nd are the chisquare test info, 3rd are any groups
-  ans$groups <- array(dim = c(length(RES), # number of strata
-                               3, # chi.squared stat, deg. freedom, p.value
-                               length(group.indices)),
+  ans$groups <- array(dim = c(strata = length(RES), # number of strata
+                              tests = 3, # chi.squared stat, deg. freedom, p.value
+                              groups = length(group.indices)),
                       dimnames = list(strata  = names(RES), 
                                       tests = c("chisquare", "df", "p.value"), 
                                       groups = names(group.indices)))
