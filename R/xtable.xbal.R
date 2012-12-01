@@ -1,6 +1,7 @@
 
-xtable.xbal <- function(x,caption = NULL, label = NULL, align =c("l",rep("r",ncol(xvardf))),
-                          digits = 2, display = NULL, col.labels=NULL, ...)
+xtable.xbal <- function(x,caption = NULL, label = NULL, align =c("l",rep("r",ncol(xdf))),
+                          digits = 2, display = NULL, col.labels = NULL,
+                          type = "variables", ...)
   {##By default use decimal alignment, which will require the dcolumn package in latex and an appropriate column definition like:
     ##\newcolumntype{.}{D{.}{.}{2.2}}
     ##Here is an example which works
@@ -13,21 +14,54 @@ xtable.xbal <- function(x,caption = NULL, label = NULL, align =c("l",rep("r",nco
     ##junk<-xtable(xb1)
     ##print(junk,add.to.row=attr(junk,"latex.add.to.row"),hline.after=c(0,nrow(junk)),sanitize.text.function=function(x){x},floating=TRUE,floating.environment="sidewaystable")
 
-    stopifnot(require(xtable))
+  if (!any(type %in% c("variables", "groups"))) {
+    stop("Unknown type of table: ", type)
+  }
+  
+  stopifnot(require(xtable))
+ 
+  attrs <- list()
+
+  if (type == "variables") {
+  
     xprint <- flatten.xbalresult(x)
     numstrata<-dim(x$results)[3]
     latex.annotation <- attr(xprint, "latex.annotation")
-    xvardf<-xprint$vartable
+    xdf<-xprint$vartable
+  
+    if(!is.null(col.labels)) names(xdf) <- col.labels
     
-    if(!is.null(col.labels)) names(xvardf) <- col.labels
+    attrs <- list(latex.add.to.row = 
+                    list(pos = list(-1),
+                         command = attr(xprint, "latex.annotation")),
+                  hline.after = c(0, nrow(xdf)))
+  }
 
 
-    ##call xtable on the resulting data.frame
-    vartab <- xtable(xvardf,caption=caption, label=label, digits=digits,align=align,display=display,col.labels=col.labels,...) ##NextMethod("xtable",xvardf)
-    structure(vartab,
-              latex.add.to.row=list(pos=list(-1),command=latex.annotation),
-              hline.after=c(0,nrow(xvardf)))
+  if (type == "groups") {
+
+    tmp <- ftable(x$groups, 
+                  row.vars = "groups", 
+                  col.vars = c("strata", "tests"))
+
+    xdf <- tmp[,] # a way to cast back to just a simple matrix
+
+    rownames(xdf) <- dimnames(x$groups)$groups
+    colnames(xdf) <- rep(dimnames(x$groups)$tests, 2)
 
   }
+
+  xt <- xtable(xdf, 
+               caption = caption, 
+               label = label, 
+               digits = digits,
+               align = align,
+               display = display,
+               col.labels = col.labels,
+               ...) 
+
+  return(do.call(structure, append(list(xt), attrs)))
+  
+}
 
 

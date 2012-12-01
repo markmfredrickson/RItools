@@ -63,6 +63,12 @@ release: check spell
 test: .local/RItools/INSTALLED
 	R --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
+# this will probably, eventually, be a vignette, but for now it is just an
+# "example"
+inst/examples/xBalance.pdf: inst/examples/xBalance.Rnw .local/RItools/INSTALLED
+	cd inst/examples && R_LIBS=../../.local R CMD Sweave xBalance.Rnw
+	cd inst/examples && latexmk -pdf xBalance.tex
+
 clean:
 	git clean -xfd
 
