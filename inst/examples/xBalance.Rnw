@@ -1,0 +1,62 @@
+\documentclass{article}
+
+\title{\texttt{RItools} and \LaTeX}
+
+\begin{document}
+
+\maketitle
+
+<<>>=
+library(RItools)
+library(xtable)
+@
+
+\section{Creating Data}
+
+<<>>=
+n <- 100
+df <- data.frame(Z = rep(c(1,0), n/2),
+                 X = rnorm(n),
+                 Y = rnorm(n),
+                 W = cut(rnorm(n), 3),
+                 K = as.factor(letters[sample.int(3, n, replace = T)]),
+                 S = as.factor(rep(c("A", "B"), each = n/2)))
+@
+
+\section{Balance Testing}
+
+The goal of this balance testing to show of several types of variables
+(continuous, categorical, interactions). These variables are pulled together
+into groups representing these and other groups. Note the use of regular
+expressions: the expression \texttt{"X"} will match not only the variable
+itself, but all of its interactions; the expression \texttt{"\^{}W"} only
+matches variables starting with \texttt{"W"}, excluding its interactions with
+\texttt{X}; finally, \texttt{":"} matches all the variables created during
+interaction expansion. 
+
+<<>>=
+xb <- xBalance(Z ~ X * Y + X * W + K , 
+               data = df, 
+               strata = data.frame(factor("none"), df$S),
+               groups = list("Continuous" = c("X", "Y"),
+                             "Categorical" = c("^W", "K"),
+                             "Interactions" = c(":"),
+                             "K"))
+
+@
+
+\section{Tables}
+
+Here are some tables created from \texttt{xb}:
+
+<<results = tex>>=
+print(xtable(xb))
+@
+
+<<results = tex>>=
+print(xtable(xb, type = "groups"))
+@
+
+
+\end{document}
+

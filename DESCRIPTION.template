@@ -6,7 +6,7 @@ Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson <mark.m.fredrickso
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
-Depends: R (>= 2.2.0), methods
+Depends: R (>= 2.2.0), methods, abind
 Imports: graphics, stats, lattice, grid, SparseM, xtable
 Suggests: optmatch, xtable, testthat
 Enhances: optmatch, xtable

@@ -1,11 +1,45 @@
-print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
-                        which.stats=dimnames(x$results)[["stat"]],
-                        which.vars=dimnames(x$results)[["vars"]],
-                        print.overall=TRUE,
-                        digits = NULL, printme=TRUE,
-                        show.signif.stars=getOption("show.signif.stars"),
-                        show.pvals=!show.signif.stars,
-                        horizontal=TRUE,...)
+#' Display the results of \code{xBalance} call.
+#'
+#' @param x An object of class \code{"xbal"} --- the result of a call to
+#'   \code{\link{xBalance}} 
+#' @param which.strata The stratification candidates to include in the
+#'   printout. Default is all. 
+#' @param which.stats The test statistics to include. Default is all those
+#'   requested from the call to \code{\link{xBalance}}. 
+#' @param which.vars The variables for which test information should be
+#'   displayed. Default is all. 
+#' @param which.groups The group level tests to display. Default is all.
+#' @param digits To how many digits should the results be displayed?
+#' @param printme Print the table to the console? 
+#' @param show.signif.stars Use stars to indicate z-statistics larger than
+#'   conventional thresholds. 
+#' @param show.pvals Instead of stars, use p-values to summarize the
+#'   information in the z-statistics. 
+#' @param horizontal Display the results for different candidate
+#'   stratifications side-by-side (Default, \code{TRUE}), or as a list for each
+#'   stratification (\code{FALSE}).
+#' @param ... Ignored
+#'
+#' @return A \code{list} with components: 
+#'    \item{vartable}{The formatted table of variable-by-variable statistics
+#'    for each stratification.} \item{grptable}{The formatted table of group
+#'    level statistics for each stratification}
+#'
+#' @example inst/examples/print.xbal.R
+#' @S3method print xbal
+#' @method print xbal
+
+print.xbal <- function (x, 
+                        which.strata = dimnames(x$results)[["strata"]],
+                        which.stats = dimnames(x$results)[["stat"]],
+                        which.vars = dimnames(x$results)[["vars"]],
+                        which.groups = dimnames(x$groups)[["groups"]],
+                        digits = NULL, 
+                        printme = TRUE,
+                        show.signif.stars = getOption("show.signif.stars"),
+                        show.pvals = !show.signif.stars,
+                        horizontal = TRUE, ...)
+
 { ##Notes: right now we've decided that you can't print both signif stars and p-values. make a choice.
 
   # withOptions will allow us to safely reset the digits
@@ -21,19 +55,17 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     ##                                     }
 
     theresults <- x$results
-    if("overall" %in% names(x)) { ##Extract the omnibus chisquared test from the xbal object...
-      theoverall <- x$overall
-    } else {
-      theoverall<-NULL ##..or set it to NULL if it does not exist.
-    }
+
+    # NB: eventually, we'll trim down the results to appropriate subset, but not now...
+    groups <- x$groups[which.strata, , which.groups, drop = FALSE]
  
-    if (length(theresults) == 0 & is.null(theoverall)) {
+    if (length(theresults) == 0 & is.null(groups)) {
       stop("There is a problem. Probably all of the variables (",
           all.vars(formula(x)),
           ") are constants within strata. Or else there is some other problem, try debug(RItools:::xBalance) to see what might be going on.")
     }
 
-    if(length(theresults)==0 & !is.null(theoverall)){##The user has requested only the omnibus test and not the tests for the individual variables
+    if(length(theresults)==0 & !is.null(groups)){##The user has requested only the omnibus test and not the tests for the individual variables
       theresults<-NULL
       thevartab<-NULL
     }
@@ -86,6 +118,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
           })
       }
     }
+
     if(show.pvals & ("p" %in% dimnames(theresults)[["stat"]]) & !is.null(theresults)) {
       if(horizontal){
         theftab <- ftabler(
@@ -101,44 +134,28 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       }
     }
     
-    ##if(show.pvals&!("p"%in% dimnames(theresults)[["stat"]])& !is.null(theresults)) { 
-    ##  stop("You need to request p-values when calling xBalance.")
-    ##} ##irrelevant now.
-
-   if (!is.null(theoverall)) {
-     nc <- length(theresults)/2
-     latex.annotation <- NULL
-     ## paste("\\\\ \\hline Overall",
-     ##       paste("\\multicolumn{",nc,"}{c}{",preSig,"}"),
-     ##       paste("\\multicolumn{",nc,"}{c}{",postSig,"}"),
-     ##       sep=" & ")
-     if(show.signif.stars){
-       ChiSignif <- signifier(theoverall[which.strata,"p.value"])
-                      
-       theoveralltab <- cbind(format(theoverall[which.strata,],digits=DIGITS),format(ChiSignif))
-       names(theoveralltab)[4]<-" "
-     }
-     theoveralltab<-format(theoverall[which.strata,],digits=DIGITS)
-   } else {
-     theoveralltab<-NULL
-   }
+  ChiSignif <- signifier(groups[,"p.value",, drop = F])
+  colnames(ChiSignif)[1] <- " "
+  groups.table <- format(groups)
+  groups.table <- abind(groups.table, ChiSignif, along = 2)
    
   if(printme) {
    ## RItools:::print.ftable(thevartab,justify.labels="center",justify.data="right") ##doesn't seem to help the alignment problem
     if(!is.null(theresults)){ print(thevartab) }
-    if(!is.null(theoverall) && print.overall){
-      cat("---Overall Test---\n")
-      print(theoveralltab)
+    if(!is.null(groups)){
+      cat("--- Group Tests ---\n")
+      for (i in dimnames(groups.table)[[3]]) {
+        cat("\nGroup:", i, "\n")
+        print(ftable(adrop(groups.table[,,i, drop = FALSE], drop = 3)))
+      }
       if(show.signif.stars&!show.pvals){
-        if(!is.null(theresults)){thelegend<-attr(Signif, "legend")} ##if we are showing thevartab use the legend from that object
-        if(is.null(theresults) & !is.null(theoverall)){thelegend<-attr(ChiSignif,"legend")} ##use legend from the overall object if only showing that one
-        cat("---\nSignif. codes: ", thelegend, "\n")
+        cat("---\nSignif. codes: ", attr(ChiSignif,"legend"), "\n")
       }
     }
     ##cat(paste("n = ", n, ", k = ", k,
     ##          "\nresidual sd = ", fround(summ$sigma, digits), ", R-Squared = ", fround(summ$r.squared, 2),
     ##          "\n", sep = ""))
-  }else{
-  list(vartable=thevartab,overalltable=theoveralltab)}
+  } else {
+    list(vartable = thevartab,grptable = groups.table)}
   } )
 }

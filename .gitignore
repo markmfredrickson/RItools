@@ -2,3 +2,10 @@
 *.tar.gz
 .local
 RItools_*
+inst/examples/*.sty
+inst/examples/*.aux
+inst/examples/*.fdb_latexmk
+inst/examples/*.fls
+inst/examples/*.log
+inst/examples/*.pdf
+inst/examples/*.tex
