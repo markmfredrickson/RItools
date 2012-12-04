@@ -133,9 +133,10 @@ test_that("Generic balance plots", {
   # the balanceplot function takes a matrix and plots it in the expected fashion
   # this serves as a compliment to the .xbal.plot function
 
-  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
-                    dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
+  testmat <- matrix(c(4,3,2,1,-5, 3,-2,-3,2,3), ncol = 2, 
+                    dimnames = list(c("Variable 1","Variable Two","Var3","X4", "V5"),
                                     c("Stratification 1", "Stratification 2")))
+  grps <- as.factor(c("Grp1", "Grp2", "Grp2", "Grp1", "Grp1"))
 
   x11() # this might be more common than quartz
   expect_true(dev.capabilities()$capture)
@@ -145,6 +146,15 @@ test_that("Generic balance plots", {
   balanceplot(testmat) 
   p2 <- dev.capture()
   expect_identical(p1,p2)
+
+  balanceplot(testmat, grps)
+  p.grps <- dev.capture()
+  expect_true(!identical(p1, p.grps))
+
+  grps2 <- grps
+  grps2[1] <- "Grp2"
+  balanceplot(testmat, grps2)
+  expect_true(!identical(p.grps, dev.capture()))
 
   dev.off()
 })

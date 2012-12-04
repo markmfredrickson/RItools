@@ -128,25 +128,56 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 #' @export
-balanceplot <- function(x, ...) {
+balanceplot <- function(x, groups = NULL, ...) {
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
+
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
+  
   ypos <- 1:nvars
   
+  if (!is.null(groups)) {
+    groups <- as.factor(groups)
+
+    # order X by the groups, and within groups order by the first column
+    localorder <- order(groups, x[,1])
+    x <- x[localorder, ]
+    groups <- groups[localorder]
+
+    grpnames <- levels(groups)
+    pergroup <- table(groups)[grpnames]
+
+    ypos <- ypos + unlist(mapply(rep, 0:(length(grpnames) - 1), pergroup))
+  } else {
+    # redorder X by the first variable, could be an option in the future
+    x <- x[order(x[,1]), ]
+  }
+
+  mai <- par('mai')
+  mai[2] <- max(c(strwidth(rownames(x), units = "inches") + mai[2], mai[2]))
+  par(mai = mai)
+  
   plot(xrange, 
-       range(ypos),
+       range(ypos) + c(0,1) ,
        axes = FALSE,
        pch = 19,
        col = "blue",
        ylab = "",
        xlab = "Balance",
-       type="n",
+       type = "n",
        ...)
 
   for(i in 1:nstrat) {
-    points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+    points(x[,i], ypos, pch = i, cex = 0.5) # col =thecols[i],pch=thesymbols[i])
   }
+
+  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
+  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+
+  if (!is.null(groups)) {
+    text(mean(xrange), cumsum(pergroup) + (1:length(grpnames)), labels = grpnames)
+  }
+
 } 
