@@ -130,14 +130,12 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' @export
 #' @import lattice
 balanceplot <- function(x, groups = NULL, ...) {
-  strata <- colnames(x)
-  colnames(x) <- paste("X", 1:(length(strata)), sep = "")
 
   df <- as.data.frame(x)
-  rhs <- paste(colnames(x), collapse = " + ")
+  rhs <- paste(paste("`", colnames(df), "`", sep = "", collapse = " + "))
 
   df$vnames <- rownames(x)
-  fmla <- as.formula(paste("reorder(vnames, X1) ~ ", rhs, 
+  fmla <- as.formula(paste("vnames ~ ", rhs, 
                            ifelse(!is.null(groups), "| groups", "")))
 
   ngrps <- 1
