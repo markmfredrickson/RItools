@@ -128,25 +128,48 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 #' @export
-balanceplot <- function(x, ...) {
-  nvars <- dim(x)[1]
-  nstrat <- dim(x)[2]
+#' @import lattice
+balanceplot <- function(x, groups = NULL, ...) {
+  # nvars <- dim(x)[1]
+  # nstrat <- dim(x)[2]
 
-  xrange <- range(x, na.rm = TRUE)
-  xrange <- xrange + xrange * 0.25
-  ypos <- 1:nvars
-  
-  plot(xrange, 
-       range(ypos),
-       axes = FALSE,
-       pch = 19,
-       col = "blue",
-       ylab = "",
-       xlab = "Balance",
-       type="n",
-       ...)
+  # xrange <- range(x, na.rm = TRUE)
+  # xrange <- xrange + xrange * 0.25
+  # ypos <- 1:nvars
+  # 
+  # plot(xrange, 
+  #      range(ypos),
+  #      axes = FALSE,
+  #      pch = 19,
+  #      col = "blue",
+  #      ylab = "",
+  #      xlab = "Balance",
+  #      type="n",
+  #      ...)
 
-  for(i in 1:nstrat) {
-    points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+  # for(i in 1:nstrat) {
+  #   points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+  # }
+
+  df <- as.data.frame(x)
+  rhs <- paste(paste("`", colnames(df), "`", sep = "", collapse = " + "))
+
+  df$vnames <- rownames(x)
+  fmla <- as.formula(paste("vnames ~ ", rhs, 
+                           ifelse(!is.null(groups), "| groups", "")))
+
+  ngrps <- 1
+
+  if (!is.null(groups)) {
+    ngrps <- nlevels(as.factor(groups))
+    df$groups <- groups
   }
+
+  dotplot(fmla, data = df,
+          strip = F, 
+          strip.left = (ngrps > 1), 
+          layout = c(1, ngrps), 
+          scales = list(y = list(relation = "free")), 
+          xlab = "Balance", 
+          auto.key = list(text = colnames(x)))
 } 

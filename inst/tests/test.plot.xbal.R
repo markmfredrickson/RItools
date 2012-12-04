@@ -134,17 +134,15 @@ test_that("Generic balance plots", {
   # this serves as a compliment to the .xbal.plot function
 
   testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
-                    dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
+                    dimnames = list(c("Income","Gender","Age","Savings"),
                                     c("Stratification 1", "Stratification 2")))
 
-  x11() # this might be more common than quartz
-  expect_true(dev.capabilities()$capture)
+  grps <- as.factor(c("Economic", "Social", "Social", "Economic"))
+  
+  non.grp <- balanceplot(testmat)
+  expect_equal(non.grp$layout, c(1,1))
 
-  balanceplot(testmat)
-  p1 <- dev.capture()
-  balanceplot(testmat) 
-  p2 <- dev.capture()
-  expect_identical(p1,p2)
+  grped <- balanceplot(testmat, grps)
+  expect_equal(grped$layout, c(1,2))
 
-  dev.off()
 })
