@@ -130,6 +130,26 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' @export
 #' @import lattice
 balanceplot <- function(x, groups = NULL, ...) {
+  # nvars <- dim(x)[1]
+  # nstrat <- dim(x)[2]
+
+  # xrange <- range(x, na.rm = TRUE)
+  # xrange <- xrange + xrange * 0.25
+  # ypos <- 1:nvars
+  # 
+  # plot(xrange, 
+  #      range(ypos),
+  #      axes = FALSE,
+  #      pch = 19,
+  #      col = "blue",
+  #      ylab = "",
+  #      xlab = "Balance",
+  #      type="n",
+  #      ...)
+
+  # for(i in 1:nstrat) {
+  #   points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+  # }
 
   df <- as.data.frame(x)
   rhs <- paste(paste("`", colnames(df), "`", sep = "", collapse = " + "))
@@ -151,6 +171,5 @@ balanceplot <- function(x, groups = NULL, ...) {
           layout = c(1, ngrps), 
           scales = list(y = list(relation = "free")), 
           xlab = "Balance", 
-          auto.key = list(text = colnames(x)),
-          lty = 3)
+          auto.key = list(text = colnames(x)))
 } 
