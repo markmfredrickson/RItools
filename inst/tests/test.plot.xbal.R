@@ -143,18 +143,27 @@ test_that("Generic balance plots", {
 
   balanceplot(testmat)
   p1 <- dev.capture()
+  dev.off()
+  
+  x11()
   balanceplot(testmat) 
   p2 <- dev.capture()
+  dev.off()
+
   expect_identical(p1,p2)
 
+  x11()
   balanceplot(testmat, grps)
   p.grps <- dev.capture()
+  dev.off()
+
   expect_true(!identical(p1, p.grps))
 
   grps2 <- grps
   grps2[1] <- "Grp2"
+
+  x11()
   balanceplot(testmat, grps2)
   expect_true(!identical(p.grps, dev.capture()))
-
   dev.off()
 })
