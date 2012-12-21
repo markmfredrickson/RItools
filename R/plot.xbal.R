@@ -7,7 +7,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     thecols=rainbow(length(which.strata)),
                     thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
                     absolute = FALSE,
-                    ordered = FALSE,
                     ...){
 
   # the helper .plot.xbal turns xb and the many of the arguments into a
@@ -19,8 +18,12 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                            which.stat,
                            which.vars,
                            thevarlabs,
-                           absolute,
-                           ordered)
+                           absolute)
+
+  return(balanceplot(theresults, ...))
+
+  ### NOT RUN: (but saving while we transition to the more general balanceplot function 
+
   nvars <- dim(theresults)[1]
   nstrata <- dim(theresults)[2]
   varlabels <- rownames(theresults)
@@ -82,14 +85,13 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 .plot.xbal <- function(x, 
-                       
                        which.strata,
                        thestratalabs,
                        which.stat,
                        which.vars,
                        thevarlabs,
-                       absolute,
-                       ordered) {
+                       absolute)
+  {
 
   if (!(which.stat %in% dimnames(x$results)[["stat"]])){
     stop(paste(which.stat,' not among results recorded in xbal object.'))}
@@ -118,12 +120,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
     theresults <- abs(theresults) 
   }
 
-  if(ordered) {
-    # the data are ordered using the  statistic in the first stratifying factor
-    tmp <- order(theresults[,1])  
-    theresults <- theresults[tmp,, drop = FALSE]
-  } 
-
   return(theresults)
 }
 
@@ -144,12 +140,13 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #'
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param groups An optional factor of variable groups.
+#' @param ordered Should the variables be ordered (within groups if any) from most to least imbalance on the first statistic?
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
 #' @example inst/examples/balanceplot.R
 #' @export
-balanceplot <- function(x, groups = NULL, xlab = "Balance", ...) {
+balanceplot <- function(x, groups = NULL, ordered = F, xlab = "Balance", ...) {
   original.par <- par()
 
   nvars <- dim(x)[1]
@@ -159,24 +156,24 @@ balanceplot <- function(x, groups = NULL, xlab = "Balance", ...) {
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
   
-  ypos <- 1:nvars
   
-  if (!is.null(groups)) {
-    groups <- as.factor(groups)
+  if (is.null(groups)) {
+    groups <- rep(1, nvars)
+  }
+  
+  groups <- as.factor(groups)
 
+  if (ordered) {
     # order X by the groups, and within groups order by the first column
     localorder <- order(groups, x[,1])
-    x <- x[localorder, ]
+    x <- x[localorder, , drop = F]
     groups <- groups[localorder]
-
-    grpnames <- levels(groups)
-    pergroup <- table(groups)[grpnames]
-
-    ypos <- ypos + unlist(mapply(rep, 0:(length(grpnames) - 1), pergroup))
-  } else {
-    # redorder X by the first variable, could be an option in the future
-    x <- x[order(x[,1]), ]
   }
+
+  grpnames <- levels(groups)
+  pergroup <- table(groups)[grpnames]
+
+  ypos <- 1:nvars + unlist(mapply(rep, 0:(length(grpnames) - 1), pergroup))
 
   mai <- par('mai')
   mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
