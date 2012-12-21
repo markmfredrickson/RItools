@@ -150,6 +150,8 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' @example inst/examples/balanceplot.R
 #' @export
 balanceplot <- function(x, groups = NULL, xlab = "Balance", ...) {
+  original.par <- par()
+
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
@@ -177,12 +179,11 @@ balanceplot <- function(x, groups = NULL, xlab = "Balance", ...) {
   }
 
   mai <- par('mai')
-  mai[2] <- max(c(strwidth(rownames(x), units = "inches") + mai[2], mai[2]))
-  par(mai = mai)
-
+  mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
   mar <- par('mar')
-  mar[3] <- mar[3] + nstrat + 2
-  
+  mar[3] <- nstrat + 2
+  original.par <- par(mar = mar, mai = mai)
+ 
   plot(xrange, 
        range(ypos) + c(0,1) ,
        axes = FALSE,
@@ -213,4 +214,5 @@ balanceplot <- function(x, groups = NULL, xlab = "Balance", ...) {
          xjust = 0.5,
          yjust = 0)
 
+  par(original.par)
 } 
