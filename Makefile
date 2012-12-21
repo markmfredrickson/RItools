@@ -15,7 +15,7 @@ current:
 	@echo $(PKG).tar.gz
 
 # we depend on the makefile so that updates to the version number will force a rebuild
-$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore
+$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore inst/examples/*
 	rm -rf $(PKG)
 	rsync -a --exclude-from=.gitignore --exclude=.git* --exclude Makefile \
 		--exclude=DESCRIPTION.template --exclude=NAMESPACE.static \
@@ -75,8 +75,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 .local/svd/INSTALLED:
 	$(call installpkg,svd)
 	
+.local/abind/INSTALLED:
+	$(call installpkg,abind)
+
 # depend on this file to decide if we need to install the local version
-.local/RItools/INSTALLED: $(PKG).tar.gz .local/svd/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED
+.local/RItools/INSTALLED: $(PKG).tar.gz .local/svd/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED
 	mkdir -p .local
 	$(R) CMD INSTALL --no-multiarch --library=.local $(PKG).tar.gz
 	echo `date` > .local/RItools/INSTALLED

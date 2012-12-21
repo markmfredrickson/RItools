@@ -67,7 +67,7 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
-#' Select variables, strata, groups, and statistics from a \code{xbal} object
+#' Select variables, strata, and statistics from a \code{xbal} object
 #'
 #' If any of the arguments are not specified, all the of relevant items are
 #' included.
@@ -77,7 +77,6 @@ withOptions <- function(optionsToChange, fun) {
 #' @param vars The variable names to select.
 #' @param strata The strata names to select.
 #' @param stats The names of the variable level statistics to select.
-#' @param groups The names of the groups to select.
 #' @param tests The names of the group level tests to select.
 #' @param ... Other arguments (ignored)
 #'
