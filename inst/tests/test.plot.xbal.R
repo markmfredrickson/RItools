@@ -46,13 +46,10 @@ test_that("Basic plot", {
 
   x11()
   # has an argument to order the variables (from bottom to bottom)
-  plot(xb, which.vars = c("X1", "X2", "X4", "X3"), ordered = F)
+  plot(subset(xb, vars = c("X1", "X2", "X4", "X3")), ordered = F)
   expect_true(!identical(p1, dev.capture()))
   dev.off()
  
-  # but including other variables is an error
-  expect_error(plot(xb, which.vars = c("X1", "X2", "X3", "X4", "X5")), "Unknown variable\\(s\\): X5")
-
   # the order the data based on the selected variable
   x11()
   plot(xb, ordered = T)
@@ -66,43 +63,6 @@ test_that("Basic plot", {
   plot(xb)
   expect_identical(p1, dev.capture())
   dev.off()
-})
-
-test_that("Helper function", {
-  set.seed(20121119)
-  Z <- rep(c(0,1), 10)
-  df <- data.frame(Z = Z,
-                   X1 = rnorm(20, mean = Z*2),
-                   X2 = rnorm(20, mean = Z*3),
-                   X3 = rnorm(20, mean = Z * -1),
-                   X4 = rnorm(20, mean = Z * -0.5))
-
-  xb <- xBalance(Z ~ ., data = df, strata = data.frame(raw = factor('none'), other = as.factor(rep(c(1,0), each = 10))))
-
-  lbls <- c("X One", "X Two", "X Three", "X Four")
-  res <-  .plot.xbal(xb, 
-                    which.strata = c("raw", "other"),
-                    thestratalabs = c("Unstratified", 
-                                      "Some Other Strata"),
-                    which.stat = "std.diff",
-                    which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls)
-
-  expect_equal(dim(res), c(4,2))
-  expect_equal(rownames(res), lbls)
-  expect_equal(colnames(res), c("Unstratified", "Some Other Strata"))
-
-  # repeating with a single strata
-  
-  res.singlestrat <-  .plot.xbal(xb, 
-                    which.strata = c("raw"),
-                    thestratalabs = c("Unstratified"),
-                    which.stat = "std.diff",
-                    which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls)
-
-  expect_equal(dim(res.singlestrat), c(4,1)) # should be a column data.frame, not a vector
-
 })
 
 test_that("Generic balance plots", {

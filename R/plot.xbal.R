@@ -1,28 +1,39 @@
 plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     mar=c(3,3,2,0)+0.1,mgp=c(1.5,.5,0),tck=-.01,
-                    which.strata=dimnames(x$results)[["strata"]],thestratalabs=which.strata,
-                    which.stat="std.diff", ##dimnames(x$results)[["stat"]],
-                    which.vars=dimnames(x$results)[["vars"]],thevarlabs=which.vars,
-                    thexlab="Standardized Differences",
+                    xlab = "Standardized Differences",
+                    statistic = "std.diff",
                     thecols=rainbow(length(which.strata)),
                     thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
                     absolute = FALSE,
+                    strata.labels = NULL,
+                    variable.labels = NULL,
                     ...){
 
   # the helper .plot.xbal turns xb and the many of the arguments into a
   # an ordered variables by stratas table. The colnames are the labeled stratifications
   # the rownames are the labeled variables
-  theresults <- .plot.xbal(x, 
-                           which.strata,
-                           thestratalabs,
-                           which.stat,
-                           which.vars,
-                           thevarlabs)
-  if (absolute) {
-    theresults <- abs(theresults)
+  if (dim(x$results)[2] > 1) {
+    # this means that the user is passing an xBalance object with more than one statistic
+    # so we need to trim it down
+    x <- subset(x, stats = statistic)
   }
 
-  return(balanceplot(theresults, ...))
+  x <- as.data.frame(x$results)  
+
+  if (!is.null(variable.labels)) {
+    rownames(x) <- variable.labels[rownames(x)]
+  }
+
+  if (!is.null(strata.labels)) {
+    colnames(x) <- strata.labels[colnames(x)]
+  }
+
+  if (absolute) {
+    x <- abs(x)
+  }
+
+
+  return(balanceplot(x, xlab = xlab, ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function 
 
@@ -84,40 +95,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
            pch=thesymbols,
            bty="n")
   }
-}
-
-.plot.xbal <- function(x, 
-                       which.strata,
-                       thestratalabs,
-                       which.stat,
-                       which.vars,
-                       thevarlabs)
-  {
-
-  if (!(which.stat %in% dimnames(x$results)[["stat"]])){
-    stop(paste(which.stat,' not among results recorded in xbal object.'))}
-  
-  if (length(which.stat) > 1) {
-    stop("Only one statistic allowed per-plot")
-  }
-
-  tmp <- !(which.vars %in% dimnames(x$results)[["vars"]])
-  if (any(tmp)) {
-    stop(paste("Unknown variable(s):", paste(which.vars[tmp], collapse = ",")))
-  }
-
-  theresults <- x$results[which.vars, which.stat, which.strata, drop=FALSE]
-  # theresults are still an array, but there is guaranteed only one statistic
-  # so we can cast to a data.frame to get a vars by strata table
-  theresults <- as.data.frame(theresults)
-  
-  # we assume that the labels are in the same order as the which.xxx vars
-  # and add potentially pretty labels to the rows and columns
-  rownames(theresults) <- thevarlabs
-  colnames(theresults) <- thestratalabs
-  
-
-  return(theresults)
 }
 
 #' Create a plot of the balance on variables across different stratifications.
