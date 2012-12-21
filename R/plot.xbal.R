@@ -1,3 +1,34 @@
+#' Plot of balance across multiple stratification schemes
+#'
+#' The plot allows a quick visual comparison of the effect of different
+#' stratification designs on the comparability of different
+#' variables. This is not a replacement for the omnibus statistical test
+#' reported as part of \code{\link{print.xbal}}. This plot does allow the
+#' analyst an easy way to identify variables that might be the primary culprits
+#' of overall imbalances and/or a way to assess whether certain important
+#' covariates might be imbalanced even if the omnibus test reports that
+#' the stratification overall produces balance.
+#'
+#' By default all variables and all stratifications are plotted. The scope
+#' of the plot can be reduced by using the \code{\link{subset.xbal}} function to
+#' make a smaller \code{xbal} object with only the desired variables or
+#' stratifications.
+#'
+#' @param x An object returned by \code{\link{xBalance}}
+#' @param xlab The label for the x-axis of the plot
+#' @param statistic The statistic to plot. The default choice of standardized
+#' difference is a good choice as it will have roughly the same scale for all
+#' plotted variables.
+#' @param thecols NOT YET IMPLEMENTED
+#' @param thesymbols NOT YET IMPLEMENTED
+#' @param absolute Convert the results to the absolute value of the statistic.
+#' @param strata.labels A named vector of the from \code{c(strata1 = "Strata Label 1", ...)} 
+#' that maps the stratification schemes to textual labels.
+#' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)} 
+#' that maps the variables to textual labels.
+#' @param ... additional arugments to pass to \code{\link{balanceplot}}
+#' @seealso \code{\link{xBalance}} \code{\link{subset.xbal}} \code{\link{balanceplot}}
+#' @example inst/examples/plot.xbal.R
 plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     mar=c(3,3,2,0)+0.1,mgp=c(1.5,.5,0),tck=-.01,
                     xlab = "Standardized Differences",
