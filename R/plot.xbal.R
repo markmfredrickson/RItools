@@ -15,16 +15,27 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   if (dim(x$results)[2] > 1) {
     # this means that the user is passing an xBalance object with more than one statistic
     # so we need to trim it down
+    
+    # but first we need to make sure the statistic exists
+    if (!(statistic %in% dimnames(x$results)[[2]])) {
+      stop("Unknown statistic: ", statistic)
+    }
     x <- subset(x, stats = statistic)
   }
 
-  x <- as.data.frame(x$results)  
+  x <- adrop(x$results, drop = 2)  
 
   if (!is.null(variable.labels)) {
+    if (is.null(names(variable.labels))) {
+      stop("Variable labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
     rownames(x) <- variable.labels[rownames(x)]
   }
 
   if (!is.null(strata.labels)) {
+    if (is.null(names(strata.labels))) {
+      stop("Strata labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
     colnames(x) <- strata.labels[colnames(x)]
   }
 

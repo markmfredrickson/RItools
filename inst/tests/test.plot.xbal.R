@@ -63,6 +63,11 @@ test_that("Basic plot", {
   plot(xb)
   expect_identical(p1, dev.capture())
   dev.off()
+
+  ### Error checking
+  expect_error(plot(xb, statistic = "foo"), "statistic")
+  expect_error(plot(xb, variable.labels = c("foo")), "labels")
+  expect_error(plot(xb, strata.labels = c("foo")), "labels")
 })
 
 test_that("Generic balance plots", {
