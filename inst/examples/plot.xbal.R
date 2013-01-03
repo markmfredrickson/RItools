@@ -15,6 +15,6 @@ plot(xb, variable.labels = c(date = "Date",
                              bw = "Babcock-Wilcox",
                              cum.n = "Total Plants Built"),
     strata.labels = c("none" = "Raw Data", "pt" = "Partial Turn-key"),
-    absolute = T)
+    absolute = TRUE)
 
 
