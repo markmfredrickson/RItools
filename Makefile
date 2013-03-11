@@ -9,6 +9,11 @@ VERSION=0.1-12
 RELEASE_DATE=`date +%Y-%m-%d`
 PKG=RItools_$(VERSION)
 
+# a useful helper for scripts who need to know what the package name is going to be
+# use: R CMD INSTALL path/to/RItools/$(cd path/to/RItools && make current)
+current: 
+	@echo $(PKG).tar.gz
+
 # we depend on the makefile so that updates to the version number will force a rebuild
 $(PKG): Makefile R/* tests/* inst/tests/* man/* 
 	rm -rf $(PKG)
