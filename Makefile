@@ -43,9 +43,10 @@ spell: package
 lexicon.txt: package
 	$(R) -q --no-save -e "source('checkspelling.R') ; make_dictionary('$(PKG)')"
 
-# we don't use $(R) here in case the locally installed libs interfere with the check process
+# For reasons unknown, the check process has a fit if using just the environment variables R_LIBS 
+# so, we also use the -l flag. 
 check: $(PKG).tar.gz .local/xtable/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED
-	$(R) CMD check --as-cran --no-multiarch $(PKG).tar.gz
+	$(R) CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
 
 release: check spell
 	git tag -a $(VERSION)
