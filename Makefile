@@ -15,7 +15,7 @@ current:
 	@echo $(PKG).tar.gz
 
 # we depend on the makefile so that updates to the version number will force a rebuild
-$(PKG): Makefile R/* tests/* inst/tests/* man/* 
+$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore
 	rm -rf $(PKG)
 	rsync -a --exclude-from=.gitignore --exclude=.git* --exclude Makefile \
 		--exclude=DESCRIPTION.template --exclude=NAMESPACE.static \
