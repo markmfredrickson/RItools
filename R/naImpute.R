@@ -2,7 +2,7 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE)
 {
   if(!all("na.rm" %in% names(formals(impfn)))){stop("The imputation function requires a na.rm argument like that of mean.default() or median()")}
   fmla.rhs <- terms.formula(if (length(FMLA)>2) FMLA[-2] else FMLA,
-                        dat=DATA, keep.order=TRUE)
+                        data = DATA, keep.order=TRUE)
   dat <- get_all_vars(fmla.rhs,DATA)
   badfactor <- sapply(dat,function(x) nlevels(x)==1)
   dat[badfactor] <- lapply(dat[badfactor], as.integer) ##Is this right? shouldn't it be dat[,badfactor] ?
@@ -45,7 +45,7 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE)
                                    c(names(dat),names(dat.NA)))],
                       dat, dat.NA)
     TFMLA <- if (length(dat.NA)) update.formula(FMLA, as.formula(paste(".~.+",paste(names(dat.NA), collapse=" + ")))) else FMLA
-    TFMLA <- terms.formula(TFMLA,dat=dat, keep.order=TRUE) 
+    TFMLA <- terms.formula(TFMLA,data = dat, keep.order=TRUE) 
     return(structure(dat, terms=TFMLA))
-  } else return(structure(DATA,terms=terms.formula(FMLA,dat=DATA, keep.order=TRUE)))
+  } else return(structure(DATA,terms=terms.formula(FMLA,data = DATA, keep.order=TRUE)))
 }

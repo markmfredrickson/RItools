@@ -71,7 +71,7 @@ ans <-
 						       ssn/sqrt(ssvar))
 	if (any(c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values") %in% report))  ##always produce a pvalue to use to create signif stars.
 		ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
-				   2*pnorm(abs(ssn/sqrt(ssvar)),lower=FALSE))
+				   2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
 
 	if ("chisquare.test"%in%report)
           {require(svd)

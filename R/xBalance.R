@@ -24,7 +24,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
 ### NA Handling ##  
   if (na.rm==TRUE)
     {
-      tfmla <- terms.formula(fmla,dat=data, keep.order=TRUE) 
+      tfmla <- terms.formula(fmla,data=data, keep.order=TRUE) 
     } else
   {
     data <- naImpute(fmla,data,impfn)
@@ -132,7 +132,7 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
    ans$overall[nn,'df'] <- RES[[nn]]$chisq['df']
    ans$overall[nn,'p.value'] <- pchisq(RES[[nn]]$chisq['chisquare'],
                                        df=RES[[nn]]$chisq['df'],
-                                       lower=FALSE)
+                                       lower.tail=FALSE)
   }
 }
   class(ans) <- c("xbal", "list")
