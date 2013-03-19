@@ -6,8 +6,8 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     thexlab="Standardized Differences",
                     thecols=rainbow(length(which.strata)),
                     thesymbols=c(19,22,23,24,25)[1:length(which.strata)],...){
-  if (!("std.diff"%in%dimnames(x$results)[["stat"]]))
-    stop('"std.diff" not among results recorded in xbal object.') 
+  if (!(which.stats %in% dimnames(x$results)[["stat"]])){
+    stop(paste(which.stats,' not among results recorded in xbal object.'))}
   theresults<-x$results[which.vars,which.stats,which.strata,drop=FALSE]
   ypos<-seq(length=length(which.vars))
   xrange<-range(theresults[,which.stats,],na.rm=TRUE)

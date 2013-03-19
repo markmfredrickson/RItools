@@ -200,8 +200,8 @@ xBalance(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 #####################################################
 if (require('xtable'))
   {
-xtable(xb0)
-xtable(xb0, caption="Caption!", label="thetable", digits=1,
+  xtablea <- xtable(xb0)
+  xtableb <- xtable(xb0, caption="Caption!", label="thetable", digits=1,
        align=rep('l', prod(dim(xb0$result)[2:3])+1),
        display=c('s', rep(c(rep('fg',5), 's'),2)) #,col.labels= do this one later
        )
@@ -259,6 +259,17 @@ xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF, strata=list(nostrata
 xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF, strata=list(nostrata=NULL,thept=~pt), data = testdata,na.rm=TRUE,impfn=mean.default)
 
 
+#####################################################
+######  handling factor with no levels strata=argument  ###
+#####################################################
+try(xBalance(pr ~ date,
+             strata=data.frame(nastrat=factor(rep(NA,nrow(testdata))) ),
+             data=testdata), FALSE)
+
+xBalance(pr ~ date,
+         strata=data.frame(nostrata=factor(rep('a',nrow(testdata))),
+           nastrat=factor(rep(NA,nrow(testdata))) ),
+         data=testdata)
 #####################################################
 ######             WISHLIST                       ###
 #####################################################
