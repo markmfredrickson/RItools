@@ -88,6 +88,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 test: .local/RItools/INSTALLED .local/testthat/INSTALLED
 	$(R) -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
+# removes local files, leaves external libraries
 clean:
-	git clean -xfd
+	mv .local .local-clean
+	git clean -Xfd
+	mv .local-clean .local
 
+clean-deps:
+	rm -rf .local
