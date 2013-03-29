@@ -56,7 +56,7 @@ release: check spell
 
 # additional dependencies from CRAN
 installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http://streaming.stat.iastate.edu/CRAN/')" ; date > .local/$(1)/INSTALLED
-	
+
 .local/roxygen2/INSTALLED:
 	$(call installpkg,roxygen2)
 
@@ -71,7 +71,7 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 
 .local/xtable/INSTALLED:
 	$(call installpkg,xtable)
-	
+
 # depend on this file to decide if we need to install the local version
 .local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED
 	mkdir -p .local
