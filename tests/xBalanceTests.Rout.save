@@ -1,13 +1,12 @@
 
-R version 2.11.1 (2010-05-31)
-Copyright (C) 2010 The R Foundation for Statistical Computing
+R version 2.15.2 (2012-10-26) -- "Trick or Treat"
+Copyright (C) 2012 The R Foundation for Statistical Computing
 ISBN 3-900051-07-0
+Platform: x86_64-apple-darwin12.2.1 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
 Type 'license()' or 'licence()' for distribution details.
-
-  Natural language support but running in an English locale
 
 R is a collaborative project with many contributors.
 Type 'contributors()' for more information and
@@ -19,7 +18,7 @@ Type 'q()' to quit R.
 
 > require("RItools")
 Loading required package: RItools
-Package SparseM (0.85) loaded.
+Package SparseM (0.96) loaded.
 	   To cite, see citation("SparseM")
 
 > 
@@ -58,7 +57,7 @@ cum.n        8.7273   8.1000   -0.6273  -0.0976  -0.2598
         chisquare df p.value
 unstrat      11.5  8   0.177
 ---
-Signif. codes:  0 ‘***’ 0.001 ‘** ’ 0.01 ‘*  ’ 0.05 ‘.  ’ 0.1 ‘   ’ 1 
+Signif. codes:  0 '***' 0.001 '** ' 0.01 '*  ' 0.05 '.  ' 0.1 '   ' 1 
 > 
 > xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 +          strata=data.frame(unstrat=factor(character(32)),
@@ -81,7 +80,7 @@ cum.n        8.7273   8.1000   -0.6273  -0.0976  -0.2598           8.7209   7.90
 unstrat      11.5  8   0.177
 pt           10.8  8   0.215
 ---
-Signif. codes:  0 ‘***’ 0.001 ‘** ’ 0.01 ‘*  ’ 0.05 ‘.  ’ 0.1 ‘   ’ 1 
+Signif. codes:  0 '***' 0.001 '** ' 0.01 '*  ' 0.05 '.  ' 0.1 '   ' 1 
 > 
 > (xb0 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 +          strata=list(unstrat=NULL, pt=~pt),
@@ -104,7 +103,7 @@ cum.n        8.7273   8.1000   -0.6273  -0.0976  -0.2598           8.7209   7.90
 unstrat      11.5  8   0.177
 pt           10.8  8   0.215
 ---
-Signif. codes:  0 ‘***’ 0.001 ‘** ’ 0.01 ‘*  ’ 0.05 ‘.  ’ 0.1 ‘   ’ 1 
+Signif. codes:  0 '***' 0.001 '** ' 0.01 '*  ' 0.05 '.  ' 0.1 '   ' 1 
 > ##########################################################################################
 > ### Oddness on LHS of formula
 > ##########################################################################################Q
@@ -129,7 +128,7 @@ cum.n            8.7273       8.1000   -0.6273  -0.0976  -0.2598               8
 unstrat      11.5  8   0.177
 pt           10.8  8   0.215
 ---
-Signif. codes:  0 ‘***’ 0.001 ‘** ’ 0.01 ‘*  ’ 0.05 ‘.  ’ 0.1 ‘   ’ 1 
+Signif. codes:  0 '***' 0.001 '** ' 0.01 '*  ' 0.05 '.  ' 0.1 '   ' 1 
 > 
 > 
 > ###(b0 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
@@ -301,35 +300,13 @@ Signif. codes:  0 ‘***’ 0.001 ‘** ’ 0.01 ‘*  ’ 0.05 ‘.  ’ 0.1 �
 > #####################################################
 > if (require('xtable'))
 +   {
-+ xtable(xb0)
-+ xtable(xb0, caption="Caption!", label="thetable", digits=1,
++   xtablea <- xtable(xb0)
++   xtableb <- xtable(xb0, caption="Caption!", label="thetable", digits=1,
 +        align=rep('l', prod(dim(xb0$result)[2:3])+1),
 +        display=c('s', rep(c(rep('fg',5), 's'),2)) #,col.labels= do this one later
 +        )
 +   }
 Loading required package: xtable
-% latex table generated in R 2.11.1 by xtable 1.5-6 package
-% Thu Aug  5 21:49:38 2010
-\begin{table}[ht]
-\begin{center}
-\begin{tabular}{lllllllllllll}
-  \hline
- & pr=0 & pr=1 & adj.diff & std.diff & z &  & pr=0 & pr=1 & adj.diff & std.diff & z &  \\ 
-  \hline
-date & 69 & 69 & -0.1 & -0.1 & -0.3 &     & 68 & 69 & 0.1 & 0.1 & 0.3 &     \\ 
-  t1 & 14 & 14 & 0.4 & 0.1 & 0.3 &     & 13 & 14 &  1 & 0.3 & 0.8 &     \\ 
-  t2 & 59 & 69 & 1e+01 &  1 &  2 & *   & 59 & 69 &  9 &  1 &  2 & *   \\ 
-  cap & 805 & 870 & 65 & 0.3 & 0.9 &     & 806 & 873 & 67 & 0.4 & 0.9 &     \\ 
-  ne & 0.3 & 0.2 & -0.07 & -0.2 & -0.4 &     & 0.2 & 0.2 & -0.02 & -0.05 & -0.1 &     \\ 
-  ct & 0.5 & 0.3 & -0.2 & -0.3 & -0.8 &     & 0.4 & 0.3 & -0.1 & -0.2 & -0.6 &     \\ 
-  bw & 0.2 & 0.2 & 0.02 & 0.05 & 0.1 &     & 0.2 & 0.2 & -0.05 & -0.1 & -0.3 &     \\ 
-  cum.n &  9 &  8 & -0.6 & -0.1 & -0.3 &     &  9 &  8 & -0.8 & -0.1 & -0.3 &     \\ 
-   \hline
-\end{tabular}
-\caption{Caption!}
-\label{thetable}
-\end{center}
-\end{table}
 > 
 > 
 > #####################################################
@@ -487,10 +464,30 @@ cum.nF21         NaN     0.0000           NaN     0.0000
 > 
 > 
 > #####################################################
+> ######  handling factor with no levels strata=argument  ###
+> #####################################################
+> try(xBalance(pr ~ date,
++              strata=data.frame(nastrat=factor(rep(NA,nrow(testdata))) ),
++              data=testdata), FALSE)
+Error in xBalance(pr ~ date, strata = data.frame(nastrat = factor(rep(NA,  : 
+  'strata=' variable contains no strata.  Perhaps it evaluates to NAs?
+> 
+> xBalance(pr ~ date,
++          strata=data.frame(nostrata=factor(rep('a',nrow(testdata))),
++            nastrat=factor(rep(NA,nrow(testdata))) ),
++          data=testdata)
+     strata nostrata               
+     stat   std.diff    z          
+vars                               
+date          -0.115  -0.305       
+> #####################################################
 > ######             WISHLIST                       ###
 > #####################################################
 > ###
 > ###
 > ###
 > ###
->
+> 
+> proc.time()
+   user  system elapsed 
+  0.816   0.043   0.839 

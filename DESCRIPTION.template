@@ -1,13 +1,19 @@
 Package: RItools
-Version:0.1-12
-Date: 2010-03-07
+Version: VERSION
+Date: DATE
 Title: Randomization inference tools
 Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson <mark.m.fredrickson@gmail.com>, and Ben Hansen <ben.hansen@umich.edu>
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
+<<<<<<< HEAD:DESCRIPTION
 Depends: R (>= 2.14.0), methods
 Imports: graphics, stats, lattice, grid, SparseM, xtable, abind
 Suggests: optmatch, xtable
+=======
+Depends: R (>= 2.2.0), methods
+Imports: graphics, stats, lattice, grid, SparseM, xtable, svd
+Suggests: optmatch, xtable, testthat
+>>>>>>> master:DESCRIPTION.template
 Enhances: optmatch, xtable
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/RItools.html

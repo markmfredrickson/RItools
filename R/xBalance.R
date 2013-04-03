@@ -24,7 +24,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
 ### NA Handling ##  
   if (na.rm==TRUE)
     {
-      tfmla <- terms.formula(fmla,dat=data, keep.order=TRUE) 
+      tfmla <- terms.formula(fmla,data=data, keep.order=TRUE) 
     } else
   {
     data <- naImpute(fmla,data,impfn)
@@ -70,6 +70,19 @@ mm1 <- xBalance.makeMM(tfmla,data)
   }
 ### End prepare ss.df, data frame of strata
 
+### Remove stratification variables without levels (e.g., all NAs), with a warning
+if (any(ss.rm <- !sapply(ss.df, nlevels)))
+  {
+    if (length(ss.df)==1) stop("'strata=' variable contains no strata.  Perhaps it evaluates to NAs?")
+    if (all(ss.rm)) stop("'strata=' variables contain no strata.  Perhaps they all evaluate to NAs?")
+    ss.rm.nms <- if (is.null(names(ss.df))) which(ss.rm) else names(ss.df)[ss.rm]
+    ss.rm.nms <- paste(ss.rm.nms, collapse=" ,")
+    warning(paste("Removing the following strata entries, which contained no strata.\n(Perhaps they evaluate to NAs?)\n",
+            ss.rm.nms)
+            )
+    ss.df <- ss.df[!ss.rm]
+}
+### End remove stratification variables without levels  
   gs.df <- xBalance.find.goodstrats(ss.df,zz,mm1)
   
   swt.ls <- xBalance.make.stratwts(stratum.weights,ss.df, gs.df, zz, data, normalize.weights)
@@ -119,7 +132,7 @@ mm1 <- xBalance.makeMM(tfmla,data)
    ans$overall[nn,'df'] <- RES[[nn]]$chisq['df']
    ans$overall[nn,'p.value'] <- pchisq(RES[[nn]]$chisq['chisquare'],
                                        df=RES[[nn]]$chisq['df'],
-                                       lower=FALSE)
+                                       lower.tail=FALSE)
   }
 }
   class(ans) <- c("xbal", "list")

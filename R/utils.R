@@ -1,6 +1,6 @@
 ##This file contains some small helper functions.
 
-makePval<-function(zs){2*pnorm(abs(zs),lower=FALSE)}
+makePval<-function(zs){2*pnorm(abs(zs),lower.tail=FALSE)}
 
 formula.xbal<-function(x,...){
   attr(x,"fmla")
