@@ -251,6 +251,41 @@ function(y, z) {
 }, asymptotic = .ksBackEnd)
 
 
+### The adTestStatistic with ad.test as a potential backend
+.adBackEnd <- function(
+  adjusted.y,
+  z) {
+
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.y, 2, function(y) {
+    res <- ad.test(y[!!z], y[!z]) # small problems may still be figured exactly
+    return(res$ad[1,c(1,3)])
+  })
+
+  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+  colnames(tmp) <- c("statistic", "p.value")
+
+  return(new("RandomizationDistribution", 
+      tmp, # RD inherits from data.frame
+      test.statistic = ad.test,
+      z = as.numeric(z)))
+}
+
+adTestStatistic <- new("AsymptoticTestStatistic",
+		       function(y, z) {
+			 require(kSamples)
+  # next borrowed from KS test
+  # first, set up using the KS test var names
+  x <- y[z == 1]
+  y <- y[z == 0]
+
+  x <- x[!is.na(x)]
+
+  y <- y[!is.na(y)]
+  
+  return(ad.test(x,y)$ad[1,1])
+}, asymptotic = .adBackEnd)
+
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
