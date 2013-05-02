@@ -213,7 +213,7 @@ quantileAbsoluteDifference <- function(quantiles) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
-    res <- ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
+    res <- stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
     return(res[c("statistic", "p.value")])
   })
 
@@ -249,6 +249,108 @@ function(y, z) {
 
   return(max(abs(z)))
 }, asymptotic = .ksBackEnd)
+
+
+### The ssrTestStatistic with the F-test as a potential asymp backend
+### (and using F as the test statistic)
+
+.ssrBackEnd <- function(
+  adjusted.y,
+  z, d) {
+
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.y, 2, function(y) {
+    tmp <- summary(lm(y~z+d))$fstatistic
+    res <- c("statistic"=tmp["value"],
+             "p.value"=1-pf(tmp["value"],tmp["numdf"],tmp["dendf"]))
+    return(res[c("statistic", "p.value")])
+  })
+
+  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+  colnames(tmp) <- c("statistic", "p.value")
+
+  return(new("RandomizationDistribution", 
+      tmp, # RD inherits from data.frame
+      test.statistic = ks.test,
+      z = as.numeric(z)))
+}
+
+ssrTestStatistic <- new("AsymptoticTestStatistic",
+                        function(y, z, d) {
+                        ##  return(summary(lm(y~z+d))$sigma)
+                          return(summary(lm(y~z+d))$fstatistic["value"])
+                        }, asymptotic = .ssrBackEnd)
+
+
+
+### The Cramer-von Mises test statistic and asymp backend (using W2 version)
+### The ksTestStatistic with ks.test as a potential backend
+
+# this borrowed from cvm.test
+.cvmBackEnd <- function(
+  adjusted.y,
+  z) {
+
+  require(dgof)
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.y, 2, function(y) {
+    res <- dgof::cvm.test(y[!!z], y[!z]) # small problems may still be figured exactly
+    return(res[c("statistic", "p.value")])
+  })
+
+  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+  colnames(tmp) <- c("statistic", "p.value")
+
+  return(new("RandomizationDistribution", 
+      tmp, # RD inherits from data.frame
+      test.statistic = cvm.test,
+      z = as.numeric(z)))
+}
+
+cvmTestStatistic <- new("AsymptoticTestStatistic",
+                        function(y, z) {
+                          ## next borrowed from  cvm.stat.disc
+                          ## first, set up using the cvm.stat.disc test var names
+                          x <- y[z == 1]
+                          y <- y[z == 0]
+                          
+                          x <- x[!is.na(x)]
+                          y <- y[!is.na(y)]
+
+                          I <- knots(y)
+                          N <- length(x)
+                          e <- diff(c(0, N * y(I)))
+                          obs <- rep(0, length(I))
+                          for (j in 1:length(I)) {
+                            obs[j] <- length(which(x == I[j]))
+                          }
+                          S <- cumsum(obs)
+                          T <- cumsum(e)
+                          H <- T/N
+                          p <- e/N
+                          t <- (p + p[c(2:length(p), 1)])/2
+                          Z <- S - T
+                          Zbar <- sum(Z * t)
+                          S0 <- diag(p) - p %*% t(p)
+                          A <- matrix(1, length(p), length(p))
+                          A <- apply(row(A) >= col(A), 2, as.numeric)
+                          E <- diag(t)
+                          One <- rep(1, nrow(E))
+                          K <- diag(0, length(H))
+                          diag(K)[-length(H)] <- 1/(H[-length(H)] * (1 - H[-length(H)]))
+                          Sy <- A %*% S0 %*% t(A)
+                          M <- E
+                          ##switch(type, W2 = E, U2 = (diag(1, nrow(E)) - E %*% 
+                          ##                    One %*% t(One)) %*% E %*% (diag(1, nrow(E)) - One %*% 
+                          ##                                               t(One) %*% E), A2 = E %*% K)
+                          lambda <- eigen(M %*% Sy)$values
+                          STAT <- sum(Z^2 * t)/N
+                            ## switch(type, W2 = sum(Z^2 * t)/N,
+                            ## U2 = sum((Z -  Zbar)^2 * t)/N, A2 = sum((Z^2 * t/(H * (1 - H)))[-length(I)])/N)
+                          return(STAT)
+                          
+                        }, asymptotic = .cvmBackEnd
+                        )
 
 
 ### Subset/subgroup Analysis
