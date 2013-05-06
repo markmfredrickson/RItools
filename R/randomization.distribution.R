@@ -292,7 +292,7 @@ getLApplyFunction <- function(x,fun,...) {
     return(parLapply(cl,x,fun,...)) # yay speed!
   }
 
-  return(lapply) # the safe default
+  return(lapply(x,fun,...)) # the safe default
 }
 
 
@@ -313,6 +313,6 @@ getApplyFunction <- function(x,fun,...) {
     return(simplify2array(parLapply(cl,x,fun,...)))
   }
 
-  return(sapply) # the safe default
+  return(sapply(x,fun,...)) # the safe default
 }
 
