@@ -274,24 +274,20 @@ function(y, z) {
 adTestStatistic <- new("AsymptoticTestStatistic",
 		       function(y, z) {
 			 require(kSamples)
-  # next borrowed from KS test
-  # first, set up using the KS test var names
-  x <- y[z == 1]
-  y <- y[z == 0]
-
-  x <- x[!is.na(x)]
-
-  y <- y[!is.na(y)]
-  
-  return(ad.test(x,y)$ad[1,1])
-}, asymptotic = .adBackEnd)
+                         x <- y[z == 1]
+                         y <- y[z == 0]
+                         
+                         x <- x[!is.na(x)]
+                         
+                         y <- y[!is.na(y)]
+                         
+                         return(ad.test(x,y)$ad[1,1])
+                       }, asymptotic = .adBackEnd)
 
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
-.ssrBackEnd <- function(
-  adjusted.y,
-  z, d) {
+.ssrBackEnd <- function( adjusted.y, z, d) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
