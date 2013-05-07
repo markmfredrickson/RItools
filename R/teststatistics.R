@@ -15,9 +15,9 @@
 
 ############################### Mean Differences ###############################
 
-mean.difference <- function(ys, z) { 
+mean.difference <- function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
-  z <- as.logical(z) 
+  z <- as.logical(z)
   return(mean(ys[z]) - mean(ys[!z]))
 }
 
@@ -34,19 +34,19 @@ mean.diff.vect<-function(ys,z){
 ############################## Rank Based Functions ##############################
 
 rank.sum <- function(ys, z) {
-  z <- as.logical(z)  
+  z <- as.logical(z)
   ys.ranks <- rank(ys)
   return(sum(ys.ranks[z]))
 }
 
-paired.sgnrank.sum <- function(ys, z){ 
+paired.sgnrank.sum <- function(ys, z){
   stopifnot(length(unique(z)) == 2) ##require binary treatment for now
-  
+
   # we assume data are in block order, eg. 11223344...
   blocks <- gl(length(ys)/2, 2)
 
   Y<-sapply(split(data.frame(r=ys,z=z),blocks),function(dat){with(dat,r[z==1]-r[z==0])})
-  sgn<-as.numeric(Y>0) 
+  sgn<-as.numeric(Y>0)
   q<-rank(abs(Y))
   sum(sgn*q)
 }
@@ -73,9 +73,9 @@ odds.ratio <- function(y, z) {
   c10 <- sum(y == 1 & z == 0)
   c01 <- sum(y == 0 & z == 1)
   c00 <- sum(y == 0 & z == 0)
-  
+
   return((c11 * c00) / (c10 * c01))
-}     
+}
 
 
 
@@ -108,7 +108,7 @@ setClass("AsymptoticTestStatistic",
     df <- data.frame(z = treatment, y = y)
 
     # ignoring blocks for now
-    res <- xBalance(z ~ y, 
+    res <- xBalance(z ~ y,
                   data = df,
                   report = report)
     return(res$results[,,])
@@ -119,10 +119,10 @@ setClass("AsymptoticTestStatistic",
 
   positions <- match(c("adj.diff", "p"), tcnms)
   results <- tmp[,positions]
-  
+
   colnames(results) <- c("statistic", 'p.value')
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       results,
       test.statistic = xBalance,
       z = as.numeric(treatment)))
@@ -147,11 +147,11 @@ function(ys, z) {
   return(f(ys, z)) # just one block for now
   # use this when blocking is included again.
   # h.b <- tapply(z, blocks, function(z) { .h.weights(length(z), sum(z))})
-  # d.b <- mapply(f, split(ys,blocks), split(z,blocks))  
-  
+  # d.b <- mapply(f, split(ys,blocks), split(z,blocks))
+
   # notice this is the same as "adj.diff" from xBalance
   # tests/test.testStatistic.R a demonstration
-  # return((1/sum(h.b)) * sum(h.b * d.b)) 
+  # return((1/sum(h.b)) * sum(h.b * d.b))
   # end of stuff to turn on when blocking enabled
 
 }, asymptotic = .xBalanceBackEnd)
@@ -161,8 +161,8 @@ function(ys, z) {
 .wilcoxBackEnd <- function(
   adjusted.data,
   treatment) {
-  
-  
+
+
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.data, 2, function(y) {
     res <- wilcox.test(y[!!treatment], y[!treatment])
@@ -172,7 +172,7 @@ function(ys, z) {
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       tmp, # RD inherits from data.frame
       test.statistic = wilcox.test,
       z = as.numeric(treatment)))
@@ -200,7 +200,7 @@ quantileAbsoluteDifference <- function(quantiles) {
     z1 <- ecdf(y[z == 1])
     z0 <- ecdf(y[z == 0])
 
-    max(abs(quantile(z1, quantiles) - quantile(z0, quantiles)))    
+    max(abs(quantile(z1, quantiles) - quantile(z0, quantiles)))
   }
 }
 
@@ -220,7 +220,7 @@ quantileAbsoluteDifference <- function(quantiles) {
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       tmp, # RD inherits from data.frame
       test.statistic = ks.test,
       z = as.numeric(z)))
@@ -230,6 +230,32 @@ ksTestStatistic <- new("AsymptoticTestStatistic",
 function(y, z) {
   # next borrowed from KS test
   # first, set up using the KS test var names
+  x <- y[z == 1]
+  y <- y[z == 0]
+
+  x <- x[!is.na(x)]
+  n <- length(x)
+
+  y <- y[!is.na(y)]
+  n.x <- as.double(n)
+  n.y <- length(y)
+
+  n <- n.x * n.y/(n.x + n.y)
+  w <- c(x, y)
+  z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
+  if (length(unique(w)) < (n.x + n.y)) {
+    z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]
+  }
+
+  return(max(abs(z)))
+}, asymptotic = .ksBackEnd)
+
+ksTestStatistic.ranked <- new("AsymptoticTestStatistic",
+function(y, z) {
+  # next borrowed from KS test
+  # first, set up using the KS test var names
+  y<-rank(y)
+
   x <- y[z == 1]
   y <- y[z == 0]
 
@@ -265,7 +291,7 @@ function(y, z) {
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       tmp, # RD inherits from data.frame
       test.statistic = ad.test,
       z = as.numeric(z)))
@@ -276,14 +302,29 @@ adTestStatistic <- new("AsymptoticTestStatistic",
 			 require(kSamples)
                          x <- y[z == 1]
                          y <- y[z == 0]
-                         
+
                          x <- x[!is.na(x)]
-                         
+
                          y <- y[!is.na(y)]
-                         
+
                          return(ad.test(x,y)$ad[1,1])
                        }, asymptotic = .adBackEnd)
 
+adTestStatistic.ranked <- new("AsymptoticTestStatistic",
+		       function(y, z) {
+                         require(kSamples)
+
+                         y<-rank(y)
+
+                         x <- y[z == 1]
+                         y <- y[z == 0]
+
+                         x <- x[!is.na(x)]
+
+                         y <- y[!is.na(y)]
+
+                         return(ad.test(x,y)$ad[1,1])
+                       }, asymptotic = .adBackEnd)
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
@@ -300,7 +341,7 @@ adTestStatistic <- new("AsymptoticTestStatistic",
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       tmp, # RD inherits from data.frame
       test.statistic = ks.test,
       z = as.numeric(z)))
@@ -332,7 +373,7 @@ ssrTestStatistic <- new("AsymptoticTestStatistic",
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution", 
+  return(new("RandomizationDistribution",
       tmp, # RD inherits from data.frame
       test.statistic = cvm.test,
       z = as.numeric(z)))
@@ -344,7 +385,7 @@ cvmTestStatistic <- new("AsymptoticTestStatistic",
                           ## first, set up using the cvm.stat.disc test var names
                           x <- y[z == 1]
                           y <- y[z == 0]
-                          
+
                           x <- x[!is.na(x)]
                           y <- y[!is.na(y)]
 
@@ -371,15 +412,15 @@ cvmTestStatistic <- new("AsymptoticTestStatistic",
                           diag(K)[-length(H)] <- 1/(H[-length(H)] * (1 - H[-length(H)]))
                           Sy <- A %*% S0 %*% t(A)
                           M <- E
-                          ##switch(type, W2 = E, U2 = (diag(1, nrow(E)) - E %*% 
-                          ##                    One %*% t(One)) %*% E %*% (diag(1, nrow(E)) - One %*% 
+                          ##switch(type, W2 = E, U2 = (diag(1, nrow(E)) - E %*%
+                          ##                    One %*% t(One)) %*% E %*% (diag(1, nrow(E)) - One %*%
                           ##                                               t(One) %*% E), A2 = E %*% K)
                           lambda <- eigen(M %*% Sy)$values
                           STAT <- sum(Z^2 * t)/N
                             ## switch(type, W2 = sum(Z^2 * t)/N,
                             ## U2 = sum((Z -  Zbar)^2 * t)/N, A2 = sum((Z^2 * t/(H * (1 - H)))[-length(I)])/N)
                           return(STAT)
-                          
+
                         }, asymptotic = .cvmBackEnd
                         )
 
