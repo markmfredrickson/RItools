@@ -299,7 +299,7 @@ function(y, z) {
 
 adTestStatistic <- new("AsymptoticTestStatistic",
 		       function(y, z) {
-			 require(kSamples)
+			 require(adk)
                          x <- y[z == 1]
                          y <- y[z == 0]
 
@@ -307,12 +307,12 @@ adTestStatistic <- new("AsymptoticTestStatistic",
 
                          y <- y[!is.na(y)]
 
-                         return(ad.test(x,y)$ad[1,1])
+                         return(adk.test(x,y)$adk[2,1])
                        }, asymptotic = .adBackEnd)
 
 adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 		       function(y, z) {
-                         require(kSamples)
+                         require(adk)
 
                          y<-rank(y)
 
@@ -323,7 +323,7 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 
                          y <- y[!is.na(y)]
 
-                         return(ad.test(x,y)$ad[1,1])
+                         return(adk.test(x,y)$adk[2,1])
                        }, asymptotic = .adBackEnd)
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
