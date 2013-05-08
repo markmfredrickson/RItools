@@ -3,8 +3,17 @@ R = R_LIBS=.local R --vanilla
 R: .local/RItools/INSTALLED
 	$(R) -q --no-save 
 
-### Package release scripts ###
+RITOOLS_TIMESTAMP: .local R/* tests/* 
+	R --vanilla CMD Install --library=.local .
+	date > RITOOLS_TIMESTAMP
 
+autotest: RITOOLS_TIMESTAMP
+	R -q -e "library(RItools, lib.loc = '.local')" \
+			 -e "library(SparseM)"  \
+		   -e "library(testthat)" \
+			 -e "auto_test_package('.')"
+
+### Package release scripts ###
 VERSION=0.1-12
 RELEASE_DATE=`date +%Y-%m-%d`
 PKG=RItools_$(VERSION)
@@ -56,7 +65,7 @@ release: check spell
 
 # additional dependencies from CRAN
 installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http://streaming.stat.iastate.edu/CRAN/')" ; date > .local/$(1)/INSTALLED
-	
+
 .local/roxygen2/INSTALLED:
 	$(call installpkg,roxygen2)
 
@@ -91,6 +100,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 test: .local/RItools/INSTALLED .local/testthat/INSTALLED
 	$(R) -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
+# removes local files, leaves external libraries
 clean:
-	git clean -xfd
+	mv .local .local-clean
+	git clean -Xfd
+	mv .local-clean .local
 
+clean-deps:
+	rm -rf .local

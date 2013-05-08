@@ -60,9 +60,9 @@ ans <-
 	tmat <- (mm*swt$wtratio - msmn) ## centered data
 
 	dv <- unsplit(tapply(zz,ss,var), ss) ##sample variance of treatment
-
-	ssvar <- apply(dv*tmat*tmat, 2, sum)
-        ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
+	dv <- unsplit(tapply(zz,ss,var), ##sample variance of treatment
+		      ss)
+	ssvar <- apply(dv*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
 
 	##report (1/h)s^2. Since ssvar=(h)*s^2 multiply by (1/h)^2 to get (1/h)s^2.
 	if ('adj.mean.diffs.null.sd' %in% report) ans[['adj.diff.null.sd']] <- sqrt(ssvar*(1/wtsum)^2) 
@@ -74,28 +74,28 @@ ans <-
 				   2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
 
 	if ("chisquare.test"%in%report)
-          {require(svd)
-           pst.svd <- try ( svd(tmat*sqrt(dv)) )
-           if(inherits(pst.svd,'try-error')){
-             pst.svd<-propack.svd(tmat*sqrt(dv))
-           }
-           ##  tmat*sqrt(dv) is element-wise multiplication of the  column vector sqrt(dv) with each
-           ##  column in tmat: i.e. apply(tmat,2,function(x){x*sqrt(dv)})
-           Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
-           Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this? 
-           if (all(Positive)) 
-             {ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*")
-              ##ytl <- pst.svd$v *  matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
-            } else{if (!any(Positive))
+	{
+          require(svd)
+          pst.svd <- try ( svd(tmat*sqrt(dv)) )
+          if(inherits(pst.svd,'try-error')){
+            pst.svd<-propack.svd(tmat*sqrt(dv))
+          }
+	##	pst.svd <- svd(tmat*sqrt(dv))
+		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
+		Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this? 
+		if (all(Positive)) ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
+		{ytl <- pst.svd$v *
+		matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
+		} else{if (!any(Positive))
 			ytl <- array(0, dim(mm)[2:1] )
-               else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
-                 matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
-                
-		mvz <- drop(crossprod(zz, tmat)%*%ytl) ## crossprod(zz, tmat) gives sums of cols of tmat for zz==1
-                
+		else ytl <- pst.svd$v[, Positive, drop = FALSE] * 
+		matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)}
+
+		mvz <- drop(crossprod(zz, tmat)%*%ytl)
+
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
-                
+
 	} else csq <- DF <- 0
 
 	list(dfr=ans,chisq=c('chisquare'=csq,'df'=DF))

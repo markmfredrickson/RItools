@@ -50,7 +50,7 @@ randomizationDistributionEngine <- function(
 
   k <- length(models)
 
-  apply.fn <- getApplyFunction()
+  apply.fn <- getLApplyFunction
 
   makedists <- function(i) {
     this.model <- models[[i]]
@@ -59,7 +59,7 @@ randomizationDistributionEngine <- function(
     
     # first, for each model, adjust the observed y with the observed
     # z
-    adjusted.y <- sapply(moes, function(m) m(y, z, ...))
+    adjusted.y <- getApplyFunction(moes, function(m) m(y, z, ...))
 
     # check if there is a backend function for this test.statistic
     if (type == "asymptotic") {
@@ -86,14 +86,18 @@ randomizationDistributionEngine <- function(
     # for a discussion of matrix + unlist vs. do.call + rbind
     this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
 
-    adjusted.stats <- apply(adjusted.y, 2, function(d) { 
-      test.statistic(d, z, ...)})
+    adjusted.stats <- getApplyFunction(1:ncol(adjusted.y), function(i) { 
+      test.statistic(adjusted.y[,i], z, ...)})
 
-    pvs <- vector("numeric")
+    ## pvs <- vector("numeric")
 
-    for (i in 1:(length(moes))) { 
-      pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
-    }
+    ## for (i in 1:(length(moes))) { 
+    ##   pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
+    ## }
+
+    pvs<-getApplyFunction(1:length(moes),function(i){
+      p.value(adjusted.stats[i], this.distrib[i,])
+    })
     
     this.result <- data.frame(statistic = adjusted.stats, p.value = pvs)
 
@@ -156,7 +160,8 @@ RItest <- function(
   if (!is.null(parameters)) {
     parameter.space <- do.call(expand.grid, parameters)
     
-    functions <- apply(parameter.space, 1, function(params) {
+    functions <- getLApplyFunction(1:nrow(parameter.space), function(i) {
+      params<-parameter.space[i,]
       force(params)
       function(y, z) {
         do.call(moe, c(list(y, z), params))
@@ -270,7 +275,8 @@ snowLoaded <- function() { ## if a cluster named cl has been started
 }
 
 
-getApplyFunction <- function() {
+getLApplyFunction <- function(x,fun,...) {
+  ## A parallized lapply
   opt <- options("RItools-apply")[[1]]
 
   if (!is.null(opt)) {
@@ -279,13 +285,34 @@ getApplyFunction <- function() {
 
   if (parallelLoaded()) {
     options("mc.cores" = detectCores())
-    return(mclapply) # yay speed!
+    return(mclapply(x,fun,...))
   }
 
   if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
-    return(function(x,fun){parLapply(cl,x,fun)}) # yay speed!
+    return(parLapply(cl,x,fun,...)) # yay speed!
   }
 
-  return(lapply) # the safe default
+  return(lapply(x,fun,...)) # the safe default
+}
+
+
+getApplyFunction <- function(x,fun,...) {
+  ## A parallelized sapply
+  opt <- options("RItools-apply")[[1]]
+
+  if (!is.null(opt)) {
+    return(opt)  
+  }
+
+  if (parallelLoaded()) {
+    options("mc.cores" = detectCores())
+    return(simplify2array(mclapply(x,fun,...)))
+  }
+  
+  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
+    return(simplify2array(parLapply(cl,x,fun,...)))
+  }
+
+  return(sapply(x,fun,...)) # the safe default
 }
 
