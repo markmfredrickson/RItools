@@ -84,8 +84,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 .local/abind/INSTALLED:
 	$(call installpkg,abind)
 	
+.local/svd/INSTALLED:
+	$(call installpkg,svd)
+
 # depend on this file to decide if we need to install the local version
-.local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED
+.local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/svd/INSTALLED
 	mkdir -p .local
 	$(R) CMD INSTALL --no-multiarch --library=.local $(PKG).tar.gz
 	echo `date` > .local/RItools/INSTALLED
