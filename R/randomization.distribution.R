@@ -12,10 +12,10 @@ setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 # each distribution is with respect to a given test statistic
 setClass("RandomizationDistribution",
   representation(test.statistic = "function",
-                 models.of.effect = "list", # first is always sharp null 
+                 models.of.effect = "list", # first is always sharp null
                  p.value = "function", # fn used to compute p-values
                  samples = "numeric", # the number of samples run, not necessarily requested
-                 z  = "numeric", # 1/0 vector 
+                 z  = "numeric", # 1/0 vector
                  distribution = "matrix"), # if requested, the raw data
   contains = "data.frame")
 # the matrix has a conventional form.
@@ -37,13 +37,13 @@ randomizationDistributionEngine <- function(
   ...) {
 
   n <- length(z)
- 
+
   if (!(type %in% c("exact", "asymptotic"))) {
-    stop("'type' argument must be either 'asymptotic' or 'exact'")  
+    stop("'type' argument must be either 'asymptotic' or 'exact'")
   }
 
   if(type == "exact") {
-    randomizations <- sampler(samples) # a list with $weight and $samples args  
+    randomizations <- sampler(samples) # a list with $weight and $samples args
   }
 
   sharp.null <- function(y, z) { y }
@@ -56,7 +56,7 @@ randomizationDistributionEngine <- function(
     this.model <- models[[i]]
     test.statistic <- this.model[[1]]
     moes <- c(sharp.null, this.model[-1])
-    
+
     # first, for each model, adjust the observed y with the observed
     # z
     adjusted.y <- getApplyFunction(moes, function(m) m(y, z, ...))
@@ -73,39 +73,39 @@ randomizationDistributionEngine <- function(
 
       stop("No asymptotic backend exists for the test statistic")
     }
-  
+
     # no backend, so use the standard approach
     # Possible todo: pull this out into its own "backend" function
 
     # now iterate over the randomizations, using the adjusted y
     this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
-      apply(adjusted.y, 2, function(d) { 
+      apply(adjusted.y, 2, function(d) {
         test.statistic(d, z, ...)})})
 
     # see http://www.biostat.wustl.edu/archives/html/s-news/2000-01/msg00169.html
     # for a discussion of matrix + unlist vs. do.call + rbind
     this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
 
-    adjusted.stats <- getApplyFunction(1:ncol(adjusted.y), function(i) { 
+    adjusted.stats <- getApplyFunction(1:ncol(adjusted.y), function(i) {
       test.statistic(adjusted.y[,i], z, ...)})
 
     ## pvs <- vector("numeric")
 
-    ## for (i in 1:(length(moes))) { 
+    ## for (i in 1:(length(moes))) {
     ##   pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
     ## }
 
     pvs<-getApplyFunction(1:length(moes),function(i){
       p.value(adjusted.stats[i], this.distrib[i,])
     })
-    
+
     this.result <- data.frame(statistic = adjusted.stats, p.value = pvs)
 
     if (length(summaries) > 0) {
       this.result <- cbind(this.result, lapply(summaries, function(f) { apply(this.distrib, 1, f)}))
     }
-    
-    tmp <- new("RandomizationDistribution", 
+
+    tmp <- new("RandomizationDistribution",
       this.result, # RD inherits from data.frame
       test.statistic = test.statistic,
       models.of.effect = moes,
@@ -114,9 +114,9 @@ randomizationDistributionEngine <- function(
       p.value = p.value)
 
     if (include.distribution) {
-      tmp@distribution <- this.distrib  
+      tmp@distribution <- this.distrib
     }
-    
+
     return(tmp)
   }
 
@@ -143,23 +143,23 @@ RItest <- function(
   moe = NULL, # single function with signature f(y, z, param1, param2, etc.)
   parameters = NULL, # list of name = values, name = values, ...
   ...) {
-  
+
   # if either moe or parameters are present, both must be present
   if ((!is.null(moe) & is.null(parameters)) | (is.null(moe) & !is.null(parameters))) {
     stop("You must supply both parameters and a model effects if you supply either")
   }
 
   if (!is.null(moe) & !inherits(moe, "function")) {
-    stop("moe object must be a function")  
+    stop("moe object must be a function")
   }
 
   if (!is.null(parameters) & !is.list(parameters)) {
-    stop("Parameters must be a list")   
+    stop("Parameters must be a list")
   }
 
   if (!is.null(parameters)) {
     parameter.space <- do.call(expand.grid, parameters)
-    
+
     functions <- getLApplyFunction(1:nrow(parameter.space), function(i) {
       params<-parameter.space[i,]
       force(params)
@@ -171,7 +171,7 @@ RItest <- function(
     rds <- randomizationDistributionEngine(y, z, models = list(c(test.stat,
       functions)), ...)
   } else {
-    rds <- randomizationDistributionEngine(y, z, 
+    rds <- randomizationDistributionEngine(y, z,
       models = list(c(test.stat)), ...)
   }
 
@@ -188,10 +188,10 @@ RItest <- function(
 
 plot.ParameterizedRandomizationDistribution <- function(object, type = 'o', ...) {
   library(lattice)
-  
+
   pnames <- colnames(object@params)
   np <- length(pnames)
-  
+
   if (np == 0) {
     stop("Cannot plot sharp null only")
   }
@@ -202,12 +202,12 @@ plot.ParameterizedRandomizationDistribution <- function(object, type = 'o', ...)
     fmla <- as.formula(paste("p.value ~ ", pnames[1]))
     return(xyplot(fmla, data = data, type = type, ...)) # drop the sharp.null
   }
-  
+
   if (np == 2) {
     fmla <- as.formula(paste("p.value ~ ", pnames[1], "+", pnames[2]))
-    return(levelplot(fmla, data = data, ...)) 
+    return(levelplot(fmla, data = data, ...))
   }
-  
+
   # this point, np > 2
   stop("Cannot plot parameters > 2 models (yet)")
 }
@@ -232,12 +232,12 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
     cat("\n")
   }
 
-  tmp <- matrix(c(object@randomizationDistribution[1,1], object@sharp.null.p), 
+  tmp <- matrix(c(object@randomizationDistribution[1,1], object@sharp.null.p),
     nrow = 1, byrow = T)
 
   rownames(tmp) <- c("Observed Test Statistic")
   colnames(tmp) <- c("Value", "Pr(>x)")
-  printCoefmat(tmp, has.Pvalue = T, P.values = T) 
+  printCoefmat(tmp, has.Pvalue = T, P.values = T)
   cat("\n")
 
   # if there is more than one distribution (ie. more than the sharp null)
@@ -252,7 +252,7 @@ setMethod("show", "ParameterizedRandomizationDistributionSummary", function(obje
 
 setGeneric("point",
   def = function(object) { standardGeneric("point") })
-           
+
 setMethod("point", "ParameterizedRandomizationDistribution", function(object) {
 
   combined <- cbind(object@params, object[-1,])
@@ -267,11 +267,11 @@ setMethod("point", "ParameterizedRandomizationDistribution", function(object) {
 ############################## Helper Functions ##############################
 
 parallelLoaded <- function() {
-   ("parallel" %in% loadedNamespaces()) 
+   ("parallel" %in% loadedNamespaces())
 }
 
 snowLoaded <- function() { ## if a cluster named cl has been started
-  length(find("cl"))==1 ##"snow" %in% loadedNamespaces()  
+  length(find("cl"))==1 ##"snow" %in% loadedNamespaces()
 }
 
 
@@ -280,7 +280,11 @@ getLApplyFunction <- function(x,fun,...) {
   opt <- options("RItools-apply")[[1]]
 
   if (!is.null(opt)) {
-    return(opt)  
+    return(opt)
+  }
+
+  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
+    return(parLapply(cl,x,fun,...)) # yay speed!
   }
 
   if (parallelLoaded()) {
@@ -288,9 +292,6 @@ getLApplyFunction <- function(x,fun,...) {
     return(mclapply(x,fun,...))
   }
 
-  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
-    return(parLapply(cl,x,fun,...)) # yay speed!
-  }
 
   return(lapply(x,fun,...)) # the safe default
 }
@@ -301,17 +302,18 @@ getApplyFunction <- function(x,fun,...) {
   opt <- options("RItools-apply")[[1]]
 
   if (!is.null(opt)) {
-    return(opt)  
+    return(opt)
+  }
+
+  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
+    return(simplify2array(parLapply(cl,x,fun,...)))
   }
 
   if (parallelLoaded()) {
     options("mc.cores" = detectCores())
     return(simplify2array(mclapply(x,fun,...)))
   }
-  
-  if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
-    return(simplify2array(parLapply(cl,x,fun,...)))
-  }
+
 
   return(sapply(x,fun,...)) # the safe default
 }
