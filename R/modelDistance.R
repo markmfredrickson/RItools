@@ -1,10 +1,3 @@
-# basic parts
-# - function(s) to compute all pairwise distances (can we just use built in dist? -- I think so)
-# - main function returns a 2 column matrix of length prod(params) * (prod(params) - 1) / 2:
-# -- the D(param)
-# -- the D(y1, y2)
-
-
 #' Compares the predictions of a model over the parameter space.
 #'
 #' Models that are insensitive to changes in the parameters will have little distance between predictions.
@@ -33,6 +26,10 @@ parameterSensitivity <- function(model, parameters, uniformity, z) {
 
 setOldClass(c("parameterSensitivity", "matrix"))
 
+#' Plots the results of \code{\link{parameterSensitivity}} as a 2D histogram.
+#'
+#' @param x The matrix of distances from \code{\link{parameterSensitivity}}.
+#' @param ... Arguments to be passed to the plot method for \code{\link{hexbin::hexbin}}
 #' @import hexbin
 #' @export
 plot.parameterSensitivity <- function(x, ...) {
