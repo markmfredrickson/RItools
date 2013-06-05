@@ -284,8 +284,8 @@ function(y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
-    res <- ad.test(y[!!z], y[!z]) # small problems may still be figured exactly
-    return(res$ad[1,c(1,3)])
+    res <- adk.test(y[!!z], y[!z]) # small problems may still be figured exactly
+    return(res$adk[2,c(1,2)])
   })
 
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
