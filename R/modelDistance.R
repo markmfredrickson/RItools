@@ -12,11 +12,18 @@ parameterSensitivity <- function(model, parameters, uniformity, z) {
 
   parameter.space <- do.call(expand.grid, parameters)
 
-  predictions <- t(apply(parameter.space, 1, function(r) {
-    do.call(invertModel, c(list(model, uniformity, z), r))
+  predictions <- t(getApplyFunction(1:nrow(parameter.space), function(i) {
+    do.call(invertModel, c(list(model, uniformity, z), parameter.space[i,]))
   }))
 
-  res <- matrix(c(as.vector(dist(parameter.space)), as.vector(dist(predictions))), ncol = 2)
+  std.parameters <- lapply(parameters, function(p) {
+    minp <- min(p)
+    maxp <- max(p)
+    (p - minp) / (maxp - minp)
+  })
+  std.parameter.space <- do.call(expand.grid, std.parameters)
+
+  res <- matrix(c(as.vector(dist(std.parameter.space)), as.vector(dist(predictions))), ncol = 2)
   colnames(res) <-  c("parameter", "prediction")
 
   class(res) <- c("parameterSensitivity", "matrix")
