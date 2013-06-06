@@ -23,10 +23,24 @@ parameterSensitivity <- function(model, parameters, uniformity, z) {
   })
   std.parameter.space <- do.call(expand.grid, std.parameters)
 
-  res <- matrix(c(as.vector(dist(std.parameter.space)), as.vector(dist(predictions))), ncol = 2)
-  colnames(res) <-  c("parameter", "prediction")
+  # comparison order of dist() is
+  # 1-2, 1-3, 1-4, ...,  2-3, 2-4, ... , 3-4, ...
+  total.pairs <- dim(parameter.space)[1]
+
+  left.index <- unlist(sapply(1:total.pairs, function(i) rep(i, total.pairs - i)))
+  right.index <- unlist(sapply(2:total.pairs, function(i) i:total.pairs))
+
+  pmat <- as.matrix(parameter.space)
+  left <- pmat[left.index,, drop = F] ; colnames(left) <- paste("left", colnames(left), sep = ".")
+  right <- pmat[right.index,, drop = F] ; colnames(right) <- paste("right", colnames(right), sep = ".")
+
+  res <- cbind(left,
+               right,
+               parameter  = as.vector(dist(std.parameter.space)), 
+               prediction = as.vector(dist(predictions)))
 
   class(res) <- c("parameterSensitivity", "matrix")
+  attr(res, "parameters") <- parameters
 
   return(res)
 }
@@ -40,5 +54,5 @@ setOldClass(c("parameterSensitivity", "matrix"))
 #' @import hexbin
 #' @export
 plot.parameterSensitivity <- function(x, ...) {
-  plot(hexbin(x), ...)
+  plot(hexbin(x[, c("parameter", "prediction")], ...))
 }

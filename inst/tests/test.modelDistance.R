@@ -30,8 +30,8 @@ test_that("parameterSensitivity", {
   nb <- 11
   nab <- 5 * 11
 
-  expect_equal(dim(res), c(nab * (nab - 1) / 2, 2))
-  expect_equal(colnames(res), c("parameter", "prediction"))
+  expect_equal(dim(res), c(nab * (nab - 1) / 2, 6))
+  expect_equal(colnames(res), c("left.a", "left.b", "right.a", "right.b", "parameter", "prediction"))
   expect_true(all(res[,"prediction"] == 0))
 
   # now try with a slightly more interesting model
@@ -41,6 +41,7 @@ test_that("parameterSensitivity", {
                                 z = rep(c(0,1), 50))
 
   expect_true(!all(res.c[,"prediction"] == 0))
+  expect_equal(colnames(res.c), c("left.tau", "right.tau", "parameter", "prediction"))
   
 })
 
