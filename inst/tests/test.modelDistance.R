@@ -43,5 +43,17 @@ test_that("parameterSensitivity", {
   expect_true(!all(res.c[,"prediction"] == 0))
   expect_equal(colnames(res.c), c("left.tau", "right.tau", "parameter", "prediction"))
   
+  # select an intentionally insensitive model
+  double.add <- UniformityModel(
+    function(y, z, a, b) { y - z * a - z * b },
+    function(y, z, a, b) { y + z * a + z * b })
+
+  res.double.add <- parameterSensitivity(double.add,
+                                         parameters = list(a = 1:10, b = -5:5),
+                                         uniformity = rnorm(100, 10),
+                                         z = rep(c(0,1), 50))
+
+
+
 })
 
