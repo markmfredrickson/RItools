@@ -34,10 +34,15 @@ parameterSensitivity <- function(model, parameters, uniformity, z) {
   left <- pmat[left.index,, drop = F] ; colnames(left) <- paste("left", colnames(left), sep = ".")
   right <- pmat[right.index,, drop = F] ; colnames(right) <- paste("right", colnames(right), sep = ".")
 
+  stdize <- function(x) { 
+    rx <- range(x)
+    (x - rx[1]) / (rx[2] - rx[1])
+  }
+
   res <- cbind(left,
                right,
-               parameter  = as.vector(dist(std.parameter.space)), 
-               prediction = as.vector(dist(predictions)))
+               parameter  = stdize(as.vector(dist(std.parameter.space))), 
+               prediction = stdize(as.vector(dist(predictions))))
 
   class(res) <- c("parameterSensitivity", "matrix")
   attr(res, "parameters") <- parameters
@@ -54,7 +59,10 @@ setOldClass(c("parameterSensitivity", "matrix"))
 #' @import hexbin
 #' @export
 plot.parameterSensitivity <- function(x, ...) {
-  plot(hexbin(x[, c("parameter", "prediction")], ...))
+  hb <- hexbin(x[, c("parameter", "prediction")], ...)
+  P <- plot(hb)
+  hexVP.abline(P$plot.vp, a = 0, b = 1, lty = 2)
+  hexVP.abline(P$plot.vp, a = 1, b = -1, lty = 2)
 }
 
 #' Plots the results of the parameter sensitivity on the original parameter space.
@@ -65,8 +73,10 @@ plot.parameterSensitivity <- function(x, ...) {
 #' @param subset An expression that will evaluate to a logical value when
 #' evaluated in the context of \code{x}. You can use \code{parameter} and
 #' \code{prediction} to subset which parameters to show.
+#' @param col The color of the lines, including transparency.
+#' @param ... Other parameters to pass to \code{\link{segments}}.
 #' @export
-parameterSensitivityBreakoutPlot <- function(x, subset) {
+parameterSensitivityBreakoutPlot <- function(x, subset, col = rgb(0, 0, 0, 0.25), ...) {
   params <- attr(x, "parameters")
  
   ps <- length(params)
@@ -92,13 +102,19 @@ parameterSensitivityBreakoutPlot <- function(x, subset) {
   # select only the relevant portion of x and only the parameter columns
   x.subset <- x[r, 1:(2 * ps)] 
   
-  left <- x.subset[, 1:ps]
-  right <- x.subset[, (ps + 1):(2 * ps)]
+  if (ps == 2)  {
+  
+    left <- x.subset[, 1:ps]
+    right <- x.subset[, (ps + 1):(2 * ps)]
 
-  xlims <- range(params[[1]])
-  ylims <- range(params[[2]])
+    xlims <- range(params[[1]])
+    ylims <- range(params[[2]])
 
-  plot(NULL, xlim = xlims, ylim = ylims, xlab = names(params)[1], ylab = names(params)[2])
-  segments(left[,1] , left[,2],
-           right[,1], right[,2])
+    plot(NULL, xlim = xlims, ylim = ylims, xlab = names(params)[1], ylab = names(params)[2])
+    segments(left[,1] , left[,2],
+             right[,1], right[,2],
+             col = col, ...)
+  } else {
+    stop("Breakout plots not yet implement for 1 parameter models")
+  }
 }

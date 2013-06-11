@@ -32,7 +32,7 @@ test_that("parameterSensitivity", {
 
   expect_equal(dim(res), c(nab * (nab - 1) / 2, 6))
   expect_equal(colnames(res), c("left.a", "left.b", "right.a", "right.b", "parameter", "prediction"))
-  expect_true(all(res[,"prediction"] == 0))
+  expect_true(all(is.nan(res[,"prediction"])))
 
   # now try with a slightly more interesting model
   res.c <- parameterSensitivity(constant.additive.model,
@@ -42,6 +42,8 @@ test_that("parameterSensitivity", {
 
   expect_true(!all(res.c[,"prediction"] == 0))
   expect_equal(colnames(res.c), c("left.tau", "right.tau", "parameter", "prediction"))
+  expect_true(all(res.c[, c("parameter", "prediction")] <= 1))
+  expect_true(all(res.c[, c("parameter", "prediction")] >= 0))
   
   # select an intentionally insensitive model
   double.add <- UniformityModel(
@@ -53,7 +55,9 @@ test_that("parameterSensitivity", {
                                          uniformity = rnorm(100, 10),
                                          z = rep(c(0,1), 50))
 
+  expect_true(all(res.double.add[, c("parameter", "prediction")] <= 1))
+  expect_true(all(res.double.add[, c("parameter", "prediction")] >= 0))
 
-
+  
 })
 
