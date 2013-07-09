@@ -1,6 +1,6 @@
-R = R_LIBS=.local R
+R=R_LIBS=.local R
 
-R: .local/RItools/INSTALLED
+interactive: .local/RItools/INSTALLED
 	$(R) -q --no-save 
 
 ### Package release scripts ###
@@ -40,7 +40,7 @@ lexicon.txt: package
 
 # we don't use $(R) here in case the locally installed libs interfere with the check process
 check: $(PKG).tar.gz 
-	R --vanilla CMD check --as-cran --no-multiarch $(PKG).tar.gz
+	$(R) --vanilla CMD check --as-cran --no-multiarch $(PKG).tar.gz
 
 release: check spell
 	git tag -a $(VERSION)
@@ -61,7 +61,7 @@ release: check spell
 
 # test is just the internal tests, not the full R CMD Check
 test: .local/RItools/INSTALLED
-	R --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
+	$(R) --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
 # this will probably, eventually, be a vignette, but for now it is just an
 # "example"
