@@ -17,8 +17,10 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                            thestratalabs,
                            which.stat,
                            which.vars,
-                           thevarlabs,
-                           absolute)
+                           thevarlabs)
+  if (absolute) {
+    theresults <- abs(theresults)
+  }
 
   return(balanceplot(theresults, ...))
 
@@ -89,8 +91,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                        thestratalabs,
                        which.stat,
                        which.vars,
-                       thevarlabs,
-                       absolute)
+                       thevarlabs)
   {
 
   if (!(which.stat %in% dimnames(x$results)[["stat"]])){
@@ -115,10 +116,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   rownames(theresults) <- thevarlabs
   colnames(theresults) <- thestratalabs
   
-
-  if (absolute) {
-    theresults <- abs(theresults) 
-  }
 
   return(theresults)
 }
@@ -180,6 +177,7 @@ balanceplot <- function(x, ordered = F, xlab = "Balance", ...) {
 
   axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
   axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+  abline(v = 0, col = "#333333")
 
 
   legend(x = mean(xrange),

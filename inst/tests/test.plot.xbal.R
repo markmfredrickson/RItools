@@ -86,26 +86,11 @@ test_that("Helper function", {
                                       "Some Other Strata"),
                     which.stat = "std.diff",
                     which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls ,
-                    absolute = F)
+                    thevarlabs = lbls)
 
   expect_equal(dim(res), c(4,2))
   expect_equal(rownames(res), lbls)
   expect_equal(colnames(res), c("Unstratified", "Some Other Strata"))
-
-
-  res.pos <-  .plot.xbal(xb, 
-                    which.strata = c("raw", "other"),
-                    thestratalabs = c("Unstratified", 
-                                      "Some Other Strata"),
-                    which.stat = "std.diff",
-                    which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls ,
-                    absolute = T)
-
-  expect_equal(dim(res.pos), c(4,2))
-  expect_identical(res.pos, abs(res))
-  expect_true(all(res.pos >= 0))
 
   # repeating with a single strata
   
@@ -114,8 +99,7 @@ test_that("Helper function", {
                     thestratalabs = c("Unstratified"),
                     which.stat = "std.diff",
                     which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls ,
-                    absolute = F)
+                    thevarlabs = lbls)
 
   expect_equal(dim(res.singlestrat), c(4,1)) # should be a column data.frame, not a vector
 
