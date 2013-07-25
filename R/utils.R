@@ -114,5 +114,8 @@ subset.xbal <- function(x,
   res <- x$results[vars, stats, strata, drop = F] 
   ovr <- x$overall[strata, tests, drop = F] 
 
-  return(list(results = res, overall = ovr))  
+  tmp <- list(results = res, overall = ovr)
+  class(tmp) <- c("xbal", "list")
+
+  return(tmp)
 }
