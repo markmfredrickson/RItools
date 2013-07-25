@@ -139,12 +139,17 @@ test_that("Generic balance plots", {
 
   x11() # this might be more common than quartz
   expect_true(dev.capabilities()$capture)
+  dev.off()
 
+  x11()
   balanceplot(testmat)
   p1 <- dev.capture()
+  dev.off()
+
+  x11()
   balanceplot(testmat) 
   p2 <- dev.capture()
-  expect_identical(p1,p2)
-
   dev.off()
+
+  expect_identical(p1,p2)
 })
