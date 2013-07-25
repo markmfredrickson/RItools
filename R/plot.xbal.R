@@ -159,12 +159,19 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param ordered Should the variables be ordered (within groups if any) from most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each variable?
+#' @param segments.args A list of arguments to pass to the \code{\link{segments}} function.
+#' @param points.args A list of arguments to pass to the \code{\link{points}} function.
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
 #' @example inst/examples/balanceplot.R
 #' @export
-balanceplot <- function(x, ordered = FALSE, segments = FALSE, xlab = "Balance", ...) {
+balanceplot <- function(x, 
+                        ordered = FALSE, 
+                        segments = TRUE, 
+                        segments.args = list(col = "grey"),
+                        points.args = list(cex = 0.5),
+                        xlab = "Balance", ...) {
   original.par <- par()
 
   nvars <- dim(x)[1]
@@ -198,7 +205,11 @@ balanceplot <- function(x, ordered = FALSE, segments = FALSE, xlab = "Balance", 
        ...)
 
   for(i in 1:nstrat) {
-    points(x[,i], ypos, pch = i, cex = 0.5) # col =thecols[i],pch=thesymbols[i])
+    do.call(graphics::points,
+            append(list(x[,i], 
+                        ypos, 
+                        pch = i), # col =thecols[i],pch=thesymbols[i])
+                   points.args))
   }
 
   axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
@@ -207,10 +218,12 @@ balanceplot <- function(x, ordered = FALSE, segments = FALSE, xlab = "Balance", 
 
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))
-    graphics::segments(x0 = bnds[,1],
+    do.call(graphics::segments,
+            append(list(x0 = bnds[,1],
                        y0 = ypos,
                        x1 = bnds[,2],
-                       y1 = ypos)
+                       y1 = ypos),
+                   segments.args))
   }
 
   legend(x = mean(xrange),
