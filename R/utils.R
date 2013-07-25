@@ -67,3 +67,52 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
+#' Select variables, strata, groups, and statistics from a \code{xbal} object
+#'
+#' If any of the arguments are not specified, all the of relevant items are
+#' included.
+#'
+#' @param x The \code{xbal} object, the result of a call to
+#' \code{\link{xBalance}}
+#' @param vars The variable names to select.
+#' @param strata The strata names to select.
+#' @param stats The names of the variable level statistics to select.
+#' @param groups The names of the groups to select.
+#' @param tests The names of the group level tests to select.
+#' @param ... Other arguments (ignored)
+#'
+#' @return A \code{xbal} object with just the appropriate items selected.
+#'
+#' @S3method subset xbal
+#' @method subset xbal
+subset.xbal <- function(x, 
+                        vars   = NULL, 
+                        strata = NULL, 
+                        stats  = NULL, 
+                        tests  = NULL,
+                        ...) {
+
+  res.dmns <- dimnames(x$results)
+  ov.dmns <- dimnames(x$overall)
+
+  if (is.null(strata)) {
+    strata <- res.dmns$strata
+  }
+
+  if (is.null(vars)) {
+    vars <- res.dmns$vars
+  }
+
+  if (is.null(stats)) {
+    stats <- res.dmns$stat
+  }
+
+  if (is.null(tests)) {
+    tests <- ov.dmns$tests
+  }
+
+  res <- x$results[vars, stats, strata, drop = F] 
+  ovr <- x$overall[strata, tests, drop = F] 
+
+  return(list(results = res, overall = ovr))  
+}
