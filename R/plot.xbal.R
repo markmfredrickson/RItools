@@ -128,7 +128,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 #' @export
-balanceplot <- function(x, ...) {
+balanceplot <- function(x, xlab = "Balance", ...) {
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
@@ -141,6 +141,9 @@ balanceplot <- function(x, ...) {
   mai <- par('mai')
   mai[2] <- max(c(strwidth(rownames(x), units = "inches") + mai[2], mai[2]))
   par(mai = mai)
+
+  mar <- par('mar')
+  mar[3] <- mar[3] + nstrat + 2
   
   plot(xrange, 
        range(ypos) + c(0,1) ,
@@ -148,7 +151,7 @@ balanceplot <- function(x, ...) {
        pch = 19,
        col = "blue",
        ylab = "",
-       xlab = "Balance",
+       xlab = xlab,
        type = "n",
        ...)
 
@@ -158,5 +161,15 @@ balanceplot <- function(x, ...) {
 
   axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
   axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+
+
+  legend(x = mean(xrange),
+         y = max(ypos) + 2,
+         legend = colnames(x),
+         pch = 1:nstrat,
+         bty = "n",
+         xpd = T,
+         xjust = 0.5,
+         yjust = 0)
 
 } 
