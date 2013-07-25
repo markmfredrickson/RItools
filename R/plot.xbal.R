@@ -195,7 +195,7 @@ balanceplot <- function(x,
   original.par <- par(mar = mar, mai = mai)
  
   plot(xrange, 
-       range(ypos) + c(0,1) ,
+       range(ypos),
        axes = FALSE,
        pch = 19,
        col = "blue",
@@ -226,14 +226,10 @@ balanceplot <- function(x,
                    segments.args))
   }
 
-  legend(x = mean(xrange),
-         y = max(ypos) + 2,
+  legend(x = "topright",
          legend = colnames(x),
          pch = 1:nstrat,
-         bty = "n",
-         xpd = T,
-         xjust = 0.5,
-         yjust = 0)
+         bty = "n")
 
   par(original.par)
 } 
