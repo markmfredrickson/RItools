@@ -132,21 +132,31 @@ balanceplot <- function(x, ...) {
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
+
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
+  
   ypos <- 1:nvars
   
+  mai <- par('mai')
+  mai[2] <- max(c(strwidth(rownames(x), units = "inches") + mai[2], mai[2]))
+  par(mai = mai)
+  
   plot(xrange, 
-       range(ypos),
+       range(ypos) + c(0,1) ,
        axes = FALSE,
        pch = 19,
        col = "blue",
        ylab = "",
        xlab = "Balance",
-       type="n",
+       type = "n",
        ...)
 
   for(i in 1:nstrat) {
-    points(x[,i], ypos) # col =thecols[i],pch=thesymbols[i])
+    points(x[,i], ypos, pch = i, cex = 0.5) # col =thecols[i],pch=thesymbols[i])
   }
+
+  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
+  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+
 } 
