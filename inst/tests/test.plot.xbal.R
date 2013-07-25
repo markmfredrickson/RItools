@@ -23,38 +23,48 @@ test_that("Basic plot", {
 
   plot(xb)
   p1 <- dev.capture()
+  dev.off()
+
+  x11()
   plot(xb)
   p2 <- dev.capture()
   expect_true(class(p1) == "matrix" & class(p2) == "matrix")
   expect_identical(p1, p2) # just to prove that the same plot twice is really identical
+  dev.off()
 
   opts <- options(warn = 2)
   # has a an argument to make only a right-sided abs difference plot
   # it will be a warning if absolute isn't a parameter
+  x11()
   plot(xb, absolute = T)
 
   p2 <- dev.capture()
   expect_true(!identical(p1,p2))
+  dev.off()
 
   options(opts)
 
+  x11()
   # has an argument to order the variables (from bottom to bottom)
-  plot(xb, which.vars = c("X1", "X2", "X4", "X3"))
+  plot(xb, which.vars = c("X1", "X2", "X4", "X3"), ordered = F)
   expect_true(!identical(p1, dev.capture()))
+  dev.off()
  
   # but including other variables is an error
   expect_error(plot(xb, which.vars = c("X1", "X2", "X3", "X4", "X5")), "Unknown variable\\(s\\): X5")
 
   # the order the data based on the selected variable
+  x11()
   plot(xb, ordered = T)
   expect_true(!identical(p1, dev.capture()))
+  dev.off()
   # note: the order should change when absolute = T, but we can't really test it as the plot is then different for two reasons
   # one way to test this would be to have a helper function that creates an array for something else to plot -- and the intermediate data could be checked
 
   # just a sanity check to make sure that the previous dev.capture tests worked
+  x11()
   plot(xb)
   expect_identical(p1, dev.capture())
-
   dev.off()
 })
 
@@ -77,26 +87,12 @@ test_that("Helper function", {
                     which.stat = "std.diff",
                     which.vars = c("X1", "X2", "X3", "X4"),
                     thevarlabs = lbls ,
-                    absolute = F,
-                    ordered = F)
+                    absolute = F)
 
   expect_equal(dim(res), c(4,2))
   expect_equal(rownames(res), lbls)
   expect_equal(colnames(res), c("Unstratified", "Some Other Strata"))
 
-  res.ordered <-  .plot.xbal(xb, 
-                    which.strata = c("raw", "other"),
-                    thestratalabs = c("Unstratified", 
-                                      "Some Other Strata"),
-                    which.stat = "std.diff",
-                    which.vars = c("X1", "X2", "X3", "X4"),
-                    thevarlabs = lbls ,
-                    absolute = F,
-                    ordered = T)
-
-  expect_false(identical(res, res.ordered))
-  expect_equal(dim(res.ordered), c(4,2))
-  expect_equal(rownames(res.ordered), lbls[c(3,4,1,2)])
 
   res.pos <-  .plot.xbal(xb, 
                     which.strata = c("raw", "other"),
@@ -105,13 +101,10 @@ test_that("Helper function", {
                     which.stat = "std.diff",
                     which.vars = c("X1", "X2", "X3", "X4"),
                     thevarlabs = lbls ,
-                    absolute = T,
-                    ordered = T)
+                    absolute = T)
 
-  expect_false(identical(res.pos, res.ordered))
   expect_equal(dim(res.pos), c(4,2))
-  # the row order of the final two variables should flip when taking abs
-  expect_equal(rownames(res.pos), lbls[c(4,3,1,2)])
+  expect_identical(res.pos, abs(res))
   expect_true(all(res.pos >= 0))
 
   # repeating with a single strata
@@ -122,8 +115,7 @@ test_that("Helper function", {
                     which.stat = "std.diff",
                     which.vars = c("X1", "X2", "X3", "X4"),
                     thevarlabs = lbls ,
-                    absolute = F,
-                    ordered = T)
+                    absolute = F)
 
   expect_equal(dim(res.singlestrat), c(4,1)) # should be a column data.frame, not a vector
 

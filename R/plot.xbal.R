@@ -7,7 +7,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     thecols=rainbow(length(which.strata)),
                     thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
                     absolute = FALSE,
-                    ordered = FALSE,
                     ...){
 
   # the helper .plot.xbal turns xb and the many of the arguments into a
@@ -19,8 +18,12 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                            which.stat,
                            which.vars,
                            thevarlabs,
-                           absolute,
-                           ordered)
+                           absolute)
+
+  return(balanceplot(theresults, ...))
+
+  ### NOT RUN: (but saving while we transition to the more general balanceplot function 
+
   nvars <- dim(theresults)[1]
   nstrata <- dim(theresults)[2]
   varlabels <- rownames(theresults)
@@ -82,14 +85,13 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 }
 
 .plot.xbal <- function(x, 
-                       
                        which.strata,
                        thestratalabs,
                        which.stat,
                        which.vars,
                        thevarlabs,
-                       absolute,
-                       ordered) {
+                       absolute)
+  {
 
   if (!(which.stat %in% dimnames(x$results)[["stat"]])){
     stop(paste(which.stat,' not among results recorded in xbal object.'))}
@@ -118,12 +120,6 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
     theresults <- abs(theresults) 
   }
 
-  if(ordered) {
-    # the data are ordered using the  statistic in the first stratifying factor
-    tmp <- order(theresults[,1])  
-    theresults <- theresults[tmp,, drop = FALSE]
-  } 
-
   return(theresults)
 }
 
@@ -139,23 +135,29 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' largest imbalance to smallest based on the first column of \code{x}.
 #' 
 #' @param x A matrix of variables (rows) by stratifications (columns).
+#' @param ordered Should the variables be ordered (within groups if any) from most to least imbalance on the first statistic?
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
 #' @example inst/examples/balanceplot.R
 #' @export
-balanceplot <- function(x, xlab = "Balance", ...) {
+balanceplot <- function(x, ordered = F, xlab = "Balance", ...) {
   original.par <- par()
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
-
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
   
+  if (ordered) {
+    # order X by the groups, and within groups order by the first column
+    localorder <- order( x[,1])
+    x <- x[localorder, , drop = F]
+  }
+
   ypos <- 1:nvars
-  
+
   mai <- par('mai')
   mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
   mar <- par('mar')
