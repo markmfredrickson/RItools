@@ -61,7 +61,7 @@ release: check spell
 
 # test is just the internal tests, not the full R CMD Check
 test: .local/RItools/INSTALLED
-	R --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
+	R_LIBS=.local R --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
 clean:
 	git clean -xfd
