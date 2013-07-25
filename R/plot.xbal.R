@@ -131,7 +131,9 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #'
 #' This plotting function summarizes variable by stratification matrices. For
 #' each variable (a row in the \code{x} argument), the values are under each
-#' stratification (the columns of \code{x}) are plotted on the same line. It is
+#' stratification (the columns of \code{x}) plotted on the same line. 
+#' 
+#' It is
 #' conventional to standardize the differences to common scale (e.g. z-scores),
 #' but this is not required. Plotting will automatically order the data from
 #' largest imbalance to smallest based on the first column of \code{x}.
@@ -140,6 +142,7 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
+#' @example inst/examples/balanceplot.R
 #' @export
 balanceplot <- function(x, xlab = "Balance", ...) {
   nvars <- dim(x)[1]
