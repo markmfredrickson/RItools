@@ -1,3 +1,4 @@
+#' @import abind
 plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
                     mar=c(3,3,2,0)+0.1,mgp=c(1.5,.5,0),tck=-.01,
                     xlab = "Standardized Differences",
