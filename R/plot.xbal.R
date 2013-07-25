@@ -37,7 +37,12 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
   ##Setup the margin, adjust for the lengths of the labels.
   par(mar=mar,tck=tck,mgp=mgp) ##set default margins
   mymai<-par('mai')
-  mymai[2]<-max(c(strwidth(varlabels ,units="inches"),mymai[2]))
+
+  # when using the SVG device, strwidth throws fits, so we hope that the default mai[2] is good enough
+  if (names(dev.cur()) != "svg") {
+    mymai[2]<-max(c(strwidth(varlabels ,units="inches"),mymai[2]))
+  }
+
   ##Setup the plotting region
   par(mai=mymai)
 

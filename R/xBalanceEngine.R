@@ -70,14 +70,19 @@ ans <-
 						       ssn/sqrt(ssvar))
 	if (any(c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values") %in% report))  ##always produce a pvalue to use to create signif stars.
 		ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
-				   2*pnorm(abs(ssn/sqrt(ssvar)),lower=FALSE))
+				   2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
 
 	if ("chisquare.test"%in%report)
 	{
-		pst.svd <- svd(tmat*sqrt(dv))
+          require(svd)
+          pst.svd <- try ( svd(tmat*sqrt(dv)) )
+          if(inherits(pst.svd,'try-error')){
+            pst.svd<-propack.svd(tmat*sqrt(dv))
+          }
+	##	pst.svd <- svd(tmat*sqrt(dv))
 		Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
 		Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this? 
-		if (all(Positive)) 
+		if (all(Positive)) ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
 		{ytl <- pst.svd$v *
 		matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
 		} else{if (!any(Positive))
