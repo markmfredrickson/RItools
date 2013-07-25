@@ -93,6 +93,14 @@ test_that("Generic balance plots", {
   dev.off()
 
   expect_identical(p1,p2)
+
+  # segments between points
+  x11()
+  balanceplot(testmat, segments = TRUE)
+  p.segs <- dev.capture()
+  dev.off()
+
+  expect_false(identical(p1, p.segs))
 })
 
 

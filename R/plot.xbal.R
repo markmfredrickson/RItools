@@ -158,12 +158,13 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' 
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param ordered Should the variables be ordered (within groups if any) from most to least imbalance on the first statistic?
+#' @param segments Should lines be drawn between points for each variable?
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
 #' @example inst/examples/balanceplot.R
 #' @export
-balanceplot <- function(x, ordered = F, xlab = "Balance", ...) {
+balanceplot <- function(x, ordered = FALSE, segments = FALSE, xlab = "Balance", ...) {
   original.par <- par()
 
   nvars <- dim(x)[1]
@@ -204,6 +205,13 @@ balanceplot <- function(x, ordered = F, xlab = "Balance", ...) {
   axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
   abline(v = 0, col = "#333333")
 
+  if (segments && dim(x)[2] > 1) {
+    bnds <- t(apply(x, 1, range))
+    graphics::segments(x0 = bnds[,1],
+                       y0 = ypos,
+                       x1 = bnds[,2],
+                       y1 = ypos)
+  }
 
   legend(x = mean(xrange),
          y = max(ypos) + 2,
