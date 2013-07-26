@@ -14,36 +14,38 @@
 #' make a smaller \code{xbal} object with only the desired variables or
 #' stratifications.
 #'
+#' \code{\link{xBalance}} can produce several different summary statistics for
+#' each variable, any of which can serve as the data for this plot. By default,
+#' the standardized differences between treated and control units makes a good
+#' choice as all variables are on the same scale. Other statistics can be
+#' selected using the \code{statistic} argument.
+#'
 #' @param x An object returned by \code{\link{xBalance}}
 #' @param xlab The label for the x-axis of the plot
 #' @param statistic The statistic to plot. The default choice of standardized
 #' difference is a good choice as it will have roughly the same scale for all
 #' plotted variables.
-#' @param thecols NOT YET IMPLEMENTED
-#' @param thesymbols NOT YET IMPLEMENTED
 #' @param absolute Convert the results to the absolute value of the statistic.
 #' @param strata.labels A named vector of the from \code{c(strata1 = "Strata Label 1", ...)} 
 #' that maps the stratification schemes to textual labels.
 #' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)} 
 #' that maps the variables to textual labels.
 #' @param ... additional arugments to pass to \code{\link{balanceplot}}
-#' @seealso \code{\link{xBalance}} \code{\link{subset.xbal}} \code{\link{balanceplot}}
+#' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
 #' @import abind
-plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
-                    mar=c(3,3,2,0)+0.1,mgp=c(1.5,.5,0),tck=-.01,
-                    xlab = "Standardized Differences",
-                    statistic = "std.diff",
-                    thecols=rainbow(length(which.strata)),
-                    thesymbols=c(19,22,23,24,25)[1:length(which.strata)],
-                    absolute = FALSE,
-                    strata.labels = NULL,
-                    variable.labels = NULL,
-                    ...){
+#' @S3method plot xbal
+#' @method plot xbal
+plot.xbal <- function(x,
+                      xlab = "Standardized Differences",
+                      statistic = "std.diff",
+                      # not implemented: thecols = rainbow(length(which.strata)),
+                      # not implemented: thesymbols = c(19,22,23,24,25)[1:length(which.strata)],
+                      absolute = FALSE,
+                      strata.labels = NULL,
+                      variable.labels = NULL,
+                      ...) {
 
-  # the helper .plot.xbal turns xb and the many of the arguments into a
-  # an ordered variables by stratas table. The colnames are the labeled stratifications
-  # the rownames are the labeled variables
   if (dim(x$results)[2] > 1) {
     # this means that the user is passing an xBalance object with more than one statistic
     # so we need to trim it down
@@ -151,19 +153,20 @@ plot.xbal<-function(x,adjustxaxis=.25,segments=TRUE,legend=TRUE,
 #' each variable (a row in the \code{x} argument), the values are under each
 #' stratification (the columns of \code{x}) plotted on the same line. 
 #' 
-#' It is
-#' conventional to standardize the differences to common scale (e.g. z-scores),
-#' but this is not required. Plotting will automatically order the data from
-#' largest imbalance to smallest based on the first column of \code{x}.
+#' It is conventional to standardize the differences to common scale (e.g.
+#' z-scores), but this is not required. Plotting will automatically order the
+#' data from largest imbalance to smallest based on the first column of
+#' \code{x}.
 #' 
 #' @param x A matrix of variables (rows) by stratifications (columns).
-#' @param ordered Should the variables be ordered (within groups if any) from most to least imbalance on the first statistic?
+#' @param ordered Should the variables be ordered from
+#' most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each variable?
 #' @param segments.args A list of arguments to pass to the \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
 #' @param xlab The label of the x-axis of the plot.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
-#' @seealso \code{\link{plot.xbal}} \code{\link{xBalance}}
+#' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}}, \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
 balanceplot <- function(x, 
