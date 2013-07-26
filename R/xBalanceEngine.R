@@ -74,7 +74,6 @@ ans <-
 
 	if ("chisquare.test"%in%report)
 	{
-          require(svd)
           pst.svd <- try ( svd(tmat*sqrt(dv)) )
           if(inherits(pst.svd,'try-error')){
             pst.svd<-propack.svd(tmat*sqrt(dv))
