@@ -175,7 +175,6 @@ balanceplot <- function(x,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
                         xlab = "Balance", ...) {
-  original.par <- par()
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
@@ -191,11 +190,17 @@ balanceplot <- function(x,
 
   ypos <- 1:nvars
 
-  mai <- par('mai')
-  mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
-  mar <- par('mar')
-  mar[3] <- nstrat + 2
-  original.par <- par(mar = mar, mai = mai)
+  
+  if (names(dev.cur()) != "svg") {
+   mai <- par('mai')
+   mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
+   par(mai = mai)
+  } else {
+   mar <- par("mar")
+   mar[2] <- max(nchar(x)) + mar[2] # assume one line per character
+   par(mar = mar)
+  }
+
  
   plot(xrange, 
        range(ypos),
@@ -234,5 +239,4 @@ balanceplot <- function(x,
          pch = 1:nstrat,
          bty = "n")
 
-  par(original.par)
 } 
