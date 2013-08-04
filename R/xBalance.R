@@ -120,20 +120,23 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ##colnames(ans$by.variable) <- nms
   attr(ans, "fmla") <- formula(tfmla)
 
-  if ("chisquare.test" %in% report)
-  {
-    ans$overall <- data.frame(chisquare=numeric(length(RES)),
-                              df=numeric(length(RES)),
-                              p.value=numeric(length(RES)),
-                              row.names=names(RES))
-  for (nn in names(RES))
-  {
-   ans$overall[nn,'chisquare'] <- RES[[nn]]$chisq['chisquare']
-   ans$overall[nn,'df'] <- RES[[nn]]$chisq['df']
-   ans$overall[nn,'p.value'] <- pchisq(RES[[nn]]$chisq['chisquare'],
-                                       df=RES[[nn]]$chisq['df'],
-                                       lower.tail=FALSE)
-  }
+  if ("chisquare.test" %in% report) {
+    ans$overall <- data.frame(chisquare = numeric(length(RES)),
+                              df        = numeric(length(RES)),
+                              p.value   = numeric(length(RES)),
+                              row.names = names(RES))
+    for (nn in names(RES)) {
+      ans$overall[nn,'chisquare'] <- RES[[nn]]$chisq['chisquare']
+      ans$overall[nn,'df']        <- RES[[nn]]$chisq['df']
+      ans$overall[nn,'p.value']   <- pchisq(RES[[nn]]$chisq['chisquare'],
+                                            df = RES[[nn]]$chisq['df'],
+                                            lower.tail = FALSE)
+
+    }
+
+    attr(ans$overall, "tcov") <- lapply(RES, function(r) {
+      r$tcov
+    })
 }
   class(ans) <- c("xbal", "list")
   ans

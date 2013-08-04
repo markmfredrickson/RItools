@@ -93,8 +93,11 @@ ans <-
 
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
+    tcov <- crossprod(sqrt(dv) * tmat)
 
-	} else csq <- DF <- 0
+	} else csq <- DF <- tcov <- 0
 
-	list(dfr=ans,chisq=c('chisquare'=csq,'df'=DF))
+	list(dfr   = ans,
+       chisq = c('chisquare' = csq, 'df' = DF),
+       tcov  = tcov) # test statistic covariance matrix
 }
