@@ -93,7 +93,7 @@ ans <-
 
 		csq <- drop(crossprod(mvz))
 		DF <- sum(Positive)
-    tcov <- crossprod(sqrt(dv) * tmat)
+    tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
 	} else csq <- DF <- tcov <- 0
 
