@@ -14,6 +14,10 @@
 ################################################################################
 
 ############################### Mean Differences ###############################
+fastmean<-function(x){
+  ## Skip checks and dispatch etc.
+  .Internal(mean(x))
+}
 
 mean.difference <- function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
@@ -21,7 +25,8 @@ mean.difference <- function(ys, z) {
   return(mean(ys[z]) - mean(ys[!z]))
 }
 
-mean.diff.lsfit<-function(ys,z){ ##Try using something that calls compiled code
+mean.diff.lsfit<-function(ys,z){ 
+  ##Try using something that calls compiled code
   ##Gives same answer as mean.difference for balanced blocks and should be like harmonic.mean.difference for unbalanced blocks.
   lsfit(x=model.matrix(ys~z),y=ys,intercept=FALSE)[["coefficients"]][["z"]]
 }
@@ -204,6 +209,29 @@ quantileAbsoluteDifference <- function(quantiles) {
   }
 }
 
+
+iqrDiff <- function(ys,z,q1=.25,q2=.75,type=7){
+  ## Inter-quartile/quantile difference
+  ## a test statistic focusing on differences in scale
+  qZtrted<-abs(diff(quantile(as.numeric(yz[!!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
+		    type = type)))
+  qZctrl<-abs(diff(quantile(as.numeric(yz[!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
+		    type = type)))
+  return(qZtrted-qZctrl)
+}
+
+madDiff <- function(ys,z){
+  ## Median absolute deviation (which is scaled to be asymp. same as sd of a Normal)
+  ## see help("mad")
+ mad(ys[!!z]) - mad(ys[!z])
+}
+
+
+quantileDifference <- function(ys,z,q=.5){
+  ## difference at a quantile
+  quantile(ys[!!z],q)-quantile(ys[!z],q)
+} 
+
 ### The ksTestStatistic with ks.test as a potential backend
 
 # this borrowed from ks.test
@@ -381,31 +409,31 @@ ssrTestStatistic <- new("AsymptoticTestStatistic",
 
 cvmTestStatistic <- new("AsymptoticTestStatistic",
                         function(y, z) {
-                          ## next borrowed from  cvm.stat.disc
-                          ## first, set up using the cvm.stat.disc test var names
-                          x <- y[z == 1]
-                          y <- y[z == 0]
+			  ## next borrowed from  cvm.stat.disc
+			  ## first, set up using the cvm.stat.disc test var names
+			  x <- y[z == 1]
+			  y <- y[z == 0]
 
-                          x <- x[!is.na(x)]
-                          y <- y[!is.na(y)]
+			  x <- x[!is.na(x)]
+			  y <- y[!is.na(y)]
 
-                          I <- knots(y)
-                          N <- length(x)
-                          e <- diff(c(0, N * y(I)))
-                          obs <- rep(0, length(I))
-                          for (j in 1:length(I)) {
-                            obs[j] <- length(which(x == I[j]))
-                          }
-                          S <- cumsum(obs)
-                          T <- cumsum(e)
-                          H <- T/N
-                          p <- e/N
-                          t <- (p + p[c(2:length(p), 1)])/2
-                          Z <- S - T
-                          Zbar <- sum(Z * t)
-                          S0 <- diag(p) - p %*% t(p)
-                          A <- matrix(1, length(p), length(p))
-                          A <- apply(row(A) >= col(A), 2, as.numeric)
+			  I <- knots(y)
+			  N <- length(x)
+			  e <- diff(c(0, N * y(I)))
+			  obs <- rep(0, length(I))
+			  for (j in 1:length(I)) {
+			    obs[j] <- length(which(x == I[j]))
+			  }
+			  S <- cumsum(obs)
+			  T <- cumsum(e)
+			  H <- T/N
+			  p <- e/N
+			  t <- (p + p[c(2:length(p), 1)])/2
+			  Z <- S - T
+			  Zbar <- sum(Z * t)
+			  S0 <- diag(p) - p %*% t(p)
+			  A <- matrix(1, length(p), length(p))
+			  A <- apply(row(A) >= col(A), 2, as.numeric)
                           E <- diag(t)
                           One <- rep(1, nrow(E))
                           K <- diag(0, length(H))
