@@ -213,9 +213,9 @@ quantileAbsoluteDifference <- function(quantiles) {
 iqrDiff <- function(ys,z,q1=.25,q2=.75,type=7){
   ## Inter-quartile/quantile difference
   ## a test statistic focusing on differences in scale
-  qZtrted<-abs(diff(quantile(as.numeric(yz[!!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
+  qZtrted<-abs(diff(quantile(as.numeric(ys[!!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
 		    type = type)))
-  qZctrl<-abs(diff(quantile(as.numeric(yz[!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
+  qZctrl<-abs(diff(quantile(as.numeric(ys[!z]), c(q1, q2), na.rm = FALSE, names = FALSE,
 		    type = type)))
   return(qZtrted-qZctrl)
 }
