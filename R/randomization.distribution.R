@@ -280,7 +280,7 @@ getLApplyFunction <- function(x,fun,...) {
   opt <- options("RItools-lapply")[[1]]
 
   if (!is.null(opt)) {
-    return(opt)
+    return(opt(x,fun,...))
   }
 
   if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
@@ -302,7 +302,7 @@ getApplyFunction <- function(x,fun,...) {
   opt <- options("RItools-sapply")[[1]]
 
   if (!is.null(opt)) {
-    return(opt)
+    return(opt(x,fun,...))
   }
 
   if (snowLoaded()) { ## for now assumes that you start the cluster with cl<-makeCluster(...)
