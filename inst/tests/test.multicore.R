@@ -14,17 +14,15 @@ test_that("Check parallel on/off", {
 
   expect_false(parallelLoaded())
 
-  expect_true(is.null(options("RItools-apply")[[1]]))
-  expect_equal(getApplyFunction(), lapply)
+  serial <- getApplyFunction(1:10^2, sqrt)
 
   library(parallel)
 
   expect_true(parallelLoaded())
-  expect_equal(getApplyFunction(), mclapply)
 
-  opts <- options("RItools-apply" = sum) # really bad choice :-)
-  expect_equal(getApplyFunction(), sum)
-  options(opts)
+  parallel <- getApplyFunction(1:10^2, sqrt)
+
+  expect_equal(serial, parallel)
   
 })
 

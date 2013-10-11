@@ -277,7 +277,7 @@ snowLoaded <- function() { ## if a cluster named cl has been started
 
 getLApplyFunction <- function(x,fun,...) {
   ## A parallized lapply
-  opt <- options("RItools-lapply")[[1]]
+  opt <- getOption("RItools-lapply", lapply)
 
   if (!is.null(opt)) {
     return(opt(x,fun,...))
@@ -299,7 +299,7 @@ getLApplyFunction <- function(x,fun,...) {
 
 getApplyFunction <- function(x,fun,...) {
   ## A parallelized sapply
-  opt <- options("RItools-sapply")[[1]]
+  opt <- getOption("RItools-sapply", sapply)
 
   if (!is.null(opt)) {
     return(opt(x,fun,...))
