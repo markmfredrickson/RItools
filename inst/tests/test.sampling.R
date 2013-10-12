@@ -7,6 +7,7 @@ library(testthat)
 context("Sampling")
 
 test_that("simpleRandomSample for fixed number of treated within blocks", {
+  set.seed(20131010)
   sampler <- simpleRandomSampler(total = 8, treated = 4) # 70 possible
   
   expect_equal(dim(sampler(100)$samples)[2], 70) # do not return more than 70
@@ -61,6 +62,7 @@ test_that("simpleRandomSample for fixed number of treated within blocks", {
 
 test_that("multinomialSampler for independent bernoulli draws", {
 
+  set.seed(20131010)
   sampler <- independentProbabilitySampler(4) 
 
   # max 2^4 = 16 randomizations (including all zero and all one)

@@ -37,7 +37,7 @@ general.two.sided.p.value<-function(value,distribution){
 setClass("ParameterPvals", contains = "data.frame")
 
 p.values <- function(object, p.value.function = general.two.sided.p.value) {
-  stopifnot(inherits(object, "ParameterizedRandomizationDistribution"))
+  stopifnot(inherits(object, "RandomizationDistribution"))
 
   k <- dim(object)[1] # total number of distributions to check
   pvs <- vector("numeric")
@@ -48,7 +48,7 @@ p.values <- function(object, p.value.function = general.two.sided.p.value) {
       object[i, -1])
   }
 
-  return(as(cbind(rbind(NA, object@params), p = pvs), "ParameterPvals"))
+  return(as(cbind(rbind(NA, object@paramMatrix), p = pvs), "ParameterPvals"))
 }
 
 plot.ParameterPvals <- function(object, ...) {
@@ -72,24 +72,24 @@ plot.ParameterPvals <- function(object, ...) {
 
 ##The confidence interval function ought to refuse to provide levels that are not supported (see the behavior of wilcox.test when you ask for an exact CI but the discreteness of the randomization distribution does not allow it
 
-setClass("ParameterizedRandomizationDistributionConfInt",
+setClass("RandomizationDistributionConfInt",
   representation(
-    prd = "ParameterizedRandomizationDistribution",
+    prd = "RandomizationDistribution",
     rejections = "data.frame"))
 
-confint.ParameterizedRandomizationDistribution <- function(
+confint.RandomizationDistribution <- function(
   object,
   param,
   level = 0.95) {
   
   reject <- (1 - object$p.value) > level
-  results <- cbind(object@params, reject[-1]) # drop the null
+  results <- cbind(object@paramMatrix, reject[-1]) # drop the null
    
-  return(new("ParameterizedRandomizationDistributionConfInt", prd = object,
+  return(new("RandomizationDistributionConfInt", prd = object,
     rejections = results))
 }
 
-summary.ParameterizedRandomizationDistributionConfInt <- function(object, ...)
+summary.RandomizationDistributionConfInt <- function(object, ...)
 {
   width <- dim(object@rejections)[2]
   params <- colnames(object@rejections)[1:(width - 1)]
@@ -103,7 +103,7 @@ summary.ParameterizedRandomizationDistributionConfInt <- function(object, ...)
   return(minmax)
 }
 
-plot.ParameterizedRandomizationDistributionConfInt <- function(object, ...) {
+plot.RandomizationDistributionConfInt <- function(object, ...) {
   library(lattice)
   # for each pair of parameters, plot somethign like this:
   width <- dim(object@rejections)[2]  

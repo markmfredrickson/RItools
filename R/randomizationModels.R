@@ -201,59 +201,60 @@ constant.additive.model <- UniformityModel(function(y, z, tau) { y - z * tau },
 #  power.samples: number of datasets to generate simulated Z values
 #  ... arguments to be passed to pRD (and probably then to the engine)
 
-compareModels <- function(models, # a list of (one param) models to try 
-                          repetitions, # how many times to create data
-                          test.statistic,                          
-                          uniformity, 
-                          sampler,
-                          summary.column = "p.value",
-                          ...) {
-  
-  Zs <- sampler(repetitions)
-
-  if (missing(uniformity)) {
-    uniformity <- rnorm(length(Zs$samples[,1]))  
-  }
-
-  results <- lapply(as.data.frame(Zs$samples), function(z) {
-    data <- lapply(models, function(m) { invertModel(m, uniformity, z)})
-
-    test <- lapply(data, function(d) {
-      tmp <- randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
-        sampler = sampler, ...) # all other args passed along, e.g. samples  
-
-      tmp[[1]][-1, summary.column, drop = F] # drop the sharp null row
-    })
-    
-    test <- matrix(unlist(test), nrow = length(models), dimnames = list(names(models), names(models)))
-    return(test)
-  })
-
-  names(results) <- 1:repetitions
-
-  require(abind)
-
-  return(abind(results, along = 3))
-}
-
-parameterizedCompareModels <- function(models, ...) {
-  unparameterized <- lapply(models, function(l) {
-    m <- l[[1]]
-    params <- l[-1]
-
-    if (length(params) > 0) {
-      parameter.space <- do.call(expand.grid, params)
-    return(apply(parameter.space, 1, function(ps) {
-        force(ps)
-        do.call(givenParams, c(list(m), ps))
-        }))
-    } else {
-      return(m)  
-    }
-  }) 
-  
-  compareModels(unlist(unparameterized), ...)
-}
+## Commented out until there is a replacement for randomizationDistributionEngine
+# compareModels <- function(models, # a list of (one param) models to try 
+#                           repetitions, # how many times to create data
+#                           test.statistic,                          
+#                           uniformity, 
+#                           sampler,
+#                           summary.column = "p.value",
+#                           ...) {
+#   
+#   Zs <- sampler(repetitions)
+# 
+#   if (missing(uniformity)) {
+#     uniformity <- rnorm(length(Zs$samples[,1]))  
+#   }
+# 
+#   results <- lapply(as.data.frame(Zs$samples), function(z) {
+#     data <- lapply(models, function(m) { invertModel(m, uniformity, z)})
+# 
+#     test <- lapply(data, function(d) {
+#       tmp <- randomizationDistributionEngine(d, z, list(c(test.statistic, models)),
+#         sampler = sampler, ...) # all other args passed along, e.g. samples  
+# 
+#       tmp[[1]][-1, summary.column, drop = F] # drop the sharp null row
+#     })
+#     
+#     test <- matrix(unlist(test), nrow = length(models), dimnames = list(names(models), names(models)))
+#     return(test)
+#   })
+# 
+#   names(results) <- 1:repetitions
+# 
+#   require(abind)
+# 
+#   return(abind(results, along = 3))
+# }
+# 
+# parameterizedCompareModels <- function(models, ...) {
+#   unparameterized <- lapply(models, function(l) {
+#     m <- l[[1]]
+#     params <- l[-1]
+# 
+#     if (length(params) > 0) {
+#       parameter.space <- do.call(expand.grid, params)
+#     return(apply(parameter.space, 1, function(ps) {
+#         force(ps)
+#         do.call(givenParams, c(list(m), ps))
+#         }))
+#     } else {
+#       return(m)  
+#     }
+#   }) 
+#   
+#   compareModels(unlist(unparameterized), ...)
+# }
 
 # given the results of analyzeModel, what can we say?
 

@@ -129,8 +129,7 @@ setClass("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              results,
-             test.statistic = xBalance,
-             z = as.numeric(treatment)))
+             test.statistic = xBalance))
 }
 
 
@@ -179,8 +178,7 @@ harmonic.mean.difference <- new("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = wilcox.test,
-             z = as.numeric(treatment)))
+             test.statistic = wilcox.test))
 }
 
 mann.whitney.u <-  new("AsymptoticTestStatistic",
@@ -254,8 +252,7 @@ quantileDifference <- function(q=.5){
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = ks.test,
-             z = as.numeric(z)))
+             test.statistic = ks.test))
 }
 
 ksTestStatistic <- new("AsymptoticTestStatistic",
@@ -325,8 +322,7 @@ ksTestStatistic.ranked <- new("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = ad.test,
-             z = as.numeric(z)))
+             test.statistic = ad.test))
 }
 
 adTestStatistic <- new("AsymptoticTestStatistic",
@@ -375,8 +371,7 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = ks.test,
-             z = as.numeric(z)))
+             test.statistic = ks.test))
 }
 
 ssrTestStatistic <- new("AsymptoticTestStatistic",
@@ -407,8 +402,7 @@ ssrTestStatistic <- new("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = cvm.test,
-             z = as.numeric(z)))
+             test.statistic = cvm.test))
 }
 
 cvmTestStatistic <- new("AsymptoticTestStatistic",

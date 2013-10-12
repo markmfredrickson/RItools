@@ -47,6 +47,10 @@ simpleRandomSampler <- function(total, treated, z, b) {
     naError()  
   }
 
+  if (length(total) != length(treated)) {
+    stop("total and treated arguments must match lengths")
+  }
+
   if (!all(total > treated)) {
     stop("Each block must contain strictly more observations than treated units")
   }
