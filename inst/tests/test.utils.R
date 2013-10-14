@@ -26,4 +26,10 @@ test_that("filling in arrays", {
 
   expect_equal(res[7,3,2], f(7, 3, 2))
 
+  # should also work for a single arg
+
+  res1 <- farray(function(i) { i^2 }, list(foo = c(1,2,3)))
+
+  expect_is(res1, "array")
+
 })

@@ -19,27 +19,28 @@ test_that("Harmonic Mean Difference", {
 
   expect_equal(harmonic.mean.difference(ys, Z), hmd)
 
+  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
   # the model, a location shift (does not fit reality as it ignores block
   # effects, but that's fine. no model is perfect.)
   
   # samples should be ignored, set low to keep the test short if there is an error
-  dst <- RItest(ys, Z, harmonic.mean.difference, moe = constant.additive.model,
-                   parameters = list(tau = 1),
-                                            samples = 1,
-                                            type = "asymptotic") 
+  # dst <- RItest(ys, Z, harmonic.mean.difference, moe = constant.additive.model,
+  #                  parameters = list(tau = 1),
+  #                                           samples = 1,
+  #                                           type = "asymptotic") 
 
-  expect_equal(dim(dst), c(2,2))
-  expect_equal(colnames(dst), c("statistic", "p.value"))
+  # expect_equal(dim(dst), c(2,2))
+  # expect_equal(colnames(dst), c("statistic", "p.value"))
 
-  # now use the exact version and check our results
-  # by default type = "exact"
-  dst.x <- RItest(ys, Z, 
-                      harmonic.mean.difference, 
-                      moe = constant.additive.model, 
-                      parameters = list(tau = 1),
-                      samples = 1)
+  # # now use the exact version and check our results
+  # # by default type = "exact"
+  # dst.x <- RItest(ys, Z, 
+  #                     harmonic.mean.difference, 
+  #                     moe = constant.additive.model, 
+  #                     parameters = list(tau = 1),
+  #                     samples = 1)
 
-  expect_equal(dst$statistic, dst.x$statistic)
+  # expect_equal(dst$statistic, dst.x$statistic)
 
 })
 
@@ -51,31 +52,32 @@ test_that("Wilcox.test", {
   B <- rep(1:4, each =  n/4)
   ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effecto
   
-  dst <- RItest(ys, 
-                Z, 
-                mann.whitney.u,
-                moe = constant.additive.model,  
-                parameters = list(tau = 1),
-                samples = 1,
-                type = "asymptotic")
+  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
+  # dst <- RItest(ys, 
+  #               Z, 
+  #               mann.whitney.u,
+  #               moe = constant.additive.model,  
+  #               parameters = list(tau = 1),
+  #               samples = 1,
+  #               type = "asymptotic")
 
 
-  expect_equal(dim(dst), c(2,2))
-  expect_equal(colnames(dst), c("statistic", "p.value"))
+  # expect_equal(dim(dst), c(2,2))
+  # expect_equal(colnames(dst), c("statistic", "p.value"))
 
-  # the exact version
-  dst.x <- RItest(ys, 
-                  Z, 
-                  mann.whitney.u, 
-                  moe = constant.additive.model,  
-                  parameters = list(tau = 1),
-                  samples = 1)
+  # # the exact version
+  # dst.x <- RItest(ys, 
+  #                 Z, 
+  #                 mann.whitney.u, 
+  #                 moe = constant.additive.model,  
+  #                 parameters = list(tau = 1),
+  #                 samples = 1)
 
-  expect_equal(dst$statistic, dst.x$statistic)
+  # expect_equal(dst$statistic, dst.x$statistic)
 
 })
 
-test_that("Quintile Differences", {
+test_that("Quantile Differences", {
 
   y <- c(1:5, 2:6)
   z <- c(rep(0,5), rep(1,5))
@@ -109,34 +111,35 @@ test_that("KS Test Statistic", {
 
   expect_equal(as.numeric(res.ks$statistic), ksTestStatistic(y, z))
 
-  res.ksfn <- RItest(y, z, ksTestStatistic, p.value = upper.p.value)
+  res.ksfn <- RItest(y, z, ksTestStatistic)
 
-  expect_equivalent(res.ks$statistic, res.ksfn$statistic)
-  expect_equal(res.ks$p.value, res.ksfn$p.value)
+  expect_equivalent(res.ks$statistic, res.ksfn@observed.statistic)
+  expect_equal(res.ks$p.value, as.numeric(res.ksfn))
 
   ### Next tests making sure that we can flip things around and get the right values
   res.ks.flip <- ks.test(y[z == 0], y[z == 1])
 
   expect_equal(as.numeric(res.ks.flip$statistic), ksTestStatistic(y, rev(z)))
 
-  res.ksfn.flip <- RItest(y, rev(z), ksTestStatistic, p.value = upper.p.value)
+  res.ksfn.flip <- RItest(y, rev(z), ksTestStatistic)
   
 
-  expect_equivalent(res.ks.flip$statistic, res.ksfn.flip$statistic)
-  expect_equal(res.ks.flip$p.value, res.ksfn.flip$p.value)
+  expect_equivalent(res.ks.flip$statistic, res.ksfn.flip@observed.statistic)
+  expect_equal(res.ks.flip$p.value, as.numeric(res.ksfn.flip))
 
   ### Compare the backend results to calling ks.test explicity for large data. Should be the same
 
-  set.seed(20120423)
-  y0 <- rnorm(10000)
-  z <- rep(c(0,1), 5000)
-  y <- y0 + 0.05 * z
+  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
+  # set.seed(20120423)
+  # y0 <- rnorm(10000)
+  # z <- rep(c(0,1), 5000)
+  # y <- y0 + 0.05 * z
 
-  res.ks.asym <- ks.test(y[z == 1], y[z == 0], exact = F) # be sure to use asymptotics
-  res.ksfn.asym <- RItest(y, z, ksTestStatistic, type = "asymptotic")
-  
-  expect_equivalent(res.ks.asym$statistic, res.ksfn.asym$statistic)
-  expect_equal(res.ks.asym$p.value, res.ksfn.asym$p.value)
+  # res.ks.asym <- ks.test(y[z == 1], y[z == 0], exact = F) # be sure to use asymptotics
+  # res.ksfn.asym <- RItest(y, z, ksTestStatistic, type = "asymptotic")
+  # 
+  # expect_equivalent(res.ks.asym$statistic, res.ksfn.asym$statistic)
+  # expect_equal(res.ks.asym$p.value, res.ksfn.asym$p.value)
 
 
 })

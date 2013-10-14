@@ -18,7 +18,7 @@ test_that("Non-paired", {
 
   expect_equal(sum(Z), 6)
 
-  res.wilcox <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T)
+  res.wilcox <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, alternative = "greater")
 
   res.prd <- RItest(R, Z, mann.whitney.u, 
     constant.additive.model, list(tau = c(-10, 9, 10)))
@@ -26,15 +26,15 @@ test_that("Non-paired", {
   # the wilcox stat is named "W", but is otherwise the same
   # the result of the test stat applied to the observed data it the first
   # entry in the sharp null object
-  expect_equal(res.prd[[1,1]], res.wilcox$statistic[[1]])
+  expect_equal(res.prd@observed.statistic, res.wilcox$statistic[[1]])
 
-  expect_equal(res.wilcox$p.value, res.prd[1,2])
+  expect_equal(res.wilcox$p.value, as.numeric(res.prd@sharp.null))
   
-  res.wilcox.m10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = -10)
-  res.wilcox.10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 10)
-  res.wilcox.9 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 9)
+  res.wilcox.m10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = -10, alternative = "greater")
+  res.wilcox.10 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 10, alternative = "greater")
+  res.wilcox.9 <- wilcox.test(R[Z == 1], R[Z == 0], exact = T, conf.int = T, mu = 9, alternative = "greater")
 
-  expect_equal(res.prd[,2], c(res.wilcox$p.value, res.wilcox.m10$p.value, 
+  expect_equivalent(as.numeric(res.prd), c(res.wilcox.m10$p.value, 
       res.wilcox.9$p.value, res.wilcox.10$p.value))
 })
 
@@ -51,7 +51,7 @@ test_that("Paired", {
   B <- gl(nB,2)
   
   expect_equal(sum(Z), 6)
-  res.wilcox <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T)
+  res.wilcox <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, alternative = "greater")
 
   # make sure the test statistic is correct on the observed data
   expect_equal(paired.sgnrank.sum(R, Z), res.wilcox$stat[[1]])
@@ -60,11 +60,11 @@ test_that("Paired", {
     constant.additive.model, list(tau = c(-10, 9, 10)),
     sampler = simpleRandomSampler(z = Z, b = B)) 
 
-  res.wilcox.m10 <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = -10)
-  res.wilcox.10 <-  wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 10)
-  res.wilcox.9 <-   wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 9)
+  res.wilcox.m10 <- wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = -10, alternative = "greater")
+  res.wilcox.10 <-  wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 10, alternative = "greater")
+  res.wilcox.9 <-   wilcox.test(R[z], R[!z], paired = T, exact = T, conf.int = T, mu = 9, alternative = "greater")
 
-  expect_equal(res.prd[,2], c(res.wilcox$p.value, res.wilcox.m10$p.value, 
+  expect_equivalent(as.numeric(res.prd), c(res.wilcox.m10$p.value, 
       res.wilcox.9$p.value, res.wilcox.10$p.value))
 
 })

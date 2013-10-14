@@ -1,10 +1,5 @@
-################################################################################
-# Test of the pRD() function. Many other tests of this function in other test.*
-# files. This is a place for tests that don't have a home there.
-################################################################################
-
 library(testthat)
-context("paramertizedRandomizationDistribution")
+context("RItest")
 
 test_that("Using model objects", {
   # constant.additive.model is already defined
@@ -28,6 +23,18 @@ test_that("Using model objects", {
   res.model <- RItest(R, Z, mean.difference,
     constant.additive.model, parameters = hypotheses)
   
+  expect_is(res.model, "array")
+  expect_equal(dim(res.model), sapply(hypotheses, length))
+
+  model3 <- function(y, z, a, b, c) {
+    y - z * a * (b ^ c)
+  }
+
+  hypo3 <- list(a = 1:10, b = -5:5, c = c(2,4,6))
+
+  res3 <- RItest(R, Z, mean.difference, model3, parameters = hypo3, samples = 10)
+
+  expect_equal(dim(res3), sapply(hypo3, length))
 })
 
 test_that("Moe can be NULL", {
@@ -75,7 +82,7 @@ test_that("Plotting", {
 
   hypotheses <- list(tau = 5:15, gamma = 0:5)
 
-  model2 <- function(y, z, b, tau, gamma) {
+  model2 <- function(y, z, tau, gamma) {
     ifelse(!!z, y * gamma - tau, y)  
   }
 
@@ -84,9 +91,5 @@ test_that("Plotting", {
 
   a <- plot(res.two)
   expect_equal(a$panel, "panel.levelplot")
-
-  # can't plot sharp nulls
-  res.sn <- RItest(R, Z, mean.difference)
-  expect_error(plot(res.sn), "Cannot plot sharp null only")
 
 })

@@ -6,19 +6,18 @@
 setClassUnion("OptionalList", c("list", "NULL"))
 setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 
+setClass("SharpNullTest", 
+  representation(observed.statistic = "numeric",
+                 samples = "numeric"),
+  contains = "array")
+
 # the RandomizationDistribution object
 # for a single test statistic
 # results of a call to randomizationDistribution
 # each distribution is with respect to a given test statistic
-setClass("RandomizationDistribution",
-  representation(test.statistic = "function",
-                 moe = "function",
-                 paramList = "list",
-                 paramMatrix = "matrix",
-                 samples = "numeric", # the number of samples run, not necessarily requested
-                 distribution = "matrix",
-                 call = "call"), # if requested, the raw data
-  contains = "data.frame")
+setClass("ParameterizedTest",
+  representation(sharp.null = "SharpNullTest"),
+  contains = "SharpNullTest")
 
 RItest <- function(
   y,
@@ -28,8 +27,6 @@ RItest <- function(
   parameters = NULL, # list of name = values, name = values, ...
   sampler = simpleRandomSampler(z = z, b = rep(1, length(z))),
   samples = 5000,
-  p.value = general.two.sided.p.value,
-  include.distribution = FALSE,
   type = "exact",
   ...) {
 
@@ -50,120 +47,94 @@ RItest <- function(
     stop("'type' argument must be either 'asymptotic' or 'exact'")
   }
 
-  sharp.null <- function(y, z) { y }
-
-  if (!is.null(parameters)) {
-    parameter.space <- as.matrix(do.call(expand.grid, parameters))
-
-    moes <- c(sharp.null, getLApplyFunction(1:nrow(parameter.space), function(i) {
-      params<-parameter.space[i,]
-      force(params)
-      function(y, z) {
-        do.call(moe, c(list(y, z), params))
-      }
-    }))
-
-  } else {
-    moe <- sharp.null 
-    moes <- list(sharp.null)
-    parameters <- list()
-    parameter.space <- matrix()
-  }
 
   n <- length(z)
 
-  if(type == "exact") {
+  # if(type == "exact") {
     randomizations <- sampler(samples) # a list with $weight and $samples args
-  }
-
+  # }
 
   apply.fn <- getLApplyFunction
 
-  # first, for each model, adjust the observed y with the observed
-  # z
-  adjusted.y <- getApplyFunction(moes, function(m) m(y, z, ...))
+  # getting the p-value
+  doit <- function(m) {
+    function(...) { 
+      # first, for each model, adjust the observed y with the observed
+      # z
+      adjusted.y <- m(y, z, ...)
+      obs.t <- test.stat(adjusted.y, z)
 
-  # check if there is a backend function for this test.statistic
-  if (type == "asymptotic") {
-      if (inherits(test.stat, "AsymptoticTestStatistic")) {
-        # basically, pass the adjusted y and everything else
-        # to the backend and let it return a RandomizationDistribution
-        # or subclass (probably a good idea)
-        # backends may not honor samples, p.value, or summaries
-        return(test.stat@asymptotic(adjusted.y, z))
-      }
+      # check if there is a backend function for this test.statistic
+      # if (type == "asymptotic") {
+      #     if (inherits(test.stat, "AsymptoticTestStatistic")) {
+      #       # basically, pass the adjusted y and everything else
+      #       # to the backend and let it return a RandomizationDistribution
+      #       # or subclass (probably a good idea)
+      #       # backends may not honor samples, p.value, or summaries
+      #       return(test.stat@asymptotic(adjusted.y, z))
+      #     }
 
-    stop("No asymptotic backend exists for the test statistic")
+      #   stop("No asymptotic backend exists for the test statistic")
+      # }
+
+      # no backend, so use the standard approach
+      # Possible todo: pull this out into its own "backend" function
+
+      # now iterate over the randomizations, using the adjusted y
+      this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
+          test.stat(adjusted.y, z)})
+
+      return(upper.p.value(obs.t, this.distrib))
+    }
   }
 
-  # no backend, so use the standard approach
-  # Possible todo: pull this out into its own "backend" function
+  sharp.null <- function(y, z) { y }
 
-  # now iterate over the randomizations, using the adjusted y
-  this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
-    apply(adjusted.y, 2, function(d) {
-      test.stat(d, z, ...)})})
+  sharp.null.test <- new("SharpNullTest",
+                        doit(sharp.null)(),
+                        observed.statistic = test.stat(y, z),
+                        samples = dim(randomizations$samples)[2])
 
-  # see http://www.biostat.wustl.edu/archives/html/s-news/2000-01/msg00169.html
-  # for a discussion of matrix + unlist vs. do.call + rbind
-  this.distrib <- matrix(unlist(this.distrib), nrow = length(moes))
+  if (!is.null(moe)) {
 
-  adjusted.stats <- getApplyFunction(1:ncol(adjusted.y), function(i) {
-    test.stat(adjusted.y[,i], z, ...)})
+    return(new("ParameterizedTest",
+      farray(doit(moe), parameters), # inherits from array
+      observed.statistic = sharp.null.test@observed.statistic,
+      sharp.null = sharp.null.test, 
+      samples = sharp.null.test@samples,
+      call = match.call()))
 
-  ## pvs <- vector("numeric")
-
-  ## for (i in 1:(length(moes))) {
-  ##   pvs[i] <- p.value(adjusted.stats[i], this.distrib[i,])
-  ## }
-
-  pvs <- getApplyFunction(1:length(moes),function(i){
-    p.value(adjusted.stats[i], this.distrib[i,])
-  })
-
-  this.result <- data.frame(statistic = adjusted.stats, p.value = pvs)
-
-  rd <- new("RandomizationDistribution",
-    this.result, # RD inherits from data.frame
-    test.statistic = test.stat,
-    moe = moe,
-    paramList = parameters,
-    paramMatrix = parameter.space,
-    samples = dim(randomizations$samples)[2])
-
-  if (include.distribution) {
-    rd@distribution <- this.distrib
+  } else {
+    return(sharp.null.test)
   }
-
-  rd@call <- match.call()
-
-  return(rd)
 }
 
-plot.RandomizationDistribution <- function(object, type = 'o', ...) {
+#' Plot the results of RItest.
+#'
+#' @param object The results of RItest.
+#' @param type The type (points, lines, etc) for one dimensional models. Ignored for multi-dimensional models.
+#' @param summary A function to summarize higher dimension models (p > 2) into 2 dimensions.
+#' @return A lattice object. Use print to plot.
+#' @export
+plot.ParameterizedTest <- function(object, type = 'o', summary = max, ...) {
   library(lattice)
 
-  pnames <- colnames(object@paramMatrix)
+  pnames <- dimnames(object)
   np <- length(pnames)
 
   if (np == 0) {
     stop("Cannot plot sharp null only")
   }
 
-  data <- cbind(object@paramMatrix, object[-1,])
-
   if (np == 1) {
+    flat <- data.frame(as.numeric(object), names(object))
+    colnames(flat) <- c("p.value", pnames[1])
     fmla <- as.formula(paste("p.value ~ ", pnames[1]))
-    return(xyplot(fmla, data = data, type = type, ...)) # drop the sharp.null
+    return(xyplot(fmla, data = flat, type = type, ...)) # drop the sharp.null
   }
 
-  if (np == 2) {
-    fmla <- as.formula(paste("p.value ~ ", pnames[1], "+", pnames[2]))
-    return(levelplot(fmla, data = data, ...))
-  }
+  return(levelplot(as.matrix(apply(object, 1:2, summary), ...)))
 
-  # this point, np > 2
-  stop("Cannot plot parameters > 2 models (yet)")
 }
 
 setClass("RandomizationDistributionSummary",

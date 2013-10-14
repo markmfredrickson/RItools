@@ -80,7 +80,13 @@ farray <- function(f, p) {
   k <- prod(j)
   
   args <- make_args_mtx(p)
-  x <- vapply(args, FUN.VALUE = numeric(1), function(a) do.call(f, a))
+  x <- vapply(args, FUN.VALUE = numeric(1), function(a) {
+    if (!is.list(a)) { 
+      f(a) 
+    } else {
+      do.call(f, a)
+    }
+  })
 
   array(x, dim = j, dimnames = p)
 }
