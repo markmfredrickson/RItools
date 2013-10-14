@@ -8,7 +8,8 @@ setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 
 setClass("SharpNullTest", 
   representation(observed.statistic = "numeric",
-                 samples = "numeric"),
+                 samples = "numeric",
+                 call = "call"),
   contains = "array")
 
 # the RandomizationDistribution object
@@ -90,10 +91,13 @@ RItest <- function(
 
   sharp.null <- function(y, z) { y }
 
+  cl <- match.call()
+
   sharp.null.test <- new("SharpNullTest",
                         doit(sharp.null)(),
                         observed.statistic = test.stat(y, z),
-                        samples = dim(randomizations$samples)[2])
+                        samples = dim(randomizations$samples)[2],
+                        call = cl)
 
   if (!is.null(moe)) {
 
@@ -102,7 +106,7 @@ RItest <- function(
       observed.statistic = sharp.null.test@observed.statistic,
       sharp.null = sharp.null.test, 
       samples = sharp.null.test@samples,
-      call = match.call()))
+      call = cl))
 
   } else {
     return(sharp.null.test)
@@ -137,27 +141,19 @@ plot.ParameterizedTest <- function(object, type = 'o', summary = max, ...) {
 
 }
 
-setClass("RandomizationDistributionSummary",
-  representation(
-    randomizationDistribution = "RandomizationDistribution",
-    point.estimate = "data.frame",
-    showCall = "logical",
-    sharp.null.p = "numeric"))
-
-setMethod("summary", "RandomizationDistribution", function(object, showCall = T, ...) {
-  return(new("RandomizationDistributionSummary", randomizationDistribution = object,
-    point.estimate = point(object), showCall = showCall, sharp.null.p = object[1,2]))
+setMethod("show", "SharpNullTest", function(object) {
+  print(object, showCall = TRUE)
 })
 
-setMethod("show", "RandomizationDistributionSummary", function(object) {
-  if (object@showCall) {
-    dc <- deparse(object@randomizationDistribution@call)
+print.SharpNullTest <- function(x, showCall = TRUE) {
+  if (showCall) {
+    dc <- deparse(x@call)
     cat("Call: ", dc[1], "\n")
     cat(paste("      ", dc[-1] , "\n", sep = ""))
     cat("\n")
   }
 
-  tmp <- matrix(c(object@randomizationDistribution[1,1], object@sharp.null.p),
+  tmp <- matrix(c(x@observed.statistic, as.numeric(x)),
     nrow = 1, byrow = T)
 
   rownames(tmp) <- c("Observed Test Statistic")
@@ -165,26 +161,38 @@ setMethod("show", "RandomizationDistributionSummary", function(object) {
   printCoefmat(tmp, has.Pvalue = T, P.values = T)
   cat("\n")
 
-  # if there is more than one distribution (ie. more than the sharp null)
+  invisible(x)
+}
+
+print.ParameterizedTest <- function(x, showCall = TRUE) {
+  print.SharpNullTest(x@sharp.null, showCall)
+
   # compute a point estimate
-  if (dim(object@randomizationDistribution)[1] > 1) {
-    cat("Hodges-Lehmann Point Estimate(s):\n")
-    print(object@point.estimate)
-  }
-
-  invisible(object)
-})
-
+  cat("Hodges-Lehmann Point Estimate(s):\n")
+  print(point(x))
+}
+  
 setGeneric("point",
   def = function(object) { standardGeneric("point") })
 
-setMethod("point", "RandomizationDistribution", function(object) {
-
-  combined <- cbind(object@paramMatrix, object[-1,])
+setMethod("point", "ParameterizedTest", function(object) {
+          
   # extract point estimate(s)
-  maxp <- max(combined$p.value)
-  point.estimate <- combined[combined$p.value == maxp, ]
-  rownames(point.estimate) <- NULL
+  maxp <- max(object)
+  point.estimate.ind <- arrayInd(which(object == maxp),
+                                 .dim = dim(object)) 
+
+  point.estimate <- matrix(0, 
+                      nrow = dim(point.estimate.ind)[1],
+                      ncol = dim(point.estimate.ind)[2])
+
+  pset <- dimnames(object)
+
+  for (i in 1:length(pset)) {
+    point.estimate[, i] <- pset[[i]][point.estimate.ind[, i]]  
+  }
+
+  colnames(point.estimate) <- names(dimnames(object))
   return(point.estimate)
 })
 
