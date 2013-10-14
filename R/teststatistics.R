@@ -182,17 +182,8 @@ harmonic.mean.difference <- new("AsymptoticTestStatistic",
 }
 
 mann.whitney.u <-  new("AsymptoticTestStatistic",
-                       # the basic implementation
-                       function(ys, z) {
-                         x <- ys[!!z]
-                         y <- ys[!z]
-
-                         # next stolen from wilcox.test
-                         r <- rank(c(x, y))
-                         n.x <- as.double(length(x))
-                         n.y <- as.double(length(y))
-                         return(sum(r[seq_along(x)]) - n.x * (n.x + 1)/2)
-                       }, asymptotic = .wilcoxBackEnd)
+                       # the implementation is in src/teststatistics.cpp
+                       wilcoxTestStatistic, asymptotic = .wilcoxBackEnd)
 
 ### Quantile Differences
 ### Similar to the KS test -- but evaluates differences at discrete points of
