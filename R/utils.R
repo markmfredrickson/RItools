@@ -67,3 +67,29 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
+#' Fill in an array from a function that takes the indices as arguments.
+#'
+#' @param f The function to be called.
+#' @param p The parameter list(a = c(1,2,3), b = c(7,8), c = c(9,10,11)) will create a 3x2x3 array.
+#' @return An array of the cartesian product of the parameters, with f applied to each combination.
+farray <- function(f, p) {
+
+  p <- lapply(p, sort)
+  n <- length(p)
+  j <- sapply(p, length)
+  k <- prod(j)
+  
+  args <- make_args_mtx(p)
+  x <- vapply(args, FUN.VALUE = numeric(1), function(a) do.call(f, a))
+
+  array(x, dim = j, dimnames = p)
+}
+
+### From:
+### http://stackoverflow.com/questions/6192848/how-to-generalize-outer-to-n-dimensions
+list_args <- Vectorize(function(a,b) c(as.list(a), as.list(b)), SIMPLIFY = FALSE)
+
+make_args_mtx <- function(alist) {
+  Reduce(function(x, y) outer(x, y, list_args), alist)
+}
+

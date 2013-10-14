@@ -16,3 +16,14 @@ test_that("xbal formula method", {
   expect_identical(Z ~ X, as.formula(xb))
 })
 
+test_that("filling in arrays", {
+  f <- function(alpha, beta, gamma) { return(1000 * alpha + 100 * beta + gamma) }
+  p <- list(alpha = 1:10, beta = 1:5, gamma = 1:3)
+  
+  res <- farray(f, p)
+
+  expect_equal(dim(res), c(alpha = 10, beta = 5, gamma = 3))
+
+  expect_equal(res[7,3,2], f(7, 3, 2))
+
+})
