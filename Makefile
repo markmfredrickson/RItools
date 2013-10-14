@@ -24,7 +24,7 @@ current:
 	@echo $(PKG).tar.gz
 
 # we depend on the makefile so that updates to the version number will force a rebuild
-$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore
+$(PKG): Makefile R/* tests/* inst/tests/* man/* src/* .Rinstignore
 	rm -rf $(PKG)
 	rsync -a --exclude-from=.gitignore --exclude=.git* --exclude Makefile \
 		--exclude=DESCRIPTION.template --exclude=NAMESPACE.static \
@@ -35,12 +35,15 @@ $(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore
 $(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template 
 	sed s/VERSION/$(VERSION)/ DESCRIPTION.template | sed s/DATE/$(RELEASE_DATE)/ > $(PKG)/DESCRIPTION
 
-$(PKG)/NAMESPACE: $(PKG) $(PKG)/DESCRIPTION NAMESPACE.static .local/roxygen2/INSTALLED
+$(PKG)/NAMESPACE: $(PKG) $(PKG)/DESCRIPTION NAMESPACE.static .local/roxygen2/INSTALLED run-rcpp
 	mkdir -p $(PKG)/man
 	$(R) -e "library(roxygen2); roxygenize('$(PKG)')"
 	cat NAMESPACE.static >> $(PKG)/NAMESPACE
 
-$(PKG).tar.gz: $(PKG) $(PKG)/DESCRIPTION $(PKG)/NAMESPACE NEWS R/* data/* inst/* man/* tests/*
+run-rcpp: $(PKG) .local/Rcpp/INSTALLED
+	$(R) -e "Rcpp::compileAttributes('$(PKG)')"
+
+$(PKG).tar.gz: $(PKG) $(PKG)/DESCRIPTION $(PKG)/NAMESPACE NEWS R/* data/* inst/* man/* tests/* run-rcpp
 	$(R) --vanilla CMD build $(PKG)
 
 package: $(PKG).tar.gz
@@ -90,8 +93,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 .local/hexbin/INSTALLED:
 	$(call installpkg,hexbin)
 
+.local/Rcpp/INSTALLED:
+	$(call installpkg,Rcpp)
+
 # depend on this file to decide if we need to install the local version
-.local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/svd/INSTALLED .local/hexbin/INSTALLED
+.local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/svd/INSTALLED .local/hexbin/INSTALLED .local/Rcpp/INSTALLED
 	mkdir -p .local
 	$(R) CMD INSTALL --no-multiarch --library=.local $(PKG).tar.gz
 	echo `date` > .local/RItools/INSTALLED

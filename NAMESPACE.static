@@ -1,3 +1,4 @@
+useDynLib(RItools)
 
 importFrom("lattice", levelplot)
 importFrom("graphics", image)
