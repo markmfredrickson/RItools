@@ -1,4 +1,7 @@
 #include<Rcpp.h>
+#include "teststatistics.h"
+
+// [[Rcpp::depends(teststatistics)]]
 
 using namespace Rcpp;
 
@@ -36,4 +39,15 @@ double meanDifference(NumericVector y, NumericVector z) {
   }
 
   return sumt/nt - sumc/nc;
+}
+
+// [[Rcpp::export]]
+XPtr<testStat> testStatisticPtr(std::string f) {
+
+  if (f == "wilcoxTestStatistic") {
+    return(XPtr<testStat>(new testStat(&wilcoxTestStatistic)));
+  } else if (f == "meanDifference") {
+    return(XPtr<testStat>(new testStat(&meanDifference)));
+
+  return XPtr<testStat>(R_NilValue);
 }
