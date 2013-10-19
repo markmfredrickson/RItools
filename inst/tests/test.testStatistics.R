@@ -143,3 +143,16 @@ test_that("KS Test Statistic", {
 
 
 })
+
+
+test_that("Mean difference", {
+  set.seed(20131018)
+  N <- 100
+  x <- rnorm(N)
+  z <- rep(c(0,1), N/2)
+
+  expected <- mean(x[z == 1]) - mean(x[z == 0])
+
+  expect_equal(expected, meanDifference(x,z))
+  
+})

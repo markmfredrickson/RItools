@@ -16,3 +16,24 @@ double wilcoxTestStatistic(NumericVector y, NumericVector z) {
   
   return w;
 }
+
+// [[Rcpp::export]]
+double meanDifference(NumericVector y, NumericVector z) {
+
+  int len = z.length();
+  int nt = sum(z);
+  int nc = z.length() - nt;
+  double sumt = 0.0;
+  double sumc = 0.0;
+ 
+
+  for(int i = 0; i < len; ++i) {
+    if (z[i] == 1) {
+      sumt += y[i]; 
+    } else {
+      sumc += y[i];
+    }
+  }
+
+  return sumt/nt - sumc/nc;
+}
