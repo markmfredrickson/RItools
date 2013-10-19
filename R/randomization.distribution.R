@@ -82,10 +82,9 @@ RItest <- function(
       # Possible todo: pull this out into its own "backend" function
 
       # now iterate over the randomizations, using the adjusted y
-      this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
-          test.stat(adjusted.y, z)})
-
-      return(upper.p.value(obs.t, this.distrib))
+      this.p <- computeTestStatPval(test.stat, adjusted.y, obs.t, as.matrix(randomizations$samples))
+        
+      return(this.p)
     }
   }
 
