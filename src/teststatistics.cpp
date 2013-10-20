@@ -1,7 +1,5 @@
 #include<Rcpp.h>
-#include "teststatistics.h"
-
-// [[Rcpp::depends(teststatistics)]]
+#include "RItools.h"
 
 using namespace Rcpp;
 
@@ -48,6 +46,7 @@ XPtr<testStat> testStatisticPtr(std::string f) {
     return(XPtr<testStat>(new testStat(&wilcoxTestStatistic)));
   } else if (f == "meanDifference") {
     return(XPtr<testStat>(new testStat(&meanDifference)));
+  }
 
   return XPtr<testStat>(R_NilValue);
 }
