@@ -156,3 +156,22 @@ test_that("Mean difference", {
   expect_equal(expected, meanDifference(x,z))
   
 })
+
+test_that("Can call either a pointer or a function as a test statistic", {
+  set.seed(20131018)
+  N <- 100
+  x <- rnorm(N)
+  z <- rep(c(0,1), N/2)
+
+  expected <- mean(x[z == 1]) - mean(x[z == 0])
+
+  res.R <- callTestStatistic(meanDifference, x, z)
+
+  expect_equal(res.R, expected)
+
+  ptr <- testStatisticPtr("meanDifference")
+
+  res.C <- callTestStatistic(ptr, x, z)
+
+  expect_equal(res.R, res.C)
+})

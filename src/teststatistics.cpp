@@ -4,7 +4,7 @@
 using namespace Rcpp;
 
 // [[Rcpp::export]]
-double wilcoxTestStatistic(NumericVector y, NumericVector z) {
+double wilcoxTestStatistic(NumericVector& y, NumericVector& z) {
   int nx = sum(z);
   int ny = z.length() - nx;
   
@@ -19,7 +19,7 @@ double wilcoxTestStatistic(NumericVector y, NumericVector z) {
 }
 
 // [[Rcpp::export]]
-double meanDifference(NumericVector y, NumericVector z) {
+double meanDifference(NumericVector& y, NumericVector& z) {
 
   int len = z.length();
   int nt = sum(z);
@@ -49,4 +49,17 @@ XPtr<testStat> testStatisticPtr(std::string f) {
   }
 
   return XPtr<testStat>(R_NilValue);
+}
+
+// [[Rcpp::export]]
+double callTestStatistic(SEXP f_, NumericVector y, NumericVector z) {
+  if (TYPEOF(f_) == EXTPTRSXP) {
+    XPtr<testStat> tsp(f_);
+    testStat f = *tsp;
+    return f(y, z);
+  }
+  // should probably test this more explicitly
+  Function f(f_);
+  NumericVector a = f(y, z);
+  return a[0];
 }
