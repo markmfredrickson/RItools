@@ -82,7 +82,13 @@ RItest <- function(
       # Possible todo: pull this out into its own "backend" function
 
       # now iterate over the randomizations, using the adjusted y
-      this.p <- computeTestStatPval(test.stat, adjusted.y, obs.t, as.matrix(randomizations$samples))
+      # if we can, we'll try to call the test stat at the C++ level using a function pointer
+      tsf <- test.stat
+      if (inherits(test.stat, "RcppFunction")) {
+        tsf <- test.stat@RcppFn
+      }
+
+      this.p <- computeTestStatPval(tsf, adjusted.y, obs.t, as.matrix(randomizations$samples))
         
       return(this.p)
     }
@@ -91,7 +97,7 @@ RItest <- function(
   sharp.null <- function(y, z) { y }
 
   cl <- match.call()
-
+  
   sharp.null.test <- new("SharpNullTest",
                         doit(sharp.null)(),
                         observed.statistic = test.stat(y, z),
