@@ -174,13 +174,20 @@ balanceplot <- function(x,
                         segments = TRUE, 
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
-                        xlab = "Balance", ...) {
+                        xlab = "Balance", 
+                        groups = NULL, ...) {
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
+  ngrps <- 0
+  if (!is.null(groups)) {
+    ngrps <- length(unique(groups)) 
+  }
+
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
+  yrange <- c(1, nvars + ngrps)
   
   if (ordered) {
     # order X by the groups, and within groups order by the first column
@@ -188,9 +195,6 @@ balanceplot <- function(x,
     x <- x[localorder, , drop = F]
   }
 
-  ypos <- 1:nvars
-
-  
   if (names(dev.cur()) != "svg") {
    mai <- par('mai')
    mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
@@ -201,9 +205,8 @@ balanceplot <- function(x,
    par(mar = mar)
   }
 
- 
   plot(xrange, 
-       range(ypos),
+       yrange,
        axes = FALSE,
        pch = 19,
        col = "blue",
@@ -212,27 +215,59 @@ balanceplot <- function(x,
        type = "n",
        ...)
 
-  for(i in 1:nstrat) {
-    do.call(graphics::points,
-            append(list(x[,i], 
-                        ypos, 
-                        pch = i), # col =thecols[i],pch=thesymbols[i])
-                   points.args))
+  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
+
+  if (is.null(groups)) {
+    ypos <- nvars:1
+
+    axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+    if (segments && dim(x)[2] > 1) {
+      bnds <- t(apply(x, 1, range))
+      do.call(graphics::segments,
+              append(list(x0 = bnds[,1],
+                         y0 = ypos,
+                         x1 = bnds[,2],
+                         y1 = ypos),
+                     segments.args))
+    }
+
+  } else {
+    offset <- 0
+    gnames <- unique(groups)
+    for (g in gnames) {
+
+      subx <- x[groups == g,]
+      n <- dim(subx)[1]
+      ypos <- n:1 + offset 
+
+      for(i in 1:nstrat) {
+        do.call(graphics::points,
+                append(list(subx[,i], 
+                            ypos, 
+                            pch = i), # col =thecols[i],pch=thesymbols[i])
+                       points.args))
+      }
+
+      axis(2, labels = paste0(rownames(subx), "    "), at = ypos, las = 2, tick = FALSE)
+      axis(2, labels = g, at = max(ypos) + 1, las = 2, tick = FALSE)
+      offset <- offset + n + 1
+
+
+      if (segments && dim(subx)[2] > 1) {
+        bnds <- t(apply(subx, 1, range))
+        do.call(graphics::segments,
+                append(list(x0 = bnds[,1],
+                           y0 = ypos,
+                           x1 = bnds[,2],
+                           y1 = ypos),
+                       segments.args))
+      }
+    }
+
   }
 
-  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
-  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
   abline(v = 0, col = "#333333")
 
-  if (segments && dim(x)[2] > 1) {
-    bnds <- t(apply(x, 1, range))
-    do.call(graphics::segments,
-            append(list(x0 = bnds[,1],
-                       y0 = ypos,
-                       x1 = bnds[,2],
-                       y1 = ypos),
-                   segments.args))
-  }
 
   legend(x = "topright",
          legend = colnames(x),

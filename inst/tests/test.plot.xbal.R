@@ -128,4 +128,24 @@ test_that("Issue 21: Cairo/pango errors when running plot.xbal", {
   }
 })
 
+test_that("balanceplot can group variables", {
+  
+  
+  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
+                    dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
+                                    c("Stratification 1", "Stratification 2")))
+  grps <- c("Group 1", "Group 2", "Group 2", "Group 1") 
 
+  x11()
+  balanceplot(testmat)
+  p1 <- dev.capture()
+  dev.off()
+
+  x11()
+  balanceplot(testmat, groups = grps)
+  p2 <- dev.capture()
+  dev.off()
+
+  expect_false(p1, p2)
+
+})
