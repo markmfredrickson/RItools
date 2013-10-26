@@ -57,7 +57,10 @@ plot.xbal <- function(x,
     x <- subset(x, stats = statistic)
   }
 
+  origs <- attr(x$results, "originals")
+
   x <- adrop(x$results, drop = 2)  
+    
 
   if (!is.null(variable.labels)) {
     if (is.null(names(variable.labels))) {
@@ -77,8 +80,7 @@ plot.xbal <- function(x,
     x <- abs(x)
   }
 
-
-  return(balanceplot(x, xlab = xlab, ...))
+  return(balanceplot(x, xlab = xlab, groups = origs, ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function 
 
@@ -174,13 +176,20 @@ balanceplot <- function(x,
                         segments = TRUE, 
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
-                        xlab = "Balance", ...) {
+                        xlab = "Balance", 
+                        groups = NULL, ...) {
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
+  ngrps <- 0
+  if (!is.null(groups)) {
+    ngrps <- length(unique(groups)) 
+  }
+
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
+  yrange <- c(1, nvars + ngrps)
   
   if (ordered) {
     # order X by the groups, and within groups order by the first column
@@ -188,9 +197,10 @@ balanceplot <- function(x,
     x <- x[localorder, , drop = F]
   }
 
-  ypos <- 1:nvars
+  if (!is.null(groups)) {
+    rownames(x) <- paste0(rownames(x), "    ")
+  }
 
-  
   if (names(dev.cur()) != "svg") {
    mai <- par('mai')
    mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
@@ -201,9 +211,8 @@ balanceplot <- function(x,
    par(mar = mar)
   }
 
- 
   plot(xrange, 
-       range(ypos),
+       yrange,
        axes = FALSE,
        pch = 19,
        col = "blue",
@@ -211,6 +220,41 @@ balanceplot <- function(x,
        xlab = xlab,
        type = "n",
        ...)
+
+  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
+
+  if (is.null(groups)) {
+    
+    .balanceplot(x, segments, segments.args, points.args, 0)
+
+  } else {
+    offset <- 0
+    gnames <- unique(groups)
+    for (g in gnames) {
+
+      subx <- x[groups == g,, drop = FALSE]
+
+      offset <- .balanceplot(subx, segments, segments.args, points.args, offset)
+
+      axis(2, labels = g, at = offset, las = 2, tick = FALSE)
+    }
+
+  }
+
+  abline(v = 0, col = "#333333")
+
+
+  legend(x = "topright",
+         legend = colnames(x),
+         pch = 1:nstrat,
+         bty = "n")
+
+} 
+
+.balanceplot <- function(x, segments, segments.args, points.args, offset) {
+  n <- dim(x)[1]
+  nstrat <- dim(x)[2]
+  ypos <- n:1 + offset 
 
   for(i in 1:nstrat) {
     do.call(graphics::points,
@@ -220,23 +264,17 @@ balanceplot <- function(x,
                    points.args))
   }
 
-  axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
-  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
-  abline(v = 0, col = "#333333")
-
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))
     do.call(graphics::segments,
             append(list(x0 = bnds[,1],
-                       y0 = ypos,
-                       x1 = bnds[,2],
-                       y1 = ypos),
+                        y0 = ypos,
+                        x1 = bnds[,2],
+                        y1 = ypos),
                    segments.args))
   }
 
-  legend(x = "topright",
-         legend = colnames(x),
-         pch = 1:nstrat,
-         bty = "n")
-
-} 
+  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+  
+  return(offset + n + 1)
+}
