@@ -120,7 +120,7 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ##colnames(ans$by.variable) <- nms
   attr(ans, "fmla") <- formula(tfmla)
 
-  if ("chisquare.test" %in% report) {
+  if (any(pmatch(report,"chisquare.test",0))) {
     ans$overall <- data.frame(chisquare = numeric(length(RES)),
                               df        = numeric(length(RES)),
                               p.value   = numeric(length(RES)),
