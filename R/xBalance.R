@@ -111,6 +111,9 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
   ##here assuming that the variables and statistics are the same across stratifications (including unstratified).
   ans$results<-array(dim=c(vars=nrow(RES[[1]][["dfr"]]),stat=ncol(RES[[1]][["dfr"]]),strata=length(RES)),
                      dimnames=list(vars=rownames(RES[[1]][["dfr"]]),stat=colnames(RES[[1]][["dfr"]]),strata=names(RES)))
+
+  attr(ans$results, "originals") <- attr(mm1, "originals")
+
   for(i in names(RES)){
     ##print(i);print(RES[[i]][["dfr"]])
     ans$results[,,i]<-as.matrix(RES[[i]][["dfr"]])
