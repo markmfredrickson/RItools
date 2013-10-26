@@ -57,7 +57,10 @@ plot.xbal <- function(x,
     x <- subset(x, stats = statistic)
   }
 
+  origs <- attr(x$results, "originals")
+
   x <- adrop(x$results, drop = 2)  
+    
 
   if (!is.null(variable.labels)) {
     if (is.null(names(variable.labels))) {
@@ -77,8 +80,7 @@ plot.xbal <- function(x,
     x <- abs(x)
   }
 
-
-  return(balanceplot(x, xlab = xlab, ...))
+  return(balanceplot(x, xlab = xlab, groups = origs, ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function 
 

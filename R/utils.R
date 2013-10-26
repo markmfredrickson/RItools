@@ -113,6 +113,8 @@ subset.xbal <- function(x,
   res <- x$results[vars, stats, strata, drop = F] 
   ovr <- x$overall[strata, tests, drop = F] 
 
+  attr(res, "originals") <- attr(x$results, "originals")[res.dmns$vars %in% vars]
+
   tmp <- list(results = res, overall = ovr)
   class(tmp) <- c("xbal", "list")
 
