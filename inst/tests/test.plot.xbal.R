@@ -6,6 +6,10 @@ library("testthat")
 
 context("Plotting Functions")
 
+shouldplot <- function() {
+  Sys.getenv("SHOULDPLOT")[1] == "1"
+}
+
 test_that("Basic plot", {
   # create a quick xBalance result
   set.seed(20121119)
@@ -18,56 +22,59 @@ test_that("Basic plot", {
 
   xb <- xBalance(Z ~ ., data = df)
 
-  x11() # this might be more common than quartz
-  expect_true(dev.capabilities()$capture)
+  if (shouldplot()) {
 
-  plot(xb)
-  p1 <- dev.capture()
-  dev.off()
+    x11() # this might be more common than quartz
+    expect_true(dev.capabilities()$capture)
 
-  x11()
-  plot(xb)
-  p2 <- dev.capture()
-  expect_true(class(p1) == "matrix" & class(p2) == "matrix")
-  expect_identical(p1, p2) # just to prove that the same plot twice is really identical
-  dev.off()
+    plot(xb)
+    p1 <- dev.capture()
+    dev.off()
 
-  opts <- options(warn = 2)
-  # has a an argument to make only a right-sided abs difference plot
-  # it will be a warning if absolute isn't a parameter
-  x11()
-  plot(xb, absolute = T)
+    x11()
+    plot(xb)
+    p2 <- dev.capture()
+    expect_true(class(p1) == "matrix" & class(p2) == "matrix")
+    expect_identical(p1, p2) # just to prove that the same plot twice is really identical
+    dev.off()
 
-  p2 <- dev.capture()
-  expect_true(!identical(p1,p2))
-  dev.off()
+    opts <- options(warn = 2)
+    # has a an argument to make only a right-sided abs difference plot
+    # it will be a warning if absolute isn't a parameter
+    x11()
+    plot(xb, absolute = T)
 
-  options(opts)
+    p2 <- dev.capture()
+    expect_true(!identical(p1,p2))
+    dev.off()
 
-  x11()
-  # has an argument to order the variables (from bottom to bottom)
-  plot(subset(xb, vars = c("X1", "X2", "X4", "X3")), ordered = F)
-  expect_true(!identical(p1, dev.capture()))
-  dev.off()
+    options(opts)
+
+    x11()
+    # has an argument to order the variables (from bottom to bottom)
+    plot(subset(xb, vars = c("X1", "X2", "X4", "X3")), ordered = F)
+    expect_true(!identical(p1, dev.capture()))
+    dev.off()
  
-  # the order the data based on the selected variable
-  x11()
-  plot(xb, ordered = T)
-  expect_true(!identical(p1, dev.capture()))
-  dev.off()
-  # note: the order should change when absolute = T, but we can't really test it as the plot is then different for two reasons
-  # one way to test this would be to have a helper function that creates an array for something else to plot -- and the intermediate data could be checked
+    # the order the data based on the selected variable
+    x11()
+    plot(xb, ordered = T)
+    expect_true(!identical(p1, dev.capture()))
+    dev.off()
+    # note: the order should change when absolute = T, but we can't really test it as the plot is then different for two reasons
+    # one way to test this would be to have a helper function that creates an array for something else to plot -- and the intermediate data could be checked
 
-  # just a sanity check to make sure that the previous dev.capture tests worked
-  x11()
-  plot(xb)
-  expect_identical(p1, dev.capture())
-  dev.off()
+    # just a sanity check to make sure that the previous dev.capture tests worked
+    x11()
+    plot(xb)
+    expect_identical(p1, dev.capture())
+    dev.off()
 
-  ### Error checking
-  expect_error(plot(xb, statistic = "foo"), "statistic")
-  expect_error(plot(xb, variable.labels = c("foo")), "labels")
-  expect_error(plot(xb, strata.labels = c("foo")), "labels")
+    ### Error checking
+    expect_error(plot(xb, statistic = "foo"), "statistic")
+    expect_error(plot(xb, variable.labels = c("foo")), "labels")
+    expect_error(plot(xb, strata.labels = c("foo")), "labels")
+  }
 })
 
 test_that("Generic balance plots", {
@@ -76,31 +83,33 @@ test_that("Generic balance plots", {
 
   testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
                     dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
-                                    c("Stratification 1", "Stratification 2")))
+                                    c("Stratification 1", "Stratification 2"))) 
+  if (shouldplot()) {
 
-  x11() # this might be more common than quartz
-  expect_true(dev.capabilities()$capture)
-  dev.off()
+    x11() # this might be more common than quartz
+    expect_true(dev.capabilities()$capture)
+    dev.off()
 
-  x11()
-  balanceplot(testmat)
-  p1 <- dev.capture()
-  dev.off()
+    x11()
+    balanceplot(testmat)
+    p1 <- dev.capture()
+    dev.off()
 
-  x11()
-  balanceplot(testmat) 
-  p2 <- dev.capture()
-  dev.off()
+    x11()
+    balanceplot(testmat) 
+    p2 <- dev.capture()
+    dev.off()
 
-  expect_identical(p1,p2)
+    expect_identical(p1,p2)
 
-  # no segments between points
-  x11()
-  balanceplot(testmat, segments = FALSE)
-  p.nosegs <- dev.capture()
-  dev.off()
+    # no segments between points
+    x11()
+    balanceplot(testmat, segments = FALSE)
+    p.nosegs <- dev.capture()
+    dev.off()
 
-  expect_false(identical(p1, p.nosegs))
+    expect_false(identical(p1, p.nosegs))
+  }
 })
 
 
@@ -130,22 +139,43 @@ test_that("Issue 21: Cairo/pango errors when running plot.xbal", {
 
 test_that("balanceplot can group variables", {
   
-  
   testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
                     dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
                                     c("Stratification 1", "Stratification 2")))
   grps <- c("Group 1", "Group 2", "Group 2", "Group 1") 
 
-  x11()
-  balanceplot(testmat)
-  p1 <- dev.capture()
-  dev.off()
+  if (shouldplot()) {
 
-  x11()
-  balanceplot(testmat, groups = grps)
-  p2 <- dev.capture()
-  dev.off()
+    x11()
+    balanceplot(testmat)
+    p1 <- dev.capture()
+    dev.off()
 
-  expect_false(p1, p2)
+    x11()
+    balanceplot(testmat, groups = grps)
+    p2 <- dev.capture()
+    dev.off()
+
+    expect_false(p1, p2)
+
+  }
+
+})
+
+test_that("preparing xbalance objects for plotting, includes groups", {
+  
+  x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
+                  x1 = rnorm(100), 
+                  x2 = sample(c("A", "B", "C"), 100, replace = T),
+                  x3 = sample(c("X", "Y", "Z"), 100, replace = T),
+                  x4 = sample(c(T,F), 100, replace = T),
+                  x5 = sample(c("A", "B", "C"), 100, replace = T))
+  
+  xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
+
+  xbp <- prepareXbalForPlot(xb)
+
+  expect_true(all(attr(xbp, "groups") %in% c("x1","x2", "x3", "x1:x2", "x2:x3", "x1:x3", "x1:x2:x3")))
+                                             
 
 })

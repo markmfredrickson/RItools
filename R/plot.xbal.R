@@ -46,41 +46,9 @@ plot.xbal <- function(x,
                       variable.labels = NULL,
                       ...) {
 
-  if (dim(x$results)[2] > 1) {
-    # this means that the user is passing an xBalance object with more than one statistic
-    # so we need to trim it down
-    
-    # but first we need to make sure the statistic exists
-    if (!(statistic %in% dimnames(x$results)[[2]])) {
-      stop("Unknown statistic: ", statistic)
-    }
-    x <- subset(x, stats = statistic)
-  }
+  x <- prepareXbalForPlot(x, statistic, absolute, strata.labels, variable.labels)
 
-  origs <- attr(x$results, "originals")
-
-  x <- adrop(x$results, drop = 2)  
-    
-
-  if (!is.null(variable.labels)) {
-    if (is.null(names(variable.labels))) {
-      stop("Variable labels must be a named vector of the form c('var1' = 'Var One', ...)")
-    }
-    rownames(x) <- variable.labels[rownames(x)]
-  }
-
-  if (!is.null(strata.labels)) {
-    if (is.null(names(strata.labels))) {
-      stop("Strata labels must be a named vector of the form c('var1' = 'Var One', ...)")
-    }
-    colnames(x) <- strata.labels[colnames(x)]
-  }
-
-  if (absolute) {
-    x <- abs(x)
-  }
-
-  return(balanceplot(x, xlab = xlab, groups = origs, ...))
+  return(balanceplot(x, xlab = xlab, groups = attr(x, "groups"), ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function 
 
@@ -147,6 +115,53 @@ plot.xbal <- function(x,
   #          pch=thesymbols,
   #          bty="n")
   # }
+}
+
+# Internal function for turning an xBalance object 
+prepareXbalForPlot <- function(x,
+                      statistic = "std.diff",
+                      absolute = FALSE,
+                      strata.labels = NULL,
+                      variable.labels = NULL,
+                      ...) {
+
+  if (dim(x$results)[2] > 1) {
+    # this means that the user is passing an xBalance object with more than one statistic
+    # so we need to trim it down
+    
+    # but first we need to make sure the statistic exists
+    if (!(statistic %in% dimnames(x$results)[[2]])) {
+      stop("Unknown statistic: ", statistic)
+    }
+    x <- subset(x, stats = statistic)
+  }
+
+  origs <- attr(x$results, "originals")
+
+  x <- adrop(x$results, drop = 2)  
+    
+
+  if (!is.null(variable.labels)) {
+    if (is.null(names(variable.labels))) {
+      stop("Variable labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
+    rownames(x) <- variable.labels[rownames(x)]
+  }
+
+  if (!is.null(strata.labels)) {
+    if (is.null(names(strata.labels))) {
+      stop("Strata labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
+    colnames(x) <- strata.labels[colnames(x)]
+  }
+
+  if (absolute) {
+    x <- abs(x)
+  }
+  
+  attr(x, "groups") <- origs
+
+  return(x)
 }
 
 #' Create a plot of the balance on variables across different stratifications.
