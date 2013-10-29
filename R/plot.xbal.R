@@ -208,7 +208,7 @@ balanceplot <- function(x,
 
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
-  yrange <- c(1, nvars + ngrps)
+  yrange <- c(1, nvars + 2 * ngrps)
   
   if (ordered) {
     # order X by the groups, and within groups order by the first column
@@ -257,7 +257,9 @@ balanceplot <- function(x,
 
       offset <- .balanceplot(subx, segments, segments.args, points.args, offset)
 
-      axis(2, labels = g, at = offset, las = 2, tick = FALSE)
+      axis(2, labels = g, at = offset + 0.25, las = 2, tick = FALSE)
+
+      offset <- offset + 1
     }
 
     .balanceplot(x[nagrp,, drop = FALSE], segments, segments.args, points.args, offset)
