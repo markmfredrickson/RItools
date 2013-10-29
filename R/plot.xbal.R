@@ -118,6 +118,7 @@ plot.xbal <- function(x,
 }
 
 # Internal function for turning an xBalance object 
+#' @export
 prepareXbalForPlot <- function(x,
                       statistic = "std.diff",
                       absolute = FALSE,
@@ -159,6 +160,8 @@ prepareXbalForPlot <- function(x,
     x <- abs(x)
   }
   
+  mgrps <- origs %in% names(which(table(origs) > 1))
+  origs[!mgrps] <- NA
   attr(x, "groups") <- origs
 
   return(x)
@@ -199,7 +202,8 @@ balanceplot <- function(x,
 
   ngrps <- 0
   if (!is.null(groups)) {
-    ngrps <- length(unique(groups)) 
+    nagrp <- is.na(groups)
+    ngrps <- length(unique(groups[which(!nagrp)])) 
   }
 
   xrange <- range(x, na.rm = TRUE)
@@ -213,7 +217,8 @@ balanceplot <- function(x,
   }
 
   if (!is.null(groups)) {
-    rownames(x) <- paste0(rownames(x), "    ")
+    rownames(x) <- paste0(rownames(x), 
+                          ifelse(is.na(groups), "", "    "))
   }
 
   if (names(dev.cur()) != "svg") {
@@ -244,15 +249,18 @@ balanceplot <- function(x,
 
   } else {
     offset <- 0
-    gnames <- unique(groups)
+    nagrp <- is.na(groups)
+    gnames <- unique(na.omit(groups))
     for (g in gnames) {
 
-      subx <- x[groups == g,, drop = FALSE]
+      subx <- x[groups == g & !is.na(groups),, drop = FALSE]
 
       offset <- .balanceplot(subx, segments, segments.args, points.args, offset)
 
       axis(2, labels = g, at = offset, las = 2, tick = FALSE)
     }
+
+    .balanceplot(x[nagrp,, drop = FALSE], segments, segments.args, points.args, offset)
 
   }
 
@@ -273,7 +281,7 @@ balanceplot <- function(x,
 
   for(i in 1:nstrat) {
     do.call(graphics::points,
-            append(list(x[,i], 
+            append(list(x[, i, drop = FALSE], 
                         ypos, 
                         pch = i), # col =thecols[i],pch=thesymbols[i])
                    points.args))

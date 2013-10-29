@@ -175,7 +175,12 @@ test_that("preparing xbalance objects for plotting, includes groups", {
 
   xbp <- prepareXbalForPlot(xb)
 
-  expect_true(all(attr(xbp, "groups") %in% c("x1","x2", "x3", "x1:x2", "x2:x3", "x1:x3", "x1:x2:x3")))
+  grps <- attr(xbp, "groups")
+
+  expect_true(all(grps[!is.na(grps)] %in% c("x2", "x3", "x1:x2", "x2:x3", "x1:x3", "x1:x2:x3")))
                                              
+  # x1 should not have a group
+  expect_equal(sum(is.na(grps)), 1)
+
 
 })
