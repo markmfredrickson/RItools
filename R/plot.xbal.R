@@ -46,41 +46,9 @@ plot.xbal <- function(x,
                       variable.labels = NULL,
                       ...) {
 
-  if (dim(x$results)[2] > 1) {
-    # this means that the user is passing an xBalance object with more than one statistic
-    # so we need to trim it down
-    
-    # but first we need to make sure the statistic exists
-    if (!(statistic %in% dimnames(x$results)[[2]])) {
-      stop("Unknown statistic: ", statistic)
-    }
-    x <- subset(x, stats = statistic)
-  }
+  x <- prepareXbalForPlot(x, statistic, absolute, strata.labels, variable.labels)
 
-  origs <- attr(x$results, "originals")
-
-  x <- adrop(x$results, drop = 2)  
-    
-
-  if (!is.null(variable.labels)) {
-    if (is.null(names(variable.labels))) {
-      stop("Variable labels must be a named vector of the form c('var1' = 'Var One', ...)")
-    }
-    rownames(x) <- variable.labels[rownames(x)]
-  }
-
-  if (!is.null(strata.labels)) {
-    if (is.null(names(strata.labels))) {
-      stop("Strata labels must be a named vector of the form c('var1' = 'Var One', ...)")
-    }
-    colnames(x) <- strata.labels[colnames(x)]
-  }
-
-  if (absolute) {
-    x <- abs(x)
-  }
-
-  return(balanceplot(x, xlab = xlab, groups = origs, ...))
+  return(balanceplot(x, xlab = xlab, groups = attr(x, "groups"), ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function 
 
@@ -149,6 +117,56 @@ plot.xbal <- function(x,
   # }
 }
 
+# Internal function for turning an xBalance object 
+#' @export
+prepareXbalForPlot <- function(x,
+                      statistic = "std.diff",
+                      absolute = FALSE,
+                      strata.labels = NULL,
+                      variable.labels = NULL,
+                      ...) {
+
+  if (dim(x$results)[2] > 1) {
+    # this means that the user is passing an xBalance object with more than one statistic
+    # so we need to trim it down
+    
+    # but first we need to make sure the statistic exists
+    if (!(statistic %in% dimnames(x$results)[[2]])) {
+      stop("Unknown statistic: ", statistic)
+    }
+    x <- subset(x, stats = statistic)
+  }
+
+  origs <- attr(x$results, "originals")
+
+  x <- adrop(x$results, drop = 2)  
+    
+
+  if (!is.null(variable.labels)) {
+    if (is.null(names(variable.labels))) {
+      stop("Variable labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
+    rownames(x) <- variable.labels[rownames(x)]
+  }
+
+  if (!is.null(strata.labels)) {
+    if (is.null(names(strata.labels))) {
+      stop("Strata labels must be a named vector of the form c('var1' = 'Var One', ...)")
+    }
+    colnames(x) <- strata.labels[colnames(x)]
+  }
+
+  if (absolute) {
+    x <- abs(x)
+  }
+  
+  mgrps <- origs %in% names(which(table(origs) > 1))
+  origs[!mgrps] <- NA
+  attr(x, "groups") <- origs
+
+  return(x)
+}
+
 #' Create a plot of the balance on variables across different stratifications.
 #'
 #' This plotting function summarizes variable by stratification matrices. For
@@ -184,12 +202,13 @@ balanceplot <- function(x,
 
   ngrps <- 0
   if (!is.null(groups)) {
-    ngrps <- length(unique(groups)) 
+    nagrp <- is.na(groups)
+    ngrps <- length(unique(groups[which(!nagrp)])) 
   }
 
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
-  yrange <- c(1, nvars + ngrps)
+  yrange <- c(1, nvars + 2 * ngrps)
   
   if (ordered) {
     # order X by the groups, and within groups order by the first column
@@ -198,7 +217,8 @@ balanceplot <- function(x,
   }
 
   if (!is.null(groups)) {
-    rownames(x) <- paste0(rownames(x), "    ")
+    rownames(x) <- paste0(rownames(x), 
+                          ifelse(is.na(groups), "", "    "))
   }
 
   if (names(dev.cur()) != "svg") {
@@ -229,15 +249,20 @@ balanceplot <- function(x,
 
   } else {
     offset <- 0
-    gnames <- unique(groups)
+    nagrp <- is.na(groups)
+    gnames <- unique(na.omit(groups))
     for (g in gnames) {
 
-      subx <- x[groups == g,, drop = FALSE]
+      subx <- x[groups == g & !is.na(groups),, drop = FALSE]
 
       offset <- .balanceplot(subx, segments, segments.args, points.args, offset)
 
-      axis(2, labels = g, at = offset, las = 2, tick = FALSE)
+      axis(2, labels = g, at = offset + 0.25, las = 2, tick = FALSE)
+
+      offset <- offset + 1
     }
+
+    .balanceplot(x[nagrp,, drop = FALSE], segments, segments.args, points.args, offset)
 
   }
 
@@ -258,7 +283,7 @@ balanceplot <- function(x,
 
   for(i in 1:nstrat) {
     do.call(graphics::points,
-            append(list(x[,i], 
+            append(list(x[, i, drop = FALSE], 
                         ypos, 
                         pch = i), # col =thecols[i],pch=thesymbols[i])
                    points.args))
