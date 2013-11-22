@@ -1,4 +1,4 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights,zzname)
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights,zzname,post.align.trans)
 {##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
 	cnms <-
@@ -59,6 +59,9 @@ ans <-
 
 	tmat <- (mm*swt$wtratio - msmn)
 
+        if (!is.null(post.align.trans))
+          tmat <- apply(tmat, 2, post.align.trans)
+        
 	dv <- unsplit(tapply(zz,ss,var), ##sample variance of treatment
 		      ss)
 	ssvar <- apply(dv*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)

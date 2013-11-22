@@ -4,7 +4,8 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                        "chisquare.test","p.values", "all")[1:2],
 #                     include.means=FALSE, chisquare.test=FALSE,
                      stratum.weights=harmonic, na.rm=FALSE,
-                     covariate.scaling=NULL, normalize.weights=TRUE,impfn=median)
+                     covariate.scaling=NULL, normalize.weights=TRUE,impfn=median,
+                     post.alignment.transform=NULL)
 {
   stopifnot(class(fmla)=="formula",
             all(report %in% c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
@@ -13,7 +14,8 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
             !is.data.frame(strata) || !any(is.na(names(strata))),
             !is.data.frame(strata) || all(names(strata)!=""),
             !is.data.frame(strata) || all(sapply(strata, is.factor)),
-            is.null(data) || is.data.frame(data)
+            is.null(data) || is.data.frame(data),
+            is.null(post.alignment.transform) || is.function(post.alignment.transform)
             )
   if (is.null(strata)) warning("Passing NULL as a 'strata=' argument is depracated;\n for balance w/o stratification pass 'list(nostrat=NULL)' instead.\n (Or did you mean to pass a non-NULL 'strata=' argument? Then check for typos.)")
   if (is.list(strata) && !is.data.frame(strata) &&
@@ -100,7 +102,8 @@ if (any(ss.rm <- !sapply(ss.df, nlevels)))
                                             zz[gs.df[[nm]]],
                                             mm1[gs.df[[nm]],,drop=FALSE],
                                             report, swt.ls[[nm]], 
-                                            s.p, normalize.weights,zzname)
+                                            s.p, normalize.weights,zzname,
+                                 post.alignment.transform)
                             }
                 )
   names(RES) <- names(ss.df)

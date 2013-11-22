@@ -15,7 +15,8 @@ xBalance(fmla, strata=list(unstrat=NULL), data, report=c("std.diffs","z.scores",
 	       "chisquare.test","p.values", "all")[1:2],
          stratum.weights=harmonic, na.rm=FALSE,
          covariate.scaling=NULL,
-         normalize.weights=TRUE,impfn=median)
+         normalize.weights=TRUE,impfn=median,
+         post.alignment.transform=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -53,6 +54,7 @@ xBalance(fmla, strata=list(unstrat=NULL), data, report=c("std.diffs","z.scores",
   \item{impfn}{A function to impute missing values when
     \code{na.rm=TRUE}. Currently \code{\link{median}}. To impute means
     use \code{\link{mean.default}}.}
+  \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
 }
 \details{
 In the unstratified case, the standardized difference of
