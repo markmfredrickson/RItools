@@ -6,14 +6,28 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                      stratum.weights=harmonic, na.rm=FALSE,
                      covariate.scaling=NULL, normalize.weights=TRUE,impfn=median) {
   stopifnot(class(fmla)=="formula",
-            all(report %in% c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
-                              "std.diffs","z.scores","p.values","all")),
             is.null(strata) || is.factor(strata) || is.list(strata),
             !is.data.frame(strata) || !any(is.na(names(strata))),
             !is.data.frame(strata) || all(names(strata)!=""),
             !is.data.frame(strata) || all(sapply(strata, is.factor)),
             is.null(data) || is.data.frame(data)
             )
+
+  # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
+  # -1 for no match, and 0 for ambiguous (multiple) matches.
+  valid.for.report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
+                                     "std.diffs","z.scores","p.values","all")
+  report.good <- charmatch(report, valid.for.report, -1)
+  if (any(report.good == -1)) {
+    stop(paste("Invalid option(s) for report:", paste(report[report.good == -1], collapse=", ")))
+  }
+  if (any(report.good == 0)) {
+    stop(paste("Option(s) for report match multiple possible values:", paste(report[report.good == 0], collapse=", ")))
+  }
+
+  # Now that we've found the partial matches, get their proper names
+  report <- valid.for.report[report.good]
+
   if (is.null(strata))
     warning("Passing NULL as a 'strata=' argument is depracated;\n for balance w/o stratification pass 'list(nostrat=NULL)' instead.\n (Or did you mean to pass a non-NULL 'strata=' argument? Then check for typos.)")
 
