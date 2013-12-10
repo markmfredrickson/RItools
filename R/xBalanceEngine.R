@@ -67,7 +67,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights,zzname)
 
 	if (any(pmatch(report,"chisquare.test",0))) {
     # nu=0 stops calculation of the U matrix, which is not used.
-    pst.svd <- try ( svd(tmat*sqrt(dv), ) )
+    pst.svd <- try ( svd(tmat*sqrt(dv), nu=0) )
     if (inherits(pst.svd,'try-error')) {
       pst.svd<-propack.svd(tmat*sqrt(dv))
     }
