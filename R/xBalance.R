@@ -127,7 +127,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   ##colnames(ans$by.variable) <- nms
   attr(ans, "fmla") <- formula(tfmla)
 
-  if (any(pmatch(report,"chisquare.test",0))) {
+  if ("chisquare.test" %in% report) {
     ans$overall <- data.frame(chisquare = numeric(length(RES)),
                               df        = numeric(length(RES)),
                               p.value   = numeric(length(RES)),
