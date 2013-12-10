@@ -103,3 +103,21 @@ test_that("partial arguments to report", {
   expect_true(!is.null(colnames(res.chi2$overall)))
 
 })
+
+test_that("Passing post.alignment.transform, #26", {
+  data(nuclearplants)
+
+  # Identity shouldn't have an effect
+  res1 <- xBalance(pr ~ ., data=nuclearplants)
+  res2 <- xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = function(x) x)
+
+  expect_true(identical(res1, res2))
+
+  res3 <- xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = rank)
+
+  expect_true(all(dim(res1$results) == dim(res3$results)))
+
+  expect_error(xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = mean),
+               "Invalid post.alignment.transform given")
+
+})
