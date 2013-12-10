@@ -41,3 +41,65 @@ test_that("xBalance returns covariance of tests", {
   expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1])
   expect_equal(sqrt(diag(tcov[[2]])), res$results[, "adj.diff.null.sd", 2])
 })
+
+test_that("partial arguments to report", {
+  data(nuclearplants)
+
+  expect_error(xBalance(pr ~ ., data=nuclearplants, report = "a"), "multiple")
+  expect_error(xBalance(pr ~ ., data=nuclearplants, report = "b"), "Invalid")
+  expect_error(xBalance(pr ~ ., data=nuclearplants, report = "adj.mean"), "multiple")
+
+  # just to test these don't error
+  res <- xBalance(pr ~ ., data=nuclearplants, report = "adj.means")
+  res <- xBalance(pr ~ ., data=nuclearplants, report = "adj.mean.diffs")
+  res <- xBalance(pr ~ ., data=nuclearplants, report = "adj.mean.diffs.null.sd")
+
+  # everything should be identical
+  res.z1 <- xBalance(pr ~ ., data=nuclearplants, report = "z.scores")
+  res.z2 <- xBalance(pr ~ ., data=nuclearplants, report = "z")
+  expect_true(identical(res.z1, res.z2))
+
+  res.chi1 <- xBalance(pr ~ ., data=nuclearplants, report = "chisquare.test")
+  res.chi2 <- xBalance(pr ~ ., data=nuclearplants, report = "chi")
+  expect_true(identical(res.chi1, res.chi2))
+
+  res.std.d1 <- xBalance(pr ~ ., data=nuclearplants, report = "std.diffs")
+  res.std.d2 <- xBalance(pr ~ ., data=nuclearplants, report = "std.d")
+  expect_true(identical(res.std.d1, res.std.d2))
+
+  res.a.m.d.n1 <- xBalance(pr ~ ., data=nuclearplants, report = "adj.mean.diffs.null.sd")
+  res.a.m.d.n2 <- xBalance(pr ~ ., data=nuclearplants, report = "adj.mean.diffs.n")
+  expect_true(identical(res.a.m.d.n1, res.a.m.d.n2))
+
+  res.mult1 <- xBalance(pr ~ ., data=nuclearplants,
+                        report = c("adj.means", "z.scores", "chisquare.test", "p.values", "adj.mean.diffs", "adj.mean.diffs.null.sd"))
+  res.mult2 <- xBalance(pr ~ ., data=nuclearplants,
+                        report = c("adj.means", "z", "chi", "p", "adj.mean.diffs", "adj.mean.diffs.null"))
+  expect_true(identical(res.mult1, res.mult2))
+
+  res.all1 <- xBalance(pr ~ ., data=nuclearplants, report = "al")
+  res.all2 <- xBalance(pr ~ ., data=nuclearplants, report = "all")
+  expect_true(identical(res.all1, res.all2))
+
+  # let's make sure the outputs are what we expect
+
+  # Only z and p (p is always returned)
+  expect_true(all(colnames(res.z1$results) == c("z", "p")))
+  expect_true(all(colnames(res.z2$results) == c("z", "p")))
+
+  # `results` is empty; overall isn't
+  expect_true(is.null(colnames(res.chi1$results)))
+  expect_true(is.null(colnames(res.chi2$results)))
+  expect_true(!is.null(colnames(res.chi1$overall)))
+  expect_true(!is.null(colnames(res.chi2$overall)))
+
+  # Only z and p (p is always returned)
+  expect_true(all(colnames(res.a.m.d.n1$results) == c("adj.diff.null.sd", "p")))
+  expect_true(all(colnames(res.a.m.d.n2$results) == c("adj.diff.null.sd", "p")))
+
+  expect_true(all(colnames(res.mult1$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult2$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(!is.null(colnames(res.chi1$overall)))
+  expect_true(!is.null(colnames(res.chi2$overall)))
+
+})

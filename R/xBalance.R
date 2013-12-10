@@ -7,8 +7,6 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                      covariate.scaling=NULL, normalize.weights=TRUE,impfn=median,
                      post.alignment.transform=NULL) {
   stopifnot(class(fmla)=="formula",
-            all(report %in% c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
-                              "std.diffs","z.scores","p.values","all")),
             is.null(strata) || is.factor(strata) || is.list(strata),
             !is.data.frame(strata) || !any(is.na(names(strata))),
             !is.data.frame(strata) || all(names(strata)!=""),
@@ -16,6 +14,22 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
             is.null(data) || is.data.frame(data),
             is.null(post.alignment.transform) || is.function(post.alignment.transform)
             )
+
+  # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
+  # -1 for no match, and 0 for ambiguous (multiple) matches.
+  valid.for.report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
+                                     "std.diffs","z.scores","p.values","all")
+  report.good <- charmatch(report, valid.for.report, -1)
+  if (any(report.good == -1)) {
+    stop(paste("Invalid option(s) for report:", paste(report[report.good == -1], collapse=", ")))
+  }
+  if (any(report.good == 0)) {
+    stop(paste("Option(s) for report match multiple possible values:", paste(report[report.good == 0], collapse=", ")))
+  }
+
+  # Now that we've found the partial matches, get their proper names
+  report <- valid.for.report[report.good]
+
   if (is.null(strata))
     warning("Passing NULL as a 'strata=' argument is depracated;\n for balance w/o stratification pass 'list(nostrat=NULL)' instead.\n (Or did you mean to pass a non-NULL 'strata=' argument? Then check for typos.)")
 
@@ -130,7 +144,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   ##colnames(ans$by.variable) <- nms
   attr(ans, "fmla") <- formula(tfmla)
 
-  if (any(pmatch(report,"chisquare.test",0))) {
+  if ("chisquare.test" %in% report) {
     ans$overall <- data.frame(chisquare = numeric(length(RES)),
                               df        = numeric(length(RES)),
                               p.value   = numeric(length(RES)),
