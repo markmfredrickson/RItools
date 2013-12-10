@@ -11,11 +11,11 @@ test_that("xBalance returns covariance of tests", {
   n <- 500
 
   library(MASS)
-  xs <- mvrnorm(n, 
+  xs <- mvrnorm(n,
                 mu = c(1,2,3),
-                Sigma = matrix(c(1, 0.5, 0.2, 
-                                 0.5, 1, 0,
-                                 0.2, 0, 1), nrow = 3, byrow = T))
+                Sigma = matrix(c(1, 0.5, 0.2,
+                    0.5, 1, 0,
+                    0.2, 0, 1), nrow = 3, byrow = T))
 
   p <- plogis(xs[,1]- 0.25 * xs[,2] - 1)
   z <- rbinom(n, p = p, size = 1)
@@ -24,11 +24,11 @@ test_that("xBalance returns covariance of tests", {
   dat <- cbind(z, xs, s)
 
 
-  res <- xBalance(z ~ . - s, 
-                  data = as.data.frame(dat), 
+  res <- xBalance(z ~ . - s,
+                  data = as.data.frame(dat),
                   report = 'all',
                   strata = list("Unadj" = NULL,
-                                "Adj"   = ~ s))
+                      "Adj"   = ~ s))
 
   tcov <- attr(res$overall, "tcov")
 
@@ -38,7 +38,6 @@ test_that("xBalance returns covariance of tests", {
   expect_equal(dim(tcov[[1]]), c(3,3))
 
   # variance should be the squares of the reported null SDs
-  expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1]) 
-  expect_equal(sqrt(diag(tcov[[2]])), res$results[, "adj.diff.null.sd", 2]) 
+  expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1])
+  expect_equal(sqrt(diag(tcov[[2]])), res$results[, "adj.diff.null.sd", 2])
 })
-

@@ -1,5 +1,5 @@
 ################################################################################
-# Tests for plotting functions 
+# Tests for plotting functions
 ################################################################################
 
 library("testthat")
@@ -55,7 +55,7 @@ test_that("Basic plot", {
     plot(subset(xb, vars = c("X1", "X2", "X4", "X3")), ordered = F)
     expect_true(!identical(p1, dev.capture()))
     dev.off()
- 
+
     # the order the data based on the selected variable
     x11()
     plot(xb, ordered = T)
@@ -81,9 +81,9 @@ test_that("Generic balance plots", {
   # the balanceplot function takes a matrix and plots it in the expected fashion
   # this serves as a compliment to the .xbal.plot function
 
-  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
+  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2,
                     dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
-                                    c("Stratification 1", "Stratification 2"))) 
+                        c("Stratification 1", "Stratification 2")))
   if (shouldplot()) {
 
     x11() # this might be more common than quartz
@@ -96,7 +96,7 @@ test_that("Generic balance plots", {
     dev.off()
 
     x11()
-    balanceplot(testmat) 
+    balanceplot(testmat)
     p2 <- dev.capture()
     dev.off()
 
@@ -124,7 +124,7 @@ test_that("Issue 21: Cairo/pango errors when running plot.xbal", {
 
     xb <- xBalance(z ~ x + y, data = data)
     tmpo <- tempfile()
-    
+
     # at the moment, I haven't found a way to capture the stderr output from the C level pango function
     # so, we'll just have to know that if the errors appear in the output stream during testing
     # we should come here to see the test case (not the best strategy)
@@ -138,11 +138,11 @@ test_that("Issue 21: Cairo/pango errors when running plot.xbal", {
 })
 
 test_that("balanceplot can group variables", {
-  
-  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2, 
+
+  testmat <- matrix(c(4,3,2,1, 3,-2,-3,2), ncol = 2,
                     dimnames = list(c("Variable 1","Variable Two","Var 3","X4"),
-                                    c("Stratification 1", "Stratification 2")))
-  grps <- c("Group 1", "Group 2", "Group 2", "Group 1") 
+                        c("Stratification 1", "Stratification 2")))
+  grps <- c("Group 1", "Group 2", "Group 2", "Group 1")
 
   if (shouldplot()) {
 
@@ -163,14 +163,14 @@ test_that("balanceplot can group variables", {
 })
 
 test_that("preparing xbalance objects for plotting, includes groups", {
-  
+
   x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
-                  x1 = rnorm(100), 
+                  x1 = rnorm(100),
                   x2 = sample(c("A", "B", "C"), 100, replace = T),
                   x3 = sample(c("X", "Y", "Z"), 100, replace = T),
                   x4 = sample(c(T,F), 100, replace = T),
                   x5 = sample(c("A", "B", "C"), 100, replace = T))
-  
+
   xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
 
   xbp <- prepareXbalForPlot(xb)
@@ -178,7 +178,7 @@ test_that("preparing xbalance objects for plotting, includes groups", {
   grps <- attr(xbp, "groups")
 
   expect_true(all(grps[!is.na(grps)] %in% c("x2", "x3", "x1:x2", "x2:x3", "x1:x3", "x1:x2:x3")))
-                                             
+
   # x1 should not have a group
   expect_equal(sum(is.na(grps)), 1)
 

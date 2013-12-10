@@ -26,9 +26,9 @@
 #' difference is a good choice as it will have roughly the same scale for all
 #' plotted variables.
 #' @param absolute Convert the results to the absolute value of the statistic.
-#' @param strata.labels A named vector of the from \code{c(strata1 = "Strata Label 1", ...)} 
+#' @param strata.labels A named vector of the from \code{c(strata1 = "Strata Label 1", ...)}
 #' that maps the stratification schemes to textual labels.
-#' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)} 
+#' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)}
 #' that maps the variables to textual labels.
 #' @param ... additional arugments to pass to \code{\link{balanceplot}}
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
@@ -50,7 +50,7 @@ plot.xbal <- function(x,
 
   return(balanceplot(x, xlab = xlab, groups = attr(x, "groups"), ...))
 
-  ### NOT RUN: (but saving while we transition to the more general balanceplot function 
+  ### NOT RUN: (but saving while we transition to the more general balanceplot function
 
   # nvars <- dim(theresults)[1]
   # nstrata <- dim(theresults)[2]
@@ -91,8 +91,8 @@ plot.xbal <- function(x,
   #   }
   # }
   # names(thesymbols)<-which.strata
-  # 
-  # 
+  #
+  #
   # plot(xrange,range(ypos),axes=FALSE,pch=19,col="blue",
   #      ylab="",xlab=thexlab,type="n",...)
   # for(i in which.strata){
@@ -101,7 +101,7 @@ plot.xbal <- function(x,
   # if(segments&length(which.strata)>1){ ##segments are mainly useful for drawing the eye to changes in balance along a single variable across more than 1 stratification
   #   for(j in ypos){
   #     segments(min(theresults[j,]),j,
-  #              max(theresults[j,]),j,col=gray(.7),lwd=.5) 
+  #              max(theresults[j,]),j,col=gray(.7),lwd=.5)
   #   }
   # }
   # axis(1,at=pretty(seq(xrange[1],xrange[2],length=5)))
@@ -117,19 +117,19 @@ plot.xbal <- function(x,
   # }
 }
 
-# Internal function for turning an xBalance object 
+# Internal function for turning an xBalance object
 #' @export
 prepareXbalForPlot <- function(x,
-                      statistic = "std.diff",
-                      absolute = FALSE,
-                      strata.labels = NULL,
-                      variable.labels = NULL,
-                      ...) {
+                               statistic = "std.diff",
+                               absolute = FALSE,
+                               strata.labels = NULL,
+                               variable.labels = NULL,
+                               ...) {
 
   if (dim(x$results)[2] > 1) {
     # this means that the user is passing an xBalance object with more than one statistic
     # so we need to trim it down
-    
+
     # but first we need to make sure the statistic exists
     if (!(statistic %in% dimnames(x$results)[[2]])) {
       stop("Unknown statistic: ", statistic)
@@ -139,8 +139,8 @@ prepareXbalForPlot <- function(x,
 
   origs <- attr(x$results, "originals")
 
-  x <- adrop(x$results, drop = 2)  
-    
+  x <- adrop(x$results, drop = 2)
+
 
   if (!is.null(variable.labels)) {
     if (is.null(names(variable.labels))) {
@@ -159,7 +159,7 @@ prepareXbalForPlot <- function(x,
   if (absolute) {
     x <- abs(x)
   }
-  
+
   mgrps <- origs %in% names(which(table(origs) > 1))
   origs[!mgrps] <- NA
   attr(x, "groups") <- origs
@@ -171,13 +171,13 @@ prepareXbalForPlot <- function(x,
 #'
 #' This plotting function summarizes variable by stratification matrices. For
 #' each variable (a row in the \code{x} argument), the values are under each
-#' stratification (the columns of \code{x}) plotted on the same line. 
-#' 
+#' stratification (the columns of \code{x}) plotted on the same line.
+#'
 #' It is conventional to standardize the differences to common scale (e.g.
 #' z-scores), but this is not required. Plotting will automatically order the
 #' data from largest imbalance to smallest based on the first column of
 #' \code{x}.
-#' 
+#'
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param ordered Should the variables be ordered from
 #' most to least imbalance on the first statistic?
@@ -189,12 +189,12 @@ prepareXbalForPlot <- function(x,
 #' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}}, \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
-balanceplot <- function(x, 
-                        ordered = FALSE, 
-                        segments = TRUE, 
+balanceplot <- function(x,
+                        ordered = FALSE,
+                        segments = TRUE,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
-                        xlab = "Balance", 
+                        xlab = "Balance",
                         groups = NULL, ...) {
 
   nvars <- dim(x)[1]
@@ -203,13 +203,13 @@ balanceplot <- function(x,
   ngrps <- 0
   if (!is.null(groups)) {
     nagrp <- is.na(groups)
-    ngrps <- length(unique(groups[which(!nagrp)])) 
+    ngrps <- length(unique(groups[which(!nagrp)]))
   }
 
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
   yrange <- c(1, nvars + 2 * ngrps)
-  
+
   if (ordered) {
     # order X by the groups, and within groups order by the first column
     localorder <- order( x[,1])
@@ -217,21 +217,21 @@ balanceplot <- function(x,
   }
 
   if (!is.null(groups)) {
-    rownames(x) <- paste0(rownames(x), 
+    rownames(x) <- paste0(rownames(x),
                           ifelse(is.na(groups), "", "    "))
   }
 
   if (names(dev.cur()) != "svg") {
-   mai <- par('mai')
-   mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
-   par(mai = mai)
+    mai <- par('mai')
+    mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
+    par(mai = mai)
   } else {
-   mar <- par("mar")
-   mar[2] <- max(nchar(x)) + mar[2] # assume one line per character
-   par(mar = mar)
+    mar <- par("mar")
+    mar[2] <- max(nchar(x)) + mar[2] # assume one line per character
+    par(mar = mar)
   }
 
-  plot(xrange, 
+  plot(xrange,
        yrange,
        axes = FALSE,
        pch = 19,
@@ -244,7 +244,7 @@ balanceplot <- function(x,
   axis(1, at = pretty(seq(xrange[1], xrange[2], length = 5)))
 
   if (is.null(groups)) {
-    
+
     .balanceplot(x, segments, segments.args, points.args, 0)
 
   } else {
@@ -274,17 +274,17 @@ balanceplot <- function(x,
          pch = 1:nstrat,
          bty = "n")
 
-} 
+}
 
 .balanceplot <- function(x, segments, segments.args, points.args, offset) {
   n <- dim(x)[1]
   nstrat <- dim(x)[2]
-  ypos <- n:1 + offset 
+  ypos <- n:1 + offset
 
   for(i in 1:nstrat) {
     do.call(graphics::points,
-            append(list(x[, i, drop = FALSE], 
-                        ypos, 
+            append(list(x[, i, drop = FALSE],
+                        ypos,
                         pch = i), # col =thecols[i],pch=thesymbols[i])
                    points.args))
   }
@@ -300,6 +300,6 @@ balanceplot <- function(x,
   }
 
   axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
-  
+
   return(offset + n + 1)
 }

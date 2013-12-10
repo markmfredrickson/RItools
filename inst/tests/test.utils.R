@@ -32,17 +32,17 @@ test_that("Select a subset of xbal results (for printing, etc)", {
 
   # the data are will be grouped as (X, XY) and (all levels W by all levels
   # K), Y is not in an explicit group
-  xb <- xBalance(Z ~ X * Y + W * K, 
-                 data = df, 
-                 strata = data.frame(none = factor("none"), 
-                                     S = df$S, 
-                                     U = cut(df$U, 3)),
+  xb <- xBalance(Z ~ X * Y + W * K,
+                 data = df,
+                 strata = data.frame(none = factor("none"),
+                     S = df$S,
+                     U = cut(df$U, 3)),
                  report = 'all')
 
   # strata based subsetion is the easiest as it common across groups and
   # variables
   xb.noneU <- subset(xb, strata = c("none", "U"))
-  
+
   expect_equivalent(dim(xb$results), c(18, 7, 3))
   expect_equivalent(dim(xb.noneU$results), c(18, 7, 2))
 
@@ -64,8 +64,7 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   # for vars, only limit the results table (for now)
   # use exact variable names -- possibly use regexes later
   xb.XY <- subset(xb, vars = c("X", "Y"))
-  
+
   expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
 
 })
-

@@ -5,10 +5,10 @@ xBalance.makeMM <- function(tfm, dat) {
   names(tlbl) <- as.character(tlbl)
   clist <- lapply(mf,
                   function(x) {
-                      if (is.factor(x))
-                          structure(diag(nlevels(x)),
-                                    dimnames=list(levels(x), levels(x)))
-                      else NULL })
+                    if (is.factor(x))
+                      structure(diag(nlevels(x)),
+                                dimnames=list(levels(x), levels(x)))
+                    else NULL })
   clist <- clist[!sapply(clist, is.null)]
   mm <- model.matrix(tfm,mf,contrasts.arg=clist)
 
@@ -17,6 +17,6 @@ xBalance.makeMM <- function(tfm, dat) {
   originals <- attr(terms(tfm), "term.labels")[assign]
 
   tmp <- mm[, -1, drop = FALSE]
-  attr(tmp, "originals") <- originals 
+  attr(tmp, "originals") <- originals
   return(tmp)
 }
