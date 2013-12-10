@@ -1,8 +1,7 @@
 
-R version 2.15.2 (2012-10-26) -- "Trick or Treat"
-Copyright (C) 2012 The R Foundation for Statistical Computing
-ISBN 3-900051-07-0
-Platform: x86_64-apple-darwin12.2.1 (64-bit)
+R version 3.0.2 (2013-09-25) -- "Frisbee Sailing"
+Copyright (C) 2013 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -18,13 +17,10 @@ Type 'q()' to quit R.
 
 > require("RItools")
 Loading required package: RItools
-Package SparseM (0.96) loaded.
-	   To cite, see citation("SparseM")
-
 > data(nuclearplants)
-> 
+>
 > testdata<-nuclearplants
-> 
+>
 > testdata$cum.n.fac <- factor(ifelse(c(T,T,T,F),testdata$cum.n,NA))
 > testdata$pt.log <- as.logical(testdata$pt)
 > testdata$pt.log[c(3,4)] <- NA
@@ -67,7 +63,7 @@ f 284.88 67.83 12 63  886  0  0  0  1    11  1        14   TRUE     1    67.83
 a 280.36 67.83 12 71  886  1  0  0  1    11  1         1   TRUE     1    67.83
 b 217.38 67.25 13 72  745  1  0  0  0     8  1         1   TRUE     1    67.25
 c 270.71 67.83  7 80  886  1  0  0  1    11  1      <NA>   TRUE     1    67.83
-> 
+>
 > RItools:::naImpute(cost~cap+date.mod+cum.n+as.logical(pt),testdata,impfn=mean.default)
     cost  date t1 t2 pr ne ct bw cum.n.fac pt.log pt.na  cap date.mod cum.n pt
 H 460.05 68.58 14 46  0  1  0  0        14  FALSE     0  687   68.623    14  0
@@ -135,7 +131,7 @@ f       FALSE
 a       FALSE
 b       FALSE
 c       FALSE
-> 
+>
 > RItools:::naImpute(cost~cap+date+cum.n.fac+as.logical(pt),testdata,impfn=mean.default)
     cost t1 t2 pr ne ct bw cum.n pt.log pt.na date.mod  cap  date cum.n.fac pt
 H 460.05 14 46  0  1  0  0    14  FALSE     0       NA  687 68.58        14  0
@@ -170,7 +166,7 @@ f 284.88 12 63  0  0  0  1    11   TRUE     1    67.83  886 67.83        14  1
 a 280.36 12 71  1  0  0  1    11   TRUE     1    67.83  886 67.83         1  1
 b 217.38 13 72  1  0  0  0     8   TRUE     1    67.25  745 67.25         1  1
 c 270.71  7 80  1  0  0  1    11   TRUE     1    67.83  886 67.83       .NA  1
-> 
+>
 > RItools:::naImpute(cost~cap+date+cum.n+pt.log,testdata,impfn=mean.default)
     cost t1 t2 pr ne ct bw pt cum.n.fac pt.na date.mod  cap  date cum.n pt.log
 H 460.05 14 46  0  1  0  0  0        14     0       NA  687 68.58    14  FALSE
@@ -238,44 +234,44 @@ f     FALSE
 a     FALSE
 b     FALSE
 c     FALSE
-> 
+>
 > ##Assess use of the median explicitly
 > dat1a<-RItools:::naImpute(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata)
-> 
+>
 > all(dat1a$date.mod[is.na(testdata$date.mod)]==median(testdata$date.mod,na.rm=TRUE))
 [1] TRUE
-> all(dat1a$pt.log[is.na(testdata$pt.log)]==(median(dat1a$pt.log,na.rm=TRUE)>.5)) 
+> all(dat1a$pt.log[is.na(testdata$pt.log)]==(median(dat1a$pt.log,na.rm=TRUE)>.5))
 [1] TRUE
-> all(dat1a$pt.na[is.na(testdata$pt.na)]==(median(dat1a$pt.na,na.rm=TRUE))) 
+> all(dat1a$pt.na[is.na(testdata$pt.na)]==(median(dat1a$pt.na,na.rm=TRUE)))
 [1] TRUE
-> 
-> 
+>
+>
 > ##Check that it works using mean.default() instead of median()
 > dat1b<-RItools:::naImpute(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata,impfn=mean.default)
-> 
+>
 > all(dat1b$date.mod[is.na(testdata$date.mod)]==mean(testdata$date.mod,na.rm=TRUE))
 [1] TRUE
-> all(dat1b$pt.log[is.na(testdata$pt.log)]==(mean(dat1b$pt.log,na.rm=TRUE)>.5)) 
+> all(dat1b$pt.log[is.na(testdata$pt.log)]==(mean(dat1b$pt.log,na.rm=TRUE)>.5))
 [1] TRUE
-> all(dat1b$pt.na[is.na(testdata$pt.na)]==(mean(dat1b$pt.na,na.rm=TRUE))) 
+> all(dat1b$pt.na[is.na(testdata$pt.na)]==(mean(dat1b$pt.na,na.rm=TRUE)))
 [1] TRUE
-> 
+>
 > ##Check that the factor columns are appropriate.
 > test.mm<-model.matrix(pr~date.mod+cum.n.fac+pt.log+pt.na-1,model.frame(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata,na.action=NULL))
 > dat2<-RItools:::naImpute(pr~date.mod+cum.n.fac1+cum.n.fac14+pt.logTRUE+pt.na,data.frame(test.mm),impfn=mean.default)
-> all(dat2$cum.n.fac1[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac1,na.rm=TRUE))) 
+> all(dat2$cum.n.fac1[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac1,na.rm=TRUE)))
 [1] TRUE
-> all(dat2$cum.n.fac14[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac14,na.rm=TRUE))) 
+> all(dat2$cum.n.fac14[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac14,na.rm=TRUE)))
 [1] TRUE
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
+>
+>
+>
+>
+>
+>
+>
+>
+>
 > proc.time()
-   user  system elapsed 
-  0.577   0.039   0.597 
+   user  system elapsed
+  0.740   0.056   0.792

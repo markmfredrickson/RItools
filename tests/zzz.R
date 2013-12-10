@@ -1,4 +1,4 @@
 if (require(testthat)) {
   library(RItools)
-  test_package("RItools")  
+  test_package("RItools")
 }
