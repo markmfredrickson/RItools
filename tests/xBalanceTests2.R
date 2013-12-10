@@ -104,4 +104,3 @@ test2.fn(zz=nuclearplants$pr,mm=mymm,ss=nuclearplants$pt)
 
 all.equal(test2.fn(zz=nuclearplants$pr,mm=mymm,ss=nuclearplants$pt),
           xb2$results[,c("adj.diff","adj.diff.null.sd","z"),"pt"],check.attributes=FALSE)
-
