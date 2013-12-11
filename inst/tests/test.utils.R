@@ -45,6 +45,8 @@ test_that("Select a subset of xbal results (for printing, etc)", {
 
   expect_equivalent(dim(xb$results), c(18, 7, 3))
   expect_equivalent(dim(xb.noneU$results), c(18, 7, 2))
+  expect_equal(attr(xb$results, "originals"),
+               attr(xb.noneU$results, "originals"))
 
   # stat and test subsetion only limits the results and overall tables
   # repectively
@@ -57,6 +59,12 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   expect_equivalent(dim(xb.zp$results), c(18, 2, 3))
   expect_equivalent(dim(xb.chip$overall), c(3, 2))
 
+  expect_equal(attr(xb$results, "originals"),
+               attr(xb.zp$results, "originals"))
+
+  expect_equal(attr(xb$results, "originals"),
+               attr(xb.chip$results, "originals"))
+
   # for vars and groups, we might want the arguments to interact more directly
   # e.g. subseting vars only returns groups that include the vars
   # e.g. subseting groups only returns the variables contained in those groups
@@ -66,5 +74,7 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   xb.XY <- subset(xb, vars = c("X", "Y"))
 
   expect_equivalent(dim(xb.XY$results), c(2, 7, 3))
+  expect_equal(length(attr(xb.XY$results, "originals")), 2)
+
 
 })
