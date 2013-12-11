@@ -173,16 +173,24 @@ prepareXbalForPlot <- function(x,
 #' each variable (a row in the \code{x} argument), the values are under each
 #' stratification (the columns of \code{x}) plotted on the same line.
 #'
-#' It is conventional to standardize the differences to common scale (e.g.
-#' z-scores), but this is not required. Plotting will automatically order the
-#' data from largest imbalance to smallest based on the first column of
+#' It is conventional to standardize the differences to common scale
+#' (e.g.  z-scores), but this is not required. When \code{ordered} is
+#' set to true, plotting will automatically order the data from
+#' largest imbalance to smallest based on the first column of
 #' \code{x}.
+#'
+#' You can fine tune the colors and shapes with the like named
+#' arguments. Any other arguments to the \code{\link{points}} function
+#' can be passed in a list as \code{points.args}. Likewise, you can
+#' fine tune the segements between points with \code{segements.args}.
 #'
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param ordered Should the variables be ordered from
 #' most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each
 #' variable?
+#' @param colors A vector of colors suitable to use as a \code{col} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}.
+#' @param shapes A vector of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}.
 #' @param segments.args A list of arguments to pass to the
 #' \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
@@ -197,6 +205,8 @@ prepareXbalForPlot <- function(x,
 balanceplot <- function(x,
                         ordered = FALSE,
                         segments = TRUE,
+                        colors = "black",
+                        shapes = NULL,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
                         xlab = "Balance",
@@ -204,6 +214,15 @@ balanceplot <- function(x,
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
+
+  # just make sure that colors and pchs have the right length
+  colors <- rep(colors, length.out = nstrat)
+
+  if (is.null(shapes)) {
+    shapes <- 1:nstrat
+  }
+  
+  shapes <- rep(shapes, length.out = nstrat)
 
   ngrps <- 0
   if (!is.null(groups)) {
@@ -250,7 +269,7 @@ balanceplot <- function(x,
 
   if (is.null(groups)) {
 
-    .balanceplot(x, segments, segments.args, points.args, 0)
+    .balanceplot(x, segments, colors, segments.args, points.args, 0)
 
   } else {
     offset <- 0
@@ -260,28 +279,31 @@ balanceplot <- function(x,
 
       subx <- x[groups == g & !is.na(groups),, drop = FALSE]
 
-      offset <- .balanceplot(subx, segments, segments.args, points.args, offset)
+      offset <- .balanceplot(subx, segments, colors, segments.args, points.args, offset)
 
       axis(2, labels = g, at = offset + 0.25, las = 2, tick = FALSE)
 
       offset <- offset + 1
     }
 
-    .balanceplot(x[nagrp,, drop = FALSE], segments, segments.args, points.args, offset)
+    .balanceplot(x[nagrp,, drop = FALSE], segments, colors, segments.args, points.args, offset)
 
   }
 
   abline(v = 0, col = "#333333")
 
 
-  legend(x = "topright",
-         legend = colnames(x),
-         pch = 1:nstrat,
-         bty = "n")
+  if (length(colnames(x)) > 0) {
+    legend(x = "topright",
+           legend = colnames(x),
+           pch = 1:nstrat,
+           col = colors,
+           bty = "n")
+  }
 
 }
 
-.balanceplot <- function(x, segments, segments.args, points.args, offset) {
+.balanceplot <- function(x, segments, colors, segments.args, points.args, offset) {
   n <- dim(x)[1]
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
@@ -290,7 +312,8 @@ balanceplot <- function(x,
     do.call(graphics::points,
             append(list(x[, i, drop = FALSE],
                         ypos,
-                        pch = i), # col =thecols[i],pch=thesymbols[i])
+                        pch = i,
+                        col = colors[i]), 
                    points.args))
   }
 
