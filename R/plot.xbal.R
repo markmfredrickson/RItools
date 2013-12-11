@@ -181,12 +181,17 @@ prepareXbalForPlot <- function(x,
 #' @param x A matrix of variables (rows) by stratifications (columns).
 #' @param ordered Should the variables be ordered from
 #' most to least imbalance on the first statistic?
-#' @param segments Should lines be drawn between points for each variable?
-#' @param segments.args A list of arguments to pass to the \code{\link{segments}} function.
+#' @param segments Should lines be drawn between points for each
+#' variable?
+#' @param segments.args A list of arguments to pass to the
+#' \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
 #' @param xlab The label of the x-axis of the plot.
+#' @param group A factor that indicates the group of each row in
+#' \code{x}. Groups are plotted under a common header.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
-#' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}}, \code{\link{segments}}, \code{\link{points}}
+#' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}},
+#' \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
 balanceplot <- function(x,
