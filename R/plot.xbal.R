@@ -210,7 +210,9 @@ balanceplot <- function(x,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 0.5),
                         xlab = "Balance",
-                        groups = NULL, ...) {
+                        xrange = range(x, na.rm = TRUE) * 1.25,
+                        groups = NULL,
+                        ...) {
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
@@ -310,13 +312,23 @@ balanceplot <- function(x,
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
+  tts <- "devSVG" == names(dev.cur())[1] 
+
   for(i in 1:nstrat) {
-    do.call(graphics::points,
-            append(list(x[, i, drop = FALSE],
-                        ypos,
-                        pch = i,
-                        col = colors[i]), 
-                   points.args))
+
+    for (j in seq_along(ypos)) {
+      
+      if (tts) {
+        setSVGShapeToolTip(paste(rownames(x)[j], colnames(x)[i]))
+      }
+
+      do.call(graphics::points,
+              append(list(x[j, i],
+                          ypos[j],
+                          pch = i,
+                          col = colors[i]), 
+                     points.args))
+    }
   }
 
   if (segments && dim(x)[2] > 1) {
