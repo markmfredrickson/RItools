@@ -286,7 +286,9 @@ balanceplot <- function(x,
       offset <- offset + 1
     }
 
-    .balanceplot(x[nagrp,, drop = FALSE], segments, colors, segments.args, points.args, offset)
+    if (sum(nagrp) > 0) {
+      .balanceplot(x[nagrp,, drop = FALSE], segments, colors, segments.args, points.args, offset)
+    }
 
   }
 
