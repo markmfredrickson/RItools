@@ -312,7 +312,7 @@ balanceplot <- function(x,
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
-  tts <- "devSVG" == names(dev.cur())[1] 
+  tts <- "devSVG" == names(dev.cur())[1] && require("RSVGTipsDevice")
 
   for(i in 1:nstrat) {
 
