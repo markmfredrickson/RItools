@@ -81,9 +81,11 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 .local/MASS/INSTALLED:
 	$(call installpkg,MASS)
 
+.local/RSVGTipsDevice/INSTALLED:
+	$(call installpkg,RSVGTipsDevice)
 
 # depend on this file to decide if we need to install the local version
-.local/RItools/INSTALLED: $(PKG).tar.gz .local/svd/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/MASS/INSTALLED
+.local/RItools/INSTALLED: $(PKG).tar.gz .local/svd/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/MASS/INSTALLED .local/RSVGTipsDevice/INSTALLED
 	mkdir -p .local
 	$(R) CMD INSTALL --no-multiarch --library=.local $(PKG).tar.gz
 	echo `date` > .local/RItools/INSTALLED

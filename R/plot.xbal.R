@@ -190,12 +190,13 @@ prepareXbalForPlot <- function(x,
 #' @param segments Should lines be drawn between points for each
 #' variable?
 #' @param colors A vector of colors suitable to use as a \code{col} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}.
-#' @param shapes A vector of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}.
+#' @param shapes A vector of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}. The suggested list has been selected to work with RSVGTipsDevice tool tips.
 #' @param segments.args A list of arguments to pass to the
 #' \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
 #' @param xlab The label of the x-axis of the plot.
 #' @param group A factor that indicates the group of each row in
+#' @param tiptext If you are using the RSVGTipsDevice library for rendering, you can include an array augments the dimensions of x with another dimesion of length 2. For example, if there are 4 observations and 2 strata, the array should be 4 by 2 by 2. The \code{tiptext[i, j, 1]} entry will be the first line of the tool tip for the data in \code{x[i, j]}. Likewise for the second row of the tool tip.
 #' \code{x}. Groups are plotted under a common header.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}},
@@ -206,24 +207,36 @@ balanceplot <- function(x,
                         ordered = FALSE,
                         segments = TRUE,
                         colors = "black",
-                        shapes = NULL,
+                        shapes = c(15, 16, 17, 18, 0, 1, 10, 12, 13, 14),
                         segments.args = list(col = "grey"),
-                        points.args = list(cex = 0.5),
+                        points.args = list(cex = 1),
                         xlab = "Balance",
                         xrange = range(x, na.rm = TRUE) * 1.25,
                         groups = NULL,
+                        tiptext = NULL,
                         ...) {
 
   nvars <- dim(x)[1]
   nstrat <- dim(x)[2]
 
-  # just make sure that colors and pchs have the right length
-  colors <- rep(colors, length.out = nstrat)
-
-  if (is.null(shapes)) {
-    shapes <- 1:nstrat
+  if (is.null(rownames(x))) {
+    rownames(x) <- paste0("V", 1:nvars)
   }
-  
+
+  if (is.null(colnames(x))) {
+    colnames(x) <- paste0("S", 1:nstrat)
+  }
+
+  # create some default tooltips if needed, will only be used if user wraps this in RSVGTipsDevice
+  if (is.null(tiptext)) {
+    tiptext <- array(data = c(rep(rownames(x), dim(x)[2]),
+                              rep(colnames(x), each = dim(x)[1])),
+                     c(dim(x), 2))
+
+  }
+
+  # just make sure that colors and shapes have the right length
+  colors <- rep(colors, length.out = nstrat)
   shapes <- rep(shapes, length.out = nstrat)
 
   ngrps <- 0
@@ -271,7 +284,7 @@ balanceplot <- function(x,
 
   if (is.null(groups)) {
 
-    .balanceplot(x, segments, colors, segments.args, points.args, 0)
+    .balanceplot(x, segments, shapes, colors, segments.args, points.args, 0, tipstext)
 
   } else {
     offset <- 0
@@ -280,8 +293,9 @@ balanceplot <- function(x,
     for (g in gnames) {
 
       subx <- x[groups == g & !is.na(groups),, drop = FALSE]
+      subtip <- tiptext[groups == g & !is.na(groups),,, drop = FALSE]
 
-      offset <- .balanceplot(subx, segments, colors, segments.args, points.args, offset)
+      offset <- .balanceplot(subx, segments, shapes, colors, segments.args, points.args, offset, subtip)
 
       axis(2, labels = g, at = offset + 0.25, las = 2, tick = FALSE)
 
@@ -289,7 +303,8 @@ balanceplot <- function(x,
     }
 
     if (sum(nagrp) > 0) {
-      .balanceplot(x[nagrp,, drop = FALSE], segments, colors, segments.args, points.args, offset)
+      subtip <- tiptext[nagrp,,, drop = FALSE]
+      .balanceplot(x[nagrp,, drop = FALSE], segments, shapes, colors, segments.args, points.args, offset, subtip)
     }
 
   }
@@ -307,29 +322,12 @@ balanceplot <- function(x,
 
 }
 
-.balanceplot <- function(x, segments, colors, segments.args, points.args, offset) {
+.balanceplot <- function(x, segments, shapes, colors, segments.args, points.args, offset, tipstext) {
   n <- dim(x)[1]
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
   tts <- "devSVG" == names(dev.cur())[1] && require("RSVGTipsDevice")
-
-  for(i in 1:nstrat) {
-
-    for (j in seq_along(ypos)) {
-      
-      if (tts) {
-        setSVGShapeToolTip(paste(rownames(x)[j], colnames(x)[i]))
-      }
-
-      do.call(graphics::points,
-              append(list(x[j, i],
-                          ypos[j],
-                          pch = i,
-                          col = colors[i]), 
-                     points.args))
-    }
-  }
 
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))
@@ -340,6 +338,27 @@ balanceplot <- function(x,
                         y1 = ypos),
                    segments.args))
   }
+
+  for(i in 1:nstrat) {
+
+    for (j in seq_along(ypos)) {
+      
+      if (tts) {
+        # note that these indices are reversed versus convention [i, j, k] notation
+        # i is strata (the columns of our tipstext object) 
+        # j is the variable (the rows of the tips)
+        setSVGShapeToolTip(tipstext[j, i, 1], tipstext[j, i, 2])
+      }
+
+      do.call(graphics::points,
+              append(list(x[j, i],
+                          ypos[j],
+                          pch = shapes[i],
+                          col = colors[i]), 
+                     points.args))
+    }
+  }
+
 
   axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
 
