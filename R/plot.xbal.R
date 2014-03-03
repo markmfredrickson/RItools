@@ -351,7 +351,12 @@ balanceplot <- function(x,
         # note that these indices are reversed versus convention [i, j, k] notation
         # i is strata (the columns of our tipstext object) 
         # j is the variable (the rows of the tips)
-        setSVGShapeToolTip(tipstext[j, i, 1], tipstext[j, i, 2])
+        if (dim(tipstext)[3] == 2) {
+          setSVGShapeToolTip(tipstext[j, i, 1], tipstext[j, i, 2])
+        }
+        if (dim(tipstext)[3] == 1) {
+          setSVGShapeToolTip(tipstext[j, i, 1])
+        }
       }
 
       do.call(graphics::points,
