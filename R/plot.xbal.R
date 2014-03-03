@@ -198,6 +198,7 @@ prepareXbalForPlot <- function(x,
 #' @param group A factor that indicates the group of each row in
 #' @param tiptext If you are using the RSVGTipsDevice library for rendering, you can include an array augments the dimensions of x with another dimesion of length 2. For example, if there are 4 observations and 2 strata, the array should be 4 by 2 by 2. The \code{tiptext[i, j, 1]} entry will be the first line of the tool tip for the data in \code{x[i, j]}. Likewise for the second row of the tool tip.
 #' \code{x}. Groups are plotted under a common header.
+#' @param legend.title An optional title to attach to the legend.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}},
 #' \code{\link{segments}}, \code{\link{points}}
@@ -214,6 +215,7 @@ balanceplot <- function(x,
                         xrange = range(x, na.rm = TRUE) * 1.25,
                         groups = NULL,
                         tiptext = NULL,
+                        legend.title = NULL,
                         ...) {
 
   nvars <- dim(x)[1]
@@ -247,7 +249,8 @@ balanceplot <- function(x,
 
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
-  yrange <- c(1, nvars + 2 * ngrps)
+  # we want a line for each of the variables, two lines for each group, and extra lines for the legend equal to the number of stata, and one for the optional legend title.
+  yrange <- c(1, nvars + 2 * ngrps + 1 + nstrat + ifelse(!is.null(legend.title), 1, 0))
 
   if (ordered) {
     # order X by the groups, and within groups order by the first column
@@ -315,8 +318,9 @@ balanceplot <- function(x,
   if (length(colnames(x)) > 0) {
     legend(x = "topright",
            legend = colnames(x),
-           pch = 1:nstrat,
+           pch = shapes,
            col = colors,
+           title = legend.title,
            bty = "n")
   }
 
