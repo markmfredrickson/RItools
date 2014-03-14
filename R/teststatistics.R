@@ -25,7 +25,7 @@ mean.difference <- function(ys, z) {
   return(fastmean(ys[z]) - fastmean(ys[!z]))
 }
 
-mean.diff.lsfit<-function(ys,z){ 
+mean.diff.lsfit<-function(ys,z){
   ##Try using something that calls compiled code
   ##Gives same answer as mean.difference for balanced blocks and should be like harmonic.mean.difference for unbalanced blocks.
   lsfit(x=model.matrix(ys~z),y=ys,intercept=FALSE)[["coefficients"]][["z"]]
@@ -233,7 +233,7 @@ quantileDifference <- function(q=.5){
   function(ys,z){
     ## difference at a quantile
     quantile(ys[!!z],q)-quantile(ys[!z],q)
-  } 
+  }
 }
 
 ### The ksTestStatistic with ks.test as a potential backend
@@ -360,6 +360,57 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
+# this borrowed from ks.test
+.ksBackEnd <- function(
+                       adjusted.y,
+                       z) {
+
+  # adjusted.data should be a matrix, where each column is an adjusted data
+  tmp <- apply(adjusted.y, 2, function(y) {
+               res <- stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
+               return(res[c("statistic", "p.value")])
+                       })
+
+  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+  colnames(tmp) <- c("statistic", "p.value")
+
+  return(new("RandomizationDistribution",
+             tmp, # RD inherits from data.frame
+             test.statistic = ks.test))
+}
+
+
+
+ssrTSmaker<-function(S){
+  force(S)
+  return(new("AsymptoticTestStatistic",
+             function(y,z){
+               d<-as.vector(z %*% S)
+               return(summary(lm(y~z+d))$fstatistic[["value"]])
+             },
+             function(adjusted.y,z){
+               d<-as.vector(z %*% S)
+               # adjusted.data should be a matrix, where each column is an adjusted data
+               tmp <- apply(adjusted.y, 2, function(y) {
+                            tmp <- summary(lm(y~z+d))$fstatistic
+                            res <- c("statistic"=tmp[["value"]],
+                                     "p.value"=1-pf(tmp[["value"]],tmp[["numdf"]],tmp[["dendf"]]))
+                            return(res[c("statistic", "p.value")])
+                              })
+
+               tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+               colnames(tmp) <- c("statistic", "p.value")
+
+               return(new("RandomizationDistribution",
+                          tmp, # RD inherits from data.frame
+                          test.statistic = ssrTestStatistic))
+             }
+             ))
+}
+
+
+
+
 .ssrBackEnd <- function( adjusted.y, z, d) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
@@ -375,8 +426,7 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 
   return(new("RandomizationDistribution",
              tmp, # RD inherits from data.frame
-             test.statistic = ks.test,
-             z = as.numeric(z)))
+             test.statistic = ssrTestStatistic))
 }
 
 ssrTestStatistic <- new("AsymptoticTestStatistic",
@@ -457,7 +507,7 @@ cvmTestStatistic <- new("AsymptoticTestStatistic",
                         )
 
 
-## Neymans Smooth Test 
+## Neymans Smooth Test
 
 quasireldist<-function(y,yo,binn=100,location="median"){
   ### This version follows the methods in 9.1.2.3 and 9.2 of Handcock and Morris, Relative Dist.
@@ -517,7 +567,7 @@ quasireldist<-function(y,yo,binn=100,location="median"){
 
   ## Sum up density of y within bins
   xx <- rep(0,length=binn)
-  for (i in unique(xxx)){    
+  for (i in unique(xxx)){
     xx[i] <- sum(ywgt[xxx==i],na.rm=TRUE)
   }
   return(as.vector(xx))
@@ -533,14 +583,14 @@ ddstTestStatistic<-function(binn=100,location="median"){
     ## this next from ddst.uniform.test.R
     coord<-ddst:::ddst.uniform.Nk(qdat,ddst:::ddst.base.legendre,10)
     l<-ddst:::ddst.IIC(coord,length(qdat),2.4)
-    return(coord[l]) 
+    return(coord[l])
   }
 }
 
 
 entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
   function(ys,z){
-  ## from Reldist rcdist    
+  ## from Reldist rcdist
     n <- length(ys[!z])
     m <- length(ys[!!z])
     qdat<-quasireldist(y=ys[!!z],yo=ys[!z])
@@ -555,7 +605,7 @@ entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
     gpdf <- predict(yl, type = "response")
     scalef <- binn/sum(gpdf)
     gpdf <- gpdf * scalef
-    
+
     egv <- gpdf[gpdf > 0]
     ##entropy <- sum(egv*log(egv))/binn
 
