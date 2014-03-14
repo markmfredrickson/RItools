@@ -360,39 +360,18 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
-# this borrowed from ks.test
-.ksBackEnd <- function(
-                       adjusted.y,
-                       z) {
-
-  # adjusted.data should be a matrix, where each column is an adjusted data
-  tmp <- apply(adjusted.y, 2, function(y) {
-               res <- stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
-               return(res[c("statistic", "p.value")])
-                       })
-
-  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
-  colnames(tmp) <- c("statistic", "p.value")
-
-  return(new("RandomizationDistribution",
-             tmp, # RD inherits from data.frame
-             test.statistic = ks.test))
-}
-
-
-
-ssrTSmaker<-function(S){
+FTSmaker<-function(S){
   force(S)
   return(new("AsymptoticTestStatistic",
              function(y,z){
                d<-as.vector(z %*% S)
-               return(summary(lm(y~z+d))$fstatistic[["value"]])
+               return(summary(lm(y~z,weights=d))$fstatistic[["value"]])
              },
-             function(adjusted.y,z){
+             asymptotic = function(adjusted.y,z){
                d<-as.vector(z %*% S)
                # adjusted.data should be a matrix, where each column is an adjusted data
                tmp <- apply(adjusted.y, 2, function(y) {
-                            tmp <- summary(lm(y~z+d))$fstatistic
+                            tmp <- summary(lm(y~z,weights=d))$fstatistic
                             res <- c("statistic"=tmp[["value"]],
                                      "p.value"=1-pf(tmp[["value"]],tmp[["numdf"]],tmp[["dendf"]]))
                             return(res[c("statistic", "p.value")])
@@ -403,37 +382,38 @@ ssrTSmaker<-function(S){
 
                return(new("RandomizationDistribution",
                           tmp, # RD inherits from data.frame
-                          test.statistic = ssrTestStatistic))
+                          test.statistic = mean))
              }
              ))
 }
 
 
-
-
-.ssrBackEnd <- function( adjusted.y, z, d) {
-
-  # adjusted.data should be a matrix, where each column is an adjusted data
-  tmp <- apply(adjusted.y, 2, function(y) {
-               tmp <- summary(lm(y~z+d))$fstatistic
-               res <- c("statistic"=tmp["value"],
-                        "p.value"=1-pf(tmp["value"],tmp["numdf"],tmp["dendf"]))
-               return(res[c("statistic", "p.value")])
+tTSmaker<-function(S){
+  force(S)
+  return(new("AsymptoticTestStatistic",
+             function(y,z){
+               d<-as.vector(z %*% S)
+               return(coef(lm(y~z+d))[["z"]])
+             },
+             asymptotic = function(adjusted.y,z){
+               d<-as.vector(z %*% S)
+               # adjusted.data should be a matrix, where each column is an adjusted data
+               tmp <- apply(adjusted.y, 2, function(y) {
+                            tmp <- summary(lm(y~z+d))
+                            res <- c("statistic"=tmp[["coefficients"]]["z",1],
+                                     "p.value"=tmp[["coefficients"]]["z",4])
+                            return(res[c("statistic", "p.value")])
                               })
 
-  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
-  colnames(tmp) <- c("statistic", "p.value")
+               tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+               colnames(tmp) <- c("statistic", "p.value")
 
-  return(new("RandomizationDistribution",
-             tmp, # RD inherits from data.frame
-             test.statistic = ssrTestStatistic))
+               return(new("RandomizationDistribution",
+                          tmp, # RD inherits from data.frame
+                          test.statistic = mean))
+             }
+             ))
 }
-
-ssrTestStatistic <- new("AsymptoticTestStatistic",
-                        function(y, z, d) {
-                          ##  return(summary(lm(y~z+d))$sigma)
-                          return(summary(lm(y~z+d))$fstatistic["value"])
-                        }, asymptotic = .ssrBackEnd)
 
 
 
