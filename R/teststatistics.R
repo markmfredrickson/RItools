@@ -360,6 +360,41 @@ adTestStatistic.ranked <- new("AsymptoticTestStatistic",
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
+
+SSRTmaker<-function(S){
+  force(S)
+  total1HopPeers<-colSums(S) ## S is undirected and symmetric
+  return(new("AsymptoticTestStatistic",
+             function(y,z){
+               d<-as.vector(z %*% S)
+               ssr<-sum(resid(lm(y~z+d+total1HopPeers))^2)
+             },
+             asymptotic = function(adjusted.y,z){
+               d<-as.vector(z %*% S)
+               # adjusted.data should be a matrix, where each column is an adjusted data
+               tmp <- apply(adjusted.y, 2, function(y) {
+                            lm1<-lm(y~z+d+total1HopPeers)
+                            lm0<-lm(y~d+total1HopPeers)
+                            theanova<-anova(lm0,lm1)
+                            res <- c("statistic"=tmp$F[[2]],
+                                     "p.value"=tmp$`Pr(>F)`[[2]])
+                            return(res[c("statistic", "p.value")])
+                              })
+
+               tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
+               colnames(tmp) <- c("statistic", "p.value")
+
+               return(new("RandomizationDistribution",
+                          tmp, # RD inherits from data.frame
+                          test.statistic = max ## this is a placeholder should be deleted 
+                          ))
+             }
+             ))
+}
+
+
+
+
 FTSmaker<-function(S){
   force(S)
   return(new("AsymptoticTestStatistic",
@@ -375,7 +410,7 @@ FTSmaker<-function(S){
                             res <- c("statistic"=tmp[["value"]],
                                      "p.value"=1-pf(tmp[["value"]],tmp[["numdf"]],tmp[["dendf"]]))
                             return(res[c("statistic", "p.value")])
-                              })
+                                     })
 
                tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
                colnames(tmp) <- c("statistic", "p.value")
@@ -570,7 +605,7 @@ ddstTestStatistic<-function(binn=100,location="median"){
 
 entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
   function(ys,z){
-  ## from Reldist rcdist
+    ## from Reldist rcdist
     n <- length(ys[!z])
     m <- length(ys[!!z])
     qdat<-quasireldist(y=ys[!!z],yo=ys[!z])
