@@ -189,8 +189,8 @@ prepareXbalForPlot <- function(x,
 #' most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each
 #' variable?
-#' @param colors A vector of colors suitable to use as a \code{col} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}.
-#' @param shapes A vector of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. The length of this vector should be the same as the number of columns in \code{x}. The suggested list has been selected to work with RSVGTipsDevice tool tips.
+#' @param colors Either a vector or a matrix of shape indicators suitable to use as a \code{col} argument to the \code{\link{points}} function. If the argument is a vector, the length should be the same as the number of columns in \code{x}. If the argument is a matrix, it should have the same dims as \code{x}.
+#' @param shapes Either a vector or a matrix of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. If the argument is a vector, the length should be the same as the number of columns in \code{x}. If the argument is a matrix, it should have the same dims as \code{x}. The suggested vector has been selected to work with RSVGTipsDevice tool tips.
 #' @param segments.args A list of arguments to pass to the
 #' \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
@@ -237,9 +237,24 @@ balanceplot <- function(x,
 
   }
 
-  # just make sure that colors and shapes have the right length
-  colors <- rep(colors, length.out = nstrat)
-  shapes <- rep(shapes, length.out = nstrat)
+  # just make sure that colors and shapes have the right length/shape
+  if (is.vector(colors)) {
+    colors <- rep(colors, length.out = nstrat)
+    colors <- matrix(rep(colors, each = nvars), nrow = nvars)
+  }
+
+  if (!identical(dim(colors), dim(x))) {
+    stop("`colors` argument must have the same dims as `x`, or be comformable.")
+  }
+
+  if (is.vector(shapes)) {
+    shapes <- rep(shapes, length.out = nstrat)
+    shapes <- matrix(rep(shapes, each = nvars), nrow = nvars)
+  }
+
+  if (!identical(dim(shapes), dim(x))) {
+    stop("`shapes` argument must have the same dims as `x`, or be comformable.")
+  }
 
   ngrps <- 0
   if (!is.null(groups)) {
@@ -362,8 +377,8 @@ balanceplot <- function(x,
       do.call(graphics::points,
               append(list(x[j, i],
                           ypos[j],
-                          pch = shapes[i],
-                          col = colors[i]), 
+                          pch = shapes[j, i],
+                          col = colors[j, i]), 
                      points.args))
     }
   }

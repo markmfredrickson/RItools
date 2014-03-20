@@ -109,7 +109,44 @@ test_that("Generic balance plots", {
     dev.off()
 
     expect_false(identical(p1, p.nosegs))
+
+    # using shapes in the plots
+    x11()
+    balanceplot(testmat, shapes = 18)
+    p.oneshape <- dev.capture()
+    dev.off()
+
+    expect_false(identical(p1, p.oneshape))
+
+    x11()
+    balanceplot(testmat, shapes = c(18, 18))
+    p.oneshape.vec <- dev.capture()
+    dev.off()
+
+    expect_true(identical(p.oneshape, p.oneshape.vec))
+
+    x11()
+    balanceplot(testmat, shapes = matrix(18, nrow = 4, ncol = 2))
+    p.oneshape.mat <- dev.capture()
+    dev.off()
+
+    expect_true(identical(p.oneshape.mat, p.oneshape))
+               
+    x11()
+    balanceplot(testmat, shapes = c(15, 16))
+    p.twoshapes <- dev.capture()
+    dev.off()
+
+    expect_true(identical(p1, p.twoshapes))
+
+    x11()
+    balanceplot(testmat, shapes = matrix(c(rep(15, 4), rep(16, 4)), nrow = 4, ncol = 2))
+    p.twoshapes.mat <- dev.capture()
+    dev.off()
+
+    expect_true(identical(p1, p.twoshapes.mat))
   }
+
 })
 
 
@@ -156,10 +193,9 @@ test_that("balanceplot can group variables", {
     p2 <- dev.capture()
     dev.off()
 
-    expect_false(p1, p2)
+    expect_false(identical(p1, p2))
 
   }
-
 })
 
 test_that("preparing xbalance objects for plotting, includes groups", {
@@ -228,3 +264,4 @@ test_that("Plotting using RSVGTips", {
   dev.off()
 
 })
+
