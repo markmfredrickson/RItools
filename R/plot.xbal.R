@@ -198,6 +198,7 @@ prepareXbalForPlot <- function(x,
 #' @param group A factor that indicates the group of each row in
 #' @param tiptext If you are using the RSVGTipsDevice library for rendering, you can include an array augments the dimensions of x with another dimesion of length 2. For example, if there are 4 observations and 2 strata, the array should be 4 by 2 by 2. The \code{tiptext[i, j, 1]} entry will be the first line of the tool tip for the data in \code{x[i, j]}. Likewise for the second row of the tool tip.
 #' \code{x}. Groups are plotted under a common header.
+#' @param legend Should a legend be included?
 #' @param legend.title An optional title to attach to the legend.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}},
@@ -215,6 +216,7 @@ balanceplot <- function(x,
                         xrange = range(x, na.rm = TRUE) * 1.25,
                         groups = NULL,
                         tiptext = NULL,
+                        include.legend = TRUE,
                         legend.title = NULL,
                         ...) {
 
@@ -310,10 +312,13 @@ balanceplot <- function(x,
     gnames <- unique(na.omit(groups))
     for (g in gnames) {
 
-      subx <- x[groups == g & !is.na(groups),, drop = FALSE]
-      subtip <- tiptext[groups == g & !is.na(groups),,, drop = FALSE]
+      idx <- groups == g & !is.na(groups)
+      subx <- x[idx,, drop = FALSE]
+      subtip <- tiptext[idx,,, drop = FALSE]
+      subshape <- shapes[idx,, drop = FALSE]
+      subcolor <- colors[idx,, drop = FALSE]
 
-      offset <- .balanceplot(subx, segments, shapes, colors, segments.args, points.args, offset, subtip)
+      offset <- .balanceplot(subx, segments, subshape, subcolor, segments.args, points.args, offset, subtip)
 
       axis(2, labels = g, at = offset + 0.25, las = 2, tick = FALSE)
 
@@ -321,8 +326,12 @@ balanceplot <- function(x,
     }
 
     if (sum(nagrp) > 0) {
+
+      subx <- x[nagrp,, drop = FALSE]
       subtip <- tiptext[nagrp,,, drop = FALSE]
-      .balanceplot(x[nagrp,, drop = FALSE], segments, shapes, colors, segments.args, points.args, offset, subtip)
+      subshape <- shapes[nagrp,, drop = FALSE]
+      subcolor <- colors[nagrp,, drop = FALSE]
+      .balanceplot(subx, segments, subshape, subcolor, segments.args, points.args, offset, subtip)
     }
 
   }
@@ -330,7 +339,7 @@ balanceplot <- function(x,
   abline(v = 0, col = "#333333")
 
 
-  if (length(colnames(x)) > 0) {
+  if (length(colnames(x)) > 0 && include.legend) {
     legend(x = "topright",
            legend = colnames(x),
            pch = shapes,
