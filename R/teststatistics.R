@@ -36,6 +36,17 @@ mean.diff.vect<-function(ys,z){
   solve(qr(X, LAPACK=TRUE), ys)[2] ## qr.coef(qr(X,LAPACK=TRUE),ys) ## to handle near singular X
 }
 
+## Studentized mean diff
+t.mean.difference <- function(ys, z) {
+  # z is usually a vector of 1s and 0s. make it logical
+  z <- as.logical(z)
+  return( {fastmean(ys[z]) - fastmean(ys[!z])}/sqrt( {fastvar(ys[z])/sum(z)}+{fastvar(ys[!z])/sum(!z)}) )
+}
+
+fastvar<-function(x){
+  ## See var for this. Right now it removes missing values
+  .Call(stats:::C_cov,x,NULL,5,FALSE)
+}
 ############################## Rank Based Functions ##############################
 
 rank.sum <- function(ys, z) {
