@@ -366,8 +366,9 @@ SSRTmaker<-function(S){
   total1HopPeers<-colSums(S) ## S is undirected and symmetric
   return(new("AsymptoticTestStatistic",
              function(y,z){
-               d<-as.vector(z %*% S)
-               ssr<-sum(resid(lm(y~z+d+total1HopPeers))^2)
+               ##d<-as.vector(z %*% S)
+               ## ssr<-sum(resid(lm(y~z+d+total1HopPeers))^2)
+               ssr<-sum(lm.fit(cbind(1,z,as.vector(z %*% S),total1HopPeers),y)$residuals^2) #resid(lm(y~z+d+total1HopPeers))^2)
              },
              asymptotic = function(adjusted.y,z){
                d<-as.vector(z %*% S)
