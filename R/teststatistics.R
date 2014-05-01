@@ -248,9 +248,7 @@ quantileDifference <- function(q=.5){
 ### The ksTestStatistic with ks.test as a potential backend
 
 # this borrowed from ks.test
-.ksBackEnd <- function(
-                       adjusted.y,
-                       z) {
+.ksBackEnd <- function( adjusted.y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
@@ -290,43 +288,14 @@ ksTestStatistic <- new("AsymptoticTestStatistic",
                          return(max(abs(z)))
                        }, asymptotic = .ksBackEnd)
 
-ksTestStatistic.ranked <- new("AsymptoticTestStatistic",
-                              function(y, z) {
-                                # next borrowed from KS test
-                                # first, set up using the KS test var names
-                                y<-rank(y)
-
-                                x <- y[z == 1]
-                                y <- y[z == 0]
-
-                                x <- x[!is.na(x)]
-                                n <- length(x)
-
-                                y <- y[!is.na(y)]
-                                n.x <- as.double(n)
-                                n.y <- length(y)
-
-                                n <- n.x * n.y/(n.x + n.y)
-                                w <- c(x, y)
-                                z <- cumsum(ifelse(order(w) <= n.x, 1/n.x, -1/n.y))
-                                if (length(unique(w)) < (n.x + n.y)) {
-                                  z <- z[c(which(diff(sort(w)) != 0), n.x + n.y)]
-                                }
-
-                                return(max(abs(z)))
-                              }, asymptotic = .ksBackEnd)
-
-
 ### The adTestStatistic with ad.test as a potential backend
-.adBackEnd <- function(
-                       adjusted.y,
-                       z) {
+.adBackEnd <- function( adjusted.y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
-               res <- adk.test(y[!!z], y[!z]) # small problems may still be figured exactly
-               return(res$adk[2,c(1,2)])
-                       })
+               res <- ad.test(y[!!z], y[!z]) 
+               return(res$ad[1,c(1,3)])
+                              })
 
   tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
   colnames(tmp) <- c("statistic", "p.value")
@@ -338,7 +307,7 @@ ksTestStatistic.ranked <- new("AsymptoticTestStatistic",
 
 adTestStatistic <- new("AsymptoticTestStatistic",
                        function(y, z) {
-                         require(adk)
+                         require(kSamples)
                          x <- y[z == 1]
                          y <- y[z == 0]
 
@@ -346,24 +315,9 @@ adTestStatistic <- new("AsymptoticTestStatistic",
 
                          y <- y[!is.na(y)]
 
-                         return(adk.test(x,y)$adk[2,1])
+                         return(ad.test(x,y)$ad[1,1])
                        }, asymptotic = .adBackEnd)
 
-adTestStatistic.ranked <- new("AsymptoticTestStatistic",
-                              function(y, z) {
-                                require(adk)
-
-                                y<-rank(y)
-
-                                x <- y[z == 1]
-                                y <- y[z == 0]
-
-                                x <- x[!is.na(x)]
-
-                                y <- y[!is.na(y)]
-
-                                return(adk.test(x,y)$adk[2,1])
-                              }, asymptotic = .adBackEnd)
 ### The ssrTestStatistic with the F-test as a potential asymp backend
 ### (and using F as the test statistic)
 
