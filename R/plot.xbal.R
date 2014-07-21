@@ -30,6 +30,9 @@
 #' that maps the stratification schemes to textual labels.
 #' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)}
 #' that maps the variables to textual labels.
+#' @param groups A vector of group names for each variable in
+#' \code{x$results}. By default, factor level variables will be
+#' grouped.
 #' @param ... additional arguments to pass to \code{\link{balanceplot}}
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
@@ -44,11 +47,16 @@ plot.xbal <- function(x,
                       absolute = FALSE,
                       strata.labels = NULL,
                       variable.labels = NULL,
+                      groups = NULL,
                       ...) {
 
   x <- prepareXbalForPlot(x, statistic, absolute, strata.labels, variable.labels)
 
-  return(balanceplot(x, xlab = xlab, groups = attr(x, "groups"), ...))
+  if (is.null(groups)) {
+    groups <- attr(x, "groups")
+  }
+
+  return(balanceplot(x, xlab = xlab, groups = groups, ...))
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function
 

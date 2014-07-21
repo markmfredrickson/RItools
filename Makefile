@@ -22,7 +22,7 @@ $(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore inst/examples/*
 		--exclude=lexicon.txt --exclude=README.md --exclude=checkspelling.R \
 		--exclude=RItools.Rcheck \
 	  --exclude=check.R --exclude=Rprofile --exclude=*.pdf --exclude=*.txt --exclude=*.zip \
-		--exclude=#* \
+		--exclude=\#* --exclude="*~" \
 		. $(PKG)
 
 $(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template 
