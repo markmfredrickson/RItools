@@ -12,7 +12,9 @@ colnames(balance_data) <- c("Before Adjustment", "After Matching")
 
 rownames(balance_data) <- varnames
 
-RItools:::balanceplot(balance_data, colors = c("red", "green"), xlab = "Balalnce Before/After Matching")
+RItools:::balanceplot(balance_data,
+                      colors = c("red", "green"),
+                      xlab = "Balance Before/After Matching")
 
 # base R graphics are allowed
 

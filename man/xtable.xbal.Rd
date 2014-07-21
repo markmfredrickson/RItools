@@ -5,7 +5,14 @@
 \description{
 	This function uses the \code{\link[xtable]{xtable}} package framework to display the results of a call to \code{\link{xBalance}} in LaTeX format. At the moment, it ignores the omnibus chi-squared test information.
 }
-\usage{\method{xtable}{xbal}(x, caption = NULL, label = NULL, align = c("l",rep("r",ncol(xvardf))), digits = 2, display = NULL, col.labels = NULL, ...)
+\usage{\method{xtable}{xbal}(x,
+caption = NULL,
+label = NULL,
+align = c("l", rep("r", ncol(xvardf))),
+digits = 2,
+display = NULL,
+col.labels = NULL,
+...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

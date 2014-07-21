@@ -13,7 +13,6 @@ xtable.xbal <- function(x,caption = NULL, label = NULL, align =c("l",rep("r",nco
   ##junk<-xtable(xb1)
   ##print(junk,add.to.row=attr(junk,"latex.add.to.row"),hline.after=c(0,nrow(junk)),sanitize.text.function=function(x){x},floating=TRUE,floating.environment="sidewaystable")
 
-  stopifnot(require(xtable))
   xprint <- flatten.xbalresult(x)
   numstrata<-dim(x$results)[3]
   latex.annotation <- attr(xprint, "latex.annotation")

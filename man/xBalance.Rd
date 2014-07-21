@@ -10,7 +10,10 @@
   within strata.
 }
 \usage{
-xBalance(fmla, strata=list(unstrat=NULL), data, report=c("std.diffs","z.scores","adj.means",
+xBalance(fmla,
+         strata = list(unstrat=NULL),
+         data,
+         report=c("std.diffs","z.scores","adj.means",
 	       "adj.mean.diffs","adj.mean.diffs.null.sd",
 	       "chisquare.test","p.values", "all")[1:2],
          stratum.weights=harmonic, na.rm=FALSE,

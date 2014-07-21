@@ -117,8 +117,7 @@ plot.xbal <- function(x,
   # }
 }
 
-# Internal function for turning an xBalance object
-#' @export
+# Internal function for turning an xBalance object into something for `balanceplot`
 prepareXbalForPlot <- function(x,
                                statistic = "std.diff",
                                absolute = FALSE,
@@ -189,16 +188,33 @@ prepareXbalForPlot <- function(x,
 #' most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each
 #' variable?
-#' @param colors Either a vector or a matrix of shape indicators suitable to use as a \code{col} argument to the \code{\link{points}} function. If the argument is a vector, the length should be the same as the number of columns in \code{x}. If the argument is a matrix, it should have the same dims as \code{x}.
-#' @param shapes Either a vector or a matrix of shape indicators suitable to use as a \code{pch} argument to the \code{\link{points}} function. If the argument is a vector, the length should be the same as the number of columns in \code{x}. If the argument is a matrix, it should have the same dims as \code{x}. The suggested vector has been selected to work with RSVGTipsDevice tool tips.
+#' @param colors Either a vector or a matrix of shape indicators
+#' suitable to use as a \code{col} argument to the
+#' \code{\link{points}} function. If the argument is a vector, the
+#' length should be the same as the number of columns in \code{x}. If
+#' the argument is a matrix, it should have the same dims as \code{x}.
+#' @param shapes Either a vector or a matrix of shape indicators
+#' suitable to use as a \code{pch} argument to the
+#' \code{\link{points}} function. If the argument is a vector, the
+#' length should be the same as the number of columns in \code{x}. If
+#' the argument is a matrix, it should have the same dims as
+#' \code{x}. The suggested vector has been selected to work with
+#' RSVGTipsDevice tool tips.
 #' @param segments.args A list of arguments to pass to the
 #' \code{\link{segments}} function.
 #' @param points.args A list of arguments to pass to the \code{\link{points}} function.
 #' @param xlab The label of the x-axis of the plot.
-#' @param group A factor that indicates the group of each row in
-#' @param tiptext If you are using the RSVGTipsDevice library for rendering, you can include an array augments the dimensions of x with another dimesion of length 2. For example, if there are 4 observations and 2 strata, the array should be 4 by 2 by 2. The \code{tiptext[i, j, 1]} entry will be the first line of the tool tip for the data in \code{x[i, j]}. Likewise for the second row of the tool tip.
-#' \code{x}. Groups are plotted under a common header.
-#' @param legend Should a legend be included?
+#' @param xrange The range of x-axis. By default, it is 1.25 times the range of \code{x}.
+#' @param groups A factor that indicates the group of each row in
+#' \code{x}. Groups are printed under a common header.
+#' @param tiptext If you are using the RSVGTipsDevice library for
+#' rendering, you can include an array of the dimensions of x
+#' with another dimesion of length 2. For example, if there are 4
+#' observations and 2 strata, the array should be 4 by 2 by 2. The
+#' \code{tiptext[i, j, 1]} entry will be the first line of the tool
+#' tip for the data in \code{x[i, j]}. Likewise for the second row of
+#' the tool tip.
+#' @param include.legend Should a legend be included?
 #' @param legend.title An optional title to attach to the legend.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
 #' @seealso \code{\link{plot.xbal}}, \code{\link{xBalance}},
@@ -304,7 +320,7 @@ balanceplot <- function(x,
 
   if (is.null(groups)) {
 
-    .balanceplot(x, segments, shapes, colors, segments.args, points.args, 0, tipstext)
+    .balanceplot(x, segments, shapes, colors, segments.args, points.args, 0, tiptext)
 
   } else {
     offset <- 0
@@ -350,7 +366,7 @@ balanceplot <- function(x,
 
 }
 
-.balanceplot <- function(x, segments, shapes, colors, segments.args, points.args, offset, tipstext) {
+.balanceplot <- function(x, segments, shapes, colors, segments.args, points.args, offset, tiptext) {
   n <- dim(x)[1]
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
@@ -373,13 +389,13 @@ balanceplot <- function(x,
       
       if (tts) {
         # note that these indices are reversed versus convention [i, j, k] notation
-        # i is strata (the columns of our tipstext object) 
+        # i is strata (the columns of our tiptext object) 
         # j is the variable (the rows of the tips)
-        if (dim(tipstext)[3] == 2) {
-          setSVGShapeToolTip(tipstext[j, i, 1], tipstext[j, i, 2])
+        if (dim(tiptext)[3] == 2) {
+          setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
         }
-        if (dim(tipstext)[3] == 1) {
-          setSVGShapeToolTip(tipstext[j, i, 1])
+        if (dim(tiptext)[3] == 1) {
+          setSVGShapeToolTip(tiptext[j, i, 1])
         }
       }
 
