@@ -21,6 +21,8 @@ $(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore inst/examples/*
 		--exclude=DESCRIPTION.template --exclude=NAMESPACE.static \
 		--exclude=lexicon.txt --exclude=README.md --exclude=checkspelling.R \
 		--exclude=RItools.Rcheck \
+	  --exclude=check.R --exclude=Rprofile --exclude=*.pdf --exclude=*.txt --exclude=*.zip \
+		--exclude=#* \
 		. $(PKG)
 
 $(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template 
@@ -46,7 +48,7 @@ lexicon.txt: package
 # For reasons unknown, the check process has a fit if using just the environment variables R_LIBS 
 # so, we also use the -l flag. 
 check: $(PKG).tar.gz .local/xtable/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED
-	$(R) CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
+	R_LIBS=.local R_PROFILE=check.R R CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
 
 release: check spell
 	git tag -a $(VERSION)
