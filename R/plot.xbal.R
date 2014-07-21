@@ -1,4 +1,4 @@
-#' Plot of balance across multiple stratification schemes
+#' Plot of balance across multiple strata 
 #'
 #' The plot allows a quick visual comparison of the effect of different
 #' stratification designs on the comparability of different
@@ -9,10 +9,10 @@
 #' covariates might be imbalanced even if the omnibus test reports that
 #' the stratification overall produces balance.
 #'
-#' By default all variables and all stratifications are plotted. The scope
+#' By default all variables and all strata are plotted. The scope
 #' of the plot can be reduced by using the \code{\link{subset.xbal}} function to
 #' make a smaller \code{xbal} object with only the desired variables or
-#' stratifications.
+#' strata.
 #'
 #' \code{\link{xBalance}} can produce several different summary statistics for
 #' each variable, any of which can serve as the data for this plot. By default,
@@ -30,7 +30,7 @@
 #' that maps the stratification schemes to textual labels.
 #' @param variable.labels A named vector of the from \code{c(var1 = "Var Label1", ...)}
 #' that maps the variables to textual labels.
-#' @param ... additional arugments to pass to \code{\link{balanceplot}}
+#' @param ... additional arguments to pass to \code{\link{balanceplot}}
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
 #' @import abind
@@ -181,9 +181,9 @@ prepareXbalForPlot <- function(x,
 #' You can fine tune the colors and shapes with the like named
 #' arguments. Any other arguments to the \code{\link{points}} function
 #' can be passed in a list as \code{points.args}. Likewise, you can
-#' fine tune the segements between points with \code{segements.args}.
+#' fine tune the segments between points with \code{segments.args}.
 #'
-#' @param x A matrix of variables (rows) by stratifications (columns).
+#' @param x A matrix of variables (rows) by strata (columns).
 #' @param ordered Should the variables be ordered from
 #' most to least imbalance on the first statistic?
 #' @param segments Should lines be drawn between points for each
@@ -207,9 +207,9 @@ prepareXbalForPlot <- function(x,
 #' @param xrange The range of x-axis. By default, it is 1.25 times the range of \code{x}.
 #' @param groups A factor that indicates the group of each row in
 #' \code{x}. Groups are printed under a common header.
-#' @param tiptext If you are using the RSVGTipsDevice library for
+#' @param tiptext If you are using the \code{RSVGTipsDevice} library for
 #' rendering, you can include an array of the dimensions of x
-#' with another dimesion of length 2. For example, if there are 4
+#' with another dimension of length 2. For example, if there are 4
 #' observations and 2 strata, the array should be 4 by 2 by 2. The
 #' \code{tiptext[i, j, 1]} entry will be the first line of the tool
 #' tip for the data in \code{x[i, j]}. Likewise for the second row of
