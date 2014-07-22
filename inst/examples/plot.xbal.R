@@ -28,4 +28,5 @@ plot(xb, variable.labels = c(date = "Date",
              cum.n = "Total Plants Built"),
      strata.labels = c("none" = "Raw Data", "pt" = "Partial Turn-key"),
      absolute = TRUE,
-     groups = c("Group A", "Group A", "Group A", "Group B", "Group B", "Group B", "Group A", "Group B"))
+     groups = c("Group A", "Group A", "Group A", "Group B",
+                "Group B", "Group B", "Group A", "Group B"))

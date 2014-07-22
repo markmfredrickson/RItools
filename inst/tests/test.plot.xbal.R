@@ -226,42 +226,43 @@ test_that("Plotting using RSVGTips", {
   # this is just an existance proof: it should go through without errors
   set.seed(20140137)
   
-  library(RSVGTipsDevice)
-  f <- tempfile()
+  if(require(RSVGTipsDevice)) {
+    f <- tempfile()
 
-  x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
-                  x1 = rnorm(100),
-                  x2 = sample(c("A", "B", "C"), 100, replace = T),
-                  x3 = sample(c("X", "Y", "Z"), 100, replace = T),
-                  x4 = sample(c(T,F), 100, replace = T),
-                  x5 = sample(c("A", "B", "C"), 100, replace = T),
-                  x6 = sample(c("X", "Y", "Z", "W"), 100, replace = T))
+    x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
+                    x1 = rnorm(100),
+                    x2 = sample(c("A", "B", "C"), 100, replace = T),
+                    x3 = sample(c("X", "Y", "Z"), 100, replace = T),
+                    x4 = sample(c(T,F), 100, replace = T),
+                    x5 = sample(c("A", "B", "C"), 100, replace = T),
+                    x6 = sample(c("X", "Y", "Z", "W"), 100, replace = T))
 
-  xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
-  xb$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 2
+    xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
+    xb$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 2
 
-  devSVGTips(paste0(f, "1.svg"), height = 8, width = 8)
+    devSVGTips(paste0(f, "1.svg"), height = 8, width = 8)
 
-  plot(xb)
+    plot(xb)
 
-  dev.off()
+    dev.off()
 
 
-  xb2 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(bar = ~ x5), report = 'all')
+    xb2 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(bar = ~ x5), report = 'all')
 
-  devSVGTips(paste0(f, "2.svg"), height = 8, width = 8)
+    devSVGTips(paste0(f, "2.svg"), height = 8, width = 8)
 
-  plot(xb2)
+    plot(xb2)
 
-  dev.off()
+    dev.off()
 
-  xb3 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~x4, bar = ~ x5, none = NULL), report = 'all')
-  xb3$results[, "std.diff", 1] <- xb$results[, "std.diff", 1] * 2
-  xb3$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 4
+    xb3 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~x4, bar = ~ x5, none = NULL), report = 'all')
+    xb3$results[, "std.diff", 1] <- xb$results[, "std.diff", 1] * 2
+    xb3$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 4
 
-  devSVGTips(paste0(f, "3.svg"), height = 8, width = 8)
-  plot(xb3)
-  dev.off()
+    devSVGTips(paste0(f, "3.svg"), height = 8, width = 8)
+    plot(xb3)
+    dev.off()
+  }
 
 })
 

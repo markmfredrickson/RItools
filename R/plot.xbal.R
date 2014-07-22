@@ -400,10 +400,10 @@ balanceplot <- function(x,
         # i is strata (the columns of our tiptext object) 
         # j is the variable (the rows of the tips)
         if (dim(tiptext)[3] == 2) {
-          setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
+          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
         }
         if (dim(tiptext)[3] == 1) {
-          setSVGShapeToolTip(tiptext[j, i, 1])
+          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1])
         }
       }
 
