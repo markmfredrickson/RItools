@@ -83,7 +83,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
                        2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
   }
 
-	if ("chisquare.test"%in%report) {
+	if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
     # nu=0 stops calculation of the U matrix, which is not used.
     pst.svd <- try ( svd(tmat*sqrt(dv), nu=0) )
     if (inherits(pst.svd,'try-error')) {
