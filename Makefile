@@ -1,7 +1,7 @@
 R = R_LIBS=.local R --vanilla
 
 R: .local/RItools/INSTALLED
-	$(R) -q --no-save 
+	$(R) -q --no-save
 
 ### Package release scripts ###
 
@@ -11,7 +11,7 @@ PKG=RItools_$(VERSION)
 
 # a useful helper for scripts who need to know what the package name is going to be
 # use: R CMD INSTALL path/to/RItools/$(cd path/to/RItools && make current)
-current: 
+current:
 	@echo $(PKG).tar.gz
 
 # we depend on the makefile so that updates to the version number will force a rebuild
@@ -25,7 +25,7 @@ $(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore inst/examples/*
 		--exclude=\#* --exclude="*~" \
 		. $(PKG)
 
-$(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template 
+$(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template
 	sed s/VERSION/$(VERSION)/ DESCRIPTION.template | sed s/DATE/$(RELEASE_DATE)/ > $(PKG)/DESCRIPTION
 
 $(PKG)/NAMESPACE: $(PKG) $(PKG)/DESCRIPTION NAMESPACE.static .local/roxygen2/INSTALLED
@@ -39,14 +39,14 @@ $(PKG).tar.gz: $(PKG) $(PKG)/DESCRIPTION $(PKG)/NAMESPACE NEWS R/* data/* inst/*
 package: $(PKG).tar.gz
 
 # the spell task doesn't need the tar.gz particularly, but it does need DESCRIPTION and roxygen
-spell: package 
+spell: package
 	$(R) -q --no-save -e "source('checkspelling.R') ; check_spelling('$(PKG)')"
 
 lexicon.txt: package
 	$(R) -q --no-save -e "source('checkspelling.R') ; make_dictionary('$(PKG)')"
 
-# For reasons unknown, the check process has a fit if using just the environment variables R_LIBS 
-# so, we also use the -l flag. 
+# For reasons unknown, the check process has a fit if using just the environment variables R_LIBS
+# so, we also use the -l flag.
 check: $(PKG).tar.gz .local/xtable/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED
 	R_LIBS=.local R_PROFILE=check.R R CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
 

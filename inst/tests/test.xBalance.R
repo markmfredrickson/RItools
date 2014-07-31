@@ -1,7 +1,8 @@
 ################################################################################
 # Tests for xBalance function
 ################################################################################
-
+## if working interactively in inst/tests you'll need
+## library(RItools, lib.loc = '../../.local')
 library("testthat")
 
 context("xBalance Functions")
@@ -111,7 +112,7 @@ test_that("Passing post.alignment.transform, #26", {
   res1 <- xBalance(pr ~ ., data=nuclearplants)
   res2 <- xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = function(x) x)
 
-  expect_true(identical(res1, res2))
+  expect_true(all.equal(res1, res2)) ## allow for small numerical differences
 
   res3 <- xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = rank)
 
@@ -119,5 +120,32 @@ test_that("Passing post.alignment.transform, #26", {
 
   expect_error(xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = mean),
                "Invalid post.alignment.transform given")
+
+  res4 <- xBalance(pr ~ ., data=nuclearplants, post.alignment.transform = rank, report="all")
+  res5 <- xBalance(pr ~ ., data=nuclearplants, report="all")
+
+  expect_false(isTRUE(all.equal(res4,res5)))
+
+  ## Show one example by hand. Our results in this particular case should be
+  ## close to but not identical to the lm() results.
+
+  res6 <- xBalance(pr ~ cost, data=nuclearplants, post.alignment.transform = rank, report="all")
+
+  mm<-nuclearplants$cost
+  zz<-nuclearplants$pr
+  tmatRank<-rank(mm-mean(mm))
+  zzMd<-zz-mean(zz)
+  lm6<-lm(tmatRank~zzMd-1)
+  summlm6<-summary(lm6)$coef
+
+  expect_true( all(summlm6[,3:4]-res6$results[,c("z","p"),] < c(.1,.1)) )
+
+  ## More (unfinished) work here on doing our test by hand on a single variable
+  ##ss<-rep(0,length(zz)) ## no strata
+  ##ssn<-sum(mm[zz==1])*mean(zz==0) - sum(mm[zz==0])*mean(zz==1)
+  ##wtsum <- sum(unlist(tapply(zz,ss,function(x){var(x)*(length(x)-1)}))) ## h=(m_t*m_c)/m
+  ##post.diff <- ssn/(wtsum) ##diff of means coef(lm(mm~zz))[["zz"]]
+  ##tmat<-mm-mean(mm)
+
 
 })

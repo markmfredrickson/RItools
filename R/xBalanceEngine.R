@@ -56,6 +56,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   if (!is.null(post.align.trans)) {
     tmat.new <- apply(tmat, 2, post.align.trans)
 
+    ssn <- drop(crossprod(zz-ZtH, tmat.new))
     # Ensure that post.align.trans wasn't something that changes the size of tmat (e.g. mean).
     # It would crash later anyway, but this is more informative
     if (is.null(dim(tmat.new)) || !all(dim(tmat) == dim(tmat.new))) {

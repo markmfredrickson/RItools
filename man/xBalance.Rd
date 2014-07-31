@@ -127,7 +127,10 @@ and the strata, in the stratified (``post'') case.
     distribution is determined by randomly permuting the treatment
     variable within strata, then re-calculating the treatment-control
     differences (regressions of each covariate on the permuted treatment
-    variable). Significance assessments are based on the large-sample
+    variable). 
+    
+    
+    Significance assessments are based on the large-sample
     Normal approximation to these reference distributions.
   }
 
@@ -181,6 +184,17 @@ xBalance(pr ~ date, data = testdata, na.rm = TRUE,report="all")
 ##To match versions of RItools 0.1-9 and older, impute means rather than medians.
 ##Not run, impfn option is not implemented in the most recent version
 xBalance(pr ~ date, data = testdata, na.rm = FALSE,report="all",impfn=mean.default)
+
+##Comparing unstratified to stratified, just one-by-one wilcoxon rank sum tests
+##and omnibus test of multivariate differences on rank scale.
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+         strata=data.frame(unstrat=factor('none'),
+           pt=factor(nuclearplants$pt)),
+         data=nuclearplants,
+         report=c("adj.means", "chisquare.test"),
+	 post.alignment.transform=rank)
+
+
 
 }
 \keyword{design, nonparametric}% at least one, from doc/KEYWORDS
