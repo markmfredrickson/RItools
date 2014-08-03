@@ -135,5 +135,7 @@ test_that("Passing post.alignment.transform, #26", {
   # w/ one variable, chisquare p value should be same as p value on that variable
   expect_equal(res6$results["cost", "p", "unstrat"],
                res6$overall["unstrat","p.value"])
+
+  # to dos: test combo of a transform with non-default stratum weights.
   
 })

@@ -49,12 +49,12 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   }
 
 
-  msmn <- xBalance.make.stratum.mean.matrix(ss, (mm*swt$wtratio))
+  msmn <- xBalance.make.stratum.mean.matrix(ss, mm)
 
-  tmat <- (mm*swt$wtratio - msmn)
+  tmat <- (mm - msmn)
   ##dv is sample variance of treatment by stratum
   dv <- unsplit(tapply(zz,ss,var),ss)
-  ssvar <- apply(dv*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
+  ssvar <- apply(dv*swt$wtratio^2*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
 
   ##report (1/h)s^2. Since ssvar=(h)*s^2 multiply by (1/h)^2 to get (1/h)s^2.
   if ('adj.mean.diffs.null.sd' %in% report) {
@@ -74,11 +74,14 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     tmat <- tmat.new
     msmn <- xBalance.make.stratum.mean.matrix(ss, tmat)
     tmat <- tmat - msmn
+    tmat <- tmat *swt$wtratio
     # Recalculate on transformed data the difference of treated sums and their null expectations
     # (NB: since tmat has just been recentered,
     # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
     ssn <- drop(crossprod(zz, tmat))
     ssvar <- apply(dv*tmat*tmat, 2, sum) 
+  } else {
+      tmat <- tmat *swt$wtratio
   }
 
 
