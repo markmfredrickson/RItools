@@ -65,15 +65,19 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   if (!is.null(post.align.trans)) {
     # Transform the columns of tmat using the function in post.align.trans
     tmat.new <- apply(tmat, 2, post.align.trans)
-    # Recalculate the weighted difference between treated and controls on the transformed data
-    ssn <- drop(crossprod(zz-ZtH, tmat.new))
     # Ensure that post.align.trans wasn't something that changes the size of tmat (e.g. mean).
     # It would crash later anyway, but this is more informative
     if (is.null(dim(tmat.new)) || !all(dim(tmat) == dim(tmat.new))) {
       stop("Invalid post.alignment.transform given")
     }
-
+    ## recenter on stratum means
     tmat <- tmat.new
+    msmn <- xBalance.make.stratum.mean.matrix(ss, tmat)
+    tmat <- tmat - msmn
+    # Recalculate on transformed data the difference of treated sums and their null expectations
+    # (NB: since tmat has just been recentered,
+    # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
+    ssn <- drop(crossprod(zz, tmat))
     ssvar <- apply(dv*tmat*tmat, 2, sum) 
   }
 
