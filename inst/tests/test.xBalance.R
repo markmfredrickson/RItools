@@ -126,34 +126,14 @@ test_that("Passing post.alignment.transform, #26", {
 
   expect_false(isTRUE(all.equal(res4,res5)))
 
-  ## Show one example by hand. Our results in this particular case should be
-  ## close to but not identical to the lm() results.
-
+  # a wilcoxon rank sum test, asymptotic and w/o continuity correction
   res6 <- xBalance(pr ~ cost, data=nuclearplants, post.alignment.transform = rank, report="all")
 
-  mm<-nuclearplants$cost
-  zz<-nuclearplants$pr
-  tmatRank<-rank(mm-mean(mm))
-  zzMd<-zz-mean(zz)
-  lm6<-lm(tmatRank~zzMd-1)
-  summlm6<-summary(lm6)$coef
+  expect_equal(res6$results["cost", "p", "unstrat"],
+               wilcox.test(cost~pr, data=nuclearplants, exact=FALSE, correct=FALSE)$p.value)
 
-  expect_true( all(summlm6[,3:4]-res6$results[,c("z","p"),] < c(.1,.1)) )
-
-  ## Note that the following are *not* what we are doing
-  lm7<-lm(I(rank(mm))~zz) ## not the simple mean difference in ranked outcomes
-
-  ## But this is what we are doing. Notice same adjusted mean difference, but different t and p values.
-  lm8<-lm(I(rank(mm))~zzMd-1)
-
-  expect_true(all.equal(summary(lm8)$coef,summlm6))
-
-  ## More (unfinished) work here on doing our test by hand on a single variable
-  ##ss<-rep(0,length(zz)) ## no strata
-  ##ssn<-sum(mm[zz==1])*mean(zz==0) - sum(mm[zz==0])*mean(zz==1)
-  ##wtsum <- sum(unlist(tapply(zz,ss,function(x){var(x)*(length(x)-1)}))) ## h=(m_t*m_c)/m
-  ##post.diff <- ssn/(wtsum) ##diff of means coef(lm(mm~zz))[["zz"]]
-  ##tmat<-mm-mean(mm)
-
-
+  # w/ one variable, chisquare p value should be same as p value on that variable
+  expect_equal(res6$results["cost", "p", "unstrat"],
+               res6$overall["unstrat","p.value"])
+  
 })
