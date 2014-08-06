@@ -109,7 +109,9 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
   } else {
-    csq <- DF <- tcov <- 0
+    csq <- DF <- 0
+    tcov <- matrix(0, ncol = length(ssvar), nrow = length(ssvar),
+                   dimnames = list(names(ssvar), names(ssvar)))
   }
 
 	list(dfr   = ans,
