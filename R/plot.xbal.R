@@ -237,7 +237,7 @@ balanceplot <- function(x,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 1),
                         xlab = "Balance",
-                        xrange = range(x, na.rm = TRUE) * 1.25,
+                        xrange = NULL, 
                         groups = NULL,
                         tiptext = NULL,
                         include.legend = TRUE,
@@ -265,6 +265,7 @@ balanceplot <- function(x,
 
   # just make sure that colors and shapes have the right length/shape
   if (is.vector(colors)) {
+    origcolors<-colors
     colors <- rep(colors, length.out = nstrat)
     colors <- matrix(rep(colors, each = nvars), nrow = nvars)
   }
@@ -274,6 +275,7 @@ balanceplot <- function(x,
   }
 
   if (is.vector(shapes)) {
+    origshapes<-shapes
     shapes <- rep(shapes, length.out = nstrat)
     shapes <- matrix(rep(shapes, each = nvars), nrow = nvars)
   }
@@ -287,9 +289,12 @@ balanceplot <- function(x,
     nagrp <- is.na(groups)
     ngrps <- length(unique(groups[which(!nagrp)]))
   }
-
+ 
+  if(is.null(xrange)){
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
+  ##xrange <- range(x, na.rm = TRUE) * 1.25
+  }
   # we want a line for each of the variables, two lines for each group, and extra lines for the legend equal to the number of stata, and one for the optional legend title.
   yrange <- c(1, nvars + 2 * ngrps + 1 + nstrat + ifelse(!is.null(legend.title), 1, 0))
 
@@ -366,8 +371,8 @@ balanceplot <- function(x,
   if (length(colnames(x)) > 0 && include.legend) {
     legend(x = "topright",
            legend = colnames(x),
-           pch = shapes,
-           col = colors,
+           pch = origshapes,
+           col = origcolors,
            title = legend.title,
            bty = "n")
   }
