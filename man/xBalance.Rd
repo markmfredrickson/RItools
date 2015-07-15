@@ -55,7 +55,7 @@ xBalance(fmla,
   \item{normalize.weights}{If \code{TRUE}, then stratum weights are
     normalized so as to sum to 1.  Defaults to \code{TRUE}.}
   \item{impfn}{A function to impute missing values when
-    \code{na.rm=TRUE}. Currently \code{\link{median}}. To impute means
+    \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute means
     use \code{\link{mean.default}}.}
   \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
 }
