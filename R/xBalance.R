@@ -15,6 +15,23 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
             is.null(post.alignment.transform) || is.function(post.alignment.transform)
             )
 
+  if (any(grepl("strata", fmla))) {
+    splitstrat <- findStrata(fmla, data)
+    if (!is.null(splitstrat$strata)) {
+      fmla <- splitstrat$newx
+      # apply was giving trouble here; not ideal but we shouldn't
+      # be having more than a few strata, so shouldn't be a
+      # performance hit
+      strata <- list()
+      for (i in paste("~", splitstrat$strata)) {
+        strata <- c(strata, list(formula(i)))
+      }
+      names(strata) <- splitstrat$strata
+      #strata <- as.list(splitstrat$strata)
+      strata <- c(list("Unadj" = NULL), strata)
+    }
+  }
+
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
   valid.for.report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
@@ -197,4 +214,22 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
   msmn <- as.matrix(msmn)
 
   return(msmn)
+}
+
+
+
+findStrata <- function(x, data) {
+
+  t <- terms(x, specials = "strata", data = data)
+
+  strata <- rownames(attr(t, "factors"))[attr(t, "specials")$strata]
+  if (length(strata) > 0) {
+    x <- update(terms(x, data=data),
+                as.formula(paste("~ . - ", paste(strata, collapse="-"))))
+    return(list(newx = x,
+                strata = gsub("\\)", "", gsub("strata\\(", "", strata))))
+  }
+
+  return(list(newx = x, strata = NULL))
+
 }
