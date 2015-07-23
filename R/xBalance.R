@@ -17,8 +17,10 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
 
   if (any(grepl("strata", fmla))) {
     splitstrat <- findStrata(fmla, data)
+
     if (!is.null(splitstrat$strata)) {
       fmla <- splitstrat$newx
+
       # apply was giving trouble here; not ideal but we shouldn't
       # be having more than a few strata, so shouldn't be a
       # performance hit
@@ -26,8 +28,10 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
       for (i in paste("~", splitstrat$strata)) {
         strata <- c(strata, list(formula(i)))
       }
+
       names(strata) <- splitstrat$strata
-      #strata <- as.list(splitstrat$strata)
+
+      # Automatically add the unadjusted version. Maybe make this an optional argument later.
       strata <- c(list("Unadj" = NULL), strata)
     }
   }
@@ -217,19 +221,22 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
 }
 
 
-
+# Extract `strata(...)` arguments from a formula.
 findStrata <- function(x, data) {
 
   t <- terms(x, specials = "strata", data = data)
 
   strata <- rownames(attr(t, "factors"))[attr(t, "specials")$strata]
   if (length(strata) > 0) {
+    # Trying to update(x) directly was causing errors about having a "."
+    # and no data. Updating the terms returns a fmla and bypasses the bug.
     x <- update(terms(x, data=data),
                 as.formula(paste("~ . - ", paste(strata, collapse="-"))))
+
+    # The gsubs return only the `...` inside `strata(...)`
     return(list(newx = x,
                 strata = gsub("\\)", "", gsub("strata\\(", "", strata))))
   }
 
   return(list(newx = x, strata = NULL))
-
 }
