@@ -5,7 +5,7 @@ R: .local/RItools/INSTALLED
 
 ### Package release scripts ###
 
-VERSION=0.1-12
+VERSION=0.1-13
 RELEASE_DATE=`date +%Y-%m-%d`
 PKG=RItools_$(VERSION)
 
