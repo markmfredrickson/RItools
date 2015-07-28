@@ -1,8 +1,8 @@
 CHANGES IN RITOOLS VERSION 0.1-13
 
-* With `xBalance`, you can no specify strata "foo" and "bar" by including 
+* With `xBalance`, you can now specify strata "foo" and "bar" by including
   "+ strata(foo) + strata(bar)" in the `fmla` argument, without need to give
-  a separate `strata` argument (eg `strata=list(foo=~foo, bar=~bar)).  
+  a separate `strata` argument (eg `strata=list(foo=~foo, bar=~bar)).
 
 CHANGES IN RITOOLS VERSION 0.1-12
 
@@ -42,4 +42,3 @@ BUG FIXES
 * In xBalance, when specifying a stratification using a formula with
   several variables, as in "~x+y", the stratification you get is now
   interaction(x,y) rather than just y.
-
