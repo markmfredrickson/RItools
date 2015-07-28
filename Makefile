@@ -1,7 +1,9 @@
 R = R_LIBS=.local R --vanilla
 
 R: .local/RItools/INSTALLED
-	$(R) -q --no-save
+	R_LIBS=.local R_PROFILE=load.R R -q --no-save
+interactive-emacs: .local/RItools/INSTALLED
+	R_LIBS=.local R_PROFILE=load.R emacs -nw -f R
 
 ### Package release scripts ###
 
