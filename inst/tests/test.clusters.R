@@ -43,7 +43,7 @@ test_that("Clusters must be aligned to treatment assignment and nested within st
   expect_error(xBalance(z.bad ~ x + strata(strata.good) + cluster(cluster), data = d), "cluster")
   expect_error(xBalance(z.good ~ x + strata(strata.bad) + cluster(cluster), data = d), "cluster")
 
-  # finally, expect different results when clusters are included.
+  # expect different results when clusters are included.
   resC <- xBalance(z.good ~ x + strata(strata.good) + cluster(cluster), data = d)
   resNC <- xBalance(z.good ~ x + strata(strata.good), data = d)
 
@@ -51,5 +51,8 @@ test_that("Clusters must be aligned to treatment assignment and nested within st
   
   # when the cluster is a single observation, we should get exactly the same answers
   expect_equivalent(resNC, xBalance(z.good ~ x + strata(strata.good) + cluster(id), data = d))
+
+  # only one cluster arg allowed
+  expect_error(xBalance(z.good ~ x + cluster(cluster) + cluster(id), data = id))
 })
 
