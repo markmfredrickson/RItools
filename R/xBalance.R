@@ -1,46 +1,28 @@
-xBalance <- function(fmla, strata=list(unstrat=NULL),
+xBalance <- function(fmla,
                      data,
+                     strata = NULL,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
-                     stratum.weights=harmonic, na.rm=FALSE,
-                     covariate.scaling=NULL, normalize.weights=TRUE,impfn=median,
-                     post.alignment.transform=NULL) {
-  stopifnot(class(fmla)=="formula",
-            is.null(strata) || is.factor(strata) || is.list(strata),
-            !is.data.frame(strata) || !any(is.na(names(strata))),
-            !is.data.frame(strata) || all(names(strata)!=""),
-            !is.data.frame(strata) || all(sapply(strata, is.factor)),
-            is.null(data) || is.data.frame(data),
-            is.null(post.alignment.transform) || is.function(post.alignment.transform)
-            )
+                     stratum.weights = harmonic,
+                     na.rm = FALSE,
+                     impfn = median,
+                     covariate.scaling = NULL,
+                     normalize.weights = TRUE,
+                     post.alignment.transform = NULL) {
 
-  if (any(grepl("strata", fmla))) {
-    splitstrat <- findStrata(fmla, data)
-
-    if (!is.null(splitstrat$strata)) {
-      fmla <- splitstrat$newx
-
-      # apply was giving trouble here; not ideal but we shouldn't
-      # be having more than a few strata, so shouldn't be a
-      # performance hit
-      strata <- list()
-      for (i in paste("~", splitstrat$strata)) {
-        strata <- c(strata, list(formula(i)))
-      }
-
-      names(strata) <- splitstrat$strata
-
-      # Automatically add the unadjusted version. Maybe make this an optional argument later.
-      strata <- c(list("Unadj" = NULL), strata)
-    }
+  if (!is.null(strata)) {
+    stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?xBalance for details.")
   }
+
+  stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
 
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
   valid.for.report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
                                      "std.diffs","z.scores","p.values","all")
   report.good <- charmatch(report, valid.for.report, -1)
+
   if (any(report.good == -1)) {
     stop(paste("Invalid option(s) for report:", paste(report[report.good == -1], collapse=", ")))
   }
@@ -51,82 +33,17 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   # Now that we've found the partial matches, get their proper names
   report <- valid.for.report[report.good]
 
-  if (is.null(strata))
-    warning("Passing NULL as a 'strata=' argument is depracated;\n for balance w/o stratification pass 'list(nostrat=NULL)' instead.\n (Or did you mean to pass a non-NULL 'strata=' argument? Then check for typos.)")
-
-  if (is.list(strata) && !is.data.frame(strata) && !all(sapply(strata, function(x) (is.null(x) | inherits(x,"formula")))))
-    stop("For balance against multiple alternative stratifications,\n please make 'strata' either a data frame or a list containing formulas or NULL entries.")
-
   if("all" %in% report)
-    report<-c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
+    report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
 
-  ### NA Handling ##
-  if (na.rm==TRUE) {
-    tfmla <- terms.formula(fmla,data=data, keep.order=TRUE)
-  } else {
-    data <- naImpute(fmla,data,impfn)
-    tfmla <- attr(data, 'terms')
-  }
-  ### End NA handling ###
+  design <- makeDesign(fmla, data)
+  
+  # temporary compatability between design and original implementation
+  ss.df <- design@Strata
+  zz <- design@Z
+  mm1 <- design@Covariates
 
-  ###Extract the treatment var
-  if (!attr(tfmla, "response")>0)
-    stop("fmla must specify a treatment group variable")
-
-  zz <- eval(tfmla[[2]], data, parent.frame()) # changed for v.93, see comment in log
-  zzname<- deparse(tfmla[[2]])
-  if (!is.numeric(zz) & !is.logical(zz))
-    stop("LHS of fmla should be logical or numeric")
-  if (any(is.na(zz)))
-    stop('NAs on LHS of fmla not allowed.')
-  ### End extract treatment var
-
-  mm1 <- xBalance.makeMM(tfmla,data)
-
-  ### Prepare ss.df, data frame of strata
-  if (is.null(strata))
-    ss.df <- data.frame(unstrat=factor(numeric(length(zz))))
-
-  if (is.factor(strata) & length(strata)!=length(zz))
-    stop("length of strata doesn\'t match dim of data")
-
-  if (is.factor(strata))
-    ss.df <- data.frame(strat=factor(strata))
-  if (is.data.frame(strata))
-    ss.df <- as.data.frame(lapply(strata,factor))
-  if (is.list(strata) & !is.data.frame(strata)) {
-    ### In this case strata should be a list of formulas
-
-    pfr <- parent.frame()
-    ss.df <-
-      lapply(strata,
-             function(fmla) {
-               if (is.null(fmla)) factor(numeric(length(zz))) else {
-                 ss <- eval(attr(terms(fmla), "variables"), data,
-                            pfr)
-                 if (length(ss)-1) interaction(ss, drop=TRUE) else factor(ss[[1]])
-               }
-             })
-    ss.df <- as.data.frame(ss.df)
-  }
-  ### End prepare ss.df, data frame of strata
-
-  ### Remove stratification variables without levels (e.g., all NAs), with a warning
-  if (any(ss.rm <- !sapply(ss.df, nlevels))) {
-    if (length(ss.df)==1)
-      stop("'strata=' variable contains no strata.  Perhaps it evaluates to NAs?")
-    if (all(ss.rm))
-      stop("'strata=' variables contain no strata.  Perhaps they all evaluate to NAs?")
-    ss.rm.nms <- if (is.null(names(ss.df))) which(ss.rm) else names(ss.df)[ss.rm]
-    ss.rm.nms <- paste(ss.rm.nms, collapse=" ,")
-    warning(paste("Removing the following strata entries, which contained no strata.\n(Perhaps they evaluate to NAs?)\n",
-                  ss.rm.nms))
-    ss.df <- ss.df[!ss.rm]
-  }
-  ### End remove stratification variables without levels
-  gs.df <- xBalance.find.goodstrats(ss.df,zz,mm1)
-
-  swt.ls <- xBalance.make.stratwts(stratum.weights,ss.df, gs.df, zz, data, normalize.weights)
+  swt.ls <- xBalance.make.stratwts(stratum.weights,ss.df, zz, data, normalize.weights)
 
   s.p <- if (is.null(covariate.scaling)) {
     xBalance.makepooledsd(zz,mm1,dim(mm1)[1])
@@ -136,13 +53,11 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
 
   RES <- lapply(names(ss.df),
                 function(nm) {
-                  ###                  workingswt.ls<-swt.ls[[nm]]  # shouldn't be neccessary after r216 change to xBalance.make.stratwts
-                  ###                  workingswt.ls[["wtratio"]]<-swt.ls[[nm]][["wtratio"]][gs.df[[nm]]]
-                  xBalanceEngine(factor(ss.df[gs.df[[nm]],nm]),
-                                 zz[gs.df[[nm]]],
-                                 mm1[gs.df[[nm]],,drop=FALSE],
+                  xBalanceEngine(factor(ss.df[,nm]),
+                                 zz,
+                                 mm1,
                                  report, swt.ls[[nm]],
-                                 s.p, normalize.weights,zzname,
+                                 s.p, normalize.weights,
                                  post.alignment.transform)
                 })
   names(RES) <- names(ss.df)
@@ -154,7 +69,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   ans$results<-array(dim=c(vars=nrow(RES[[1]][["dfr"]]),stat=ncol(RES[[1]][["dfr"]]),strata=length(RES)),
                      dimnames=list(vars=rownames(RES[[1]][["dfr"]]),stat=colnames(RES[[1]][["dfr"]]),strata=names(RES)))
 
-  attr(ans$results, "originals") <- attr(mm1, "originals")
+  attr(ans$results, "originals") <- design@OriginalVariables
 
   for (i in names(RES)) {
     ##print(i);print(RES[[i]][["dfr"]])
@@ -163,7 +78,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
   ##dimnames(ans)[["stat"]][grep("Tx",dimnames(ans)[["stat"]])]<-c("adj.mean.strata=0","adj.mean.strata=1")
   ##ans$by.variable <- do.call(cbind, lapply(RES, function(x) x[['dfr']]) )
   ##colnames(ans$by.variable) <- nms
-  attr(ans, "fmla") <- formula(tfmla)
+  attr(ans, "fmla") <- formula(fmla)
 
   if ("chisquare.test" %in% report) {
     ans$overall <- data.frame(chisquare = numeric(length(RES)),

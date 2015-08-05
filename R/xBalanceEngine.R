@@ -1,9 +1,9 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, post.align.trans) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
   cnms <-
     c(
-      if ('adj.means'%in%report) c(paste(zzname,"0",sep="="),paste(zzname,"1",sep="=")) else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
+      if ('adj.means'%in%report) c("Control", "Treatment") else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
       if ('adj.mean.diffs'%in%report) 'adj.diff' else character(0),
       if ('adj.mean.diffs.null.sd'%in%report) 'adj.diff.null.sd' else character(0),
       if ('std.diffs'%in%report) 'std.diff' else character(0),
@@ -44,8 +44,8 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   if ("adj.means"%in%report) 	{
     postwt0 <- unsplit(swt$sweights/tapply(zz<=0, ss, sum),
 		       ss[zz<=0], drop=TRUE)
-    ans[[paste(zzname,"0",sep="=")]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
-    ans[[paste(zzname,"1",sep="=")]] <- ans[[paste(zzname,"0",sep="=")]] + post.diff
+    ans[["Control"]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
+    ans[["Treatment"]] <- ans[["Treatment"]] + post.diff
   }
 
 

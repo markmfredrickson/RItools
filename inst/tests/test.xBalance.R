@@ -25,18 +25,16 @@ test_that("xBalance returns covariance of tests", {
   dat <- cbind(z, xs, s)
 
 
-  res <- xBalance(z ~ . - s,
+  res <- xBalance(z ~ . + strata(s),
                   data = as.data.frame(dat),
-                  report = 'all',
-                  strata = list("Unadj" = NULL,
-                                "s"   = ~ s))
+                  report = 'all')
 
   tcov <- attr(res$overall, "tcov")
 
   expect_false(is.null(tcov))
 
   expect_equal(length(tcov), 2)
-  expect_equal(dim(tcov[[1]]), c(3,3))
+  expect_equal(dim(tcov[[1]]), c(4,4))
 
   # variance should be the squares of the reported null SDs
   expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1])
@@ -44,55 +42,6 @@ test_that("xBalance returns covariance of tests", {
 
 })
 
-test_that("strata in formula", {
-  set.seed(20130801)
-  n <- 500
-
-  library(MASS)
-  xs <- mvrnorm(n,
-                mu = c(1,2,3),
-                Sigma = matrix(c(1, 0.5, 0.2,
-                                 0.5, 1, 0,
-                                 0.2, 0, 1), nrow = 3, byrow = T))
-  colnames(xs) <- c("X1", "X2", "X3")
-
-  p <- plogis(xs[,1]- 0.25 * xs[,2] - 1)
-  z <- rbinom(n, p = p, size = 1)
-  s <- rep(c(0,1), each = n/2)
-  s2 <- rep(rep(c(0,1), each=n/4), 2)
-
-  dat <- cbind(z, xs, s, s2)
-
-
-  res <- xBalance(z ~ . - s - s2,
-                  data = as.data.frame(dat),
-                  report = 'all',
-                  strata = list("Unadj" = NULL,
-                                "s"     = ~ s))
-
-  res2 <- xBalance(z ~ . - s - s2 + strata(s),
-                   data = as.data.frame(dat),
-                   report = 'all')
-
-  expect_true(all.equal(res, res2, check.attributes=FALSE))
-
-
-
-  res3 <- xBalance(z ~ . - s - s2,
-                   data = as.data.frame(dat),
-                   report = 'all',
-                   strata = list("Unadj" = NULL,
-                                 "s"     = ~ s,
-                                 "s2"    = ~ s2))
-
-  res4 <- xBalance(z ~ . - s - s2 + strata(s) + strata(s2),
-                   data = as.data.frame(dat),
-                   report = 'all')
-
-  expect_true(all.equal(res3, res4, check.attributes=FALSE))
-
-
-})
 
 test_that("partial arguments to report", {
   data(nuclearplants)
@@ -149,8 +98,8 @@ test_that("partial arguments to report", {
   expect_true(all(colnames(res.a.m.d.n1$results) == c("adj.diff.null.sd", "p")))
   expect_true(all(colnames(res.a.m.d.n2$results) == c("adj.diff.null.sd", "p")))
 
-  expect_true(all(colnames(res.mult1$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
-  expect_true(all(colnames(res.mult2$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult1$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult2$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
   expect_true(!is.null(colnames(res.chi1$overall)))
   expect_true(!is.null(colnames(res.chi2$overall)))
 
@@ -180,12 +129,12 @@ test_that("Passing post.alignment.transform, #26", {
   # a wilcoxon rank sum test, asymptotic and w/o continuity correction
   res6 <- xBalance(pr ~ cost, data=nuclearplants, post.alignment.transform = rank, report="all")
 
-  expect_equal(res6$results["cost", "p", "unstrat"],
+  expect_equal(res6$results["cost", "p", "Unstrat"],
                wilcox.test(cost~pr, data=nuclearplants, exact=FALSE, correct=FALSE)$p.value)
 
   # w/ one variable, chisquare p value should be same as p value on that variable
-  expect_equal(res6$results["cost", "p", "unstrat"],
-               res6$overall["unstrat","p.value"])
+  expect_equal(res6$results["cost", "p", "Unstrat"],
+               res6$overall["Unstrat","p.value"])
 
   # to dos: test combo of a transform with non-default stratum weights.
 
