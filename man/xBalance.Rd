@@ -11,24 +11,34 @@
 }
 \usage{
 xBalance(fmla,
-         strata = list(unstrat=NULL),
          data,
+         strata = NULL,
          report=c("std.diffs","z.scores","adj.means",
 	       "adj.mean.diffs","adj.mean.diffs.null.sd",
 	       "chisquare.test","p.values", "all")[1:2],
-         stratum.weights=harmonic, na.rm=FALSE,
+         stratum.weights=harmonic,
+         na.rm=FALSE,
+         impfn=median,
          covariate.scaling=NULL,
-         normalize.weights=TRUE,impfn=median,
+         normalize.weights=TRUE,
          post.alignment.transform=NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{fmla}{ A formula containing an indicator of treatment
-  assignment on the left hand side and covariates at right. }
-  \item{strata}{A list of right-hand-side-only formulas containing the factor(s) identifying the strata, with \code{NULL} entries interpreted as no stratification; or a factor with length equal to the number of rows
-    in data; or a data frame of such factors. See below for examples. }
+  \item{fmla}{ A formula containing an indicator of treatment assignment
+  on the left hand side and covariates at right. By default, a
+  comparison of the unstratified data is computed. This can be disabled
+  by including \code{-1} in the formula. Additional stratifying factors
+  can be included with \code{strata(x)}, where \code{x} is a factor
+  variable indicating stratum memberhip. If treatment assignment is made
+  by clusters, this can be included with \code{cluster(x)}, where
+  \code{x} is a factor variable indicating cluster membership.}
+
   \item{data}{ A data frame in which \code{fmla} and \code{strata} are 
     to be evaluated.}
+
+  \item{strata}{Deprecated. Use \code{strata(x)} in the formula instead.}
+
   \item{report}{Character vector listing measures to report for each
     stratification; a subset of \code{c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
       "chisquare.test","std.diffs","z.scores","p.values","all")}. P-values
@@ -157,20 +167,17 @@ xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
          report=c("all"))
 
 ##Stratified, all output
-xBalance(pr~.-cost-pt, strata=factor(nuclearplants$pt), data=nuclearplants, 
+xBalance(pr~ . -cost + strata(pt), data=nuclearplants, 
          report=c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
       "chisquare.test","std.diffs","z.scores","p.values"))
 
 ##Comparing unstratified to stratified, just adjusted means and omnibus test
-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata=list(unstrat=NULL, pt=~pt),
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"))
 
 ##Comparing unstratified to stratified, just adjusted means and omnibus test
-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata=data.frame(unstrat=factor('none'),
-           pt=factor(nuclearplants$pt)),
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"))
 
@@ -187,9 +194,7 @@ xBalance(pr ~ date, data = testdata, na.rm = FALSE,report="all",impfn=mean.defau
 
 ##Comparing unstratified to stratified, just one-by-one wilcoxon rank sum tests
 ##and omnibus test of multivariate differences on rank scale.
-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata=data.frame(unstrat=factor('none'),
-           pt=factor(nuclearplants$pt)),
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + starta(pt),
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"),
 	 post.alignment.transform=rank)

@@ -61,9 +61,7 @@ xb0<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,data=nuclearplants
 
 print(xb0)
 
-xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata = data.frame(unstrat = factor(character(32)),
-                             pt = factor(nuclearplants$pt)),
+xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data = nuclearplants,
          report = c("all"))
 
@@ -79,16 +77,13 @@ print(xb1, horizontal = FALSE)
 \dontrun{print(xb1,which.vars=c("date","t1"),which.stats=c("adj.means","z.scores","p.values"))}
 
 ## The following example prints the adjusted means
-## labeled as "treatmentvar=0" and "treatmentvar=1" using the formula provided to xBalance().
 
 print(xb1,
       which.vars = c("date", "t1"),
-      which.stats = c("pr=0", "pr=1", "z", "p"))
+      which.stats = c("Control", "Treatment", "z", "p"))
 
 ## Now, not asking for the omnibus test
-xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata = data.frame(unstrat = factor(character(32)),
-                             pt = factor(nuclearplants$pt)),
+xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data = nuclearplants,
          report = c("all"))
 
