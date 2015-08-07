@@ -332,3 +332,63 @@ aggregateDesign <- function(design) {
       OriginalVariables = c("Cluster Size", design@OriginalVariables))
                        
 }
+
+alignDesignByStrata <- function(design, post.align.transform = NULL) {
+
+  stopifnot(inherits(design, "WeightedDesign")) # defensive programming
+
+  vars   <- colnames(design@Covariates)
+  strata <- colnames(design@Strata)
+
+  ans <- list()
+
+  for (s in strata) {
+    
+    ss  <- design@Strata[, s]
+    swt <- design@Weights[[s]]
+
+    retain  <- !is.na(ss)
+    ss      <- ss[retain]
+    zz      <- design@Z[retain]
+    covs    <- design@Covariates[retain, , drop = FALSE]
+    wtratio <- swt$wtratio[retain]
+    
+    ### Calculate post.difference
+    ZtH <- unsplit(tapply(zz, ss, mean), ss) ##proportion treated (zz==1) in strata s.
+    ssn <- drop(crossprod(zz - ZtH, covs * wtratio)) ##weighted sum of mm in treated (using centered treatment)
+    wtsum <- sum(unlist(tapply(zz, ss, function(x){ var(x) * (length(x) - 1) }))) ## h=(m_t*m_c)/m
+    msmn <- xBalance.make.stratum.mean.matrix(ss, covs)
+
+    tmat <- (covs - msmn)
+
+    # dv is sample variance of treatment by stratum
+    dv <- unsplit(tapply(zz,ss,var),ss)
+
+    if (!is.null(post.align.trans)) {
+      # Transform the columns of tmat using the function in post.align.trans
+      tmat.new <- apply(tmat, 2, post.align.trans)
+
+      # Ensure that post.align.trans wasn't something that changes the size of tmat (e.g. mean).
+      # It would crash later anyway, but this is more informative
+      if (is.null(dim(tmat.new)) || !all(dim(tmat) == dim(tmat.new))) {
+        stop("Invalid post.alignment.transform given")
+      }
+      ## recenter on stratum means
+      tmat <- tmat.new
+      msmn <- xBalance.make.stratum.mean.matrix(ss, tmat)
+      tmat <- tmat - msmn
+      tmat <- tmat *swt$wtratio
+
+      # Recalculate on transformed data the difference of treated sums and their null expectations
+      # (NB: since tmat has just been recentered,
+      # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
+      ssn <- drop(crossprod(zz, tmat))
+      ssvar <- apply(dv*tmat*tmat, 2, sum) 
+    } else {
+      tmat <- tmat *swt$wtratio
+    }
+
+    ans[[s]] <- tmat
+  }
+  return(ans)
+}

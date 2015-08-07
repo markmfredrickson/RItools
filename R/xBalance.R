@@ -41,6 +41,10 @@ xBalance <- function(fmla,
 
   descriptives <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
 
+  aggDesign             <- aggregateDesign(design)
+  aggDesign.weighted    <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
+  aggDesign.transformed <- designAlignStrata(aggDesign.weighted, post.align.transform)
+
   ### Call xBalanceEngine here.
 
   RES <- lapply(names(ss.df),
