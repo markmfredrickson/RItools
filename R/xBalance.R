@@ -37,17 +37,9 @@ xBalance <- function(fmla,
     report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
 
   design <- makeDesign(fmla, data)
-  
-  # temporary compatability between design and original implementation
-  ss.df <- design@Strata
-  zz <- design@Z
-  mm1 <- design@Covariates
+  design.weighted <- weightedDesign(design, stratum.weights, normalize.weights)
 
-  swt.ls <- xBalance.make.stratwts(stratum.weights,ss.df, zz, data, normalize.weights)
-
-  s.p <- if (is.null(covariate.scaling)) {
-    xBalance.makepooledsd(zz,mm1,dim(mm1)[1])
-  } else 1
+  descriptives <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
 
   ### Call xBalanceEngine here.
 
@@ -103,7 +95,8 @@ xBalance <- function(fmla,
 }
 
 xBalance.make.stratum.mean.matrix <- function(ss, mm) {
-
+  stopifnot(inherits(ss, "factor")) # just in case a numeric variable is passed in.
+  
   post.nobs <- dim(mm)[1]
   nlev <- nlevels(ss)
 
