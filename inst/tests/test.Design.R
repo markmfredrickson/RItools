@@ -30,7 +30,7 @@ test_that("Creating design objects", {
   expect_equal(dim(simple@Strata)[2], 1)
   expect_equivalent(simple@Covariates[, "x"], d$x)
   expect_equivalent(simple@Z, as.logical(d$z.good))
-  expect_equal(nlevels(simple@Cluster), 1)
+  expect_equal(nlevels(simple@Cluster), 500) # a cluster per individual
   
   clustered <- makeDesign(z.good ~ x + cluster(cluster), data = d)
   expect_equal(dim(clustered@Strata)[2], 1)
@@ -68,7 +68,7 @@ test_that("Design to descriptive statistics", {
 
   # descriptives ignore clustering
   design.noclus <- RItools:::makeDesign(z ~ x + f + strata(s), data = d)
-  expect_equal(descriptives, weightedDesignToDescriptives(weightedDesign(design.noclus)))
+  expect_equal(descriptives, RItools:::weightedDesignToDescriptives(RItools:::weightedDesign(design.noclus)))
   
   # the strata should imply different stats
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
@@ -103,12 +103,12 @@ test_that("Aggegating designs by clusters", {
   aggDesign <- RItools:::aggregateDesign(design) 
 
   # one row per cluster, with columns x, fa, fb, fc, and cluster.size
-  expect_equal(dim(aggDesign@Covariates), c(100, 5))
+  expect_equal(dim(aggDesign@Covariates), c(100, 4))
 
   # properly aggregating up cluster counts
   expect_equivalent(aggDesign@N, as.vector(table(d$c))[aggDesign@Cluster])
 
   # now spot check some cluster totals of totals
-  expect_equal(aggDesign@Covariates[1, -1], colSums(design@Covariates[design@Cluster == aggDesign@Cluster[1],]))
+  expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == aggDesign@Cluster[1],]))
 
 })

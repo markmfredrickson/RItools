@@ -122,11 +122,10 @@ makeDesign <- function(fmla, data) {
   
   data.mm   <- model.matrix(data.fmla, data.data, contrasts.arg = clist)
 
-  # if we have clusters, aggegate up the counts and data, otherwise just return it as is.
   if (length(clusterCol) > 0) { 
     Cluster <- str.data[, clusterCol]
   } else {
-    Cluster <- rep(1, dim(str.data)[1])
+    Cluster <- 1:(dim(str.data)[1])
   }
 
   Z <- str.data[, treatmentCol]
@@ -308,7 +307,10 @@ setClass("AggregatedDesign",
 
 aggregateDesign <- function(design) {
   n.clusters <- nlevels(design@Cluster)
-  Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates) + 1) # the extra col will be for cluster counts
+  # it seemed like a good idea to include cluster size, but this leads to issues later with z-values and p-values for the descriptives
+  # keeping the idea commented out to make it easier to resurrect later
+  # Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates) + 1) # the extra col will be for cluster counts
+  Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates)) 
 
   dupes <- duplicated(design@Cluster)
   Z <- design@Z[!dupes]
@@ -318,21 +320,29 @@ aggregateDesign <- function(design) {
   for (i in 1:length(Cluster))  {
     cname <- Cluster[i]
     subcovs <- design@Covariates[design@Cluster == cname, , drop = FALSE]
-    Covariates[i, ] <- c(dim(subcovs)[1], colSums(subcovs))
+
+    # Covariates[i, ] <- c(dim(subcovs)[1], colSums(subcovs))
+    Covariates[i, ] <- colSums(subcovs)
   }
 
-  colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
+  # colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
+  colnames(Covariates) <- colnames(design@Covariates)
   
   new("AggregatedDesign",
-      N = as.integer(Covariates[,1]),
+      N = as.vector(table(design@Cluster)[Cluster]),
       Z = Z,
       Strata = Strata,
       Cluster = Cluster,
       Covariates = Covariates,
-      OriginalVariables = c("Cluster Size", design@OriginalVariables))
+      # OriginalVariables = c("Cluster Size", design@OriginalVariables))
+      OriginalVariables = design@OriginalVariables)
                        
 }
 
+# TODO: Can we minimize the amount of weighted stuff that needs to get pushed through?
+# Eg. when creating the weighted design, we mulitply all covariates by the weighting scheme
+# right away, so we don't need to track it explicitly later.
+# observe all the multiplication of tmat by swt$wtradio throughout. This seems redundant
 alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
   stopifnot(inherits(design, "WeightedDesign")) # defensive programming
@@ -340,6 +350,8 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
   vars   <- colnames(design@Covariates)
   strata <- colnames(design@Strata)
 
+  # we can't return an array because different stratifications will have varying numbers
+  # of strata levels. A list is more flexible here, but less structured.
   ans <- list()
 
   for (s in strata) {
@@ -363,10 +375,11 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
     # dv is sample variance of treatment by stratum
     dv <- unsplit(tapply(zz,ss,var),ss)
+    ssvar <- colSums(dv * wtratio^2 * tmat * tmat) 
 
-    if (!is.null(post.align.trans)) {
+    if (!is.null(post.align.transform)) {
       # Transform the columns of tmat using the function in post.align.trans
-      tmat.new <- apply(tmat, 2, post.align.trans)
+      tmat.new <- apply(tmat, 2, post.align.transform)
 
       # Ensure that post.align.trans wasn't something that changes the size of tmat (e.g. mean).
       # It would crash later anyway, but this is more informative
@@ -388,7 +401,42 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
       tmat <- tmat *swt$wtratio
     }
 
-    ans[[s]] <- tmat
+    ans[[s]] <- list(tmat = tmat, ssn = ssn, ssvar = ssvar, dv = dv, wtsum)
   }
   return(ans)
+}
+
+# I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up
+# e.g. something that is a list of strata with a given structure, rather than just a list.
+alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
+  z <- ifelse(ssvar <= .Machine$double.eps, 0, ssn/sqrt(ssvar))
+  p <- 2 * pnorm(abs(z), lower.tail = FALSE)
+
+  
+  pst.svd <- try(svd(tmat * sqrt(dv), nu=0))
+
+  if (inherits(pst.svd, 'try-error')) {
+    pst.svd <- propack.svd(tmat * sqrt(dv))
+  }
+
+  Positive <- pst.svd$d > max(sqrt(.Machine$double.eps) * pst.svd$d[1], 0)
+  Positive[is.na(Positive)] <- FALSE # JB Note: Can we imagine a situation in which we dont want to do this?
+
+  if (all(Positive)) { ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
+    ytl <- pst.svd$v *
+      matrix(1/pst.svd$d, nrow = dim(tmat)[2], ncol = length(pst.svd$d), byrow = T)
+  } else if (!any(Positive)) {
+    ytl <- array(0, dim(tmat)[2:1] )
+  } else  {
+    ytl <- pst.svd$v[, Positive, drop = FALSE] *
+      matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = dim(tmat)[2], byrow = TRUE)
+  }
+
+  mvz <- drop(crossprod(zz, tmat) %*% ytl)
+
+  csq <- drop(crossprod(mvz))
+  DF <- sum(Positive)
+  tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
+
+  list(z = z, p = p, csq = csq , DF = DF, tcov = tcov)
 }

@@ -7,7 +7,7 @@ xBalance <- function(fmla,
                      stratum.weights = harmonic,
                      na.rm = FALSE,
                      impfn = median,
-                     covariate.scaling = NULL,
+                     covariate.scaling = TRUE,
                      normalize.weights = TRUE,
                      post.alignment.transform = NULL) {
 
@@ -43,57 +43,37 @@ xBalance <- function(fmla,
 
   aggDesign             <- aggregateDesign(design)
   aggDesign.weighted    <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
-  aggDesign.transformed <- designAlignStrata(aggDesign.weighted, post.align.transform)
 
-  ### Call xBalanceEngine here.
+  strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 
-  RES <- lapply(names(ss.df),
-                function(nm) {
-                  xBalanceEngine(factor(ss.df[,nm]),
-                                 zz,
-                                 mm1,
-                                 report, swt.ls[[nm]],
-                                 s.p, normalize.weights,
-                                 post.alignment.transform)
-                })
-  names(RES) <- names(ss.df)
-  ##nms <- paste(rep(names(ss.df), rep(length(RES[[1]]$dfr),length(ss.df))),
-  ##            names(RES[[1]]$dfr), sep=".")
-  ans <- list() ##the overall function still returns a list because of the overall test info.
-  ##results is an array of variables by balance statistics by stratification.
-  ##here assuming that the variables and statistics are the same across stratifications (including unstratified).
-  ans$results<-array(dim=c(vars=nrow(RES[[1]][["dfr"]]),stat=ncol(RES[[1]][["dfr"]]),strata=length(RES)),
-                     dimnames=list(vars=rownames(RES[[1]][["dfr"]]),stat=colnames(RES[[1]][["dfr"]]),strata=names(RES)))
+  tmp <- lapply(strataAligned, function(i) { do.call(alignedToInferentials, c(list(aggDesign.weighted@Z), i)) })
+  names(tmp) <- names(aggDesign@Strata)
+
+  ans <- list()
+
+  # append the z and p to the "descriptives" array (making it somewhat misnamed)
+  tmp.z <- as.data.frame(lapply(tmp, function(tt) { tt$z }))
+  tmp.p <- as.data.frame(lapply(tmp, function(tt) { tt$p }))
+  nstats.previous <- dim(descriptives)[2]
+  descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p)
+  dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
+  
+  inferentials <- do.call(rbind, lapply(tmp, function(s) {
+    c(s$csq, s$DF, pchisq(s$csq, df = s$DF, lower.tail = FALSE))
+  }))
+  colnames(inferentials) <- c("chi.squared", "df", "p.value")
+ 
+  # the meat of our xbal object
+  ans$overall <- inferentials
+  ans$results <- descriptives
 
   attr(ans$results, "originals") <- design@OriginalVariables
-
-  for (i in names(RES)) {
-    ##print(i);print(RES[[i]][["dfr"]])
-    ans$results[,,i]<-as.matrix(RES[[i]][["dfr"]])
-  }
-  ##dimnames(ans)[["stat"]][grep("Tx",dimnames(ans)[["stat"]])]<-c("adj.mean.strata=0","adj.mean.strata=1")
-  ##ans$by.variable <- do.call(cbind, lapply(RES, function(x) x[['dfr']]) )
-  ##colnames(ans$by.variable) <- nms
+  attr(ans$overall, "tcov") <- lapply(tmp, function(r) {
+    r$tcov
+  })
   attr(ans, "fmla") <- formula(fmla)
+  attr(ans, "report") <- report # hinting to our summary method later
 
-  if ("chisquare.test" %in% report) {
-    ans$overall <- data.frame(chisquare = numeric(length(RES)),
-                              df        = numeric(length(RES)),
-                              p.value   = numeric(length(RES)),
-                              row.names = names(RES))
-    for (nn in names(RES)) {
-      ans$overall[nn,'chisquare'] <- RES[[nn]]$chisq['chisquare']
-      ans$overall[nn,'df']        <- RES[[nn]]$chisq['df']
-      ans$overall[nn,'p.value']   <- pchisq(RES[[nn]]$chisq['chisquare'],
-                                            df = RES[[nn]]$chisq['df'],
-                                            lower.tail = FALSE)
-
-    }
-
-    attr(ans$overall, "tcov") <- lapply(RES, function(r) {
-      r$tcov
-    })
-  }
   class(ans) <- c("xbal", "list")
   ans
 }
@@ -130,25 +110,4 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
   msmn <- as.matrix(msmn)
 
   return(msmn)
-}
-
-
-# Extract `strata(...)` arguments from a formula.
-findStrata <- function(x, data) {
-
-  t <- terms(x, specials = "strata", data = data)
-
-  strata <- rownames(attr(t, "factors"))[attr(t, "specials")$strata]
-  if (length(strata) > 0) {
-    # Trying to update(x) directly was causing errors about having a "."
-    # and no data. Updating the terms returns a fmla and bypasses the bug.
-    x <- update(terms(x, data=data),
-                as.formula(paste("~ . - ", paste(strata, collapse="-"))))
-
-    # The gsubs return only the `...` inside `strata(...)`
-    return(list(newx = x,
-                strata = gsub("\\)", "", gsub("strata\\(", "", strata))))
-  }
-
-  return(list(newx = x, strata = NULL))
 }

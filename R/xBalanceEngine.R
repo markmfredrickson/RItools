@@ -126,6 +126,6 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, post.al
   }
 
   list(dfr   = ans,
-       chisq = c('chisquare' = csq, 'df' = DF),
+       chisq = c('chiquare' = csq, 'df' = DF),
        tcov  = tcov) # test statistic covariance matrix
 }
