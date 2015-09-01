@@ -56,6 +56,8 @@ xBalance <- function(fmla,
   tmp.p <- as.data.frame(lapply(tmp, function(tt) { tt$p }))
   nstats.previous <- dim(descriptives)[2]
   descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p)
+  names(dimnames(descriptives)) <- c("vars", "stat", "strata")
+
   dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
   
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
