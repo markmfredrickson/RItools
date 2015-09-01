@@ -21,7 +21,7 @@ setClass("Design",
 #  - All other variables are considered covariates.
 #
 # NB: should we make this more like glm() to pick up environment? Probably
-makeDesign <- function(fmla, data) {
+makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE) {
   ts <- terms(fmla, data = data, specials = c("cluster", "strata"))
 
   if (attr(ts, "response") == 0) {
@@ -103,9 +103,17 @@ makeDesign <- function(fmla, data) {
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
   
-  warning("TODO: add NA imputation when generating the covariates in makeDesign")
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", "1", vnames[str.idx]))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
+
+  if (!na.rm) {
+    data.data <- naImpute(data.fmla, data.data, imputefn)
+  } else {
+    # who's missing entries in data.data
+    idx <- !apply(data.data, 1, function(i) { any(is.na(i)) })
+    data.data <- data.data[idx, ]
+    str.data <- str.data[idx, ]
+  }
 
   # we want our own contrast function for the factors that expands each level to its own dummy
   
@@ -120,7 +128,7 @@ makeDesign <- function(fmla, data) {
   })
   clist <- clist[!sapply(clist, is.null)]
   
-  data.mm   <- model.matrix(data.fmla, data.data, contrasts.arg = clist)
+  data.mm   <- model.matrix(terms(data.data), data.data, contrasts.arg = clist)
 
   if (length(clusterCol) > 0) { 
     Cluster <- str.data[, clusterCol]
@@ -131,7 +139,7 @@ makeDesign <- function(fmla, data) {
   Z <- str.data[, treatmentCol]
   tmp <- str.data[, strataCols, drop = FALSE]
   colnames(tmp) <- gsub(colnames(tmp), pattern = "strata\\((.*)\\)", replacement = "\\1")
-  Strata <- as.data.frame(lapply(tmp, factor))
+  Strata <- data.frame(lapply(tmp, factor), check.names = FALSE)
   
   Covariates <- data.mm
 
@@ -191,7 +199,8 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
                 args = list(data =
                     data.frame(Tx.grp = design@Z,
                                stratum.code = factor(design@Strata[[nn]]),
-                               design@Covariates)),
+                               design@Covariates,
+                               check.names = FALSE)),
                 envir=parent.frame())
     } else {
       if (!is.numeric(swt.ls[[nn]]))
@@ -223,7 +232,8 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     } else {
       hwts <- harmonic(data.frame(Tx.grp=zz,
                                   stratum.code=factor(design@Strata),
-                                  data))
+                                  data,
+                                  check.names = FALSE))
     }
     hwts <- hwts/sum(hwts, na.rm=TRUE)
 

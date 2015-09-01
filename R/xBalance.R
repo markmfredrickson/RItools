@@ -36,7 +36,7 @@ xBalance <- function(fmla,
   if("all" %in% report)
     report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
 
-  design <- makeDesign(fmla, data)
+  design <- makeDesign(fmla, data, impfn, na.rm)
   design.weighted <- weightedDesign(design, stratum.weights, normalize.weights)
 
   descriptives <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
@@ -55,7 +55,7 @@ xBalance <- function(fmla,
   tmp.z <- as.data.frame(lapply(tmp, function(tt) { tt$z }))
   tmp.p <- as.data.frame(lapply(tmp, function(tt) { tt$p }))
   nstats.previous <- dim(descriptives)[2]
-  descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p)
+  descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p, use.first.dimnames = TRUE)
   names(dimnames(descriptives)) <- c("vars", "stat", "strata")
 
   dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
@@ -63,7 +63,7 @@ xBalance <- function(fmla,
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
     c(s$csq, s$DF, pchisq(s$csq, df = s$DF, lower.tail = FALSE))
   }))
-  colnames(inferentials) <- c("chi.squared", "df", "p.value")
+  colnames(inferentials) <- c("chisquare", "df", "p.value")
  
   # the meat of our xbal object
   ans$overall <- inferentials
