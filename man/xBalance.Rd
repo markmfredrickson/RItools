@@ -194,7 +194,7 @@ xBalance(pr ~ date, data = testdata, na.rm = FALSE,report="all",impfn=mean.defau
 
 ##Comparing unstratified to stratified, just one-by-one wilcoxon rank sum tests
 ##and omnibus test of multivariate differences on rank scale.
-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + starta(pt),
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"),
 	 post.alignment.transform=rank)

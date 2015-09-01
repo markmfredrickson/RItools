@@ -38,10 +38,10 @@ testxb1a<-t(sapply(nuclearplants[,dimnames(xb1a$results)$vars],function(thevar){
 
 ##print(testxb1a,digits=4)
 
-all.equal(xb1a$results[,c("adj.diff","adj.diff.null.sd","z"),"nostrat"],testxb1a,check.attributes = FALSE)
+all.equal(xb1a$results[,c("adj.diff","adj.diff.null.sd","z"),"Unstrat"],testxb1a,check.attributes = FALSE)
 
 ###Now with strata.
-xb2<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n + strata(s),
+xb2<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
               data=nuclearplants,
               report=c("all"))
 

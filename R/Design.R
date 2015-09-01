@@ -93,6 +93,11 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE) {
   ## for each strata, we want there to be at least one treated and control unit
   
   for (s in strataCols) {
+
+    if (all(is.na(str.data[, s]))) {
+      stop("All levels in ", s, " are NA")
+    }
+
     tbl <- table(str.data[, c(treatmentCol, s)])
     isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 2 })
     if (!(all(isGood))) {
@@ -230,7 +235,7 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     if (identical(harmonic, swt.ls[[nn]])) {
       hwts <- sweights
     } else {
-      hwts <- harmonic(data.frame(Tx.grp=zz,
+      hwts <- harmonic(data.frame(Tx.grp = design@Treatment,
                                   stratum.code=factor(design@Strata),
                                   data,
                                   check.names = FALSE))
