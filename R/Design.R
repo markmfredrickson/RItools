@@ -235,7 +235,7 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     if (identical(harmonic, swt.ls[[nn]])) {
       hwts <- sweights
     } else {
-      hwts <- harmonic(data.frame(Tx.grp = design@Treatment,
+      hwts <- harmonic(data.frame(Tx.grp = design@Z,
                                   stratum.code=factor(design@Strata),
                                   data,
                                   check.names = FALSE))
