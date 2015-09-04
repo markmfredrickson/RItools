@@ -7,7 +7,7 @@ Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
 Depends: R (>= 2.2.0), survival
-Imports: graphics, stats, lattice, grid, SparseM, xtable, svd, abind
+Imports: graphics, stats, lattice, grid, SparseM, xtable, svd, abind, methods
 Suggests: testthat, MASS, RSVGTipsDevice
 Enhances: optmatch 
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/RItools.html

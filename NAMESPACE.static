@@ -1,4 +1,6 @@
 
+import("methods")
+
 importFrom("lattice", levelplot)
 importFrom("graphics", image)
 importFrom("utils", head, tail)

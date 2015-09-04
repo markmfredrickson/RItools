@@ -15,7 +15,8 @@ which.vars=dimnames(x$results)[["vars"]],
 print.overall=TRUE,digits = NULL,printme=TRUE,
 show.signif.stars=getOption("show.signif.stars"),
 show.pvals=!show.signif.stars,
-horizontal=TRUE,...)
+horizontal=TRUE,
+report = NULL,...)
 }
 
 \arguments{
@@ -39,6 +40,8 @@ horizontal=TRUE,...)
   \item{horizontal}{Display the results for different candidate
     stratifications side-by-side (Default, TRUE), or as a list for each
     stratification (FALSE).}
+  \item{report}{Override the reporting arguments originally passed to
+  \code{xBalance}. See the help file for \code{\link{xBalance}} for options.}
   \item{...}{Other arguments. Not currently used.}
 }
 

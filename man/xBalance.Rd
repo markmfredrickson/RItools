@@ -16,12 +16,12 @@ xBalance(fmla,
          report=c("std.diffs","z.scores","adj.means",
 	       "adj.mean.diffs","adj.mean.diffs.null.sd",
 	       "chisquare.test","p.values", "all")[1:2],
-         stratum.weights=harmonic,
-         na.rm=FALSE,
-         impfn=median,
-         covariate.scaling=NULL,
-         normalize.weights=TRUE,
-         post.alignment.transform=NULL)
+         stratum.weights = harmonic,
+         na.rm = FALSE,
+         impfn = median,
+         covariate.scaling = TRUE,
+         normalize.weights = TRUE,
+         post.alignment.transform = NULL)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -56,12 +56,8 @@ xBalance(fmla,
     a data frame, then it can be such a function, a list of such
     functions, or a data frame of stratum weighting schemes
     corresponding to the different stratifying factors of \code{strata}.  See details.}
-  \item{covariate.scaling}{scale factor to apply to covariates in
-    calculating \code{std.diffs}.  If
-    \code{NULL}, \code{xBalance} pools standard deviations of each
-    variable in the treatment and control group (defining these groups
-    according to whether the LHS of \code{formula} is greater than or
-    equal to 0).  Also, see details.}
+  \item{covariate.scaling}{Should variables be scaled by pooled standard
+    deviations (pooled between treatment and control groups)?}
   \item{normalize.weights}{If \code{TRUE}, then stratum weights are
     normalized so as to sum to 1.  Defaults to \code{TRUE}.}
   \item{impfn}{A function to impute missing values when
@@ -108,11 +104,6 @@ and the strata, in the stratified (``post'') case.
     \code{Tx.grp} and \code{stratum.code}, and return a vector of
     non-negative weights with stratum codes as names; for an example, do
     \code{getFromNamespace("harmonic", "RItools")}.
-
-  If \code{covariate.scaling} is not \code{NULL}, no scaling is
-  applied. This behavior is likely to change in future versions.  (If
-  you want no scaling, set \code{covariate.scaling=1}, as this is likely
-  to retain this meaning in the future.)
 
    \code{adj.mean.diffs.null.sd} returns the standard deviation of the
    Normal approximated randomization distribution of the strata-adjusted

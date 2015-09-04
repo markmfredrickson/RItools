@@ -384,7 +384,7 @@ balanceplot <- function(x,
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
-  tts <- "devSVG" == names(dev.cur())[1] && require("RSVGTipsDevice")
+  tts <- "devSVG" == names(dev.cur())[1] && requireNamespace("RSVGTipsDevice")
 
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))

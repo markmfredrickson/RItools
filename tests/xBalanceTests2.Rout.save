@@ -1,6 +1,6 @@
 
-R version 3.1.0 (2014-04-10) -- "Spring Dance"
-Copyright (C) 2014 The R Foundation for Statistical Computing
+R version 3.2.1 (2015-06-18) -- "World-Famous Astronaut"
+Copyright (C) 2015 The R Foundation for Statistical Computing
 Platform: x86_64-unknown-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
@@ -23,9 +23,7 @@ Type 'q()' to quit R.
 > 
 > require("RItools")
 Loading required package: RItools
-Package SparseM (0.99) loaded.
-	   To cite, see citation("SparseM")
-
+Loading required package: survival
 > 
 > data(nuclearplants)
 > 
@@ -44,7 +42,6 @@ Package SparseM (0.99) loaded.
 > 
 > #####First just looking at the unstratified calculations
 > xb1a<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n,
-+                strata=list(nostrat=NULL),
 +                data=nuclearplants,
 +                report=c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values"))
 > 
@@ -60,12 +57,11 @@ Package SparseM (0.99) loaded.
 > 
 > ##print(testxb1a,digits=4)
 > 
-> all.equal(xb1a$results[,c("adj.diff","adj.diff.null.sd","z"),"nostrat"],testxb1a,check.attributes = FALSE)
+> all.equal(xb1a$results[,c("adj.diff","adj.diff.null.sd","z"),"Unstrat"],testxb1a,check.attributes = FALSE)
 [1] TRUE
 > 
 > ###Now with strata.
-> xb2<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n,
-+               strata=list(pt=~pt),
+> xb2<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 +               data=nuclearplants,
 +               report=c("all"))
 > 
@@ -139,4 +135,4 @@ cum.n -0.81976744        2.4129633 -0.3397347
 > 
 > proc.time()
    user  system elapsed 
-  0.509   0.039   0.537 
+  0.619   0.036   0.641 

@@ -5,13 +5,17 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                         digits = NULL, printme=TRUE,
                         show.signif.stars=getOption("show.signif.stars"),
                         show.pvals=!show.signif.stars,
-                        horizontal=TRUE,...) {
+                        horizontal=TRUE,
+                        report = NULL, ...) {
   ##Notes: right now we've decided that you can't print both signif stars and p-values. make a choice.
+
 
   # withOptions will allow us to safely reset the digits
   # even if an error is thrown the option should be the same after this function
   DIGITS = ifelse(is.null(digits), max(2, getOption("digits")-4), digits)
-  withOptions(list(digits = DIGITS), function() {
+
+  # we'll call this function within a wrapped options block below. 
+  f <- function() {
     ##makeSigStarsStdNormal <- function(zs) {
     ##  if (length(zs)){##c('','.  ','*  ','** ','***'
     ##    factor(c('','.','*','**','***') [1+
@@ -19,21 +23,51 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     ##                        length(zs),4, byrow=TRUE),1, sum)]
     ##           )} else {character(0)}
     ##                                     }
+    if (is.null(report)) {
+      report <- attr(x, "report")
+    }
 
     theresults <- x$results
-    if("overall" %in% names(x)) { ##Extract the omnibus chisquared test from the xbal object...
+
+    # for historical reasons, what the user requests and the column names in the per-variable table are not the same
+    lookup <- c("std.diffs" = "std.diff", "z.scores" = "z", 
+                "adj.mean.diffs" = "adj.diff",
+                "adj.mean.diffs.null.sd" = "adj.diff.null.sd", "p.values" = "p")
+
+    stopifnot(all(report %in% c("all", "chisquare.test", "adj.means", names(lookup))))
+
+    # adj.means gets expanded into the treated and control group mean columns
+    if ("adj.means" %in% report) {
+      idx <- report == "adj.means"
+      report <- c("Treatment", "Control", report[!idx])
+      lookup <- c(Treatment = "Treatment", Control = "Control", lookup)
+    }
+
+    
+    if (!("all" %in% report)) {
+      # on this next line, we use anything in report tha tis also in the names of the lookup table
+      # it's a little strange looking, but it does the right thing
+      tmp <- lookup[report[report %in% names(lookup)]]
+
+      # likewise, don't grab any columns that aren't there
+      theresults <- theresults[, tmp[tmp %in% dimnames(theresults)[["stat"]]], , drop = FALSE]
+    }
+
+    hasP <- "p" %in% dimnames(theresults)[["stat"]]
+    
+    if("chisquare.test" %in% report || "all" %in% report) { ##Extract the omnibus chisquared test from the xbal object...
       theoverall <- x$overall
     } else {
       theoverall<-NULL ##..or set it to NULL if it does not exist.
     }
 
-    if (length(theresults) == 0 & is.null(theoverall)) {
+    if (length(theresults) == 0 && is.null(theoverall)) {
       stop("There is a problem. Probably all of the variables (",
            all.vars(formula(x)),
            ") are constants within strata. Or else there is some other problem, try debug(RItools:::xBalance) to see what might be going on.")
     }
 
-    if (length(theresults)==0 & !is.null(theoverall)){##The user has requested only the omnibus test and not the tests for the individual variables
+    if (length(theresults)==0 && !is.null(theoverall)){##The user has requested only the omnibus test and not the tests for the individual variables
       theresults<-NULL
       thevartab<-NULL
     }
@@ -51,7 +85,9 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
     }
 
-    if (show.signif.stars & !show.pvals & !is.null(theresults)) {
+    thevartab <- ftabler(theresults) # we'll update this variable later if we include p-values or significance stars
+
+    if (show.signif.stars && !show.pvals && !is.null(theresults) && hasP ) {
 
       Signif <- signifier(theresults[,"p",which.strata,drop=FALSE])
 
@@ -86,7 +122,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                             })
       }
     }
-    if (show.pvals & ("p" %in% dimnames(theresults)[["stat"]]) & !is.null(theresults)) {
+
+    if (show.pvals && hasP && !is.null(theresults)) {
       if (horizontal) {
         theftab <- ftabler(
             theresults[which.vars,which.stats,which.strata,drop=FALSE])
@@ -129,11 +166,11 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       if (!is.null(theoverall) && print.overall) {
         cat("---Overall Test---\n")
         print(theoveralltab)
-        if (show.signif.stars&!show.pvals) {
+        if (show.signif.stars && !show.pvals && hasP) {
           if (!is.null(theresults)) {
             thelegend<-attr(Signif, "legend") ##if we are showing thevartab use the legend from that object
           }
-          if (is.null(theresults) & !is.null(theoverall)) {
+          if (is.null(theresults) && !is.null(theoverall)) {
             thelegend<-attr(ChiSignif,"legend") ##use legend from the overall object if only showing that one
           }
           cat("---\nSignif. codes: ", thelegend, "\n")
@@ -145,5 +182,6 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     } else {
       list(vartable=thevartab,overalltable=theoveralltab)}
   }
-              )
+              
+  withOptions(list(digits = DIGITS), f)
 }
