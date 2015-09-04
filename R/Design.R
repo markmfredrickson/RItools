@@ -263,7 +263,7 @@ weightedDesignToDescriptives <- function(design, covariate.scaling = TRUE) {
   strata <- colnames(design@Strata)
 
   s.p <- if (covariate.scaling) {
-    xBalance.makepooledsd(design@Z, design@Covariates, length(vars))
+    xBalance.makepooledsd(design@Z, design@Covariates, length(design@Z))
   } else 1
 
   ans <- array(NA,
