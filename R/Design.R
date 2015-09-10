@@ -236,8 +236,8 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
       hwts <- sweights
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
-                                  stratum.code=factor(design@Strata),
-                                  data,
+                                  stratum.code=factor(design@Strata[[nn]]),
+                                  design@Covariates,
                                   check.names = FALSE))
     }
     hwts <- hwts/sum(hwts, na.rm=TRUE)

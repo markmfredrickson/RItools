@@ -81,6 +81,9 @@ test_that("Design to descriptive statistics", {
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
 
+})
+
+test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   ### Descriptives with missing covariates ###
 
   set.seed(20130801)
@@ -90,6 +93,7 @@ test_that("Design to descriptive statistics", {
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
       c = rep(1:100, 5),
       s = rep(c(1:4, NA), 100),
+      paired = rep(c(0,1), each = 250),
       z = rep(c(0,1), 250))
 
   d.missing <- d
@@ -117,6 +121,15 @@ test_that("Design to descriptive statistics", {
                     mean(x[z == 1 & !is.na(s)], na.rm = TRUE)))
 
   expect_false(identical(descriptives.all, descriptives.missing))
+
+  # ETT weighting
+  design.paired   <- RItools:::makeDesign(z ~ x + f + strata(paired) + strata(s), data = d) 
+  weighted.paired <- RItools:::weightedDesign(design.paired)
+  descriptives.paired <- RItools:::weightedDesignToDescriptives(weighted.paired)
+
+  with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
+  with(d, expect_equal(descriptives.paired["x", "Control", "Unstrat"], mean(x[z == 0])))
+  with(d, expect_false(identical(descriptives.paired["x", "Control", "s"], mean(x[z == 0]))))
 })
 
 test_that("Aggegating designs by clusters", {

@@ -25,8 +25,11 @@ test_that("xBalance returns covariance of tests", {
   dat <- cbind(z, xs, s)
 
 
+  # we use ETT weighting here to correspond to the weighting scheme used
+  # in the descriptives section
   res <- xBalance(z ~ . + strata(s),
                   data = as.data.frame(dat),
+                  stratum.weights = effectOfTreatmentOnTreated,
                   report = 'all')
 
   tcov <- attr(res$overall, "tcov")
