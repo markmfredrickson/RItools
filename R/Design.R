@@ -284,31 +284,67 @@ weightedDesignToDescriptives <- function(design, covariate.scaling = TRUE) {
     covs    <- design@Covariates[retain, , drop = FALSE]
     wtratio <- swt$wtratio[retain]
     
-    ### Calculate post.difference
-    ZtH <- unsplit(tapply(zz, ss, mean), ss) ##proportion treated (zz==1) in strata s.
-    ssn <- drop(crossprod(zz - ZtH, covs * wtratio)) ##weighted sum of mm in treated (using centered treatment)
-    wtsum <- sum(unlist(tapply(zz, ss, function(x){ var(x) * (length(x) - 1) }))) ## h=(m_t*m_c)/m
+    for (var.name in vars) {
+      # eliminate any strata for which there are not any treated or not any control units
+      # with non-missing values 
+      v <- covs[, var.name]
+      missing <- is.na(v)
+      
+      # duplicate a little code in case we change to .NA indicators at some point
+      # (instead of .NATRUE indicators as we have now)
+      if (paste0(var.name, ".NA") %in% vars) {
+        missing <- covs[, paste0(var.name, ".NA")] | missing
+      }
 
-    post.diff <- ssn/(wtsum) ##diff of means
+      if (paste0(var.name, ".NATRUE") %in% vars) {
+        missing <- covs[, paste0(var.name, ".NATRUE")] | missing
+      }
 
-    ans[, 'adj.diff', s] <- post.diff
-    ans[, 'std.diff', s] <- post.diff/s.p
+      tss <- ss[as.logical(zz) & !missing]
+      css <- ss[as.logical(1 - zz) & !missing]
 
-    ### Calculate post.Tx.eq.0, post.Tx.eq.1 --- now called "the treatment var"=0 and =1
-    postwt0 <- unsplit(swt$sweights / tapply(zz == 0, ss, sum),
-                       ss[zz == 0], drop=TRUE)
+      excess.controls   <- css[!css %in% tss]
+      excess.treatments <- tss[!tss %in% css]
+      
+      dropExcess <- missing | ss %in% excess.controls | ss %in% excess.treatments
 
-    ans[, "Control", s]   <- apply(covs[zz == 0,, drop = FALSE] * postwt0, 2, sum)
-    ans[, "Treatment", s] <- ans[, "Control", s] + post.diff
+      # reduce the data to only include good strata (i.e., having at least one treated and control with non-missing values)
+      zz.clean <- zz[!dropExcess]
+      ss.clean <- factor(ss[!dropExcess])
+      v.clean  <- v[!dropExcess]
+      wts.clean <- swt$sweights[levels(ss.clean)]
+      wtr.clean <- wtratio[!dropExcess]
 
-    msmn <- xBalance.make.stratum.mean.matrix(ss, covs)
+      s.p <- if (covariate.scaling) {
+        xBalance.makepooledsd.single(zz.clean, v.clean, length(zz.clean))
+      } else 1
 
-    tmat <- (covs - msmn)
-    ##dv is sample variance of treatment by stratum
-    dv <- unsplit(tapply(zz, ss, var), ss)
-    ssvar <- colSums(dv * wtratio^2 * tmat * tmat) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
+      ### Calculate post.difference
+      ZtH <- unsplit(tapply(zz.clean, ss.clean, mean), ss.clean) ## proportion treated (zz==1) in strata s.
+      ssn <- drop(crossprod(zz.clean - ZtH, v.clean * wtr.clean))  ## weighted sum of mm in treated (using centered treatment)
+      wtsum <- sum(unlist(tapply(zz.clean, ss.clean, function(x){ var(x) * (length(x) - 1) }))) ## h=(m_t*m_c)/m
 
-    ans[, 'adj.diff.null.sd', s] <- sqrt(ssvar*(1/wtsum)^2)
+      post.diff <- ssn/(wtsum) ##diff of means
+
+      ans[var.name, 'adj.diff', s] <- post.diff
+      ans[var.name, 'std.diff', s] <- post.diff/s.p
+
+      ### Calculate post.Tx.eq.0, post.Tx.eq.1 --- now called "the treatment var"=0 and =1
+      postwt0 <- unsplit(wts.clean / tapply(zz.clean == 0, ss.clean, sum),
+                         ss.clean[zz.clean == 0], drop=TRUE)
+
+      ans[var.name, "Treatment", s] <- mean(v.clean[zz.clean > 0])
+      ans[var.name, "Control", s]   <- sum(v.clean[zz.clean <= 0] * postwt0)
+
+      ss.mean <- xBalance.make.stratum.mean.matrix(ss.clean, matrix(v.clean, ncol = 1))[, 1]
+
+      centered <- v.clean - ss.mean 
+      ##dv is sample variance of treatment by stratum
+      dv <- unsplit(tapply(zz.clean, ss.clean, var), ss.clean)
+      ssvar <- sum(dv * wtr.clean^2 * centered^2) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
+
+      ans[var.name, 'adj.diff.null.sd', s] <- sqrt(ssvar*(1/wtsum)^2)
+    }
   }
   
   return(ans)

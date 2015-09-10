@@ -36,13 +36,12 @@ xBalance <- function(fmla,
   if("all" %in% report)
     report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
 
-  design <- makeDesign(fmla, data, impfn, na.rm)
+  design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm)
   design.weighted <- weightedDesign(design, stratum.weights, normalize.weights)
+  descriptives    <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
 
-  descriptives <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
-
-  aggDesign             <- aggregateDesign(design)
-  aggDesign.weighted    <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
+  aggDesign          <- aggregateDesign(design)
+  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
 
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 

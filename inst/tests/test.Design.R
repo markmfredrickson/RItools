@@ -80,6 +80,43 @@ test_that("Design to descriptive statistics", {
   # with equal sized strata, the the control/treatment means are the means of the the strata means
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
+
+  ### Descriptives with missing covariates ###
+
+  set.seed(20130801)
+
+  d <- data.frame(
+      x = rnorm(500),
+      f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
+      c = rep(1:100, 5),
+      s = rep(c(1:4, NA), 100),
+      z = rep(c(0,1), 250))
+
+  d.missing <- d
+
+  d.missing$x[sample.int(500, size = 10)] <- NA
+
+  design.all <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
+  simple.all <- RItools:::weightedDesign(design.all)
+  
+  descriptives.all <- RItools:::weightedDesignToDescriptives(simple.all)
+  expect_equal(descriptives.all["x", "Treatment", "Unstrat"], mean(d$x[d$z == 1]))
+  expect_equal(descriptives.all["x", "Treatment", "s"], mean(d$x[d$z == 1 & !is.na(d$s)]))
+
+  design.missing <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.missing)
+  simple.missing <- RItools:::weightedDesign(design.missing)
+  
+  descriptives.missing <- RItools:::weightedDesignToDescriptives(simple.missing)
+
+  with(d.missing,
+       expect_equal(descriptives.missing["x", "Treatment", "Unstrat"],
+                    mean(x[z == 1], na.rm = TRUE)))
+
+  with(d.missing,
+       expect_equal(descriptives.missing["x", "Treatment", "s"],
+                    mean(x[z == 1 & !is.na(s)], na.rm = TRUE)))
+
+  expect_false(identical(descriptives.all, descriptives.missing))
 })
 
 test_that("Aggegating designs by clusters", {
