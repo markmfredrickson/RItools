@@ -21,7 +21,7 @@ setClass("Design",
 #  - All other variables are considered covariates.
 #
 # NB: should we make this more like glm() to pick up environment? Probably
-makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE) {
+makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.flags = TRUE) {
   ts <- terms(fmla, data = data, specials = c("cluster", "strata"))
 
   if (attr(ts, "response") == 0) {
@@ -112,7 +112,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE) {
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
   if (!na.rm) {
-    data.data <- naImpute(data.fmla, data.data, imputefn)
+    data.data <- naImpute(data.fmla, data.data, imputefn, include.NA.flags = include.NA.flags)
   } else {
     # who's missing entries in data.data
     idx <- !apply(data.data, 1, function(i) { any(is.na(i)) })
@@ -350,11 +350,7 @@ weightedDesignToDescriptives <- function(design, covariate.scaling = TRUE) {
   return(ans)
 }
 
-# Aggregated Design totals up all the covariates and adds a new covariate "N"
-#
-setClass("AggregatedDesign",
-         representation = list("N" = "numeric"),
-         contains = "Design")
+# Aggregated Design totals up all the covariates 
 
 aggregateDesign <- function(design) {
   n.clusters <- nlevels(design@Cluster)
@@ -376,15 +372,15 @@ aggregateDesign <- function(design) {
     Covariates[i, ] <- colSums(subcovs)
   }
 
+
   # colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
-  colnames(Covariates) <- colnames(design@Covariates)
-  
-  new("AggregatedDesign",
-      N = as.vector(table(design@Cluster)[Cluster]),
+  colnames(Covariates)   <- colnames(design@Covariates)
+
+  new("Design",
       Z = Z,
       Strata = Strata,
       Cluster = Cluster,
-      Covariates = Covariates,
+      Covariates = as.matrix(Covariates),
       # OriginalVariables = c("Cluster Size", design@OriginalVariables))
       OriginalVariables = design@OriginalVariables)
                        

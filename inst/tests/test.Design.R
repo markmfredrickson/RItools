@@ -152,13 +152,31 @@ test_that("Aggegating designs by clusters", {
   design <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
   aggDesign <- RItools:::aggregateDesign(design) 
 
-  # one row per cluster, with columns x, fa, fb, fc, and cluster.size
+  # one row per cluster, with columns x, fa, fb, fc
   expect_equal(dim(aggDesign@Covariates), c(100, 4))
-
-  # properly aggregating up cluster counts
-  expect_equivalent(aggDesign@N, as.vector(table(d$c))[aggDesign@Cluster])
 
   # now spot check some cluster totals of totals
   expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == aggDesign@Cluster[1],]))
 
+})
+
+test_that("NA flags are optional", {
+  set.seed(20130801)
+
+  d <- data.frame(
+      x = rnorm(500),
+      f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
+      c = rep(1:100, 5),
+      s = rep(c(1:4, NA), 100),
+      paired = rep(c(0,1), each = 250),
+      z = rep(c(0,1), 250))
+
+
+  d$x[sample.int(500, size = 10)] <- NA
+
+  design.flags   <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
+  design.noFlags <- RItools:::makeDesign(z ~ x + f + strata(s), data = d, include.NA.flags = FALSE)
+
+  expect_equal(dim(design.flags@Covariates)[2], 5)
+  expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })
