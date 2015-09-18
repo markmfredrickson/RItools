@@ -37,12 +37,10 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE)
     dat <- as.data.frame(dat)
 
     if (include.NA.flags) {
-      dat <- data.frame(DATA[setdiff(names(DATA),
-                                     names(dat)),names(dat.NA)],
+      dat <- data.frame(DATA[, setdiff(names(DATA),names(dat)), drop = FALSE],
                         dat, dat.NA)
     } else {
-      dat <- data.frame(DATA[setdiff(names(DATA),
-                                     names(dat))],
+      dat <- data.frame(DATA[, setdiff(names(DATA), names(dat)), drop = FALSE],
                         dat)
     }
     TFMLA <- if (include.NA.flags && length(dat.NA) > 0) update.formula(FMLA, as.formula(paste(".~.+",paste(names(dat.NA), collapse=" + ")))) else FMLA
