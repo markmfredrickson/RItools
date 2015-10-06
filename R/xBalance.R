@@ -7,6 +7,7 @@ xBalance <- function(fmla,
                      stratum.weights = harmonic,
                      na.rm = FALSE,
                      impfn = median,
+                     include.NA.flags = TRUE,
                      covariate.scaling = TRUE,
                      normalize.weights = TRUE,
                      post.alignment.transform = NULL) {
@@ -36,13 +37,13 @@ xBalance <- function(fmla,
   if("all" %in% report)
     report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
 
-  design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm)
+  design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
   design.weighted <- weightedDesign(design,
                                     stratum.weights = effectOfTreatmentOnTreated,
                                     normalize.weights)
   descriptives    <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
 
-  aggDesign          <- aggregateDesign(design)
+  aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
   aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
 

@@ -1,4 +1,4 @@
-naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE) {
+naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE) {
   if (!all("na.rm" %in% names(formals(impfn)))){stop("The imputation function requires a na.rm argument like that of mean.default() or median()")}
   fmla.rhs <- terms.formula(if (length(FMLA)>2) FMLA[-2] else FMLA,
                             data = DATA, keep.order=TRUE)
@@ -16,7 +16,7 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE) {
   if (any(impute.dat))  {
     dat <- lapply(dat, function(x){
       if (is.factor(x) & !is.ordered(x)) {
-        if (any(is.na(x))) {
+        if (any(is.na(x)) && include.NA.flags) {
           levels(x) <- c(levels(x),'.NA') ##There is a weird problem here with factors with no missing data
           x[is.na(x)] <- '.NA'
         }
@@ -35,10 +35,15 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE) {
     }
     )
     dat <- as.data.frame(dat)
-    dat <- data.frame(DATA[setdiff(names(DATA),
-                                   c(names(dat),names(dat.NA)))],
-                      dat, dat.NA)
-    TFMLA <- if (length(dat.NA)) update.formula(FMLA, as.formula(paste(".~.+",paste(names(dat.NA), collapse=" + ")))) else FMLA
+
+    if (include.NA.flags) {
+      dat <- data.frame(DATA[, setdiff(names(DATA),names(dat)), drop = FALSE],
+                        dat, dat.NA)
+    } else {
+      dat <- data.frame(DATA[, setdiff(names(DATA), names(dat)), drop = FALSE],
+                        dat)
+    }
+    TFMLA <- if (include.NA.flags && length(dat.NA) > 0) update.formula(FMLA, as.formula(paste(".~.+",paste(names(dat.NA), collapse=" + ")))) else FMLA
     TFMLA <- terms.formula(TFMLA,data = dat, keep.order=TRUE)
     return(structure(dat, terms=TFMLA))
   } else return(structure(DATA,terms=terms.formula(FMLA,data = DATA, keep.order=TRUE)))
