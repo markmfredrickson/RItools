@@ -6,7 +6,7 @@
 set.seed(20151001)
 @ 
 
-Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p'$, with $p' \le p$. $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated taht all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
+Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p'$, with $p' \le p$. $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
 
 Goal: express all operations required for \texttt{xBalance} computations with respect to these matrices.
 
@@ -14,7 +14,12 @@ Goal: express all operations required for \texttt{xBalance} computations with re
 
 All descriptive statistics are computed without respect to clustering.
 
-Some examples to check that we get what we want. 2 sets of 3 and one set of 2. We'll use column matrices to make sure we have the right dimensions everywhere. We'll make the treated unit missing a value on $X_1$ for group 3, both treated units missing on $X_2$, and both control units missing on $X_3$. Nothing missing on $X_4$.
+Some examples to check that we get what we want. 2 sets of 3 and one
+set of 2. We'll use column matrices to make sure we have the right
+dimensions everywhere. We'll make group~3's treated unit missing a value on
+$X_1$ (but not other $X$), both of group~2's treated units missing on
+$X_2$ but not other $X$es, and both of group~1's control units missing on $X_3$. 
+Nothing missing on $X_4$.  
 <<>>=
 (Z <- matrix(c(1,0,0,1,1,0,0,1), nrow = 8))
 (S <- matrix(c(rep(c(1,0,0), 3), rep(c(0,1,0), 3), rep(c(0,0,1), 2)), nrow = 8, byrow = T))
@@ -29,37 +34,39 @@ X <- matrix(rnorm(32), nrow = 8)
 We need to make \emph{per-variable} weights based on non-missingness. We want to drop any units in strata that have all missing treated or all missing control. At the end of the day, we want a matrix that is $n \times p$, where $p$ is the number of variables we're considering.
 
 <<>>=
-ZZ <- S * matrix(Z, ncol = ncol(S), nrow = nrow(Z)) # this matrix indicates for each stratum, which units are treated
+ZZ <- S * matrix(Z, ncol = ncol(S),# this matrix indicates for each  
+                 nrow = nrow(Z))   # stratum, which units are treated
 WW <- S * matrix(1 - Z, ncol = ncol(S), nrow = nrow(Z)) 
-S.missing.0 <- t(ZZ) %*% (1 - M) == 0 
-S.missing.1 <- t(WW) %*% (1 - M) == 0
-S.has.both <- !(S.missing.0 | S.missing.1)
-use.units <- (S %*% S.has.both)
+S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p'
+S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p' also
+S.has.both <- !(S.missing.0 | S.missing.1) 
+use.units <- (S %*% S.has.both) # n * p'
 @ 
 
 We can get the per variable $n$:
 <<>>=
-n1 <- t(use.units) %*% Z
-n0 <- t(use.units) %*% (1 - Z)
+n1 <- t(use.units) %*% Z # p' * 1
+n0 <- t(use.units) %*% (1 - Z) # p' * 1
 @ 
 
 Then we can get ETT strata weights per variable:
 <<>>=
-(ETT <- S %*% t(ZZ) %*% use.units)
+(ETT <- S %*% t(ZZ) %*% use.units) # n * p'
 @ 
 
 Then we can compute the simple treated unit averages as:
 <<>>=
 (treated.avg <- t(X * use.units) %*% Z / n1)
 @ 
-
+% this assumes X ($n \times p$) is conformable to `use.units`, ie that p = p'
 The control averages are ETT weighted, instead we do:
 <<>>=
 n0.ett <- t(ETT) %*% (1 - Z)
 (control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)
 @ 
 
-Next up, pooled standard deviations. [SHOULD THESE BE ETT WEIGHTED?]
+Next up, pooled standard deviations. 
+[MF: SHOULD THESE BE ETT WEIGHTED? BH: NO, I THINK.]
 
 <<>>=
 v <- (X)^2 * ETT
