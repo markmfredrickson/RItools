@@ -6,7 +6,7 @@
 set.seed(20151001)
 @ 
 
-Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p'$, with $p' \le p$. $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
+Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p$ (this varies from our previous missingness indicators that will only have a column for each variable that is missing. We need to expand to get the matrix ops to work out. Also, since the we've already done model matrix expansion, we'll need a matrix that corresponds to missingness in the original variable, so many columns many be indentical as they represent the same categorical variable). $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
 
 Goal: express all operations required for \texttt{xBalance} computations with respect to these matrices.
 
@@ -37,28 +37,32 @@ We need to make \emph{per-variable} weights based on non-missingness. We want to
 ZZ <- S * matrix(Z, ncol = ncol(S),# this matrix indicates for each  
                  nrow = nrow(Z))   # stratum, which units are treated
 WW <- S * matrix(1 - Z, ncol = ncol(S), nrow = nrow(Z)) 
-S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p'
-S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p' also
+S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p
+S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p also
 S.has.both <- !(S.missing.0 | S.missing.1) 
-use.units <- (S %*% S.has.both) # n * p'
+use.units <- (S %*% S.has.both) # n * p
+
+# zero out any "missing" entries
+X.use  <- X * use.units
+X2.use <- X.use^2 
 @ 
 
 We can get the per variable $n$:
 <<>>=
-n1 <- t(use.units) %*% Z # p' * 1
-n0 <- t(use.units) %*% (1 - Z) # p' * 1
+n1 <- t(use.units) %*% Z # p * 1
+n0 <- t(use.units) %*% (1 - Z) # p * 1
 @ 
 
 Then we can get ETT strata weights per variable:
 <<>>=
-(ETT <- S %*% t(ZZ) %*% use.units) # n * p'
+(ETT <- S %*% t(ZZ) %*% use.units) # n * p
 @ 
 
 Then we can compute the simple treated unit averages as:
 <<>>=
-(treated.avg <- t(X * use.units) %*% Z / n1)
+(treated.avg <- t(X * use.units) %*% Z / n1) # p * 1
 @ 
-% this assumes X ($n \times p$) is conformable to `use.units`, ie that p = p'
+
 The control averages are ETT weighted, instead we do:
 <<>>=
 n0.ett <- t(ETT) %*% (1 - Z)
@@ -66,47 +70,21 @@ n0.ett <- t(ETT) %*% (1 - Z)
 @ 
 
 Next up, pooled standard deviations. 
-[MF: SHOULD THESE BE ETT WEIGHTED? BH: NO, I THINK.]
 
 <<>>=
-v <- (X)^2 * ETT
 
-var.1 <- colSums((v * as.vector(Z))^2) - n1 * treated.avg^2
-var.0 <- colSums((v * as.vector(1 - Z))^2) - n0 * control.avg^2
+var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
+var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
 
 (pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
-apply(X, 2, sd)
+apply(X.use, 2, function(i) { sd(i[i != 0]) }) # in general, this wouldn't work, but we know that exactly zero means missing in this data set.
 @
 
-Hmm. I would expect these to be a little closer to the non-pooled versions without ETT weighting.
+Pretty close. Good. We wouldn't expect them to be identical. 
 
-Proceeding as if we have the correct pooled SD, next up is the standardized differences. Following along from the current implementation, we wan to get the \emph{proportion} treated in each stratum. The result is a matrix that is $s \times p$ -- for each stratum level, what is the proprotion treated (filtering out strata that have no non-missing treated or control units for a given variable)
+The standardized differences:
 <<>>=
-strata.variable.treated <- t(ZZ) %*% use.units
-(proportion.treated <- strata.variable.treated / colSums(S))
-@ 
-Then, for each variable, we get a centered treatment indicator:
-<<>>=
-ZX <- matrix(Z, nrow = dim(X)[1], ncol = dim(X)[2])
-(centeredTreatment <- ZX - S %*% proportion.treated)
-@ 
-Now to get the adjusted difference per strata, we multiply the weighted treatment indicator by the data and weights
-
-<<>>=
-(weightedMean <- colSums(X * ETT * centeredTreatment))
+(standardizeDifferences <- (treated.avg - control.avg) / pooled)
 @ 
 
-Getting per variable means and variance by stratum level
-
-<<>>=
-n.ett <- colSums(ETT)
-(strataVariableMeans <- t(S) %*% (X * ETT) / n.ett )
-(strataVariableVar   <- (t(S) %*% (X^2 * ETT) - n.ett * strataVariableMeans^2) / (n.ett - 1))
-@ 
-
-(Weighted) Variance for each variable:
-<<>>=
-(perVariableVariance <- colSums(strataVariableVar))
-(apply(X, 2, var))
-@ 
 \end{document}
