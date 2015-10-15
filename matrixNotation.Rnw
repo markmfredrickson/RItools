@@ -84,7 +84,8 @@ Pretty close. Good. We wouldn't expect them to be identical.
 
 The standardized differences:
 <<>>=
-(standardizeDifferences <- (treated.avg - control.avg) / pooled)
+(adjustedDifferences    <- treated.avg - control.avg)
+(standardizeDifferences <- adjustedDifferences / pooled)
 @ 
 
 \end{document}
