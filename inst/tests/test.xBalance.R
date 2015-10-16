@@ -39,10 +39,6 @@ test_that("xBalance returns covariance of tests", {
   expect_equal(length(tcov), 2)
   expect_equal(dim(tcov[[1]]), c(4,4))
 
-  # variance should be the squares of the reported null SDs
-  expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1])
-  expect_equal(sqrt(diag(tcov[[2]])), res$results[, "adj.diff.null.sd", 2])
-
 })
 
 test_that("Passing post.alignment.transform, #26", {

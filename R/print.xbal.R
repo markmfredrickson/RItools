@@ -32,7 +32,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     # for historical reasons, what the user requests and the column names in the per-variable table are not the same
     lookup <- c("std.diffs" = "std.diff", "z.scores" = "z", 
                 "adj.mean.diffs" = "adj.diff",
-                "adj.mean.diffs.null.sd" = "adj.diff.null.sd", "p.values" = "p")
+                "p.values" = "p")
 
     stopifnot(all(report %in% c("all", "chisquare.test", "adj.means", names(lookup))))
 

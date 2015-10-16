@@ -5,7 +5,6 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, post.al
     c(
       if ('adj.means'%in%report) c("Control", "Treatment") else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
       if ('adj.mean.diffs'%in%report) 'adj.diff' else character(0),
-      if ('adj.mean.diffs.null.sd'%in%report) 'adj.diff.null.sd' else character(0),
       if ('std.diffs'%in%report) 'std.diff' else character(0),
       if ('z.scores'%in%report) 'z' else character(0),
       if ('p.values'%in%report) 'p' else 'p'#character(0) turns out that it may be useful to have p-values in the object whether or not they are requested for printing
@@ -56,12 +55,6 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, post.al
   dv <- unsplit(tapply(zz,ss,var),ss)
   ssvar <- apply(dv*swt$wtratio^2*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
 
-  ##report (1/h)s^2. Since ssvar=(h)*s^2 multiply by (1/h)^2 to get (1/h)s^2.
-  if ('adj.mean.diffs.null.sd' %in% report) {
-    ans[['adj.diff.null.sd']] <- sqrt(ssvar*(1/wtsum)^2)
-  }
-
-
   if (!is.null(post.align.trans)) {
     # Transform the columns of tmat using the function in post.align.trans
     tmat.new <- apply(tmat, 2, post.align.trans)
@@ -88,7 +81,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, post.al
     if ('z.scores' %in% report) {
     ans['z'] <- ifelse(ssvar<=.Machine$double.eps,0, ssn/sqrt(ssvar))
   }
-  if (any(c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values") %in% report)) {
+  if (any(c("adj.means","adj.mean.diffs","std.diffs","z.scores","p.values") %in% report)) {
     ##always produce a pvalue to use to create signif stars.
     ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
 		       2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))

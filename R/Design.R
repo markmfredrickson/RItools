@@ -4,11 +4,13 @@
 
 setClass("Design",
          representation = list(
-             Z                 = "logical",
-             Strata            = "data.frame",
-             Cluster           = "factor",
-             OriginalVariables = "character",
-             Covariates        = "matrix"))
+           Z                 = "logical",
+           Strata            = "data.frame",
+           Cluster           = "factor",
+           OriginalVariables = "character",
+           Covariates        = "matrix",
+           NotMissing        = "matrix") # 1 is the value in covariates was not missing, 0 if it was imputed
+         )
              
 
 # Create a Design object from a formula and some data
@@ -111,15 +113,6 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", "1", vnames[str.idx]))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
-  if (!na.rm) {
-    data.data <- naImpute(data.fmla, data.data, imputefn, include.NA.flags = include.NA.flags)
-  } else {
-    # who's missing entries in data.data
-    idx <- !apply(data.data, 1, function(i) { any(is.na(i)) })
-    data.data <- data.data[idx, ]
-    str.data <- str.data[idx, ]
-  }
-
   # we want our own contrast function for the factors that expands each level to its own dummy
   
   tlbl <- names(data.data)
@@ -133,8 +126,26 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   })
   clist <- clist[!sapply(clist, is.null)]
   
-  data.mm   <- model.matrix(terms(data.data), data.data, contrasts.arg = clist)
+  if (!na.rm) {
+    # impute, possibly adding flags.
+    data.data.imp <- naImpute(data.fmla, data.data, imputefn, include.NA.flags = include.NA.flags)
+  } else {
+    # who's missing entries in data.data
+    idx <- !apply(data.data, 1, function(i) { any(is.na(i)) })
+    data.data.imp <- data.data[idx, ]
+    str.data <- str.data[idx, ]
+  }
 
+  data.mm         <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
+  data.notmissing <- 1 - is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist))
+
+  # now we need to find if we added any NA flags
+  toAdd <- dim(data.mm)[2] - dim(data.notmissing)[2]
+  if (toAdd > 0) {
+    xtra <- matrix(1, ncol = toAdd, nrow = dim(data.mm)[1])
+    data.notmissing <- cbind(data.notmissing, xtra)
+  }
+  
   if (length(clusterCol) > 0) { 
     Cluster <- str.data[, clusterCol]
   } else {
@@ -146,17 +157,16 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   colnames(tmp) <- gsub(colnames(tmp), pattern = "strata\\((.*)\\)", replacement = "\\1")
   Strata <- data.frame(lapply(tmp, factor), check.names = FALSE)
   
-  Covariates <- data.mm
-
   # create a look up table linking the model.matrix variables with the original variables
   
-  originals <- attr(terms(data.fmla, data = data.data), "term.labels")[attr(data.mm, "assign")]
+  originals <- attr(terms(data.fmla, data = data.data.imp), "term.labels")[attr(data.mm, "assign")]
 
   return(new("Design",
              Z = as.logical(as.numeric(Z) - 1),
              Strata = Strata,
              Cluster = factor(Cluster),
-             Covariates = Covariates,
+             Covariates = data.mm,
+             NotMissing = data.notmissing,
              OriginalVariables = originals))
 }
 
@@ -255,101 +265,91 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
 
 # Use a design object to generate descriptive statistics that ignore clustering.
 # Stratum weights are respected.
-weightedDesignToDescriptives <- function(design, covariate.scaling = TRUE) {
-  stopifnot(inherits(design, "WeightedDesign")) # defensive programming
+designToDescriptives <- function(design, covariate.scaling = TRUE) {
+  stopifnot(inherits(design, "Design")) # defensive programming
 
-  res    <- list()
   vars   <- colnames(design@Covariates)
   strata <- colnames(design@Strata)
-
-  s.p <- if (covariate.scaling) {
-    xBalance.makepooledsd(design@Z, design@Covariates, length(design@Z))
-  } else 1
 
   ans <- array(NA,
                dim = c(length(vars), 5, length(strata)),
                dimnames = list(
                    "vars" = vars,
-                   "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "adj.diff.null.sd"),
+                   "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
                    "strata" = strata))
-
   for (s in strata) {
     
-    ss  <- design@Strata[, s]
-    swt <- design@Weights[[s]]
-
-    retain  <- !is.na(ss)
-    ss      <- ss[retain]
-    zz      <- design@Z[retain]
-    covs    <- design@Covariates[retain, , drop = FALSE]
-    wtratio <- swt$wtratio[retain]
+    S <- SparseMMFromFactor(design@Strata[, s])
+    Z <- as.numeric(design@Z)
+    ZZ <- S * Z 
+    WW <- S * (1 - Z)
     
-    for (var.name in vars) {
-      # eliminate any strata for which there are not any treated or not any control units
-      # with non-missing values 
-      v <- covs[, var.name]
-      missing <- is.na(v)
-      
-      # duplicate a little code in case we change to .NA indicators at some point
-      # (instead of .NATRUE indicators as we have now)
-      if (paste0(var.name, ".NA") %in% vars) {
-        missing <- covs[, paste0(var.name, ".NA")] | missing
-      }
+    S.missing.0 <- as.matrix((t(ZZ) %*% design@NotMissing)) == 0 
+    S.missing.1 <- as.matrix((t(WW) %*% design@NotMissing)) == 0 
+    S.has.both  <- !(S.missing.0 | S.missing.1)
+    use.units   <- S %*% S.has.both * design@NotMissing
 
-      if (paste0(var.name, ".NATRUE") %in% vars) {
-        missing <- covs[, paste0(var.name, ".NATRUE")] | missing
-      }
+    X.use  <- design@Covariates * use.units
+    X2.use <- X.use^2 
 
-      tss <- ss[as.logical(zz) & !missing]
-      css <- ss[as.logical(1 - zz) & !missing]
+    n1 <- t(use.units) %*% Z
+    n0 <- t(use.units) %*% (1 - Z)
 
-      excess.controls   <- css[!css %in% tss]
-      excess.treatments <- tss[!tss %in% css]
-      
-      dropExcess <- missing | ss %in% excess.controls | ss %in% excess.treatments
+    ETT <- S %*% t(ZZ) %*% use.units
 
-      # reduce the data to only include good strata (i.e., having at least one treated and control with non-missing values)
-      zz.clean <- zz[!dropExcess]
-      ss.clean <- factor(ss[!dropExcess])
-      v.clean  <- v[!dropExcess]
-      wts.clean <- swt$sweights[levels(ss.clean)]
-      wtr.clean <- wtratio[!dropExcess]
+    # ok, now that preliminaries are out of the way, compute some useful stuff.
+    treated.avg <- t(X.use) %*% Z / n1
 
-      s.p <- if (covariate.scaling) {
-        xBalance.makepooledsd.single(zz.clean, v.clean, length(zz.clean))
-      } else 1
+    n0.ett <- t(ETT) %*% (1 - Z)
+    control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
 
-      ### Calculate post.difference
-      ZtH <- unsplit(tapply(zz.clean, ss.clean, mean), ss.clean) ## proportion treated (zz==1) in strata s.
-      ssn <- drop(crossprod(zz.clean - ZtH, v.clean * wtr.clean))  ## weighted sum of mm in treated (using centered treatment)
-      wtsum <- sum(unlist(tapply(zz.clean, ss.clean, function(x){ var(x) * (length(x) - 1) }))) ## h=(m_t*m_c)/m
+    var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
+    var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
 
-      post.diff <- ssn/(wtsum) ##diff of means
-
-      ans[var.name, 'adj.diff', s] <- post.diff
-      ans[var.name, 'std.diff', s] <- post.diff/s.p
-
-      ### Calculate post.Tx.eq.0, post.Tx.eq.1 --- now called "the treatment var"=0 and =1
-      postwt0 <- unsplit(wts.clean / tapply(zz.clean == 0, ss.clean, sum),
-                         ss.clean[zz.clean == 0], drop=TRUE)
-
-      ans[var.name, "Treatment", s] <- mean(v.clean[zz.clean > 0])
-      ans[var.name, "Control", s]   <- sum(v.clean[zz.clean <= 0] * postwt0)
-
-      ss.mean <- xBalance.make.stratum.mean.matrix(ss.clean, matrix(v.clean, ncol = 1))[, 1]
-
-      centered <- v.clean - ss.mean 
-      ##dv is sample variance of treatment by stratum
-      dv <- unsplit(tapply(zz.clean, ss.clean, var), ss.clean)
-      ssvar <- sum(dv * wtr.clean^2 * centered^2) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
-
-      ans[var.name, 'adj.diff.null.sd', s] <- sqrt(ssvar*(1/wtsum)^2)
-    }
-  }
+    pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2))
   
+    adjustedDifference    <- treated.avg - control.avg
+    standardizedDifference <- adjustedDifference / pooled
+
+    ans[, , s] <- c(control.avg, treated.avg, standardizedDifference, adjustedDifference, pooled)
+  }
+
   return(ans)
 }
 
+## <description>
+## Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
+## has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
+## <details>
+## NA's give rise to rows with no 1s.
+## As the result is only meaningful in the context of the SparseM package,
+## function requires that SparseM be loaded.
+## @title Represent factor levels as columns of a sparse matrix
+## @param thefactor Factor variable, or object inheriting from class factor
+## @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
+## @import SparseM
+## @export
+## @author Ben Hansen
+SparseMMFromFactor <- function(thefactor) {
+  stopifnot(inherits(thefactor, "factor"))
+  theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
+    is.na(thefactor)
+
+  if (all(theNA)) stop("No non-NA's in thefactor") else {
+    if (any(theNA) && !inherits(thefactor, "optmatch")) warning("NA's found in thefactor.")
+  }
+
+  nlev <- nlevels(thefactor)
+  nobs <- length(thefactor)
+  theint <- as.integer(thefactor)
+  if (any(theNA)) theint[theNA] <- 1L#nlev + 1L:sum(theNA)
+  new("matrix.csr",
+      ja=theint,
+      ia=1L:(nobs+1L),
+      ra=(1L-theNA),
+      dimension = c(nobs, nlev) #+sum(theNA)
+      )
+}
 # Aggregated Design totals up all the covariates 
 
 aggregateDesign <- function(design) {

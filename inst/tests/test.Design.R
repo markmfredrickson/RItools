@@ -58,17 +58,16 @@ test_that("Design to descriptive statistics", {
       s = rep(c(1:4, NA), 100),
       z = rep(c(0,1), 250))
 
-  design <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
-  simple <- RItools:::weightedDesign(design)
+  simple <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
   
-  descriptives <- RItools:::weightedDesignToDescriptives(simple)
+  descriptives <- RItools:::designToDescriptives(simple)
 
   expect_is(descriptives, "array")
   expect_equal(dim(descriptives), c(4, 5, 2))
 
   # descriptives ignore clustering
   design.noclus <- RItools:::makeDesign(z ~ x + f + strata(s), data = d)
-  expect_equal(descriptives, RItools:::weightedDesignToDescriptives(RItools:::weightedDesign(design.noclus)))
+  expect_equal(descriptives, RItools:::designToDescriptives(design.noclus))
   
   # the strata should imply different stats
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
@@ -98,19 +97,17 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
 
   d.missing <- d
 
-  d.missing$x[sample.int(500, size = 10)] <- NA
+  d.missing$x[d.missing$x < -1] <- NA
 
-  design.all <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
-  simple.all <- RItools:::weightedDesign(design.all)
+  simple.all <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
   
-  descriptives.all <- RItools:::weightedDesignToDescriptives(simple.all)
+  descriptives.all <- RItools:::designToDescriptives(simple.all)
   expect_equal(descriptives.all["x", "Treatment", "Unstrat"], mean(d$x[d$z == 1]))
   expect_equal(descriptives.all["x", "Treatment", "s"], mean(d$x[d$z == 1 & !is.na(d$s)]))
 
-  design.missing <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.missing)
-  simple.missing <- RItools:::weightedDesign(design.missing)
+  simple.missing <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.missing)
   
-  descriptives.missing <- RItools:::weightedDesignToDescriptives(simple.missing)
+  descriptives.missing <- RItools:::designToDescriptives(simple.missing)
 
   with(d.missing,
        expect_equal(descriptives.missing["x", "Treatment", "Unstrat"],
@@ -124,8 +121,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
 
   # ETT weighting
   design.paired   <- RItools:::makeDesign(z ~ x + f + strata(paired) + strata(s), data = d) 
-  weighted.paired <- RItools:::weightedDesign(design.paired)
-  descriptives.paired <- RItools:::weightedDesignToDescriptives(weighted.paired)
+  descriptives.paired <- RItools:::designToDescriptives(design.paired)
 
   with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
   with(d, expect_equal(descriptives.paired["x", "Control", "Unstrat"], mean(x[z == 0])))

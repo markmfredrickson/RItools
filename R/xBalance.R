@@ -1,7 +1,7 @@
 xBalance <- function(fmla,
                      data,
                      strata = NULL,
-                     report=c("std.diffs","z.scores","adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
+                     report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
                      stratum.weights = harmonic,
@@ -20,7 +20,7 @@ xBalance <- function(fmla,
 
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
-  valid.for.report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test",
+  valid.for.report <- c("adj.means","adj.mean.diffs","chisquare.test",
                                      "std.diffs","z.scores","p.values","all")
   report.good <- charmatch(report, valid.for.report, -1)
 
@@ -35,13 +35,10 @@ xBalance <- function(fmla,
   report <- valid.for.report[report.good]
 
   if("all" %in% report)
-    report <- c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","chisquare.test", "std.diffs","z.scores","p.values")
+    report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
-  design.weighted <- weightedDesign(design,
-                                    stratum.weights = effectOfTreatmentOnTreated,
-                                    normalize.weights)
-  descriptives    <- weightedDesignToDescriptives(design.weighted, covariate.scaling)
+  descriptives    <- designToDescriptives(design, covariate.scaling)
 
   aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
