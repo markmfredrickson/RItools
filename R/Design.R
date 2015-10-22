@@ -272,7 +272,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
   strata <- colnames(design@Strata)
 
   ans <- array(NA,
-               dim = c(length(vars), 5, length(strata)),
+               dim = c(length(vars), 6, length(strata)),
                dimnames = list(
                    "vars" = vars,
                    "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
@@ -437,7 +437,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
       tmat <- tmat.new
       msmn <- xBalance.make.stratum.mean.matrix(ss, tmat)
       tmat <- tmat - msmn
-      tmat <- tmat *swt$wtratio
+      tmat <- tmat * wtratio
 
       # Recalculate on transformed data the difference of treated sums and their null expectations
       # (NB: since tmat has just been recentered,
@@ -445,10 +445,11 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
       ssn <- drop(crossprod(zz, tmat))
       ssvar <- apply(dv*tmat*tmat, 2, sum) 
     } else {
-      tmat <- tmat *swt$wtratio
+      tmat <- tmat * wtratio
     }
 
-    ans[[s]] <- list(tmat = tmat, ssn = ssn, ssvar = ssvar, dv = dv, wtsum)
+    # save everything as we drop some of the observations and we need all the dims/etc to line up
+    ans[[s]] <- list(zz = zz, tmat = tmat, ssn = ssn, ssvar = ssvar, dv = dv, wtsum)
   }
   return(ans)
 }
