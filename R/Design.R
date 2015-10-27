@@ -309,11 +309,11 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     n0.ett <- t(ETT) %*% (1 - Z)
     control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
 
-    var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
-    var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
+    var.1 <- (t(X2.use) %*% Z - n1 * treated.avg^2) / (n1 - 1)
+    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / (n0.ett - 1)
 
-    pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2))
-  
+    pooled <- sqrt((var.1 + var.0) / 2)
+    
     adjustedDifference    <- treated.avg - control.avg
     standardizedDifference <- adjustedDifference / pooled
 
