@@ -272,7 +272,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
   strata <- colnames(design@Strata)
 
   ans <- array(NA,
-               dim = c(length(vars), 6, length(strata)),
+               dim = c(length(vars), 5, length(strata)),
                dimnames = list(
                    "vars" = vars,
                    "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
