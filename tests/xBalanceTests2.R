@@ -24,7 +24,7 @@ var2<-function(x,m){ ##var(Z'x) (i.e. var of the sum statistic)
 #####First just looking at the unstratified calculations
 xb1a<-xBalance(pr~ date+ t1 + t2 + cap + ne + ct + bw + cum.n,
                data=nuclearplants,
-               report=c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values"))
+               report=c("adj.means","adj.mean.diffs","std.diffs","z.scores","p.values"))
 
 ##print(xb1a,digits=4)
 
@@ -38,6 +38,6 @@ testxb1a<-t(sapply(nuclearplants[,dimnames(xb1a$results)$vars],function(thevar){
 
 ##print(testxb1a,digits=4)
 
-all.equal(xb1a$results[,c("adj.diff","adj.diff.null.sd","z"),"Unstrat"],testxb1a,check.attributes = FALSE)
+all.equal(xb1a$results[,c("adj.diff","z"),"Unstrat"],testxb1a,check.attributes = FALSE)
 
 

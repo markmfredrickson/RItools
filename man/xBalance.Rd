@@ -14,7 +14,7 @@ xBalance(fmla,
          data,
          strata = NULL,
          report=c("std.diffs","z.scores","adj.means",
-	       "adj.mean.diffs","adj.mean.diffs.null.sd",
+	       "adj.mean.diffs",
 	       "chisquare.test","p.values", "all")[1:2],
          stratum.weights = harmonic,
          na.rm = FALSE,
@@ -40,7 +40,7 @@ xBalance(fmla,
   \item{strata}{Deprecated. Use \code{strata(x)} in the formula instead.}
 
   \item{report}{Character vector listing measures to report for each
-    stratification; a subset of \code{c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
+    stratification; a subset of \code{c("adj.means","adj.mean.diffs",
       "chisquare.test","std.diffs","z.scores","p.values","all")}. P-values
     reported are two-sided for the null-hypothesis of no effect. The option "all"
     requests all measures.}
@@ -105,9 +105,6 @@ and the strata, in the stratified (``post'') case.
     non-negative weights with stratum codes as names; for an example, do
     \code{getFromNamespace("harmonic", "RItools")}.
 
-   \code{adj.mean.diffs.null.sd} returns the standard deviation of the
-   Normal approximated randomization distribution of the strata-adjusted
-   difference of means under the strict null of no effect.
  }
   
   \value{An object of class 
@@ -159,7 +156,7 @@ xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
 
 ##Stratified, all output
 xBalance(pr~ . -cost + strata(pt), data=nuclearplants, 
-         report=c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
+         report=c("adj.means","adj.mean.diffs",
       "chisquare.test","std.diffs","z.scores","p.values"))
 
 ##Comparing unstratified to stratified, just adjusted means and omnibus test

@@ -113,18 +113,11 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", "1", vnames[str.idx]))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
-  # we want our own contrast function for the factors that expands each level to its own dummy
-  
-  tlbl <- names(data.data)
-  names(tlbl) <- as.character(tlbl)
-  clist <- lapply(data.data, function(x) {
-    if (is.factor(x)) { 
-      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
-    } else {
-      NULL
-    }
-  })
-  clist <- clist[!sapply(clist, is.null)]
+  # knock out any levels that are not used
+  fcts <- colnames(data.data)[sapply(data.data, is.factor)]
+  for (f in fcts) {
+    data.data[, f] <- factor(data.data[, f])
+  }
   
   if (!na.rm) {
     # impute, possibly adding flags.
@@ -132,9 +125,22 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   } else {
     # who's missing entries in data.data
     idx <- !apply(data.data, 1, function(i) { any(is.na(i)) })
-    data.data.imp <- data.data[idx, ]
+    data.data <- data.data[idx, ]
+    data.data.imp <- data.data
     str.data <- str.data[idx, ]
   }
+
+  # we want our own contrast function for the factors that expands each level to its own dummy
+  tlbl <- names(data.data.imp)
+  names(tlbl) <- as.character(tlbl)
+  clist <- lapply(data.data.imp, function(x) {
+    if (is.factor(x)) { 
+      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
+    } else {
+      NULL
+    }
+  })
+  clist <- clist[!sapply(clist, is.null)]
 
   data.mm         <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
   data.notmissing <- 1 - is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist))

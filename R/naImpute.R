@@ -17,9 +17,11 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE)
     dat <- lapply(dat, function(x){
       if (is.factor(x) & !is.ordered(x)) {
         if (any(is.na(x)) && include.NA.flags) {
-          levels(x) <- c(levels(x),'.NA') ##There is a weird problem here with factors with no missing data
-          x[is.na(x)] <- '.NA'
+          x <- factor(x, exclude = NULL)
+        } else {
+          x <- factor(x)
         }
+         
       } else {
         if (is.ordered(x)) {
           x[is.na(x)] <- levels(x)[1]
