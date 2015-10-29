@@ -19,6 +19,7 @@ xBalance(fmla,
          stratum.weights = harmonic,
          na.rm = FALSE,
          impfn = median,
+         include.NA.flags = TRUE,
          covariate.scaling = TRUE,
          normalize.weights = TRUE,
          post.alignment.transform = NULL)
@@ -63,6 +64,7 @@ xBalance(fmla,
   \item{impfn}{A function to impute missing values when
     \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute means
     use \code{\link{mean.default}}.}
+  \item{include.NA.flags}{For each column with a missing values, should a \code{variable.NA} column be added to the model matrix? These flags will then be included in the descriptive statistics table and used in the overall chi squared test.}
   \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
 }
 \details{

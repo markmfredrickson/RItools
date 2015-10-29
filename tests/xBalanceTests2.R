@@ -33,7 +33,7 @@ testxb1a<-t(sapply(nuclearplants[,dimnames(xb1a$results)$vars],function(thevar){
   myadjdiff<-myssn/h.fn(m=sum(nuclearplants$pr),n=length(nuclearplants$pr))
   mynullvar1<-var1(x=thevar,m=sum(nuclearplants$pr))
   myz<-myadjdiff/sqrt(mynullvar1)
-  return(c(adj.diff=myadjdiff,adj.diff.null.sd=sqrt(mynullvar1),z=myz))
+  return(c(adj.diff=myadjdiff,z=myz))
 }))
 
 ##print(testxb1a,digits=4)
