@@ -360,6 +360,11 @@ SparseMMFromFactor <- function(thefactor) {
 
 aggregateDesign <- function(design) {
   n.clusters <- nlevels(design@Cluster)
+
+  if (n.clusters == length(design@Cluster)) {
+    return(design)
+  }
+
   # it seemed like a good idea to include cluster size, but this leads to issues later with z-values and p-values for the descriptives
   # keeping the idea commented out to make it easier to resurrect later
   # Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates) + 1) # the extra col will be for cluster counts
@@ -408,28 +413,31 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
   ans <- list()
 
   for (s in strata) {
-    
-    ss  <- design@Strata[, s]
-    swt <- design@Weights[[s]]
 
-    retain  <- !is.na(ss)
-    ss      <- ss[retain]
-    zz      <- design@Z[retain]
-    covs    <- design@Covariates[retain, , drop = FALSE]
-    wtratio <- swt$wtratio[retain]
-    
-    ### Calculate post.difference
-    ZtH <- unsplit(tapply(zz, ss, mean), ss) ##proportion treated (zz==1) in strata s.
-    ssn <- drop(crossprod(zz - ZtH, covs * wtratio)) ##weighted sum of mm in treated (using centered treatment)
-    wtsum <- sum(unlist(tapply(zz, ss, function(x){ var(x) * (length(x) - 1) }))) ## h=(m_t*m_c)/m
-    msmn <- xBalance.make.stratum.mean.matrix(ss, covs)
+    S <- SparseMMFromFactor(design@Strata[, s])
+    Z <- as.numeric(design@Z)
+    n <- t(S) %*% S
+    n.inv <- 1 / n
+    n1 <- t(S) %*% Z
+    n0 <- t(S) %*% (1 - Z)
 
-    tmat <- (covs - msmn)
+    ZtH <- S %*% n.inv %*% n1
+    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (design@Covariates * design@Weights[[s]]$wtratio))
+
+    wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
+
+    msmn <- as.matrix(S %*% n.inv %*% t(S) %*% design@Covariates) # this will be mostly dense, so just cast back to a standard matrix
+
+    tmat <- (design@Covariates - msmn)
 
     # dv is sample variance of treatment by stratum
-    dv <- unsplit(tapply(zz,ss,var),ss)
-    ssvar <- colSums(dv * wtratio^2 * tmat * tmat) 
+    # set up 1/(n-1)
+    tmp <- n
+    tmp@ra <- 1 / (tmp@ra - 1)
 
+    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2))
+    ssvar <-  colSums(dv * design@Weights[[s]]$wtratio^2 * tmat^2)
+    
     if (!is.null(post.align.transform)) {
       # Transform the columns of tmat using the function in post.align.trans
       tmat.new <- apply(tmat, 2, post.align.transform)
@@ -441,21 +449,25 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
       }
       ## recenter on stratum means
       tmat <- tmat.new
-      msmn <- xBalance.make.stratum.mean.matrix(ss, tmat)
+      msmn <- as.matrix(S %*% n.inv %*% t(S) %*% tmat)
       tmat <- tmat - msmn
-      tmat <- tmat * wtratio
+      tmat <- tmat * design@Weights[[s]]$wtratio
 
       # Recalculate on transformed data the difference of treated sums and their null expectations
       # (NB: since tmat has just been recentered,
-      # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
-      ssn <- drop(crossprod(zz, tmat))
-      ssvar <- apply(dv*tmat*tmat, 2, sum) 
+      ssn <- t(Z) %*% tmat
+      ssvar <- colSums(dv * tmat^2)
     } else {
-      tmat <- tmat * wtratio
+      tmat <- tmat * design@Weights[[s]]$wtratio
     }
 
     # save everything as we drop some of the observations and we need all the dims/etc to line up
-    ans[[s]] <- list(zz = zz, tmat = tmat, ssn = ssn, ssvar = ssvar, dv = dv, wtsum)
+    ans[[s]] <- list(zz = design@Z,
+                     tmat = tmat, # we can make this dense, chances are the zeros are not especially common
+                     ssn = ssn,
+                     ssvar = ssvar,
+                     dv = dv, 
+                     wtsum = wtsum)
   }
   return(ans)
 }
@@ -466,11 +478,12 @@ alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   z <- ifelse(ssvar <= .Machine$double.eps, 0, ssn/sqrt(ssvar))
   p <- 2 * pnorm(abs(z), lower.tail = FALSE)
 
+  scaled.tmat <- as.matrix(tmat * sqrt(dv))
   
-  pst.svd <- try(svd(tmat * sqrt(dv), nu=0))
+  pst.svd <- try(svd(scaled.tmat, nu=0))
 
   if (inherits(pst.svd, 'try-error')) {
-    pst.svd <- propack.svd(tmat * sqrt(dv))
+    pst.svd <- propack.svd(scaled.tmat)
   }
 
   Positive <- pst.svd$d > max(sqrt(.Machine$double.eps) * pst.svd$d[1], 0)
@@ -493,4 +506,12 @@ alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
   list(z = z, p = p, csq = csq , DF = DF, tcov = tcov)
+}
+
+sparseToVec <- function(s, column = TRUE) {
+  if (column) {
+    as.matrix(s)[,1]
+  } else {
+    as.matrix(s)[1,]
+  }
 }
