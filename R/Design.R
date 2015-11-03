@@ -422,7 +422,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     n0 <- t(S) %*% (1 - Z)
 
     ZtH <- S %*% n.inv %*% n1
-    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (design@Covariates * design@Weights[[s]]$wtratio))
+    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (design@Covariates * design@Weights[[s]]$wtratio), column = FALSE)
 
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
 
