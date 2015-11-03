@@ -75,3 +75,20 @@ test_that("Passing post.alignment.transform, #26", {
   # to dos: test combo of a transform with non-default stratum weights.
 
 })
+
+test_that("NA in stratify factor are dropped", {
+  data(nuclearplants)
+
+  n2 <- nuclearplants
+  n2 <- rbind(n2, n2[1,])
+  n2$pt[1] <- NA
+
+  f <- function(d) {
+    xBalance(pr ~ . - pt + strata(pt) - 1, data = d)
+  }
+
+  xb1 <- f(nuclearplants)
+  xb2 <- f(n2)
+
+  expect_equal(xb1, xb2)
+})

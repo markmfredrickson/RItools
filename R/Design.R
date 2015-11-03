@@ -259,6 +259,7 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     hwts <- hwts/sum(hwts, na.rm=TRUE)
 
     wtratio <- unsplit(sweights/hwts, design@Strata[[nn]], drop=TRUE)
+    wtratio[is.na(wtratio)] <- 0
     wtlist[[nn]] <- list(sweights=sweights,wtratio=wtratio)
     NULL
   }
