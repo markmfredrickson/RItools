@@ -16,12 +16,16 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE)
   if (any(impute.dat))  {
     dat <- lapply(dat, function(x){
       if (is.factor(x) & !is.ordered(x)) {
-        if (any(is.na(x)) && include.NA.flags) {
-          x <- factor(x, exclude = NULL)
-        } else {
-          x <- factor(x)
+        if (any(is.na(x))) {
+          if (include.NA.flags) {
+            x <- factor(x, exclude = NULL)
+          } else {
+            tmp <- table(x)
+            mostCommon <- names(tmp)[which.max(tmp)]
+            x[is.na(x)] <- mostCommon
+            x <- factor(x)
+          }
         }
-         
       } else {
         if (is.ordered(x)) {
           x[is.na(x)] <- levels(x)[1]
