@@ -331,12 +331,17 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
 ## NA's give rise to rows with no 1s.
 ## As the result is only meaningful in the context of the SparseM package,
 ## function requires that SparseM be loaded.
-## @title Represent factor levels as columns of a sparse matrix
+## @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
 ## @param thefactor Factor variable, or object inheriting from class factor
 ## @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
 ## @import SparseM
 ## @export
 ## @author Ben Hansen
+## @examples
+## sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
+## mod_matrix <- model.matrix(~Species-1, iris)
+## all.equal(as.matrix(sparse_mod_matrix),
+##           mod_matrix, check.attributes=FALSE)
 SparseMMFromFactor <- function(thefactor) {
   stopifnot(inherits(thefactor, "factor"))
   theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
