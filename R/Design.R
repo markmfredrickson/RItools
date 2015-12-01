@@ -302,7 +302,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
 
-    ETT <- S %*% t(ZZ) %*% use.units
+    ETT <- S %*% (t(ZZ) %*% use.units)
 
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     treated.avg <- t(X.use) %*% Z / n1
