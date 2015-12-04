@@ -10,7 +10,8 @@ xBalance <- function(fmla,
                      include.NA.flags = TRUE,
                      covariate.scaling = TRUE,
                      normalize.weights = TRUE,
-                     post.alignment.transform = NULL) {
+                     post.alignment.transform = NULL,
+                     p.adjust.method = "holm") {
 
   if (!is.null(strata)) {
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?xBalance for details.")
@@ -68,6 +69,11 @@ xBalance <- function(fmla,
   # the meat of our xbal object
   ans$overall <- inferentials
   ans$results <- descriptives
+
+  # do p.value adjustment
+  ans$results[, "p", ] <- p.adjust(ans$results[, "p", ], method = p.adjust.method)
+  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
+
 
   attr(ans$results, "originals") <- design@OriginalVariables
   attr(ans$overall, "tcov") <- lapply(tmp, function(r) {

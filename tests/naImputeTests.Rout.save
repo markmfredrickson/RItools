@@ -267,4 +267,4 @@ c     FALSE
 > 
 > proc.time()
    user  system elapsed 
-  0.476   0.019   0.485 
+  0.589   0.033   0.611 

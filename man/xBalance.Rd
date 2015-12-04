@@ -22,7 +22,8 @@ xBalance(fmla,
          include.NA.flags = TRUE,
          covariate.scaling = TRUE,
          normalize.weights = TRUE,
-         post.alignment.transform = NULL)
+         post.alignment.transform = NULL,
+         p.adjust.method = "holm")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -66,6 +67,7 @@ xBalance(fmla,
     use \code{\link{mean.default}}.}
   \item{include.NA.flags}{For each column with a missing values, should a \code{variable.NA} column be added to the model matrix? These flags will then be included in the descriptive statistics table and used in the overall chi squared test.}
   \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
+  \item{p.adjust.method}{A method that will correct reported p-values for multiple comparisons. See \code{\link{p.adjust}} for available methods. Note that the "hochberg" and "hommel" mehtods include dependency assumptions that may not apply in the context of covariate imbalance testing.}
 }
 \details{
 In the unstratified case, the standardized difference of
