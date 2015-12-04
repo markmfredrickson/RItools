@@ -5,7 +5,8 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                      #                     include.means=FALSE, chisquare.test=FALSE,
                      stratum.weights=harmonic, na.rm=FALSE,
                      covariate.scaling=NULL, normalize.weights=TRUE,impfn=median,
-                     post.alignment.transform=NULL) {
+                     post.alignment.transform=NULL,
+                     p.adjust.method = "holm") {
   stopifnot(class(fmla)=="formula",
             is.null(strata) || is.factor(strata) || is.list(strata),
             !is.data.frame(strata) || !any(is.na(names(strata))),
@@ -143,7 +144,8 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                                  mm1[gs.df[[nm]],,drop=FALSE],
                                  report, swt.ls[[nm]],
                                  s.p, normalize.weights,zzname,
-                                 post.alignment.transform)
+                                 post.alignment.transform,
+                                 p.adjust.method)
                 })
   names(RES) <- names(ss.df)
   ##nms <- paste(rep(names(ss.df), rep(length(RES[[1]]$dfr),length(ss.df))),
@@ -178,6 +180,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
                                             lower.tail = FALSE)
 
     }
+    ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], p.adjust.method)
 
     attr(ans$overall, "tcov") <- lapply(RES, function(r) {
       r$tcov

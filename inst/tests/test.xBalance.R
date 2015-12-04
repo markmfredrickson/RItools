@@ -190,3 +190,22 @@ test_that("Passing post.alignment.transform, #26", {
   # to dos: test combo of a transform with non-default stratum weights.
 
 })
+
+test_that("p.adjust.method argument", {
+  data(nuclearplants)
+
+  res.none <- xBalance(pr ~ .,
+                       strata = list(None = NULL, a = ~ pt),
+                       data = nuclearplants,
+                       report = c("p.value", "chisquare"),
+                       p.adjust.method = "none")
+  
+  # the default argument (holm) should cause the p-values to increase
+  res.holm <- xBalance(pr ~ .,
+                       strata = list(None = NULL, a = ~ pt),
+                       data = nuclearplants,
+                       report = c("p.value", "chisquare"))
+
+  expect_true(all(res.holm$result[, "p", ] >= res.none$result[, "p", ]))
+  expect_true(all(res.holm$overall[, "p.value"] >= res.none$overall[, "p.value"]))
+})

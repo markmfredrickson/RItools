@@ -19,7 +19,8 @@ xBalance(fmla,
          stratum.weights=harmonic, na.rm=FALSE,
          covariate.scaling=NULL,
          normalize.weights=TRUE,impfn=median,
-         post.alignment.transform=NULL)
+         post.alignment.transform=NULL,
+         p.adjust.method = "holm")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -58,6 +59,7 @@ xBalance(fmla,
     \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute means
     use \code{\link{mean.default}}.}
   \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
+  \item{p.adjust.method}{A method that will correct reported p-values for multiple comparisons. See \code{\link{p.adjust}} for available methods. Note that the "hochberg" and "hommel" mehtods include dependency assumptions that may not apply in the context of covariate imbalance testing.}
 }
 \details{
 In the unstratified case, the standardized difference of

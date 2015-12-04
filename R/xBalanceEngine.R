@@ -1,4 +1,4 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans, p.adjust.method) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
   cnms <-
@@ -90,8 +90,11 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   }
   if (any(c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values") %in% report)) {
     ##always produce a pvalue to use to create signif stars.
-    ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
-		       2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
+    ans['p'] <- p.adjust(
+      ifelse(ssvar <= .Machine$double.eps,
+             1,
+             2 * pnorm(abs(ssn/sqrt(ssvar)), lower.tail=FALSE)),
+      p.adjust.method)
   }
 
   if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
