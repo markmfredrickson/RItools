@@ -432,9 +432,8 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
 
-    msmn <- as.matrix(S %*% n.inv %*% t(S) %*% design@Covariates) # this will be mostly dense, so just cast back to a standard matrix
-
-    tmat <- (design@Covariates - msmn)
+    # see note at the bottom of this file why we use this function instead of SparseM's version
+    tmat <- slm.fit.csr.fixed(S, design@Covariates)$residuals
 
     # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
@@ -454,9 +453,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
         stop("Invalid post.alignment.transform given")
       }
       ## recenter on stratum means
-      tmat <- tmat.new
-      msmn <- as.matrix(S %*% n.inv %*% t(S) %*% tmat)
-      tmat <- tmat - msmn
+      tmat <- slm.fit.csr.fixed(S, tmat.new)$residuals
       tmat <- tmat * design@Weights[[s]]$wtratio
 
       # Recalculate on transformed data the difference of treated sums and their null expectations
@@ -520,4 +517,28 @@ sparseToVec <- function(s, column = TRUE) {
   } else {
     as.matrix(s)[1,]
   }
+}
+
+# SparseM's slm.fit.csr has a bug for intercept only models (admittedly, these are generally a little silly to be done as a sparse matrix), but in order to avoid duplicate code, if everything is in a single strata, we use the intercept only model.
+slm.fit.csr.fixed <- function (x, y, ...) 
+{
+    if (is.matrix(y)) 
+        n <- dim(y)[1]
+    else n <- length(y)
+    p <- x@dimension[2]
+    if (n != x@dimension[1]) 
+        stop("x and y don't match n")
+    chol <- SparseM::chol(t(x) %*% x, ...)
+    xy <- t(x) %*% y
+    coef <- SparseM::backsolve(chol, xy)
+
+    if (is.vector(coef)) {
+      coef <- matrix(coef, ncol = dim(y)[2], nrow = p)
+    }
+
+    fitted <- as.matrix(x %*% coef)
+    resid <- y - fitted
+    df <- n - p
+    list(coefficients = coef, chol = chol, residuals = resid, 
+        fitted = fitted, df.residual = df)
 }

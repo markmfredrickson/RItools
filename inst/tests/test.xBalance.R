@@ -29,7 +29,7 @@ test_that("xBalance returns covariance of tests", {
   # in the descriptives section
   res <- xBalance(z ~ . + strata(s),
                   data = as.data.frame(dat),
-                  stratum.weights = effectOfTreatmentOnTreated,
+                  stratum.weights = RItools:::effectOfTreatmentOnTreated,
                   report = 'all')
 
   tcov <- attr(res$overall, "tcov")
