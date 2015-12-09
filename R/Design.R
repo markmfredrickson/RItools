@@ -440,8 +440,8 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
 
-    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2))
-    ssvar <-  colSums(dv * design@Weights[[s]]$wtratio^2 * tmat^2)
+    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * design@Weights[[s]]$wtratio^2
+    ssvar <-  colSums(dv  * tmat^2)
     
     if (!is.null(post.align.transform)) {
       # Transform the columns of tmat using the function in post.align.trans
