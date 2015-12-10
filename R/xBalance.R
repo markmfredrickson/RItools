@@ -48,7 +48,7 @@ xBalance <- function(fmla,
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 
   tmp <- lapply(strataAligned, function(i) { do.call(alignedToInferentials, i) })
-  names(tmp) <- names(aggDesign@Strata)
+  names(tmp) <- names(aggDesign@StrataMatrices)
 
   ans <- list()
 

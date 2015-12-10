@@ -27,20 +27,20 @@ test_that("Creating design objects", {
 
   # actually testing that the output is as expected
   simple <- makeDesign(z.good ~ x, data = d)
-  expect_equal(dim(simple@Strata)[2], 1)
+  expect_equal(dim(simple@StrataFrame)[2], 1)
   expect_equivalent(simple@Covariates[, "x"], d$x)
   expect_equivalent(simple@Z, as.logical(d$z.good))
   expect_equal(nlevels(simple@Cluster), 500) # a cluster per individual
   
   clustered <- makeDesign(z.good ~ x + cluster(cluster), data = d)
-  expect_equal(dim(clustered@Strata)[2], 1)
+  expect_equal(dim(clustered@StrataFrame)[2], 1)
   expect_true(nlevels(clustered@Cluster) > 1)
 
   clustStrata <- makeDesign(z.good ~ x + cluster(cluster) + strata(strata.good), data = d)
-  expect_equal(dim(clustStrata@Strata)[2], 2)
+  expect_equal(dim(clustStrata@StrataFrame)[2], 2)
 
   # dropping the overall comparison
-  expect_equal(dim(makeDesign(z.good ~ x + cluster(cluster) + strata(strata.good) - 1, data = d)@Strata)[2], 1)
+  expect_equal(dim(makeDesign(z.good ~ x + cluster(cluster) + strata(strata.good) - 1, data = d)@StrataFrame)[2], 1)
    
   ## More tests to write:
   # - All NA strata variables
@@ -152,7 +152,7 @@ test_that("Aggegating designs by clusters", {
   expect_equal(dim(aggDesign@Covariates), c(100, 4))
 
   # now spot check some cluster totals of totals
-  expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == aggDesign@Cluster[1],]))
+  expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == 1,]))
 
 })
 

@@ -5,13 +5,13 @@
 setClass("Design",
          representation = list(
            Z                 = "logical",
-           Strata            = "data.frame",
+           StrataMatrices    = "list", # this is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratafication
+           StrataFrame       = "data.frame", # this is just the factors (not the sparse matrices, as we use them in the weighting function)
            Cluster           = "factor",
            OriginalVariables = "character",
            Covariates        = "matrix",
            NotMissing        = "matrix") # 1 is the value in covariates was not missing, 0 if it was imputed
          )
-             
 
 # Create a Design object from a formula and some data
 #
@@ -161,18 +161,21 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   Z <- str.data[, treatmentCol]
   tmp <- str.data[, strataCols, drop = FALSE]
   colnames(tmp) <- gsub(colnames(tmp), pattern = "strata\\((.*)\\)", replacement = "\\1")
-  Strata <- data.frame(lapply(tmp, factor), check.names = FALSE)
+  strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
+  strata.mats  <- lapply(strata.frame, function(s) { SparseMMFromFactor(s) })
+  names(strata.mats) <- colnames(strata.frame)
   
   # create a look up table linking the model.matrix variables with the original variables
   
   originals <- attr(terms(data.fmla, data = data.data.imp), "term.labels")[attr(data.mm, "assign")]
 
   return(new("Design",
-             Z = as.logical(as.numeric(Z) - 1),
-             Strata = Strata,
-             Cluster = factor(Cluster),
-             Covariates = data.mm,
-             NotMissing = data.notmissing,
+             Z                 = as.logical(as.numeric(Z) - 1),
+             StrataMatrices    = strata.mats,
+             StrataFrame       = strata.frame,
+             Cluster           = factor(Cluster),
+             Covariates        = data.mm,
+             NotMissing        = data.notmissing,
              OriginalVariables = originals))
 }
 
@@ -184,8 +187,8 @@ setClass("WeightedDesign",
 weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
   stopifnot(inherits(design, "Design"))
   
-  n.strata <- dim(design@Strata)[2]
-  strata.names <- colnames(design@Strata)
+  n.strata <- dim(design@StrataFrame)[2]
+  strata.names <- colnames(design@StrataFrame)
   
   if (is.function(stratum.weights)) {
     swt.ls <- rep(list(stratum.weights), n.strata)
@@ -219,7 +222,7 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
         do.call(swt.ls[[nn]],
                 args = list(data =
                     data.frame(Tx.grp = design@Z,
-                               stratum.code = factor(design@Strata[[nn]]),
+                               stratum.code = factor(design@StrataFrame[[nn]]),
                                design@Covariates,
                                check.names = FALSE)),
                 envir=parent.frame())
@@ -230,10 +233,10 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
       if (is.null(names(swt.ls[[nn]])))
         stop ("if stratum.weights is a vector, must have names")
 
-      if (!(all(levels(factor(design@Strata[[nn]])) %in% names(swt.ls[[nn]])) ))
+      if (!(all(levels(factor(design@StrataFrame[[nn]])) %in% names(swt.ls[[nn]])) ))
         stop("if stratum.weights is a vector, must have a name for each stratum")
 
-      sweights <- swt.ls[[nn]][levels(factor(design@Strata[[nn]]))]
+      sweights <- swt.ls[[nn]][levels(factor(design@StrataFrame[[nn]]))]
     }
 
     if (all(is.na(sweights)))
@@ -252,13 +255,13 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
       hwts <- sweights
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
-                                  stratum.code=factor(design@Strata[[nn]]),
+                                  stratum.code=factor(design@StrataFrame[[nn]]),
                                   design@Covariates,
                                   check.names = FALSE))
     }
     hwts <- hwts/sum(hwts, na.rm=TRUE)
 
-    wtratio <- unsplit(sweights/hwts, design@Strata[[nn]], drop=TRUE)
+    wtratio <- unsplit(sweights/hwts, design@StrataFrame[[nn]], drop=TRUE)
     wtratio[is.na(wtratio)] <- 0
     wtlist[[nn]] <- list(sweights=sweights,wtratio=wtratio)
     NULL
@@ -276,7 +279,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
   stopifnot(inherits(design, "Design")) # defensive programming
 
   vars   <- colnames(design@Covariates)
-  strata <- colnames(design@Strata)
+  strata <- colnames(design@StrataFrame)
 
   ans <- array(NA,
                dim = c(length(vars), 5, length(strata)),
@@ -286,7 +289,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
                    "strata" = strata))
   for (s in strata) {
     
-    S <- SparseMMFromFactor(design@Strata[, s])
+    S <- design@StrataMatrices[[s]]
     Z <- as.numeric(design@Z)
     ZZ <- S * Z 
     WW <- S * (1 - Z)
@@ -371,31 +374,27 @@ aggregateDesign <- function(design) {
     return(design)
   }
 
-  # it seemed like a good idea to include cluster size, but this leads to issues later with z-values and p-values for the descriptives
-  # keeping the idea commented out to make it easier to resurrect later
-  # Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates) + 1) # the extra col will be for cluster counts
-  Covariates <- matrix(NA, nrow = n.clusters, ncol = ncol(design@Covariates)) 
-
   dupes <- duplicated(design@Cluster)
   Z <- design@Z[!dupes]
-  Strata <- design@Strata[!dupes,, drop = FALSE]
+  StrataFrame <- design@StrataFrame[!dupes,, drop = FALSE]
   Cluster <- design@Cluster[!dupes]
 
-  for (i in 1:length(Cluster))  {
-    cname <- Cluster[i]
-    subcovs <- design@Covariates[design@Cluster == cname, , drop = FALSE]
+  C <- SparseMMFromFactor(design@Cluster)
+  Covariates <- as.matrix(t(C) %*% design@Covariates)
 
-    # Covariates[i, ] <- c(dim(subcovs)[1], colSums(subcovs))
-    Covariates[i, ] <- colSums(subcovs)
-  }
-
+  StrataMatrices <- lapply(design@StrataMatrices, function(S) {
+    tmp <- t(C) %*% S
+    tmp@ra <- rep(1, length(tmp@ra))
+    return(tmp)
+  })
 
   # colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
   colnames(Covariates)   <- colnames(design@Covariates)
 
   new("Design",
       Z = Z,
-      Strata = Strata,
+      StrataMatrices = StrataMatrices,
+      StrataFrame = StrataFrame,
       Cluster = Cluster,
       Covariates = as.matrix(Covariates),
       # OriginalVariables = c("Cluster Size", design@OriginalVariables))
@@ -412,7 +411,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
   stopifnot(inherits(design, "WeightedDesign")) # defensive programming
 
   vars   <- colnames(design@Covariates)
-  strata <- colnames(design@Strata)
+  strata <- names(design@StrataMatrices)
 
   # we can't return an array because different stratifications will have varying numbers
   # of strata levels. A list is more flexible here, but less structured.
@@ -420,7 +419,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
   for (s in strata) {
 
-    S <- SparseMMFromFactor(design@Strata[, s])
+    S <- design@StrataMatrices[[s]]
     Z <- as.numeric(design@Z)
     n <- t(S) %*% S
     n.inv <- 1 / n
