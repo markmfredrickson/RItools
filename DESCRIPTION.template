@@ -6,8 +6,8 @@ Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson <mark.m.fredrickso
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
-Depends: R (>= 2.14.0), methods
-Imports: graphics, stats, lattice, grid, SparseM, xtable, abind, svd
-Suggests: optmatch, xtable, testthat
-Enhances: optmatch, xtable
-URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/RItools.html
+Depends: R (>= 2.14.0), survival
+Imports: graphics, stats, lattice, grid, SparseM, xtable, abind, svd, methods
+Suggests: testthat, MASS, RSVGTipsDevice
+Enhances: optmatch
+URL: http://CRAN.R-project.org/package=RItools, http://https://github.com/markmfredrickson/RItools

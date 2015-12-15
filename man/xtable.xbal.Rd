@@ -1,11 +1,18 @@
 \name{xtable.xbal}
 \alias{xtable.xbal}
 %- Also NEED an '\alias' for EACH other topic documented here.
-\title{ An xtable method for xbalance objects }
+\title{ An \code{xtable} method for \code{xbal} objects }
 \description{
 	This function uses the \code{\link[xtable]{xtable}} package framework to display the results of a call to \code{\link{xBalance}} in LaTeX format. At the moment, it ignores the omnibus chi-squared test information.
 }
-\usage{\method{xtable}{xbal}(x, caption = NULL, label = NULL, align = c("l",rep("r",ncol(xvardf))), digits = 2, display = NULL, col.labels = NULL, ...)
+\usage{\method{xtable}{xbal}(x,
+caption = NULL,
+label = NULL,
+align = c("l", rep("r", ncol(xvardf))),
+digits = 2,
+display = NULL,
+col.labels = NULL,
+...)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -25,20 +32,20 @@
   The resulting LaTeX will present one row for each variable in the formula originally
   passed to \code{\link{xBalance}}, using the variable name used in the
   original formula. If you wish to have reader friendly labels instead of the
-  orginal variables names, see the code examples below.
+  original variables names, see the code examples below.
 
   To get decimal aligned
   columns, specify \code{align=c("l", rep(".", <ncols>))}, where
   \code{<ncols>} is the number of columns to be printed, in your
-  call to \code{xtable}.  Then use the dcolumn package and define
+  call to \code{xtable}.  Then use the \code{dcolumn} package and define
   \samp{'.'} within LaTeX: 
   add the lines \code{\\usepackage\{dcolumn\}} and
   \code{\\newcolumntype\{.\}\{D\{.\}\{.\}\{2.2\}\}} to your LaTeX
   document's preamble.  
 }
 \value{
- This function produces an xtable object which can then be printed with
- the appropriate print method (see \code{\link[xtable]{print.xtable}}).
+ This function produces an \code{xtable} object which can then be printed with
+ the appropriate \code{print} method (see \code{\link[xtable]{print.xtable}}).
 }
 %\references{ ~put references to the literature/web site here ~ }
 %\author{ ~~who you are~~ }
@@ -55,9 +62,7 @@ require(xtable)
 # Test balance on a variety of variables, with the 'pr' factor indicating
 # which sites are control and treatment units, with stratification by
 # the 'pt' factor to group similar sites
-xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-                strata = data.frame(unstrat = factor(character(32)),
-                pt = factor(nuclearplants$pt)),
+xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
                 data = nuclearplants,
                 report = c('adj.means', 'adj.mean.diffs', 'std.diffs',
                            'z.scores', 'chisquare.test', 'p.values'))

@@ -8,7 +8,15 @@
  A print method for xBalance objects.
 }
 \usage{
-\method{print}{xbal}(x,which.strata=dimnames(x$results)[["strata"]],which.stats=dimnames(x$results)[["stat"]],which.vars=dimnames(x$results)[["vars"]],print.overall=TRUE,digits = NULL,printme=TRUE,show.signif.stars=getOption("show.signif.stars"),show.pvals=!show.signif.stars,horizontal=TRUE,...)
+\method{print}{xbal}(x,
+which.strata=dimnames(x$results)[["strata"]],
+which.stats=dimnames(x$results)[["stat"]],
+which.vars=dimnames(x$results)[["vars"]],
+print.overall=TRUE,digits = NULL,printme=TRUE,
+show.signif.stars=getOption("show.signif.stars"),
+show.pvals=!show.signif.stars,
+horizontal=TRUE,
+report = NULL,...)
 }
 
 \arguments{
@@ -32,6 +40,8 @@
   \item{horizontal}{Display the results for different candidate
     stratifications side-by-side (Default, TRUE), or as a list for each
     stratification (FALSE).}
+  \item{report}{Override the reporting arguments originally passed to
+  \code{xBalance}. See the help file for \code{\link{xBalance}} for options.}
   \item{...}{Other arguments. Not currently used.}
 }
 
@@ -54,32 +64,33 @@ xb0<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,data=nuclearplants
 
 print(xb0)
 
-xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata=data.frame(unstrat=factor(character(32)),
-           pt=factor(nuclearplants$pt)),
-         data=nuclearplants,
-         report=c("adj.means","adj.mean.diffs","std.diffs", "z.scores", "chisquare.test","p.values"))
+xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+         data = nuclearplants,
+         report = c("all"))
 
 str(xb1)
 
 print(xb1)
 
-print(xb1,show.pvals=TRUE)
+print(xb1, show.pvals = TRUE)
 
-print(xb1,horizontal=FALSE)
+print(xb1, horizontal = FALSE)
 
-##The following doesn't work yet. 
+## The following doesn't work yet. 
 \dontrun{print(xb1,which.vars=c("date","t1"),which.stats=c("adj.means","z.scores","p.values"))}
-##The following example prints the adjusted means --- labeled as "treatmentvar=0" and "treatmentvar=1" using the formula provided to xBalance().
-print(xb1,which.vars=c("date","t1"),which.stats=c("pr=0","pr=1","z","p"))
-##Now, not asking for the omnibus test
-xb2<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-         strata=data.frame(unstrat=factor(character(32)),
-           pt=factor(nuclearplants$pt)),
-         data=nuclearplants,
-         report=c("adj.means","adj.mean.diffs","std.diffs", "z.scores", "p.values"))
 
-print(xb2,which.strata="pt")
+## The following example prints the adjusted means
+
+print(xb1,
+      which.vars = c("date", "t1"),
+      which.stats = c("Control", "Treatment", "z", "p"))
+
+## Now, not asking for the omnibus test
+xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+         data = nuclearplants,
+         report = c("all"))
+
+print(xb2, which.strata = "pt")
 
 }
 \keyword{print}

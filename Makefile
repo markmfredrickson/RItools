@@ -1,7 +1,9 @@
 R = R_LIBS=.local R --vanilla
 
 R: .local/RItools/INSTALLED
-	$(R) -q --no-save 
+	R_LIBS=.local R_PROFILE=load.R R -q --no-save
+interactive-emacs: .local/RItools/INSTALLED
+	R_LIBS=.local R_PROFILE=load.R emacs -nw -f R
 
 RITOOLS_TIMESTAMP: .local R/* tests/* 
 	R --vanilla CMD Install --library=.local .
@@ -14,25 +16,29 @@ autotest: RITOOLS_TIMESTAMP
 			 -e "auto_test_package('.')"
 
 ### Package release scripts ###
-VERSION=0.1-12
+
+VERSION=0.1-13
 RELEASE_DATE=`date +%Y-%m-%d`
 PKG=RItools_$(VERSION)
 
 # a useful helper for scripts who need to know what the package name is going to be
 # use: R CMD INSTALL path/to/RItools/$(cd path/to/RItools && make current)
-current: 
+current:
 	@echo $(PKG).tar.gz
 
 # we depend on the makefile so that updates to the version number will force a rebuild
-$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore
+$(PKG): Makefile R/* tests/* inst/tests/* man/* .Rinstignore inst/examples/*
 	rm -rf $(PKG)
 	rsync -a --exclude-from=.gitignore --exclude=.git* --exclude Makefile \
 		--exclude=DESCRIPTION.template --exclude=NAMESPACE.static \
 		--exclude=lexicon.txt --exclude=README.md --exclude=checkspelling.R \
 		--exclude=RItools.Rcheck \
+	  --exclude=check.R --exclude=Rprofile --exclude=*.pdf --exclude=*.txt --exclude=*.zip \
+		--exclude=\#* --exclude="*~" \
+		--exclude="load.R" \
 		. $(PKG)
 
-$(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template 
+$(PKG)/DESCRIPTION: $(PKG) DESCRIPTION.template
 	sed s/VERSION/$(VERSION)/ DESCRIPTION.template | sed s/DATE/$(RELEASE_DATE)/ > $(PKG)/DESCRIPTION
 
 $(PKG)/NAMESPACE: $(PKG) $(PKG)/DESCRIPTION NAMESPACE.static .local/roxygen2/INSTALLED
@@ -46,16 +52,16 @@ $(PKG).tar.gz: $(PKG) $(PKG)/DESCRIPTION $(PKG)/NAMESPACE NEWS R/* data/* inst/*
 package: $(PKG).tar.gz
 
 # the spell task doesn't need the tar.gz particularly, but it does need DESCRIPTION and roxygen
-spell: package 
+spell: package
 	$(R) -q --no-save -e "source('checkspelling.R') ; check_spelling('$(PKG)')"
 
 lexicon.txt: package
 	$(R) -q --no-save -e "source('checkspelling.R') ; make_dictionary('$(PKG)')"
 
-# For reasons unknown, the check process has a fit if using just the environment variables R_LIBS 
-# so, we also use the -l flag. 
+# For reasons unknown, the check process has a fit if using just the environment variables R_LIBS
+# so, we also use the -l flag.
 check: $(PKG).tar.gz .local/xtable/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED
-	$(R) CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
+	R_LIBS=.local R_PROFILE=check.R R CMD check --as-cran --no-multiarch -l .local $(PKG).tar.gz
 
 release: check spell
 	git tag -a $(VERSION)
@@ -80,18 +86,21 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 
 .local/xtable/INSTALLED:
 	$(call installpkg,xtable)
-	`
-.local/abind/INSTALLED:
-	$(call installpkg,abind)
-	
+
 .local/svd/INSTALLED:
 	$(call installpkg,svd)
 
-.local/hexbin/INSTALLED:
-	$(call installpkg,hexbin)
+.local/abind/INSTALLED:
+	$(call installpkg,abind)
+
+.local/MASS/INSTALLED:
+	$(call installpkg,MASS)
+
+.local/RSVGTipsDevice/INSTALLED:
+	$(call installpkg,RSVGTipsDevice)
 
 # depend on this file to decide if we need to install the local version
-.local/RItools/INSTALLED: $(PKG).tar.gz .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/svd/INSTALLED .local/hexbin/INSTALLED
+.local/RItools/INSTALLED: $(PKG).tar.gz .local/svd/INSTALLED .local/SparseM/INSTALLED .local/optmatch/INSTALLED .local/xtable/INSTALLED .local/abind/INSTALLED .local/MASS/INSTALLED .local/RSVGTipsDevice/INSTALLED .local/testthat/INSTALLED
 	mkdir -p .local
 	$(R) CMD INSTALL --no-multiarch --library=.local $(PKG).tar.gz
 	echo `date` > .local/RItools/INSTALLED
@@ -103,8 +112,8 @@ installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http:/
 # 	echo `date` > .local/roxygen2/INSTALLED
 
 # test is just the internal tests, not the full R CMD Check
-test: .local/RItools/INSTALLED .local/testthat/INSTALLED
-	$(R) -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
+test: .local/RItools/INSTALLED
+	R_LIBS=.local R --vanilla -q -e "library(RItools, lib.loc = '.local'); library(testthat); test_package('RItools')"
 
 # removes local files, leaves external libraries
 clean:

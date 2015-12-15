@@ -1,0 +1,22 @@
+personal_ws-1.1 en 42 UTF-8
+RSVGTipsDevice
+Babcock
+Canty
+LWR
+LWR
+LWR
+MWe
+stratifications
+covariates
+covariate
+xbal
+xBalance
+Kalton
+LHS
+RHS
+listwise
+NAs
+RItools
+pre
+unstratified
+LaTeX

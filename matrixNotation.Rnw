@@ -1,0 +1,91 @@
+\documentclass{article}
+\usepackage{fullpage}
+\begin{document}
+
+<<>>=
+set.seed(20151001)
+@ 
+
+Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p$ (this varies from our previous missingness indicators that will only have a column for each variable that is missing. We need to expand to get the matrix ops to work out. Also, since the we've already done model matrix expansion, we'll need a matrix that corresponds to missingness in the original variable, so many columns many be indentical as they represent the same categorical variable). $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
+
+Goal: express all operations required for \texttt{xBalance} computations with respect to these matrices.
+
+\section*{Descriptive Statistics}
+
+All descriptive statistics are computed without respect to clustering.
+
+Some examples to check that we get what we want. 2 sets of 3 and one
+set of 2. We'll use column matrices to make sure we have the right
+dimensions everywhere. We'll make group~3's treated unit missing a value on
+$X_1$ (but not other $X$), both of group~2's treated units missing on
+$X_2$ but not other $X$es, and both of group~1's control units missing on $X_3$. 
+Nothing missing on $X_4$.  
+<<>>=
+(Z <- matrix(c(1,0,0,1,1,0,0,1), nrow = 8))
+(S <- matrix(c(rep(c(1,0,0), 3), rep(c(0,1,0), 3), rep(c(0,0,1), 2)), nrow = 8, byrow = T))
+(M <- matrix(c(0,0,0,0,0,0,0,1, # X_1
+               0,0,0,1,1,0,0,0, # X_2
+               0,1,1,0,0,0,0,0, # X_3
+               0,0,0,0,0,0,0,0),# X_4
+             nrow = 8))
+X <- matrix(rnorm(32), nrow = 8)
+@ 
+
+We need to make \emph{per-variable} weights based on non-missingness. We want to drop any units in strata that have all missing treated or all missing control. At the end of the day, we want a matrix that is $n \times p$, where $p$ is the number of variables we're considering.
+
+<<>>=
+ZZ <- S * matrix(Z, ncol = ncol(S),# this matrix indicates for each  
+                 nrow = nrow(Z))   # stratum, which units are treated
+WW <- S * matrix(1 - Z, ncol = ncol(S), nrow = nrow(Z)) 
+S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p
+S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p also
+S.has.both <- !(S.missing.0 | S.missing.1) 
+use.units <- (S %*% S.has.both) # n * p
+
+# zero out any "missing" entries
+X.use  <- X * use.units
+X2.use <- X.use^2 
+@ 
+
+We can get the per variable $n$:
+<<>>=
+n1 <- t(use.units) %*% Z # p * 1
+n0 <- t(use.units) %*% (1 - Z) # p * 1
+@ 
+
+Then we can get ETT strata weights per variable:
+<<>>=
+(ETT <- S %*% t(ZZ) %*% use.units) # n * p
+@ 
+
+Then we can compute the simple treated unit averages as:
+<<>>=
+(treated.avg <- t(X * use.units) %*% Z / n1) # p * 1
+@ 
+
+The control averages are ETT weighted, instead we do:
+<<>>=
+n0.ett <- t(ETT) %*% (1 - Z)
+(control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)
+@ 
+
+Next up, pooled standard deviations. 
+
+<<>>=
+
+var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
+var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
+
+(pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
+apply(X.use, 2, function(i) { sd(i[i != 0]) }) # in general, this wouldn't work, but we know that exactly zero means missing in this data set.
+@
+
+Pretty close. Good. We wouldn't expect them to be identical. 
+
+The standardized differences:
+<<>>=
+(adjustedDifferences    <- treated.avg - control.avg)
+(standardizeDifferences <- adjustedDifferences / pooled)
+@ 
+
+\end{document}

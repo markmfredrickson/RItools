@@ -1,8 +1,7 @@
 
-R version 2.15.2 (2012-10-26) -- "Trick or Treat"
-Copyright (C) 2012 The R Foundation for Statistical Computing
-ISBN 3-900051-07-0
-Platform: x86_64-apple-darwin12.2.1 (64-bit)
+R version 3.2.2 (2015-08-14) -- "Fire Safety"
+Copyright (C) 2015 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -18,9 +17,7 @@ Type 'q()' to quit R.
 
 > require("RItools")
 Loading required package: RItools
-Package SparseM (0.96) loaded.
-	   To cite, see citation("SparseM")
-
+Loading required package: survival
 > data(nuclearplants)
 > 
 > testdata<-nuclearplants
@@ -141,35 +138,35 @@ c       FALSE
 H 460.05 14 46  0  1  0  0    14  FALSE     0       NA  687 68.58        14  0
 I 452.99 10 73  0  0  1  0     1  FALSE     0       NA 1065 67.33         1  0
 A 443.22 10 85  1  0  1  0     1     NA    NA    67.33 1065 67.33         1  0
-J 652.32 11 67  0  1  1  0    12     NA    NA    68.00 1065 68.00       .NA  0
+J 652.32 11 67  0  1  1  0    12     NA    NA    68.00 1065 68.00      <NA>  0
 B 642.23 11 78  1  1  1  0    12  FALSE     0    68.00 1065 68.00        14  0
 K 345.39 13 51  0  1  1  0     3  FALSE     0    67.92  514 67.92         1  0
 L 272.37 12 50  0  0  0  0     5  FALSE     0    68.17  822 68.17         1  0
-M 317.21 14 59  0  0  0  0     1  FALSE     0    68.42  457 68.42       .NA  0
+M 317.21 14 59  0  0  0  0     1  FALSE     0    68.42  457 68.42      <NA>  0
 C 457.12 15 55  1  0  0  0     5  FALSE     0    68.42  822 68.42        14  0
 N 690.19 12 71  0  1  1  1     2  FALSE     0    68.33  792 68.33         1  0
 O 350.63 12 64  0  0  0  0     3  FALSE     0    68.58  560 68.58         1  0
-P 402.59 13 47  0  1  0  0     6  FALSE     0    68.75  790 68.75       .NA  0
+P 402.59 13 47  0  1  0  0     6  FALSE     0    68.75  790 68.75      <NA>  0
 Q 412.18 15 62  0  0  1  0     2  FALSE     0    68.42  530 68.42        14  0
 R 495.58 17 52  0  0  0  0     7  FALSE     0    68.92 1050 68.92         1  0
 S 394.36 13 65  0  0  0  1    16  FALSE     0    68.92  850 68.92         1  0
-T 423.32 11 67  0  0  0  0     3  FALSE     0    68.42  778 68.42       .NA  0
+T 423.32 11 67  0  0  0  0     3  FALSE     0    68.42  778 68.42      <NA>  0
 U 712.27 18 60  0  1  0  0    17  FALSE     0    69.50  845 69.50        14  0
 D 289.66 15 76  1  0  1  0     2  FALSE     0    68.42  530 68.42         1  0
 V 881.24 15 67  0  0  0  0     1  FALSE     0    69.17 1090 69.17         1  0
-E 490.88 16 59  1  0  0  0     8  FALSE     0    68.92 1050 68.92       .NA  0
+E 490.88 16 59  1  0  0  0     8  FALSE     0    68.92 1050 68.92      <NA>  0
 W 567.79 11 70  0  0  1  1    15  FALSE     0    68.75  913 68.75        14  0
 F 665.99 22 57  1  1  0  0    20  FALSE     0    70.92  828 70.92         1  0
 X 621.45 16 59  0  0  1  0    18  FALSE     0    69.67  786 69.67         1  0
-G 608.80 19 58  1  0  0  0     3  FALSE     0    70.08  821 70.08       .NA  0
+G 608.80 19 58  1  0  0  0     3  FALSE     0    70.08  821 70.08      <NA>  0
 Y 473.64 19 44  0  0  1  0    19  FALSE     0    70.42  538 70.42        14  0
 Z 697.14 20 57  0  0  1  0    21  FALSE     0    71.08 1130 71.08         1  0
 d 207.51 13 63  0  0  0  0     8   TRUE     1    67.25  745 67.25         1  1
-e 288.48  9 48  0  0  1  0     7   TRUE     1    67.17  821 67.17       .NA  1
+e 288.48  9 48  0  0  1  0     7   TRUE     1    67.17  821 67.17      <NA>  1
 f 284.88 12 63  0  0  0  1    11   TRUE     1    67.83  886 67.83        14  1
 a 280.36 12 71  1  0  0  1    11   TRUE     1    67.83  886 67.83         1  1
 b 217.38 13 72  1  0  0  0     8   TRUE     1    67.25  745 67.25         1  1
-c 270.71  7 80  1  0  0  1    11   TRUE     1    67.83  886 67.83       .NA  1
+c 270.71  7 80  1  0  0  1    11   TRUE     1    67.83  886 67.83      <NA>  1
 > 
 > RItools:::naImpute(cost~cap+date+cum.n+pt.log,testdata,impfn=mean.default)
     cost t1 t2 pr ne ct bw pt cum.n.fac pt.na date.mod  cap  date cum.n pt.log
@@ -244,9 +241,9 @@ c     FALSE
 > 
 > all(dat1a$date.mod[is.na(testdata$date.mod)]==median(testdata$date.mod,na.rm=TRUE))
 [1] TRUE
-> all(dat1a$pt.log[is.na(testdata$pt.log)]==(median(dat1a$pt.log,na.rm=TRUE)>.5)) 
+> all(dat1a$pt.log[is.na(testdata$pt.log)]==(median(dat1a$pt.log,na.rm=TRUE)>.5))
 [1] TRUE
-> all(dat1a$pt.na[is.na(testdata$pt.na)]==(median(dat1a$pt.na,na.rm=TRUE))) 
+> all(dat1a$pt.na[is.na(testdata$pt.na)]==(median(dat1a$pt.na,na.rm=TRUE)))
 [1] TRUE
 > 
 > 
@@ -255,27 +252,19 @@ c     FALSE
 > 
 > all(dat1b$date.mod[is.na(testdata$date.mod)]==mean(testdata$date.mod,na.rm=TRUE))
 [1] TRUE
-> all(dat1b$pt.log[is.na(testdata$pt.log)]==(mean(dat1b$pt.log,na.rm=TRUE)>.5)) 
+> all(dat1b$pt.log[is.na(testdata$pt.log)]==(mean(dat1b$pt.log,na.rm=TRUE)>.5))
 [1] TRUE
-> all(dat1b$pt.na[is.na(testdata$pt.na)]==(mean(dat1b$pt.na,na.rm=TRUE))) 
+> all(dat1b$pt.na[is.na(testdata$pt.na)]==(mean(dat1b$pt.na,na.rm=TRUE)))
 [1] TRUE
 > 
 > ##Check that the factor columns are appropriate.
 > test.mm<-model.matrix(pr~date.mod+cum.n.fac+pt.log+pt.na-1,model.frame(pr~date.mod+cum.n.fac+pt.log+pt.na,testdata,na.action=NULL))
 > dat2<-RItools:::naImpute(pr~date.mod+cum.n.fac1+cum.n.fac14+pt.logTRUE+pt.na,data.frame(test.mm),impfn=mean.default)
-> all(dat2$cum.n.fac1[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac1,na.rm=TRUE))) 
+> all(dat2$cum.n.fac1[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac1,na.rm=TRUE)))
 [1] TRUE
-> all(dat2$cum.n.fac14[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac14,na.rm=TRUE))) 
+> all(dat2$cum.n.fac14[is.na(testdata$cum.n.fac)]==(mean(dat2$cum.n.fac14,na.rm=TRUE)))
 [1] TRUE
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
 > 
 > proc.time()
    user  system elapsed 
-  0.577   0.039   0.597 
+  0.589   0.033   0.611 
