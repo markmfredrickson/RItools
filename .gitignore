@@ -1,5 +1,5 @@
 *.Rcheck
 *.tar.gz
 .local
-RITOOLS_TIMESTAMP
 RItools_*
+RITOOLS_TIMESTAMP
