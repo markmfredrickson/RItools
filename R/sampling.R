@@ -10,7 +10,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
   naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
 
   if (!missing(b)) {
-    # since b is passed, it must be free of NA values 
+    # since b is passed, it must be free of NA values
     if (any(is.na(b))) {
       naError()
     }
@@ -22,10 +22,10 @@ simpleRandomSampler <- function(total, treated, z, b) {
   if (!missing(z) && !missing(b)) {
     # b is checked above, check z for NAs
     if (any(is.na(z))) {
-      naError()  
+      naError()
     }
-    
-    treated <- aggregate(z, list(b), sum)$x    
+
+    treated <- aggregate(z, list(b), sum)$x
   }
 
   if (!missing(total) && !missing(z) && missing(treated)) {
@@ -44,7 +44,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
 
   # both total and treated exist by now, so check them for NAs
   if (any(is.na(total)) || any(is.na(treated))) {
-    naError()  
+    naError()
   }
 
   if (length(total) != length(treated)) {
@@ -62,7 +62,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
   if (length(treated) != length(total)) {
     stop("Arguments 'total' and 'treated' must be the same size")
   }
-  
+
   # precompute some constants used in the process
   # the size of the omega sample space (log'ed)
   total.randomizations <- sum(lchoose(total, treated))
@@ -76,7 +76,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
   expand.z <- function(i) { a <- numeric(n); a[i] <- 1; return(a) }
 
   # b wasn't passed, we'll need to create a reordering vector for later
-  # but it will just be the "identity" reordering. 
+  # but it will just be the "identity" reordering.
   if (missing(b)) {
     reordering <- 1:n
   }
@@ -92,18 +92,18 @@ simpleRandomSampler <- function(total, treated, z, b) {
         for (i in 1:samples) {
           raw.draws <- mapply(sample.int, total, treated, SIMPLIFY = F)
           randomizations[, i] <- unlist(mapply(function(b,o) { b + o }, raw.draws, block.starts))
-          NULL 
+          NULL
         }
-    } else { # small enough to figured exactly 
+    } else { # small enough to figured exactly
       # we first get all the block level samples (these vary in size
       block.combinations <- mapply(combn, total, treated, SIMPLIFY = F)
 
       block.combinations <- mapply(function(b,o) { b + o }, block.combinations, block.starts, SIMPLIFY = FALSE)
       # then all the indexes we need to get unique permutations of block.combs
-      expansions <- 
+      expansions <-
       expand.grid(
-        mapply(seq, 
-          rep(1, length(total)), 
+        mapply(seq,
+          rep(1, length(total)),
           sapply(block.combinations, function(b) { dim(b)[2] }),
           SIMPLIFY = F))
 
@@ -115,8 +115,8 @@ simpleRandomSampler <- function(total, treated, z, b) {
         # from each block, grab the combination indexed by the row in expansions
         # combine all such items into a row in randomizations
         randomizations[,i] <- unlist(
-          mapply(function(block, i) { block[, i] }, 
-            block.combinations, 
+          mapply(function(block, i) { block[, i] },
+            block.combinations,
             expansions[i,]))
         NULL
       }
@@ -133,7 +133,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
       tmp[, i] <- x
     }
 
-    return(list(weight = 1, samples = tmp))    
+    return(list(weight = 1, samples = tmp))
   } # end inner function
 }
 
@@ -143,7 +143,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
 ### vector p (e.g. where each unit gets its own, possibly biased, coin flip)
 
 independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
-  
+
   function(samples) {
 
     if (log(samples, base = 2) >= n) {
@@ -155,7 +155,7 @@ independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
       matrices <- lapply(indexes, function(idxgrp) {
         apply(idxgrp, 2, function(i) { a <- numeric(n); a[i] <- 1; a })
       })
-      
+
       zs <- cbind(do.call(cbind, matrices), 0)
 
     } else {
@@ -171,7 +171,7 @@ independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
     if (all(p == 0.5)) {
       weight <- 1
     } else {
-      weight <- apply(p * zs + (1 - p) * (1 - zs), 2, prod)    
+      weight <- apply(p * zs + (1 - p) * (1 - zs), 2, prod)
     }
 
     return(list(weight = weight, samples = zs))
