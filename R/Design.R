@@ -381,6 +381,7 @@ aggregateDesign <- function(design) {
 
   C <- SparseMMFromFactor(design@Cluster)
   Covariates <- as.matrix(t(C) %*% design@Covariates)
+  NotMissing <- as.matrix(t(C) %*% design@NotMissing)
 
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
     tmp <- t(C) %*% S
@@ -396,6 +397,7 @@ aggregateDesign <- function(design) {
       StrataMatrices = StrataMatrices,
       StrataFrame = StrataFrame,
       Cluster = Cluster,
+      NotMissing = NotMissing,
       Covariates = as.matrix(Covariates),
       # OriginalVariables = c("Cluster Size", design@OriginalVariables))
       OriginalVariables = design@OriginalVariables)
@@ -418,28 +420,36 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
   ans <- list()
 
   for (s in strata) {
-
-    S <- design@StrataMatrices[[s]]
-    Z <- as.numeric(design@Z)
+    ss <- design@StrataFrame[, s]
+    keep <- !is.na(ss)
+    ss <- ss[keep]
+    S <- SparseMMFromFactor(ss)
+    Z <- as.numeric(design@Z[keep])
     n <- t(S) %*% S
     n.inv <- 1 / n
     n1 <- t(S) %*% Z
     n0 <- t(S) %*% (1 - Z)
 
+    Covs <- design@Covariates[keep, , drop = FALSE]
+    NotMiss <- design@NotMissing[keep, , drop = FALSE]
+    wtr <- design@Weights[[s]]$wtratio[keep]
+
     ZtH <- S %*% n.inv %*% n1
-    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (design@Covariates * design@Weights[[s]]$wtratio), column = FALSE)
+    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (Covs * wtr), column = FALSE)
 
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
 
     # see note at the bottom of this file why we use this function instead of SparseM's version
-    tmat <- slm.fit.csr.fixed(S, design@Covariates)$residuals
+    # we use residuals in the first term to subtract of the mean of the stratum
+    # we use fitted in the second term to normalize by average cluster size in the stratum
+    tmat <- slm.fit.csr.fixed(S, Covs)$residuals / slm.fit.csr.fixed(S, NotMiss)$fitted
 
     # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
 
-    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * design@Weights[[s]]$wtratio^2
+    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * wtr^2
     ssvar <-  colSums(dv  * tmat^2)
     
     if (!is.null(post.align.transform)) {
@@ -453,18 +463,18 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
       }
       ## recenter on stratum means
       tmat <- slm.fit.csr.fixed(S, tmat.new)$residuals
-      tmat <- tmat * design@Weights[[s]]$wtratio
+      tmat <- tmat * wtr
 
       # Recalculate on transformed data the difference of treated sums and their null expectations
       # (NB: since tmat has just been recentered,
       ssn <- t(Z) %*% tmat
       ssvar <- colSums(dv * tmat^2)
     } else {
-      tmat <- tmat * design@Weights[[s]]$wtratio
+      tmat <- tmat * wtr
     }
 
     # save everything as we drop some of the observations and we need all the dims/etc to line up
-    ans[[s]] <- list(zz = design@Z,
+    ans[[s]] <- list(zz = Z,
                      tmat = tmat, # we can make this dense, chances are the zeros are not especially common
                      ssn = ssn,
                      ssvar = ssvar,
