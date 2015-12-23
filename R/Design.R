@@ -490,31 +490,13 @@ alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   z <- ifelse(ssvar <= .Machine$double.eps, 0, ssn/sqrt(ssvar))
   p <- 2 * pnorm(abs(z), lower.tail = FALSE)
 
-  scaled.tmat <- as.matrix(tmat * sqrt(dv))
-  
-  pst.svd <- try(svd(scaled.tmat, nu=0))
+  tmat.scaled <- as.matrix(tmat * sqrt(dv))
+  tmat.Q <- qr.Q(qr(tmat.scaled))
+  rotated.X <- (dv^-0.5) * tmat.Q
+  dzx <- t(zz) %*% rotated.X
+  csq <- sum(dzx^2.0) # sum of squares of d(z, x)
+  DF <- dim(tmat.Q)[2]
 
-  if (inherits(pst.svd, 'try-error')) {
-    pst.svd <- propack.svd(scaled.tmat)
-  }
-
-  Positive <- pst.svd$d > max(sqrt(.Machine$double.eps) * pst.svd$d[1], 0)
-  Positive[is.na(Positive)] <- FALSE # JB Note: Can we imagine a situation in which we dont want to do this?
-
-  if (all(Positive)) { ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
-    ytl <- pst.svd$v *
-      matrix(1/pst.svd$d, nrow = dim(tmat)[2], ncol = length(pst.svd$d), byrow = T)
-  } else if (!any(Positive)) {
-    ytl <- array(0, dim(tmat)[2:1] )
-  } else  {
-    ytl <- pst.svd$v[, Positive, drop = FALSE] *
-      matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = dim(tmat)[2], byrow = TRUE)
-  }
-
-  mvz <- drop(crossprod(zz, tmat) %*% ytl)
-
-  csq <- drop(crossprod(mvz))
-  DF <- sum(Positive)
   tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
   list(z = z, p = p, csq = csq , DF = DF, tcov = tcov)
