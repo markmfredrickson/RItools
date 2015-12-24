@@ -491,11 +491,13 @@ alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   p <- 2 * pnorm(abs(z), lower.tail = FALSE)
 
   tmat.scaled <- as.matrix(tmat * sqrt(dv))
-  tmat.Q <- qr.Q(qr(tmat.scaled))
+  tmat.qr.obj <- qr(tmat.scaled)
+  tmat.Q <- qr.Q(tmat.qr.obj)
+  DF <- tmat.qr.obj$rank
+
   rotated.X <- (dv^-0.5) * tmat.Q
   dzx <- t(zz) %*% rotated.X
   csq <- sum(dzx^2.0) # sum of squares of d(z, x)
-  DF <- dim(tmat.Q)[2]
 
   tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
