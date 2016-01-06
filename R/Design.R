@@ -442,7 +442,13 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     # see note at the bottom of this file why we use this function instead of SparseM's version
     # we use residuals in the first term to subtract of the mean of the stratum
     # we use fitted in the second term to normalize by average cluster size in the stratum
-    tmat <- slm.fit.csr.fixed(S, Covs)$residuals / slm.fit.csr.fixed(S, NotMiss)$fitted
+    a <- slm.fit.csr.fixed(S, Covs)$residuals
+    b <- slm.fit.csr.fixed(S, NotMiss)$fitted
+
+    # this is needed for the case when a strata has all missing in either the treated or control group
+    # setting this to the value closet to zero will give us a zero in the appropriate place in tmat, so all is good
+    b[b == 0] <- .Machine$double.eps 
+    tmat <- a / b 
 
     # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
