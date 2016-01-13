@@ -59,7 +59,7 @@ release: check spell
 
 
 # additional dependencies from CRAN
-installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http://streaming.stat.iastate.edu/CRAN/')" ; date > .local/$(1)/INSTALLED
+installpkg = mkdir -p .local ; $(R) -e "install.packages('$(1)', repos = 'http://cran.rstudio.com/')" ; date > .local/$(1)/INSTALLED
 
 .local/roxygen2/INSTALLED:
 	$(call installpkg,roxygen2)

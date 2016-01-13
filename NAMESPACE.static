@@ -1,16 +1,34 @@
 
-importFrom("lattice", levelplot)
-importFrom("graphics", image)
+
+## 'base' packages:
+importFrom("graphics", abline, axis, image, legend, par, plot, strwidth)
+importFrom("grDevices", dev.cur)
+importFrom("grid", grid.rect, gpar, grob)
+importFrom("methods", new)
+importFrom("stats", as.formula, coef, complete.cases, deviance,
+           formula, ftable,
+           get_all_vars, median, model.frame, model.matrix,
+           na.omit, na.pass, pchisq, pnorm, symnum, terms,
+           terms.formula, update.formula, var)
 importFrom("utils", head, tail)
+
+## 'Recommended' packages:
+importFrom("lattice", levelplot)
+
+## CRAN packages:
+import(abind)
 importFrom("grid", grid.rect, gpar, grob)
 importFrom("stats", deviance, formula, coef)
 importFrom("xtable", xtable)
 importFrom("svd", propack.svd)
-
 importClassesFrom("SparseM", "matrix.csr")
 importMethodsFrom("SparseM", "t", "%*%","as.matrix")
 
-# Generics and functions defined in this package
+### -- EXPORT -- Generics and functions defined in this package --------------
+export(balanceplot)
+S3method(plot, xbal)
+S3method(subset, xbal)
+
 export(
        "xBalance"
        )

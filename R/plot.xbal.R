@@ -244,8 +244,10 @@ balanceplot <- function(x,
                         legend.title = NULL,
                         ...) {
 
-  nvars <- dim(x)[1]
-  nstrat <- dim(x)[2]
+  stopifnot(length( dx <- dim(x) ) == 2, dx >= 1)
+  names(dx) <- NULL # for comparisons below
+  nvars  <- dx[1]
+  nstrat <- dx[2]
 
   if (is.null(rownames(x))) {
     rownames(x) <- paste0("V", 1:nvars)
@@ -257,9 +259,9 @@ balanceplot <- function(x,
 
   # create some default tooltips if needed, will only be used if user wraps this in RSVGTipsDevice
   if (is.null(tiptext)) {
-    tiptext <- array(data = c(rep(rownames(x), dim(x)[2]),
-                              rep(colnames(x), each = dim(x)[1])),
-                     c(dim(x), 2))
+    tiptext <- array(data = c(rep(rownames(x), dx[2]),
+                              rep(colnames(x), each = dx[1])),
+                     c(dx, 2))
 
   }
 
@@ -270,7 +272,7 @@ balanceplot <- function(x,
     colors <- matrix(rep(colors, each = nvars), nrow = nvars)
   }
 
-  if (!identical(dim(colors), dim(x))) {
+  if (!identical(dim(colors), dx)) {
     stop("`colors` argument must have the same dims as `x`, or be comformable.")
   }
 
@@ -280,7 +282,7 @@ balanceplot <- function(x,
     shapes <- matrix(rep(shapes, each = nvars), nrow = nvars)
   }
 
-  if (!identical(dim(shapes), dim(x))) {
+  if (!identical(dim(shapes), dx)) {
     stop("`shapes` argument must have the same dims as `x`, or be comformable.")
   }
 
@@ -384,7 +386,7 @@ balanceplot <- function(x,
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
-  tts <- "devSVG" == names(dev.cur())[1] && require("RSVGTipsDevice")
+  tts <- "devSVG" == names(dev.cur())[1] && requireNamespace("RSVGTipsDevice")
 
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))
