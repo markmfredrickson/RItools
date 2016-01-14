@@ -228,6 +228,7 @@ prepareXbalForPlot <- function(x,
 #' \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
+#' @import grDevices
 balanceplot <- function(x,
                         ordered = FALSE,
                         segments = TRUE,
