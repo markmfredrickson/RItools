@@ -3,7 +3,12 @@
 makePval<-function(zs) {
   2*pnorm(abs(zs),lower.tail=FALSE)
 }
-
+##' Returns `formula` attribute of an `xbal` object.
+##'
+##' @param x An `xbal` object.
+##' @param ... Ignored.
+##' @return The formula corresponding to `xbal`.
+##' @export
 formula.xbal<-function(x,...){
   attr(x,"fmla")
 }
@@ -69,23 +74,23 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
-#' Select variables, strata, and statistics from a \code{xbal} object
-#'
-#' If any of the arguments are not specified, all the of relevant items are
-#' included.
-#'
-#' @param x The \code{xbal} object, the result of a call to
-#' \code{\link{xBalance}}
-#' @param vars The variable names to select.
-#' @param strata The strata names to select.
-#' @param stats The names of the variable level statistics to select.
-#' @param tests The names of the group level tests to select.
-#' @param ... Other arguments (ignored)
-#'
-#' @return A \code{xbal} object with just the appropriate items selected.
-#'
-#' @S3method subset xbal
-#' @method subset xbal
+##' Select variables, strata, and statistics from a \code{xbal} object
+##'
+##' If any of the arguments are not specified, all the of relevant
+##' items are included.
+##'
+##' @param x The \code{xbal} object, the result of a call to
+##'   \code{\link{xBalance}}
+##' @param vars The variable names to select.
+##' @param strata The strata names to select.
+##' @param stats The names of the variable level statistics to select.
+##' @param tests The names of the group level tests to select.
+##' @param ... Other arguments (ignored)
+##'
+##' @return A \code{xbal} object with just the appropriate items
+##'   selected.
+##'
+##' @export
 subset.xbal <- function(x,
                         vars   = NULL,
                         strata = NULL,
