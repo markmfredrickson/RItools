@@ -22,4 +22,4 @@ test check document build: .devtools
 #vignette clean-vignette: .devtools
 
 clean: #clean-vignette
-	rm -rf man/ #src/*.o
+	git clean -Xfd
