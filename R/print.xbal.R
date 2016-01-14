@@ -1,26 +1,27 @@
-##' A `print` method for `xBalance` objects.
+##' A \code{print} method for \code{xBalance} objects.
 ##'
 ##' @title Printing xBalance Objects
 ##' @param x An object of class "xbal" which is the result of a call
-##'   to `xBalance`.
+##'   to \code{xBalance}.
 ##' @param which.strata The stratification candidates to include in
 ##'   the printout. Default is all.
 ##' @param which.stats The test statistics to include. Default is all
-##'   those requested from the call to `xBalance`.
+##'   those requested from the call to \code{xBalance}.
 ##' @param which.vars The variables for which test information should
 ##'   be displayed. Default is all.
 ##' @param print.overall Should the omnibus test be reported? Default
-##'   is `TRUE`.
+##'   is \code{TRUE}.
 ##' @param digits To how many digits should the results be displayed?
 ##'   Default is \code{max(2,getOptions("digits")-4)}.
-##' @param printme Print the table to the console? Default is `TRUE`.
+##' @param printme Print the table to the console? Default is
+##'   \code{TRUE}.
 ##' @param show.signif.stars Use stars to indicate z-statistics larger
-##'   than conventional thresholds. Default is `TRUE`.
+##'   than conventional thresholds. Default is \code{TRUE}.
 ##' @param show.pvals Instead of stars, use p-values to summarize the
-##'   information in the z-statistics. Default is `FALSE`.
+##'   information in the z-statistics. Default is \code{FALSE}.
 ##' @param horizontal Display the results for different candidate
-##'   stratifications side-by-side (Default, `TRUE`), or as a list for
-##'   each stratification (`FALSE`).
+##'   stratifications side-by-side (Default, \code{TRUE}), or as a
+##'   list for each stratification (\code{FALSE}).
 ##' @param ... Other arguements. Not currently used.
 ##' @return \describe{
 ##' \item{vartable}{The formatted table of variable-by-variable

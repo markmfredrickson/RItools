@@ -59,12 +59,12 @@
 ##' @param fmla A formula containing an indicator of treatment
 ##'   assignment on the left hand side and covariates at right.
 ##' @param strata A list of right-hand-side-only formulas containing
-##'   the factor(s) identifying the strata, with `NULL` entries
+##'   the factor(s) identifying the strata, with \code{NULL} entries
 ##'   interpreted as no stratification; or a factor with length equal
 ##'   to the number of rows in data; or a data frame of such
 ##'   factors. See below for examples.
-##' @param data A data frame in which `fmla` and `strata` are to be
-##'   evaluated.
+##' @param data A data frame in which \code{fmla} and \code{strata}
+##'   are to be evaluated.
 ##' @param report Character vector listing measures to report for each
 ##'   stratification; a subset of \code{c("adj.means",
 ##'   "adj.mean.diffs", "adj.mean.diffs.null.sd", "chisquare.test",

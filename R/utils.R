@@ -3,11 +3,12 @@
 makePval<-function(zs) {
   2*pnorm(abs(zs),lower.tail=FALSE)
 }
-##' Returns `formula` attribute of an `xbal` object.
+
+##' Returns \code{formula} attribute of an \code{xbal} object.
 ##'
-##' @param x An `xbal` object.
+##' @param x An \code{xbal} object.
 ##' @param ... Ignored.
-##' @return The formula corresponding to `xbal`.
+##' @return The formula corresponding to \code{xbal}.
 ##' @export
 formula.xbal<-function(x,...){
   attr(x,"fmla")
