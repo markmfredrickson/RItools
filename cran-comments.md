@@ -1,3 +1,6 @@
+## Resubmission
+This version no longer includes cran-comments.md. It is now listed in .Rbuildignore
+
 ## Test environments
 * local OS X install, R 3.2.3
 * win-builder (devel and release)
