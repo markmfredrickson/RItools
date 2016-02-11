@@ -1,4 +1,4 @@
-#' Plot of balance across multiple strata 
+#' Plot of balance across multiple strata
 #'
 #' The plot allows a quick visual comparison of the effect of different
 #' stratification designs on the comparability of different
@@ -37,8 +37,7 @@
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
 #' @import abind
-#' @S3method plot xbal
-#' @method plot xbal
+#' @export
 plot.xbal <- function(x,
                       xlab = "Standardized Differences",
                       statistic = "std.diff",
