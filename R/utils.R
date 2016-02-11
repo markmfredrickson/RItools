@@ -1,10 +1,16 @@
 ##This file contains some small helper functions.
 
-makePval<-function(zs) {
-  2*pnorm(abs(zs),lower.tail=FALSE)
+makePval <- function(zs) {
+  2 * pnorm(abs(zs),lower.tail=FALSE)
 }
 
-formula.xbal<-function(x,...){
+##' Returns \code{formula} attribute of an \code{xbal} object.
+##'
+##' @param x An \code{xbal} object.
+##' @param ... Ignored.
+##' @return The formula corresponding to \code{xbal}.
+##' @export
+formula.xbal <- function(x,...){
   attr(x,"fmla")
 }
 
@@ -80,11 +86,11 @@ farray <- function(f, p) {
   n <- length(p)
   j <- sapply(p, length)
   k <- prod(j)
-  
+
   args <- make_args_mtx(p)
   x <- vapply(args, FUN.VALUE = numeric(1), function(a) {
-    if (!is.list(a)) { 
-      f(a) 
+    if (!is.list(a)) {
+      f(a)
     } else {
       do.call(f, a)
     }
@@ -115,9 +121,7 @@ make_args_mtx <- function(alist) {
 #' @param ... Other arguments (ignored)
 #'
 #' @return A \code{xbal} object with just the appropriate items selected.
-#'
-#' @S3method subset xbal
-#' @method subset xbal
+#' @export
 subset.xbal <- function(x,
                         vars   = NULL,
                         strata = NULL,
@@ -126,6 +130,7 @@ subset.xbal <- function(x,
                         ...) {
 
   res.dmns <- dimnames(x$results)
+  ov.dmns <- dimnames(x$overall)
 
   if (is.null(strata)) {
     strata <- res.dmns$strata
@@ -140,7 +145,7 @@ subset.xbal <- function(x,
   }
 
   if (is.null(tests)) {
-    tests <- colnames(x$overall)
+    tests <- ov.dmns$tests
   }
 
   res <- x$results[vars, stats, strata, drop = F]
