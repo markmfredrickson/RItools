@@ -17,6 +17,13 @@ Type 'q()' to quit R.
 
 > require("RItools")
 Loading required package: RItools
+Loading required package: SparseM
+
+Attaching package: ‘SparseM’
+
+The following object is masked from ‘package:base’:
+
+    backsolve
 Loading required package: survival
 > data(nuclearplants)
 >

@@ -11,11 +11,11 @@ Depends:
     stats,
     methods,
     graphics,
+    SparseM,
     utils,
     survival
 Imports:
     grDevices,
-    SparseM,
     abind,
     xtable,
     svd

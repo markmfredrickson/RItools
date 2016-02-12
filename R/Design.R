@@ -2,6 +2,15 @@
 # Design Objects: communicate cluster, strata, treatment, and covariate information
 ################################################################################
 
+#' Design S4 class
+#'
+#' @slot Z Z
+#' @slot StrataMatrices StrataMatrices
+#' @slot StrataFrame StrataFrame
+#' @slot Cluster Cluster
+#' @slot OriginalVariables OriginalVariables
+#' @slot Covariates Covariates
+#' @slot NotMissing NotMissing
 setClass("Design",
          representation = list(
            Z                 = "logical",
@@ -13,7 +22,7 @@ setClass("Design",
            NotMissing        = "matrix") # 1 is the value in covariates was not missing, 0 if it was imputed
          )
 
-# Create a Design object from a formula and some data
+#
 #
 # The formula must have a left hand side that can be converted to a logical.
 #
@@ -23,6 +32,22 @@ setClass("Design",
 #  - All other variables are considered covariates.
 #
 # NB: should we make this more like glm() to pick up environment? Probably
+##' Create a Design object from a formula and some data
+##'
+##' The formula must have a left hand side that can be converted to a logical.
+##'
+##' On the RHS:
+##'  - It may have at most one cluster() argument.
+##'  - It may have one or more strata() arguments.
+##'  - All other variables are considered covariates.
+##'
+##' NB: should we make this more like glm() to pick up environment? Probably
+##' @param fmla Formula
+##' @param data Data
+##' @param imputefn Function to impute
+##' @param na.rm Should NA's removed?
+##' @param include.NA.flags Flag NA's?
+##' @return Design
 makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.flags = TRUE) {
   ts <- terms(fmla, data = data, specials = c("cluster", "strata"))
 
@@ -52,7 +77,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))))
   str.tms  <- terms(str.fmla, data = data, specials = c("cluster", "strata"))
   str.data <- model.frame(str.tms, data = data, na.action = na.pass)
-  
+
 
   ## check that strata and clusters have the proper relationships with treatment assignment
   treatmentCol <- colnames(str.data)[attr(str.tms, "response")]
@@ -93,7 +118,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   }
 
   ## for each strata, we want there to be at least one treated and control unit
-  
+
   for (s in strataCols) {
 
     if (all(is.na(str.data[, s]))) {
@@ -109,7 +134,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   }
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
-  
+
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", "1", vnames[str.idx]))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
@@ -118,7 +143,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   for (f in fcts) {
     data.data[, f] <- factor(data.data[, f])
   }
-  
+
   if (!na.rm) {
     # impute, possibly adding flags.
     data.data.imp <- naImpute(data.fmla, data.data, imputefn, include.NA.flags = include.NA.flags)
@@ -134,7 +159,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   tlbl <- names(data.data.imp)
   names(tlbl) <- as.character(tlbl)
   clist <- lapply(data.data.imp, function(x) {
-    if (is.factor(x)) { 
+    if (is.factor(x)) {
       structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
     } else {
       NULL
@@ -151,8 +176,8 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
     xtra <- matrix(1, ncol = toAdd, nrow = dim(data.mm)[1])
     data.notmissing <- cbind(data.notmissing, xtra)
   }
-  
-  if (length(clusterCol) > 0) { 
+
+  if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]
   } else {
     Cluster <- 1:(dim(str.data)[1])
@@ -164,9 +189,9 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
   strata.mats  <- lapply(strata.frame, function(s) { SparseMMFromFactor(s) })
   names(strata.mats) <- colnames(strata.frame)
-  
+
   # create a look up table linking the model.matrix variables with the original variables
-  
+
   originals <- attr(terms(data.fmla, data = data.data.imp), "term.labels")[attr(data.mm, "assign")]
 
   return(new("Design",
@@ -180,16 +205,26 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
 }
 
 # Add stratum weights to a design
+#' Weighted Design
+#'
+#' @slot Weights Weights
 setClass("WeightedDesign",
          representation = list(Weights = "list"),
          contains = "Design")
 
+##' Create a weighted Design
+##'
+##' Adds weights to existing Design.
+##' @param design Design
+##' @param stratum.weights Stratum weights
+##' @param normalize.weights Normalize weights?
+##' @return WeightedDesign
 weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
   stopifnot(inherits(design, "Design"))
-  
+
   n.strata <- dim(design@StrataFrame)[2]
   strata.names <- colnames(design@StrataFrame)
-  
+
   if (is.function(stratum.weights)) {
     swt.ls <- rep(list(stratum.weights), n.strata)
     names(swt.ls) <- strata.names
@@ -273,8 +308,13 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
   return(design)
 }
 
-# Use a design object to generate descriptive statistics that ignore clustering.
-# Stratum weights are respected.
+##' Generate Descriptives
+##'
+##' Use a design object to generate descriptive statistics that ignore
+##' clustering. Stratum weights are respected.
+##' @param design A Design
+##' @param covariate.scaling Should covs be scaled?
+##' @return Descriptives
 designToDescriptives <- function(design, covariate.scaling = TRUE) {
   stopifnot(inherits(design, "Design")) # defensive programming
 
@@ -288,19 +328,19 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
                    "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
                    "strata" = strata))
   for (s in strata) {
-    
+
     S <- design@StrataMatrices[[s]]
     Z <- as.numeric(design@Z)
-    ZZ <- S * Z 
+    ZZ <- S * Z
     WW <- S * (1 - Z)
-    
-    S.missing.0 <- as.matrix((t(ZZ) %*% design@NotMissing)) == 0 
-    S.missing.1 <- as.matrix((t(WW) %*% design@NotMissing)) == 0 
+
+    S.missing.0 <- as.matrix((t(ZZ) %*% design@NotMissing)) == 0
+    S.missing.1 <- as.matrix((t(WW) %*% design@NotMissing)) == 0
     S.has.both  <- !(S.missing.0 | S.missing.1)
     use.units   <- S %*% S.has.both * design@NotMissing
 
     X.use  <- design@Covariates * use.units
-    X2.use <- X.use^2 
+    X2.use <- X.use^2
 
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
@@ -317,7 +357,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / (n0.ett - 1)
 
     pooled <- sqrt((var.1 + var.0) / 2)
-    
+
     adjustedDifference    <- treated.avg - control.avg
     standardizedDifference <- adjustedDifference / pooled
 
@@ -327,24 +367,23 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
   return(ans)
 }
 
-## <description>
-## Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
-## has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
-## <details>
-## NA's give rise to rows with no 1s.
-## As the result is only meaningful in the context of the SparseM package,
-## function requires that SparseM be loaded.
-## @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
-## @param thefactor Factor variable, or object inheriting from class factor
-## @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
-## @import SparseM
-## @export
-## @author Ben Hansen
-## @examples
-## sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
-## mod_matrix <- model.matrix(~Species-1, iris)
-## all.equal(as.matrix(sparse_mod_matrix),
-##           mod_matrix, check.attributes=FALSE)
+##' Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
+##' has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
+##'
+##' NA's give rise to rows with no 1s.
+##' As the result is only meaningful in the context of the SparseM package,
+##' function requires that SparseM be loaded.
+##' @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
+##' @param thefactor Factor variable, or object inheriting from class factor
+##' @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
+##' @import SparseM
+##' @export
+##' @author Ben Hansen
+##' @examples
+##' sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
+##' mod_matrix <- model.matrix(~Species-1, iris)
+##' all.equal(as.matrix(sparse_mod_matrix),
+##'           mod_matrix, check.attributes=FALSE)
 SparseMMFromFactor <- function(thefactor) {
   stopifnot(inherits(thefactor, "factor"))
   theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
@@ -365,8 +404,11 @@ SparseMMFromFactor <- function(thefactor) {
       dimension = c(nobs, nlev) #+sum(theNA)
       )
 }
-# Aggregated Design totals up all the covariates 
-
+##' Aggregate Design
+##'
+##' totals up all the covariates
+##' @param design Design
+##' @return Aggregates
 aggregateDesign <- function(design) {
   n.clusters <- nlevels(design@Cluster)
 
@@ -401,13 +443,18 @@ aggregateDesign <- function(design) {
       Covariates = as.matrix(Covariates),
       # OriginalVariables = c("Cluster Size", design@OriginalVariables))
       OriginalVariables = design@OriginalVariables)
-                       
+
 }
 
-# TODO: Can we minimize the amount of weighted stuff that needs to get pushed through?
-# Eg. when creating the weighted design, we mulitply all covariates by the weighting scheme
-# right away, so we don't need to track it explicitly later.
-# observe all the multiplication of tmat by swt$wtradio throughout. This seems redundant
+##' Align Design by Strata
+##'
+##' TODO: Can we minimize the amount of weighted stuff that needs to get pushed through?
+##' Eg. when creating the weighted design, we mulitply all covariates by the weighting scheme
+##' right away, so we don't need to track it explicitly later.
+##' observe all the multiplication of tmat by swt$wtradio throughout. This seems redundant
+##' @param design Design
+##' @param post.align.transform A post-align transform
+##' @return List
 alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
   stopifnot(inherits(design, "WeightedDesign")) # defensive programming
@@ -447,8 +494,8 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
     # this is needed for the case when a strata has all missing in either the treated or control group
     # setting this to the value closet to zero will give us a zero in the appropriate place in tmat, so all is good
-    b[b == 0] <- .Machine$double.eps 
-    tmat <- a / b 
+    b[b == 0] <- .Machine$double.eps
+    tmat <- a / b
 
     # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
@@ -457,7 +504,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * wtr^2
     ssvar <-  colSums(dv  * tmat^2)
-    
+
     if (!is.null(post.align.transform)) {
       # Transform the columns of tmat using the function in post.align.trans
       tmat.new <- apply(tmat, 2, post.align.transform)
@@ -484,7 +531,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
                      tmat = tmat, # we can make this dense, chances are the zeros are not especially common
                      ssn = ssn,
                      ssvar = ssvar,
-                     dv = dv, 
+                     dv = dv,
                      wtsum = wtsum)
   }
   return(ans)
@@ -492,12 +539,21 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
 # I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up
 # e.g. something that is a list of strata with a given structure, rather than just a list.
+##' Align to Inferentials
+##'
+##' @param zz zz
+##' @param tmat tmat
+##' @param ssn ssn
+##' @param ssvar ssvar
+##' @param dv dv
+##' @param wtsum wtsum
+##' @return list
 alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   z <- ifelse(ssvar <= .Machine$double.eps, 0, ssn/sqrt(ssvar))
   p <- 2 * pnorm(abs(z), lower.tail = FALSE)
 
   scaled.tmat <- as.matrix(tmat * sqrt(dv))
-  
+
   pst.svd <- try(svd(scaled.tmat, nu=0))
 
   if (inherits(pst.svd, 'try-error')) {
@@ -526,6 +582,11 @@ alignedToInferentials <- function(zz, tmat, ssn, ssvar, dv, wtsum) {
   list(z = z, p = p, csq = csq , DF = DF, tcov = tcov)
 }
 
+##' Convert Matrix to vector
+##'
+##' @param s Matrix
+##' @param column Column (TRUE) or row (FALSE)?
+##' @return vector
 sparseToVec <- function(s, column = TRUE) {
   if (column) {
     as.matrix(s)[,1]
@@ -534,14 +595,24 @@ sparseToVec <- function(s, column = TRUE) {
   }
 }
 
-# SparseM's slm.fit.csr has a bug for intercept only models (admittedly, these are generally a little silly to be done as a sparse matrix), but in order to avoid duplicate code, if everything is in a single strata, we use the intercept only model.
-slm.fit.csr.fixed <- function (x, y, ...) 
+##' slm.fit.csr with a fix
+##'
+##' SparseM's slm.fit.csr has a bug for intercept only models
+##' (admittedly, these are generally a little silly to be done as a
+##' sparse matrix), but in order to avoid duplicate code, if
+##' everything is in a single strata, we use the intercept only model.
+##' @param x As slm.fit.csr
+##' @param y As slm.fit.csr
+##' @param ... As slm.fit.csr
+##' @return As slm.fit.csr
+##' @import SparseM
+slm.fit.csr.fixed <- function (x, y, ...)
 {
-    if (is.matrix(y)) 
+    if (is.matrix(y))
         n <- dim(y)[1]
     else n <- length(y)
     p <- x@dimension[2]
-    if (n != x@dimension[1]) 
+    if (n != x@dimension[1])
         stop("x and y don't match n")
     chol <- SparseM::chol(t(x) %*% x, ...)
     xy <- t(x) %*% y
@@ -554,6 +625,6 @@ slm.fit.csr.fixed <- function (x, y, ...)
     fitted <- as.matrix(x %*% coef)
     resid <- y - fitted
     df <- n - p
-    list(coefficients = coef, chol = chol, residuals = resid, 
+    list(coefficients = coef, chol = chol, residuals = resid,
         fitted = fitted, df.residual = df)
 }
