@@ -7,11 +7,12 @@
 ##'
 ##' simple random samples: draw from all randomizations within a fixed
 ##' number of treated units within blocks
-##' @param total Total
-##' @param treated Treated
+##' @param total size of the experimental pool
+##' @param treated Total number to be assigned treatment. One of \code{treated} or \code{z} is required.
 ##' @param z z
 ##' @param b b
 ##' @return List
+##' @export
 simpleRandomSampler <- function(total, treated, z, b) {
   naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
 
@@ -152,6 +153,7 @@ simpleRandomSampler <- function(total, treated, z, b) {
 ##' @param n n
 ##' @param p p
 ##' @return List
+##' @export
 independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
 
   function(samples) {

@@ -27,7 +27,7 @@ setClass("ParameterizedTest",
   representation(sharp.null = "SharpNullTest"),
   contains = "SharpNullTest")
 
-##' RITest
+##' Test a sharp hypothesis
 ##'
 ##' @param y y
 ##' @param z z
@@ -39,6 +39,7 @@ setClass("ParameterizedTest",
 ##' @param type type
 ##' @param ... Add'l arguments
 ##' @return SharpNullTest
+##' @export
 RItest <- function(
   y,
   z,
