@@ -1,12 +1,18 @@
 #' Compares the predictions of a model over the parameter space.
 #'
-#' Models that are insensitive to changes in the parameters will have little distance between predictions.
-#' 
-#' @param model A \code{\link{UniformityModel}} object that will be used with the parameters to generate the model predictions.
-#' @param parameters A list of the form \code{list(param1 = c(1,2,3), param2 = c(4,5,6), ...)} where the names are the parameter arguments to the model function.
-#' @param uniformity Data that represent the uniformity trial (the state of the world when treatment is not applied to any unit).
+#' Models that are insensitive to changes in the parameters will have
+#' little distance between predictions.
+#'
+#' @param model A \code{\link{UniformityModel}} object that will be
+#'   used with the parameters to generate the model predictions.
+#' @param parameters A list of the form \code{list(param1 = c(1,2,3),
+#'   param2 = c(4,5,6), ...)} where the names are the parameter
+#'   arguments to the model function.
+#' @param uniformity Data that represent the uniformity trial (the
+#'   state of the world when treatment is not applied to any unit).
 #' @param z A vector of treatment indicators.
-#' @return A matrix of two columns: the parameter space distance and the prediction distance for all pair-wise comparisons
+#' @return A matrix of two columns: the parameter space distance and
+#'   the prediction distance for all pair-wise comparisons
 #' @export
 parameterSensitivity <- function(model, parameters, uniformity, z) {
 
@@ -34,14 +40,14 @@ parameterSensitivity <- function(model, parameters, uniformity, z) {
   left <- pmat[left.index,, drop = F] ; colnames(left) <- paste("left", colnames(left), sep = ".")
   right <- pmat[right.index,, drop = F] ; colnames(right) <- paste("right", colnames(right), sep = ".")
 
-  stdize <- function(x) { 
+  stdize <- function(x) {
     rx <- range(x)
     (x - rx[1]) / (rx[2] - rx[1])
   }
 
   res <- cbind(left,
                right,
-               parameter  = stdize(as.vector(dist(std.parameter.space))), 
+               parameter  = stdize(as.vector(dist(std.parameter.space))),
                prediction = stdize(as.vector(dist(predictions))))
 
   class(res) <- c("parameterSensitivity", "matrix")
@@ -55,18 +61,19 @@ setOldClass(c("parameterSensitivity", "matrix"))
 #' Plots the results of \code{\link{parameterSensitivity}} as a 2D histogram.
 #'
 #' @param x The matrix of distances from \code{\link{parameterSensitivity}}.
-#' @param ... Arguments to be passed to the plot method for \code{\link{hexbin::hexbin}}
+#' @param ... Arguments to be passed to the plot method for \code{\link{hexbin}}
 #' @import hexbin
 #' @export
+#' @method plot parameterSensitivity
 plot.parameterSensitivity <- function(x, ...) {
-  hb <- hexbin(x[, c("parameter", "prediction")], ...)
+  hb <- hexbin::hexbin(x[, c("parameter", "prediction")], ...)
   P <- plot(hb)
   hexVP.abline(P$plot.vp, a = 0, b = 1, lty = 2)
   hexVP.abline(P$plot.vp, a = 1, b = -1, lty = 2)
 }
 
 #' Plots the results of the parameter sensitivity on the original parameter space.
-#' 
+#'
 #' Works best for 2D models, may not work for other dimenions.
 #'
 #' @param x The results of the call to \code{\link{parameterSensitivity}}.
@@ -78,7 +85,7 @@ plot.parameterSensitivity <- function(x, ...) {
 #' @export
 parameterSensitivityBreakoutPlot <- function(x, subset, col = rgb(0, 0, 0, 0.25), ...) {
   params <- attr(x, "parameters")
- 
+
   ps <- length(params)
 
   if (ps > 2) {
@@ -88,22 +95,22 @@ parameterSensitivityBreakoutPlot <- function(x, subset, col = rgb(0, 0, 0, 0.25)
   if (ps < 1) {
     stop("Cannot plot models with no parameters")
   }
-  
-  if (missing(subset)) 
+
+  if (missing(subset))
     r <- TRUE
   else {
     e <- substitute(subset)
     r <- eval(e, as.data.frame(x), parent.frame())
-    if (!is.logical(r)) 
+    if (!is.logical(r))
       stop("'subset' must be logical")
     r <- r & !is.na(r)
   }
 
   # select only the relevant portion of x and only the parameter columns
-  x.subset <- x[r, 1:(2 * ps)] 
-  
+  x.subset <- x[r, 1:(2 * ps)]
+
   if (ps == 2)  {
-  
+
     left <- x.subset[, 1:ps]
     right <- x.subset[, (ps + 1):(2 * ps)]
 

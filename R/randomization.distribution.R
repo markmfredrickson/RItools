@@ -6,26 +6,45 @@
 setClassUnion("OptionalList", c("list", "NULL"))
 setClassUnion("OptionalDataFrame", c("data.frame", "NULL"))
 
-setClass("SharpNullTest", 
+##' SharpNullTest class
+##'
+##' @slot observed.statistic observed.statistic
+##' @slot samples sample
+##' @slot call call
+setClass("SharpNullTest",
   representation(observed.statistic = "numeric",
                  samples = "numeric",
                  call = "call"),
   contains = "array")
 
-# the RandomizationDistribution object
-# for a single test statistic
-# results of a call to randomizationDistribution
-# each distribution is with respect to a given test statistic
+##' the RandomizationDistribution object
+##'
+##' for a single test statistic, results of a call to
+##' randomizationDistribution, each distribution is with respect to a
+##' given test statistic
+##' @slot sharp.null SharpNullTest object
 setClass("ParameterizedTest",
   representation(sharp.null = "SharpNullTest"),
   contains = "SharpNullTest")
 
+##' RITest
+##'
+##' @param y y
+##' @param z z
+##' @param test.stat test.stat
+##' @param moe single function with signature f(y, z, param1, param2, etc.)odel of effect
+##' @param parameters list of name = values, name = values, ...
+##' @param sampler sampler
+##' @param samples num samples
+##' @param type type
+##' @param ... Add'l arguments
+##' @return SharpNullTest
 RItest <- function(
   y,
   z,
   test.stat,
-  moe = NULL, # single function with signature f(y, z, param1, param2, etc.)
-  parameters = NULL, # list of name = values, name = values, ...
+  moe = NULL,
+  parameters = NULL,
   sampler = simpleRandomSampler(z = z, b = rep(1, length(z))),
   samples = 5000,
   type = "exact",
@@ -59,7 +78,7 @@ RItest <- function(
 
   # getting the p-value
   doit <- function(m) {
-    function(...) { 
+    function(...) {
       # first, for each model, adjust the observed y with the observed
       # z
       adjusted.y <- m(y, z, ...)
@@ -104,7 +123,7 @@ RItest <- function(
     return(new("ParameterizedTest",
       farray(doit(moe), parameters), # inherits from array
       observed.statistic = sharp.null.test@observed.statistic,
-      sharp.null = sharp.null.test, 
+      sharp.null = sharp.null.test,
       samples = sharp.null.test@samples,
       call = cl))
 
@@ -115,15 +134,19 @@ RItest <- function(
 
 #' Plot the results of RItest.
 #'
-#' @param object The results of RItest.
-#' @param type The type (points, lines, etc) for one dimensional models. Ignored for multi-dimensional models.
-#' @param summary A function to summarize higher dimension models (p > 2) into 2 dimensions.
+#' @param x The results of RItest.
+#' @param type The type (points, lines, etc) for one dimensional
+#'   models. Ignored for multi-dimensional models.
+#' @param summary A function to summarize higher dimension models (p >
+#'   2) into 2 dimensions.
+#' @param ... Add'l arguments
 #' @return A lattice object. Use print to plot.
 #' @export
-plot.ParameterizedTest <- function(object, type = 'o', summary = max, ...) {
-  library(lattice)
+#' @import lattice
+#' @method plot ParameterizedTest
+plot.ParameterizedTest <- function(x, type = 'o', summary = max, ...) {
 
-  pnames <- dimnames(object)
+  pnames <- dimnames(x)
   np <- length(pnames)
 
   if (np == 0) {
@@ -131,21 +154,34 @@ plot.ParameterizedTest <- function(object, type = 'o', summary = max, ...) {
   }
 
   if (np == 1) {
-    flat <- data.frame(as.numeric(object), names(object))
+    flat <- data.frame(as.numeric(x), names(x))
     colnames(flat) <- c("p.value", pnames[1])
     fmla <- as.formula(paste("p.value ~ ", pnames[1]))
     return(xyplot(fmla, data = flat, type = type, ...)) # drop the sharp.null
   }
 
-  return(levelplot(as.matrix(apply(object, 1:2, summary), ...)))
+  return(levelplot(as.matrix(apply(x, 1:2, summary), ...)))
 
 }
 
+##' Show for SharpNullTest class
+##'
+##' @param object SharpNullTest
+##' @return print call
+##' @export
 setMethod("show", "SharpNullTest", function(object) {
   print(object, showCall = TRUE)
 })
 
-print.SharpNullTest <- function(x, showCall = TRUE) {
+##' Print for SharpNullTest
+##'
+##' @param x SharpNullTest
+##' @param showCall Show call?
+##' @param ... Ignored
+##' @return printed object
+##' @export
+##' @method print SharpNullTest
+print.SharpNullTest <- function(x, showCall = TRUE, ...) {
   if (showCall) {
     dc <- deparse(x@call)
     cat("Call: ", dc[1], "\n")
@@ -164,32 +200,50 @@ print.SharpNullTest <- function(x, showCall = TRUE) {
   invisible(x)
 }
 
-print.ParameterizedTest <- function(x, showCall = TRUE) {
+##' Print ParameterizedTest
+##'
+##' @param x A ParameterizedTest.
+##' @param showCall Should call be shown?
+##' @param ... Ignored
+##' @return printed object
+##' @export
+##' @method print ParameterizedTest
+print.ParameterizedTest <- function(x, showCall = TRUE, ...) {
   print.SharpNullTest(x@sharp.null, showCall)
 
   # compute a point estimate
   cat("Hodges-Lehmann Point Estimate(s):\n")
   print(point(x))
 }
-  
-setGeneric("point",
-  def = function(object) { standardGeneric("point") })
 
+##' Generic point method
+##'
+##' @param object Object
+##' @return something
+##' @export
+setGeneric("point",
+           def = function(object) { standardGeneric("point") })
+
+##' point for ParameterizedTest
+##'
+##' @param object ParameterizedTest
+##' @return output
+##' @export
 setMethod("point", "ParameterizedTest", function(object) {
-          
+
   # extract point estimate(s)
   maxp <- max(object)
   point.estimate.ind <- arrayInd(which(object == maxp),
-                                 .dim = dim(object)) 
+                                 .dim = dim(object))
 
-  point.estimate <- matrix(0, 
+  point.estimate <- matrix(0,
                       nrow = dim(point.estimate.ind)[1],
                       ncol = dim(point.estimate.ind)[2])
 
   pset <- dimnames(object)
 
   for (i in 1:length(pset)) {
-    point.estimate[, i] <- pset[[i]][point.estimate.ind[, i]]  
+    point.estimate[, i] <- pset[[i]][point.estimate.ind[, i]]
   }
 
   colnames(point.estimate) <- names(dimnames(object))
@@ -199,15 +253,27 @@ setMethod("point", "ParameterizedTest", function(object) {
 
 ############################## Helper Functions ##############################
 
+##' Helper function to check if parallel package is loaded
+##'
+##' @return Logical
 parallelLoaded <- function() {
    ("parallel" %in% loadedNamespaces())
 }
 
+##' Helper function to check if snow package is loaded
+##'
+##' @return Logical
 snowLoaded <- function() { ## if a cluster named cl has been started
   length(find("cl"))==1 ##"snow" %in% loadedNamespaces()
 }
 
-
+##' Get proper lapply function
+##'
+##' @param x x
+##' @param fun fun
+##' @param ... Add'l arguments.
+##' @return function
+##' @import parallel
 getLApplyFunction <- function(x,fun,...) {
   ## A parallized lapply
   opt <- getOption("RItools-lapply", lapply)
@@ -230,6 +296,12 @@ getLApplyFunction <- function(x,fun,...) {
 }
 
 
+##' Get proper apply function
+##'
+##' @param x x
+##' @param fun fun
+##' @param ... Add'l arguments.
+##' @return function
 getApplyFunction <- function(x,fun,...) {
   ## A parallelized sapply
   opt <- getOption("RItools-sapply", sapply)
@@ -250,4 +322,3 @@ getApplyFunction <- function(x,fun,...) {
 
   return(sapply(x,fun,...)) # the safe default
 }
-

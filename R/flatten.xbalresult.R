@@ -1,3 +1,11 @@
+##' Flattens xBalance output.
+##'
+##' Details...
+##' @param x x
+##' @param show.signif.stars Should signif stars be shown?
+##' @param show.pvals Should p-vals be shown?
+##' @param ... Ignored
+##' @return Structure
 flatten.xbalresult <- function (x,
                                 show.signif.stars=getOption("show.signif.stars"),
                                 show.pvals=!show.signif.stars,...) {

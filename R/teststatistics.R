@@ -14,47 +14,66 @@
 ################################################################################
 
 ############################### Mean Differences ###############################
-fastmean<-function(x){
+##' Mean functions
+##'
+##' Various functions to compute means
+##' @param ys ys
+##' @param z Vector that can be made logical.
+##' @return mean
+##' @name test.stat.means
+fastmean<-function(ys){
   ## Skip checks and dispatch etc.
-  .Internal(mean(x))
+  .Internal(mean(ys))
 }
 
+##' @rdname test.stat.means
 mean.difference <- function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
   z <- as.logical(z)
   return(fastmean(ys[z]) - fastmean(ys[!z]))
 }
 
+##' @rdname test.stat.means
 mean.diff.lsfit<-function(ys,z){
   ##Try using something that calls compiled code
   ##Gives same answer as mean.difference for balanced blocks and should be like harmonic.mean.difference for unbalanced blocks.
   lsfit(x=model.matrix(ys~z),y=ys,intercept=FALSE)[["coefficients"]][["z"]]
 }
 
+##' @rdname test.stat.means
 mean.diff.vect<-function(ys,z){
   X<-model.matrix(ys~z)
   solve(qr(X, LAPACK=TRUE), ys)[2] ## qr.coef(qr(X,LAPACK=TRUE),ys) ## to handle near singular X
 }
 
-## Studentized mean diff
+##' @rdname test.stat.means
 t.mean.difference <- function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
   z <- as.logical(z)
   return( {fastmean(ys[z]) - fastmean(ys[!z])}/sqrt( {fastvar(ys[z])/sum(z)}+{fastvar(ys[!z])/sum(!z)}) )
 }
 
-fastvar<-function(x){
+##' @rdname test.stat.means
+fastvar<-function(ys){
   ## See var for this. Right now it removes missing values
-  .Call(stats:::C_cov,x,NULL,5,FALSE)
+  .Call(stats:::C_cov,ys,NULL,5,FALSE)
 }
+
 ############################## Rank Based Functions ##############################
 
+##' Rank based functions
+##'
+##' @param ys ys
+##' @param z Vector that can be made logical
+##' @return sum
+##' @name rank.sum.functions
 rank.sum <- function(ys, z) {
   z <- as.logical(z)
   ys.ranks <- rank(ys)
   return(sum(ys.ranks[z]))
 }
 
+##' @rdname rank.sum.functions
 paired.sgnrank.sum <- function(ys, z){
   stopifnot(length(unique(z)) == 2) ##require binary treatment for now
 
@@ -84,6 +103,11 @@ paired.sgnrank.sum <- function(ys, z){
 
 ############################## Misc Statistics ##############################
 
+##' Odds ratio
+##'
+##' @param y y
+##' @param z z
+##' @return odds ratio
 odds.ratio <- function(y, z) {
   c11 <- sum(y == 1 & z == 1)
   c10 <- sum(y == 1 & z == 0)
@@ -97,6 +121,11 @@ odds.ratio <- function(y, z) {
 
 ############################# d and d^2 stats ###############################
 
+##' d stat
+##'
+##' @param y y
+##' @param z z
+##' @return d
 d.stat <- function(y, z) {
   tmp <- xBalance(z ~ y,
                   data = data.frame(y, z),
@@ -107,6 +136,10 @@ d.stat <- function(y, z) {
 
 ###################### Asymptotics ######################
 
+##' S4 AsymptoticTestStatistic class
+##'
+##' @slot asymptotic function
+##' @import kSamples
 setClass("AsymptoticTestStatistic",
          representation = c(asymptotic = "function"),
          contains = "function")
@@ -114,6 +147,12 @@ setClass("AsymptoticTestStatistic",
 
 ### Harmonic Mean Difference -- uses xBalance for asymptotics ###
 
+##' xBalanceBackEnd
+##'
+##' @param adjusted.data adjusted.data
+##' @param treatment treatment
+##' @return RandomizationDistribution
+##' @name xBalanceBackEnd
 .xBalanceBackEnd <- function(
                              adjusted.data,
                              treatment) {
@@ -144,10 +183,17 @@ setClass("AsymptoticTestStatistic",
 }
 
 
-# a little helper function
+##' Helper function
+##'
+##' @param n n
+##' @param m m
+##' @return value
+##' @name h.weights
 .h.weights <- function(n, m) {
   (m * (n-m)) / n
 }
+
+
 
 harmonic.mean.difference <- new("AsymptoticTestStatistic",
                                 # the main implementation
@@ -173,6 +219,12 @@ harmonic.mean.difference <- new("AsymptoticTestStatistic",
 
 ### Mann-Whitney U, with wilcox.test as a backend ###
 
+##' Wilcox BackEnd
+##'
+##' @param adjusted.data adjusted.data
+##' @param treatment treatment
+##' @return RandomizationDistribution
+##' @name wilcoxBackEnd
 .wilcoxBackEnd <- function(
                            adjusted.data,
                            treatment) {
@@ -205,10 +257,16 @@ mann.whitney.u <-  new("AsymptoticTestStatistic",
                          return(sum(r[seq_along(x)]) - n.x * (n.x + 1)/2)
                        }, asymptotic = .wilcoxBackEnd)
 
-### Quantile Differences
+###
 ### Similar to the KS test -- but evaluates differences at discrete points of
 ### the eCDF
 
+##' Quantile Differences
+##'
+##' Similar to the KS test -- but evaluates differences at discrete
+##' points of the eCDF
+##' @param quantiles quantiles
+##' @return value
 quantileAbsoluteDifference <- function(quantiles) {
   function(y, z) {
     z1 <- ecdf(y[z == 1])
@@ -218,7 +276,12 @@ quantileAbsoluteDifference <- function(quantiles) {
   }
 }
 
-
+##' IQR Difference
+##'
+##' @param q1 Lower quartile
+##' @param q2 Upper quartile
+##' @param type type
+##' @return IQR
 iqrDiff <- function(q1=.25,q2=.75,type=7){
   function(ys,z){
     ## Inter-quartile/quantile difference
@@ -231,13 +294,21 @@ iqrDiff <- function(q1=.25,q2=.75,type=7){
   }
 }
 
+##' MAD
+##'
+##' @param ys ys
+##' @param z z
+##' @return diff
 madDiff <- function(ys,z){
   ## Median absolute deviation (which is scaled to be asymp. same as sd of a Normal)
   ## see help("mad")
   mad(ys[!!z]) - mad(ys[!z])
 }
 
-
+##' Quantile difference
+##'
+##' @param q quantiles
+##' @return diff
 quantileDifference <- function(q=.5){
   function(ys,z){
     ## difference at a quantile
@@ -247,7 +318,13 @@ quantileDifference <- function(q=.5){
 
 ### The ksTestStatistic with ks.test as a potential backend
 
-# this borrowed from ks.test
+## KS background
+##'
+##' this borrowed from ks.test
+##' @param adjusted.y y
+##' @param z z
+##' @return RandomizationDistribution
+##' @name ksBackEnd
 .ksBackEnd <- function( adjusted.y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
@@ -288,12 +365,17 @@ ksTestStatistic <- new("AsymptoticTestStatistic",
                          return(max(abs(z)))
                        }, asymptotic = .ksBackEnd)
 
-### The adTestStatistic with ad.test as a potential backend
+##' The adTestStatistic with ad.test as a potential backend
+##'
+##' @param adjusted.y y
+##' @param z z
+##' @return RandomizationDistribution
+##' @name adBackEnd
 .adBackEnd <- function( adjusted.y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
-               res <- ad.test(y[!!z], y[!z]) 
+               res <- ad.test(y[!!z], y[!z])
                return(res$ad[1,c(1,3)])
                               })
 
@@ -307,7 +389,6 @@ ksTestStatistic <- new("AsymptoticTestStatistic",
 
 adTestStatistic <- new("AsymptoticTestStatistic",
                        function(y, z) {
-                         require(kSamples)
                          x <- y[z == 1]
                          y <- y[z == 0]
 
@@ -318,30 +399,12 @@ adTestStatistic <- new("AsymptoticTestStatistic",
                          return(ad.test(x,y)$ad[1,1])
                        }, asymptotic = .adBackEnd)
 
-### The ssrTestStatistic with the F-test as a potential asymp backend
-### (and using F as the test statistic)
-
-# this borrowed from ks.test
-.ksBackEnd <- function(
-                       adjusted.y,
-                       z) {
-
-  # adjusted.data should be a matrix, where each column is an adjusted data
-  tmp <- apply(adjusted.y, 2, function(y) {
-               res <- stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
-               return(res[c("statistic", "p.value")])
-                       })
-
-  tmp <- as.data.frame(matrix(unlist(tmp), ncol = 2, byrow = T))
-  colnames(tmp) <- c("statistic", "p.value")
-
-  return(new("RandomizationDistribution",
-             tmp, # RD inherits from data.frame
-             test.statistic = ks.test))
-}
-
-
-
+##' ssrTestStatistic
+##'
+##' The ssrTestStatistic with the F-test as a potential asymp backend
+##' (and using F as the test statistic)
+##' @param S S
+##' @return AsymptoticTestStatistic
 ssrTSmaker<-function(S){
   force(S)
   return(new("AsymptoticTestStatistic",
@@ -369,9 +432,13 @@ ssrTSmaker<-function(S){
              ))
 }
 
-
-
-
+##' ssr backEnd
+##'
+##' @param adjusted.y y
+##' @param z z
+##' @param d d
+##' @return RandomizationDistribution
+##' @name ssrBackEnd
 .ssrBackEnd <- function( adjusted.y, z, d) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
@@ -401,12 +468,19 @@ ssrTestStatistic <- new("AsymptoticTestStatistic",
 ### The Cramer-von Mises test statistic and asymp backend (using W2 version)
 ### The ksTestStatistic with ks.test as a potential backend
 
-# this borrowed from cvm.test
+#
+##' cvm BackEnd
+##'
+##' this borrowed from cvm.test
+##' @param adjusted.y y
+##' @param z z
+##' @return RandomizationDistribution
+##' @import dgof
+##' @name cvmBackEnd
 .cvmBackEnd <- function(
                         adjusted.y,
                         z) {
 
-  require(dgof)
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp <- apply(adjusted.y, 2, function(y) {
                res <- dgof::cvm.test(y[!!z], y[!z]) # small problems may still be figured exactly
@@ -469,6 +543,13 @@ cvmTestStatistic <- new("AsymptoticTestStatistic",
 
 ## Neymans Smooth Test
 
+##' Quasi Relative Distance
+##'
+##' @param y y
+##' @param yo y0
+##' @param binn binn
+##' @param location location
+##' @return vector
 quasireldist<-function(y,yo,binn=100,location="median"){
   ### This version follows the methods in 9.1.2.3 and 9.2 of Handcock and Morris, Relative Dist.
   ## first part is rmdata (from reldist.R)
@@ -533,10 +614,15 @@ quasireldist<-function(y,yo,binn=100,location="median"){
   return(as.vector(xx))
 }
 
+##' ddst test Statistic
+##'
+##' @param binn binn
+##' @param location location
+##' @return function
+##' @import ddst
 ddstTestStatistic<-function(binn=100,location="median"){
   function(ys,z){
     ## Neyman's Smooth test with data driven tuning parameter choice from Ledwina
-    require(ddst)
     qdat<-quasireldist(y=ys[!!z],yo=ys[!z])
     ## theddst<-ddst.uniform.test(qdat)
     ## return(theddst$statistic)
@@ -547,7 +633,13 @@ ddstTestStatistic<-function(binn=100,location="median"){
   }
 }
 
-
+##' entropy relative distance
+##'
+##' @param smooth smooth
+##' @param binn binn
+##' @param location location
+##' @return function
+##' @import mgcv
 entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
   function(ys,z){
   ## from Reldist rcdist
@@ -555,12 +647,11 @@ entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
     m <- length(ys[!!z])
     qdat<-quasireldist(y=ys[!!z],yo=ys[!z])
     r <- seq(0, 1, length = binn + 1)[-1] - 0.5/binn
-    require(mgcv, quietly = TRUE)
     is.wholenumber <- function(x, tol = .Machine$double.eps^0.5){
       abs(x - round(x)) < tol
     }
     family <- ifelse(is.wholenumber(m*qdat),"poisson","quasi")
-    yl <- gam(y ~ s(x, bs = "cr"), sp = smooth, family = family,
+    yl <- mgcv::gam(y ~ s(x, bs = "cr"), sp = smooth, family = family,
               data = data.frame(x = r, y = m * qdat))
     gpdf <- predict(yl, type = "response")
     scalef <- binn/sum(gpdf)
@@ -582,12 +673,14 @@ entropyRelDistTestStatistic<-function(smooth=.01,binn=100,location="median"){
 
 ## Entropy (From reldist)
 
-### Subset/subgroup Analysis
-### using a logical vector, limit the test statistic to a smaller group
-
+##' Subset/subgroup Analysis
+##'
+##' using a logical vector, limit the test statistic to a smaller group
+##' @param statistic statistic
+##' @param ... Add'l arguments to subset
+##' @return function
 subsetStatistic <- function(statistic, ...) {
   function(y, z) {
     statistic(subset(y, ...), subset(z, ...))
   }
 }
-

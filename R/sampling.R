@@ -3,9 +3,15 @@
 # simple random sampling, srs with blocks, multinomial sampling, etc.)
 ################################################################################
 
-### simple random samples: draw from all randomizations within a fixed number
-### of treated units within blocks
-
+##' Simple Random Sampler
+##'
+##' simple random samples: draw from all randomizations within a fixed
+##' number of treated units within blocks
+##' @param total Total
+##' @param treated Treated
+##' @param z z
+##' @param b b
+##' @return List
 simpleRandomSampler <- function(total, treated, z, b) {
   naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
 
@@ -138,10 +144,14 @@ simpleRandomSampler <- function(total, treated, z, b) {
 }
 
 
-### independentProbabilitySampler
-### Draw from the 2^n possible randomizations for n units with probability
-### vector p (e.g. where each unit gets its own, possibly biased, coin flip)
-
+##' Independent Probability Sampler
+##'
+##' Draw from the 2^n possible randomizations for n units with
+##' probability vector p (e.g. where each unit gets its own, possibly
+##' biased, coin flip)
+##' @param n n
+##' @param p p
+##' @return List
 independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
 
   function(samples) {

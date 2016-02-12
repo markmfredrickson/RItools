@@ -1,3 +1,78 @@
+##' A \code{print} method for \code{xBalance} objects.
+##'
+##' @title Printing xBalance Objects
+##' @param x An object of class "xbal" which is the result of a call
+##'   to \code{xBalance}.
+##' @param which.strata The stratification candidates to include in
+##'   the printout. Default is all.
+##' @param which.stats The test statistics to include. Default is all
+##'   those requested from the call to \code{xBalance}.
+##' @param which.vars The variables for which test information should
+##'   be displayed. Default is all.
+##' @param print.overall Should the omnibus test be reported? Default
+##'   is \code{TRUE}.
+##' @param digits To how many digits should the results be displayed?
+##'   Default is \code{max(2,getOptions("digits")-4)}.
+##' @param printme Print the table to the console? Default is
+##'   \code{TRUE}.
+##' @param show.signif.stars Use stars to indicate z-statistics larger
+##'   than conventional thresholds. Default is \code{TRUE}.
+##' @param show.pvals Instead of stars, use p-values to summarize the
+##'   information in the z-statistics. Default is \code{FALSE}.
+##' @param horizontal Display the results for different candidate
+##'   stratifications side-by-side (Default, \code{TRUE}), or as a
+##'   list for each stratification (\code{FALSE}).
+##' @param report What to report.
+##' @param ... Other arguements. Not currently used.
+##' @return \describe{
+##' \item{vartable}{The formatted table of variable-by-variable
+##'   statistics for each stratification.}
+##' \item{overalltable}{If the overall Chi-squared statistic is
+##'   requested, a formatted version of that table is returned.}
+##' }
+##' @seealso xBalance
+##' @export
+##' @aliases print
+##' @keywords print
+##' @examples
+##' data(nuclearplants)
+##'
+##' xb0<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##'               data=nuclearplants)
+##'
+##' print(xb0)
+##'
+##' xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##'          data = nuclearplants,
+##'          report = c("all"))
+##'
+##' str(xb1)
+##'
+##' print(xb1)
+##'
+##' print(xb1, show.pvals = TRUE)
+##'
+##' print(xb1, horizontal = FALSE)
+##'
+##' ## The following doesn't work yet.
+##' \dontrun{print(xb1, which.vars=c("date","t1"),
+##'          which.stats=c("adj.means","z.scores","p.values"))}
+##'
+##' ## The following example prints the adjusted means
+##' ## labeled as "treatmentvar=0" and "treatmentvar=1" using the
+##' ## formula provided to xBalance().
+##'
+##' # This is erroring with the change to devtools, FIXME
+##' \dontrun{print(xb1,
+##'       which.vars = c("date", "t1"),
+##'       which.stats = c("pr=0", "pr=1", "z", "p"))}
+##'
+##' ## Now, not asking for the omnibus test
+##' xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##'          data = nuclearplants,
+##'          report = c("all"))
+##'
+##' print(xb2, which.strata = "pt")
 print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                         which.stats=dimnames(x$results)[["stat"]],
                         which.vars=dimnames(x$results)[["vars"]],
@@ -14,7 +89,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
   # even if an error is thrown the option should be the same after this function
   DIGITS = ifelse(is.null(digits), max(2, getOption("digits")-4), digits)
 
-  # we'll call this function within a wrapped options block below. 
+  # we'll call this function within a wrapped options block below.
   f <- function() {
     ##makeSigStarsStdNormal <- function(zs) {
     ##  if (length(zs)){##c('','.  ','*  ','** ','***'
@@ -30,7 +105,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     theresults <- x$results
 
     # for historical reasons, what the user requests and the column names in the per-variable table are not the same
-    lookup <- c("std.diffs" = "std.diff", "z.scores" = "z", 
+    lookup <- c("std.diffs" = "std.diff", "z.scores" = "z",
                 "adj.mean.diffs" = "adj.diff",
                 "p.values" = "p",
                 "pooled.sd" = "pooled.sd")
@@ -44,7 +119,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       lookup <- c(Treatment = "Treatment", Control = "Control", lookup)
     }
 
-    
+
     if (!("all" %in% report)) {
       # on this next line, we use anything in report tha tis also in the names of the lookup table
       # it's a little strange looking, but it does the right thing
@@ -55,7 +130,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     }
 
     hasP <- "p" %in% dimnames(theresults)[["stat"]]
-    
+
     if("chisquare.test" %in% report || "all" %in% report) { ##Extract the omnibus chisquared test from the xbal object...
       theoverall <- x$overall
     } else {
@@ -184,6 +259,5 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     } else {
       list(vartable=thevartab,overalltable=theoveralltab)}
   }
-              
   withOptions(list(digits = DIGITS), f)
 }

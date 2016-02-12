@@ -52,6 +52,3 @@ future, if you wish load the downloaded version of `RItools` in a new `R`
 session you can use this one-liner:
 
     > library("RItools", lib.loc = "~/R/RItools.experimental") # <- your path here
-
-
-

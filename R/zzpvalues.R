@@ -7,35 +7,54 @@
 
 ############################## P-Value Generators ##############################
 
+##' P-value gnerators
+##'
+##' @param value value
+##' @param distribution distribution
+##' @param lower.tail lower.tail?
+##' @return value
+##' @name p-value
 simple.p.value <- function(value, distribution, lower.tail = FALSE) {
   if (lower.tail) {
     mean(distribution <= value)
-  } else { 
+  } else {
     mean(distribution >= value)
   }
 }
 
+
+##' @rdname p-value
 upper.p.value <- function(value, distribution) { simple.p.value(value, distribution, FALSE) }
+
+##' @rdname p-value
 lower.p.value <- function(value, distribution) { simple.p.value(value, distribution, TRUE) }
 
 ##There is some debate about two-sided p-values. I've been going with Rosenbaum 2009, Chapter 2, Footnote 2
 
 ##"In general, if you want a two-sided P-value, compute both one-sided P-values, double the smaller one, and take the minimum of this value and 1. This approach views the two-sided P-value as a correction for testing twice [10]. Both the sample mean in the current section and Wilcoxon's signed rank statistic in the next section have randomization distributions under the null hypothesis that are symmetric, and with a symmetric null distribution there is little ambiguity about the mean- ing of a two-sided P-value. When the null distribution is not symmetric, different definitions of a two-sided P-value can give slightly different answers. As discussed in [10], the view of a two- sided P-value as a correction for testing twice is one sensible approach in all cases. For related results, see [55]."
 
+##' @rdname p-value
 general.two.sided.mid.p.value<-function(value,distribution){
     high.mid<-mean(distribution>value)+mean(distribution==value)/2
     low.mid<-mean(distribution<value)+mean(distribution==value)/2
     return(2*min(low.mid,high.mid)) ##don't worry about bounding by 1 for now
 }
 
+##' @rdname p-value
 general.two.sided.p.value<-function(value,distribution){
   min(2 * min(upper.p.value(value, distribution), lower.p.value(value, distribution)),1)
 }
 
 ############################## Using RDs ##############################
 
+#' Parameter P-value class
 setClass("ParameterPvals", contains = "data.frame")
 
+##' Generate p-values
+##'
+##' @param object Object
+##' @param p.value.function Function to use
+##' @return ParameterPvals
 p.values <- function(object, p.value.function = general.two.sided.p.value) {
   stopifnot(inherits(object, "RandomizationDistribution"))
 
@@ -51,10 +70,15 @@ p.values <- function(object, p.value.function = general.two.sided.p.value) {
   return(as(cbind(rbind(NA, object@paramMatrix), p = pvs), "ParameterPvals"))
 }
 
+##' Plot function for ParameterPvals
+##'
+##' @param object ParameterPvals
+##' @param ... Add'l arguments to \code{plot}
+##' @return plot
+##' @import lattice
 plot.ParameterPvals <- function(object, ...) {
-  library(lattice)
   # for each pair of parameters, plot somethign like this:
-  width <- dim(object)[2]  
+  width <- dim(object)[2]
   params <- colnames(object)[1:(width - 1)] # TODO function to get
   # it from the PRD
 
@@ -72,23 +96,42 @@ plot.ParameterPvals <- function(object, ...) {
 
 ##The confidence interval function ought to refuse to provide levels that are not supported (see the behavior of wilcox.test when you ask for an exact CI but the discreteness of the randomization distribution does not allow it
 
+##' RandomizationDistribution
+##'
+##' @slot test.statistic xBalance object
+setClass("RandomizationDistribution",
+         slots = list(test.statistic = "list"),
+         contains = "data.frame")
+
+##' Randomization Distribution Confidence Interval
+##'
+##' @slot prd RandomizationDistribution
+##' @slot rejections data.frame
 setClass("RandomizationDistributionConfInt",
   representation(
     prd = "RandomizationDistribution",
     rejections = "data.frame"))
 
+##' functions for RandomizationDistribution
+##'
+##' @param object RandomizationDistribution
+##' @param param param
+##' @param level level
+##' @param ... Add'l arguments.
+##' @name Randomizationdistributionconfint
 confint.RandomizationDistribution <- function(
   object,
   param,
   level = 0.95) {
-  
+
   reject <- (1 - object$p.value) > level
   results <- cbind(object@paramMatrix, reject[-1]) # drop the null
-   
+
   return(new("RandomizationDistributionConfInt", prd = object,
     rejections = results))
 }
 
+##' @rdname Randomizationdistributionconfint
 summary.RandomizationDistributionConfInt <- function(object, ...)
 {
   width <- dim(object@rejections)[2]
@@ -98,19 +141,17 @@ summary.RandomizationDistributionConfInt <- function(object, ...)
     tmp2 <- object@rejections[!object@rejections$reject, p]
     c(min(tmp1), min(tmp2), max(tmp2), max(tmp1))
   }))
-  colnames(minmax) <- c("Tested Min", "Int. Min", 
+  colnames(minmax) <- c("Tested Min", "Int. Min",
                         "Int. Max", "Tested Max")
   return(minmax)
 }
 
+##' @rdname Randomizationdistributionconfint
 plot.RandomizationDistributionConfInt <- function(object, ...) {
-  library(lattice)
   # for each pair of parameters, plot somethign like this:
-  width <- dim(object@rejections)[2]  
+  width <- dim(object@rejections)[2]
   params <- colnames(object@rejections)[1:(width - 1)] # TODO function to get
   # it from the PRD
   fmla <- as.formula(paste("reject ~ ", params[1], "+", params[2]))
   levelplot(fmla, data = object@rejections, colorkey = F)
 }
-
-
