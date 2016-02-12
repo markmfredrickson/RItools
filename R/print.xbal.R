@@ -222,5 +222,5 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     } else {
       list(vartable=thevartab,overalltable=theoveralltab)}
   }
-              )
+  )
 }

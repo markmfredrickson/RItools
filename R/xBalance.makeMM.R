@@ -1,3 +1,9 @@
+##' Helper function for xBalance
+##'
+##' Make MM
+##' @param tfm tfm
+##' @param dat data
+##' @return mm
 xBalance.makeMM <- function(tfm, dat) {
   attr(tfm, "intercept") <- 1
   mf <- model.frame(tfm, dat, na.action=na.pass) ##na.pass leaves the NAs in dat in the model.frame

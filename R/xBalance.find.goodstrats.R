@@ -1,3 +1,10 @@
+##' xBalance helper function
+##'
+##' Finds good strata
+##' @param ss.df Degrees of freedom.
+##' @param zz Treatment
+##' @param mm mm
+##' @return Data.frame
 xBalance.find.goodstrats <- function(ss.df,zz,mm) {
   ### EXCLUDE "NA" STRATA, EMPTY STRATA & STRATA W/O VARIATION IN zz ("treatment")
   ccs <- complete.cases(mm)

@@ -1,5 +1,9 @@
 ##This file contains some small helper functions.
 
+##' Get p-value for Z-stats
+##'
+##' @param zs A Z-statistic.
+##' @return A P-value
 makePval<-function(zs) {
   2*pnorm(abs(zs),lower.tail=FALSE)
 }
@@ -14,9 +18,11 @@ formula.xbal<-function(x,...){
   attr(x,"fmla")
 }
 
-# ============================================================================
-# = withOptions helper provides a safe way to temporarily override options() =
-# ============================================================================
+##' Safe way to temporarily override options()
+##'
+##' @param optionsToChange Which options.
+##' @param fun Function to run with new options.
+##' @return Result of \code{fun}.
 withOptions <- function(optionsToChange, fun) {
   oldOpts <- options()
   do.call(options, optionsToChange)

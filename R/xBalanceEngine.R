@@ -1,3 +1,16 @@
+##' xBalance helper function
+##'
+##' Make engine
+##' @param ss ss
+##' @param zz zz
+##' @param mm mm
+##' @param report report
+##' @param swt swt
+##' @param s.p s.p
+##' @param normalize.weights normalize.weights
+##' @param zzname zzname
+##' @param post.align.trans post.align.trans
+##' @return List
 xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
@@ -79,7 +92,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     # (NB: since tmat has just been recentered,
     # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
     ssn <- drop(crossprod(zz, tmat))
-    ssvar <- apply(dv*tmat*tmat, 2, sum) 
+    ssvar <- apply(dv*tmat*tmat, 2, sum)
   } else {
       tmat <- tmat *swt$wtratio
   }
