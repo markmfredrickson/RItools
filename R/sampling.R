@@ -1,13 +1,10 @@
-################################################################################
-# Sampling: Drawing samples from sample spaces implied design choices (e.g.
-# simple random sampling, srs with blocks, multinomial sampling, etc.)
-################################################################################
-
-##' simple random samples: draw from all randomizations within a fixed number
-##' of treated units within blocks.
-##' @param Total size of the experimental pool
-##' @param treated Total number to be assigned treatment. One of \code{treated} or \code{z} is required.
-##' @export
+#' Generate Simple/Stratified/Paired Random Assignments
+#'
+#' simple random samples: draw from all randomizations within a fixed number
+#' of treated units within blocks.
+#' @param Total size of the experimental pool
+#' @param treated Total number to be assigned treatment. One of \code{treated} or \code{z} is required.
+#' @export
 simpleRandomSampler <- function(total, treated, z, b) {
   naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
 
