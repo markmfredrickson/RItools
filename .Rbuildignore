@@ -1,0 +1,8 @@
+Makefile
+Rprofile
+checkspelling.R
+lexicon.txt
+load.R
+inst/docs
+cran-comments.md
+matrixNotation.Rnw

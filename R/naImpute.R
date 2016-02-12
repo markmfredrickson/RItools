@@ -1,3 +1,12 @@
+##' Impute NA's
+##'
+##' Does this by doing something...
+##' @param FMLA Formula
+##' @param DATA Data
+##' @param impfn Function for imputing.
+##' @param na.rm What to do with NA's
+##' @param include.NA.flags Should NA flags be included
+##' @return Structure
 naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE) {
   if (!all("na.rm" %in% names(formals(impfn)))){stop("The imputation function requires a na.rm argument like that of mean.default() or median()")}
   fmla.rhs <- terms.formula(if (length(FMLA)>2) FMLA[-2] else FMLA,
