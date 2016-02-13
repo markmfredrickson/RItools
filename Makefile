@@ -12,13 +12,14 @@ interactive-emacs:
 .devtools:
 	@$(RCMD) "library(devtools); devtools:::$(FUNC)()"
 
+dependencies: FUNC=install_deps
 test: FUNC=test
 check: FUNC=check
 document: FUNC=document
 # vignette: FUNC=build_vignettes # To be renabled if we add vignettes
 # clean-vignette: FUNC=clean_vignettes
 build: FUNC=build
-test check document build: .devtools
+dependencies test check document build: .devtools
 #vignette clean-vignette: .devtools
 
 clean: #clean-vignette
