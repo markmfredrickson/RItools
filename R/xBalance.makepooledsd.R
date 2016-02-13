@@ -22,3 +22,21 @@ xBalance.makepooledsd <- function(zz,mm,pre.n) {
   ##Pooled standard deviation.
   sqrt( (max(sum(zz>0)-1,0)*s2.t + max(sum(zz<=0)-1,0)*s2.c)/(pre.n-2) )
 }
+
+xBalance.makepooledsd.single <- function(zz,v,pre.n) {
+  if (any(zz>0)) {
+    s2.t <- var(v[zz > 0], na.rm = TRUE)
+  } else {
+    s2.t <- 0
+  }
+
+  ##Variance of the covariates among the controls (zz==0)
+  if (any(zz<=0)) {
+    s2.c <- var(v[zz <= 0], na.rm = TRUE)
+  } else {
+    s2.c <- 0
+  }
+
+  ##Pooled standard deviation.
+  sqrt( (max(sum(zz>0)-1,0)*s2.t + max(sum(zz<=0)-1,0)*s2.c)/(pre.n-2) )
+}

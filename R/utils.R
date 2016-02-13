@@ -106,7 +106,6 @@ subset.xbal <- function(x,
                         ...) {
 
   res.dmns <- dimnames(x$results)
-  ov.dmns <- dimnames(x$overall)
 
   if (is.null(strata)) {
     strata <- res.dmns$strata
@@ -121,7 +120,7 @@ subset.xbal <- function(x,
   }
 
   if (is.null(tests)) {
-    tests <- ov.dmns$tests
+    tests <- colnames(x$overall)
   }
 
   res <- x$results[vars, stats, strata, drop = F]

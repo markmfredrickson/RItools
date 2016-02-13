@@ -42,9 +42,7 @@
 ##' # Test balance on a variety of variables, with the 'pr' factor
 ##' # indicating which sites are control and treatment units, with
 ##' # stratification by the 'pt' factor to group similar sites
-##' xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-##'                 strata = data.frame(unstrat = factor(character(32)),
-##'                 pt = factor(nuclearplants$pt)),
+##' xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'                 data = nuclearplants,
 ##'                 report = c('adj.means', 'adj.mean.diffs',
 ##'                            'std.diffs', 'z.scores',
@@ -75,7 +73,6 @@ xtable.xbal <- function(x,
   ##\newcolumntype{.}{D{.}{.}{2.2}}
   ##Here is an example which works
   ##xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-  ##         strata=data.frame(unstrat=factor(character(32)),
   ##           pt=factor(nuclearplants$pt)),
   ##         data=nuclearplants,
   ##         report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test','p.values'))
