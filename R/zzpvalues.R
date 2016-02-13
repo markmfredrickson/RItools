@@ -115,14 +115,17 @@ setClass("RandomizationDistributionConfInt",
 ##' functions for RandomizationDistribution
 ##'
 ##' @param object RandomizationDistribution
-##' @param param param
+##' @param parm param
 ##' @param level level
-##' @param ... Add'l arguments.
+##' @param ... Add'l arguments. Ignored.
 ##' @name Randomizationdistributionconfint
+##' @method confint RandomizationDistribution
+##' @export
 confint.RandomizationDistribution <- function(
   object,
-  param,
-  level = 0.95) {
+  parm,
+  level = 0.95,
+  ...) {
 
   reject <- (1 - object$p.value) > level
   results <- cbind(object@paramMatrix, reject[-1]) # drop the null
