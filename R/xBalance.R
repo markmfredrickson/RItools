@@ -302,6 +302,3 @@ xBalance.make.stratum.mean.matrix <- function(ss, mm) {
 
   return(msmn)
 }
-
-
-
