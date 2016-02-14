@@ -68,15 +68,18 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
+##' @param weights.case NOT YET IMPLEMENTED: Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
-##'   sizes within strata.  This can be either a function used to
+##'   sizes, in numbers of clusters if clusters are present, within strata.
+##'   This can be either a function used to
 ##'   calculate the weights or the weights themselves; if
 ##'   \code{strata} is a data frame, then it can be such a function, a
 ##'   list of such functions, or a data frame of stratum weighting
 ##'   schemes corresponding to the different stratifying factors of
 ##'   \code{strata}.  See details.
+##' @param subset Optional vector specifying a subset of observations to be used.
 ##' @param na.rm Whether to remove rows with NAs on any variables
 ##'   mentioned on the RHS of \code{fmla} (i.e. listwise deletion).
 ##'   Defaults to \code{FALSE}, wherein rows aren't deleted but for
@@ -187,7 +190,9 @@ xBalance <- function(fmla,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
+                     weights.case,
                      stratum.weights = harmonic,
+                     subset,
                      na.rm = FALSE,
                      impfn = median,
                      include.NA.flags = TRUE,
@@ -201,6 +206,18 @@ xBalance <- function(fmla,
   }
 
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
+
+  if (missing(data)) 
+     data <- environment(formula)
+  mf <- match.call(expand.dots = FALSE)
+  m <- match(c("formula", "data", "subset", "weights.case"), names(mf), 0L)
+  mf <- mf[c(1L, m)]
+  if (cwpos <- match("weights.case", m, nomatch=0))
+      names(mf)[cwpos] <- "weights"
+  mf$drop.unused.levels <- TRUE
+  mf[[1L]] <- quote(stats::model.frame)
+  mf$na.action <- quote(stats::na.pass)
+  data <- eval(mf, parent.frame())
 
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.

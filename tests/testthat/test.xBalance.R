@@ -93,6 +93,20 @@ test_that("NA in stratify factor are dropped", {
   expect_equal(xb1, xb2)
 })
 
+test_that("Use of subset argument", {
+  data(nuclearplants)
+
+  n2 <- nuclearplants
+  n2 <- rbind(n2, n2[1,])
+  n2[nrow(nuclearplants)+1, "pt"] <- 2
+
+  xb1 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants)
+  xb2 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants, subset=pt<=1)
+
+  expect_equal(xb1, xb2)
+})
+
+
 test_that("p.adjust.method argument", {
   data(nuclearplants)
 
