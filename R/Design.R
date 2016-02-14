@@ -76,7 +76,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
 
   str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))))
   str.tms  <- terms(str.fmla, data = data, specials = c("cluster", "strata"))
-  str.data <- model.frame(str.tms, data = data, na.action = na.pass)
+  str.data <- model.frame(str.tms, data = data, na.action = na.pass, drop.unused.levels=TRUE)
 
 
   ## check that strata and clusters have the proper relationships with treatment assignment
