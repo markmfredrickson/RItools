@@ -1,84 +1,59 @@
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](http://cran.r-project.org/package=RItools)
+Stable version: [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](http://cran.r-project.org/package=RItools)
 
-# RItools
-Randomization inference tools for R
+# RItools: Randomization Inference Tools
 
-# Using a development version of RItools
+The `RItools` package implements useful functions for implementing
+randomization inference based statistical tests.  The package provides tools
+for testing balance of observed covariates in observational studies using the
+methodology of:
 
-## Fetching and installing in a local directory
+    Ben B. Hansen and Jake Bowers (2008). Covariate balance in simple,
+      stratified and clustered comparative studies. Statistical Science.
+      23(2):219--236.
 
-Chances are you already have an installation of RItools that you
-use. These directions will install the development version in a way
-that will not overwrite your existing installation.
+See the online documentation for `xbalance` for more details.
 
-`ritools` is built using
-[devtools](https://cran.r-project.org/package=devtools) which makes
-installing the current development version very easy. Simply install
-the `devtools` package and then use it to install from this
-repository.
+The package also provides outcome analysis of simple or block randomized
+trials (or matched observational studies) based on user defined models and
+test statistics. See the online documentation of
+`parameterizedRandomizationDistribution` for more details.
 
-    install.packages("devtools")
-    devtools:::install_github("markmfredrickson/ritools")
+`RItools` is available on [CRAN](http://cran.r-project.org):
 
-You may pass `ref=<branchname>` as an argument to `install_github` to
-install a branch other than "master", which is the default.
+    > install.packages("RItools")
+    > library("RItools")
 
-Alternatively, if you have a working installation of `git` and all the
-software mentioned in the previous section, you can checkout a copy of
-the source directly.  Instead of downloading the source directly, fork
-the project and github and clone a working copy from your forked
-project:
 
-    $ git clone git@github.com:YOURUSERNAME/ritools.git
+##  Using a development version of RItools
 
-To ensure you have all the required dependencies to work with
-`ritools`, you can automatically install them with
+These directions will install development version in a way that will not
+overwrite an existing installation of `RItools` from CRAN. You will will need
+to know the name of the branch you wish to install.
 
-    $ make dependencies
+1. `master`: The current released version of `RItools` and a holding place for small bug changes.
+2. `randomization-distribution`: Experimental work on outcome analysis using
+   user defined models of effects and test statistics. This branch contains
+   the tools necessary to compute estimated treatment effects, p-values, and
+   confidence intervals (regions) using direct simulation from the randomization
+   distribution implied by the design of the experiment (or using the exact
+	   randomization distribution if the number of possible ways for the treatment to
+	   be assigned is relatively small).
 
-As mentioned, `ritools` is developed with `devtools` and requires it
-to compile.  Once you have installed `devtools`, you may create a
-bundled package with
+Install and load the `devtools` package:
 
-    $ cd /path/to/package
-    $ make build
+    > install.packages("devtools")
+    > library("devtools")
 
-This should build a `ritools_VERSION.tar.gz` file. You can install it
-in a local directory (for example `~/R/ritools.demo`) using:
+Next, pick a location to install the package. For example, create a
+directory called `~/R/RItools.experimental/` (`~` is short for my home directory on a
+UNIX system). For this session, we will set the library path to look in this
+location first and install the package there:
 
-    $ mkdir -p ~/R/ritools.demo
-    $ R CMD Install --no-multiarch --library=~/R/ritools.demo ./ritools_VERSION.tar.gz
+    > .libPaths("~/R/RItools.experimental/") # <- your path here
+    > install_github("markmfredrickson/RItools@randomization-distribution")
 
-You can then load the library in `R` using:
+The function `install_github` will load the package automatically. In the
+future, if you wish load the downloaded version of `RItools` in a new `R`
+session you can use this one-liner:
 
-    > library("ritools", lib.loc = "~/R/ritools.demo")
-
-### Developing for RItools
-
-We prefer changes that include unit tests demonstrating the problem or
-showing how the new feature should be added. The test suite uses the
-[testthat](http://github.com/hadley/test_that) package to write and
-run tests.  (Please ensure you have the latest version of testthat (or
-at least v0.11.0), as older versions stored the tests in a different
-directory, and may not test properly.) See the `tests/testthat`
-directory for examples. To run the test suite, use:
-
-    $ make test
-
-New features should include inline [Roxygen](http://roxygen.org/)
-documentation.  You can generate all `.Rd` documents from the
-`Roxygen` code via
-
-    $ make document
-
-These other commands are also useful for development:
-
-- `make interactive`: starts up an interactive session with `ritools`
-  loaded.
-- `make check`: runs `R CMD check` on the package
-- `make vignette`: Builds any vignettes in `vignettes/` directory
-- `make clean`: Removes files built by `make vignette`, `make
-   document` or `make check`.  Should not be generally necessary, but
-   can be useful for debugging.
-
-When your change is ready, make a pull request on github.
+    > library("RItools", lib.loc = "~/R/RItools.experimental") # <- your path here
