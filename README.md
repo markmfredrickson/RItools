@@ -50,10 +50,15 @@ UNIX system). For this session, we will set the library path to look in this
 location first and install the package there:
 
     > .libPaths("~/R/RItools.experimental/") # <- your path here
+    > install_github("markmfredrickson/RItools")
+
+The function `install_github` will load the package automatically.  To
+install from a branch of the repository, e.g. the
+randomization-distribution branch, instead use
+
     > install_github("markmfredrickson/RItools@randomization-distribution")
 
-The function `install_github` will load the package automatically. In the
-future, if you wish load the downloaded version of `RItools` in a new `R`
+In the future, if you wish load the downloaded version of `RItools` in a new `R`
 session you can use this one-liner:
 
     > library("RItools", lib.loc = "~/R/RItools.experimental") # <- your path here
