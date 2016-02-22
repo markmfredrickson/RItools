@@ -5,12 +5,12 @@
 
 ##' Simple Random Sampler
 ##'
-##' simple random samples: draw from all randomizations within a fixed
+##' The simple random sampler creates a function that draws from the set of all randomizations with a fixed
 ##' number of treated units within blocks
 ##' @param total size of the experimental pool
 ##' @param treated Total number to be assigned treatment. One of \code{treated} or \code{z} is required.
-##' @param z z
-##' @param b b
+##' @param z Right now, z is binary or logical.
+##' @param b records the membership in blocks within which treatment is assigned
 ##' @return List
 ##' @export
 simpleRandomSampler <- function(total, treated, z, b) {
