@@ -158,6 +158,17 @@ test_that("Aggegating designs by clusters", {
 
 })
 
+test_that("aggregateDesign treats NA covariates as 0's" ,{
+  dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x=rep(c(NA, 1), c(3,2))
+                  )
+  design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
+  aggDesign <- RItools:::aggregateDesign(design)
+  expect_equal(aggDesign@Covariates[1:2,'x'], c(0, 0))
+})
+
 test_that("NA flags are optional", {
   set.seed(20130801)
 

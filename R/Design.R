@@ -422,7 +422,7 @@ aggregateDesign <- function(design) {
   Cluster <- design@Cluster[!dupes]
 
   C <- SparseMMFromFactor(design@Cluster)
-  Covariates <- as.matrix(t(C) %*% design@Covariates)
+  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@NotMissing))
   NotMissing <- as.matrix(t(C) %*% design@NotMissing)
 
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
