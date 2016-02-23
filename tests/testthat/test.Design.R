@@ -46,6 +46,8 @@ test_that("Creating design objects", {
   # - All NA strata variables
   # - Missing z or cluster
   # - strata with extra levels but no observations (which can be safely dropped)
+  #   (NB: extra levels tested upstream, in xBalance, as of commit 34861515; 
+  #   see ./test.clusters.R  
 })
 
 test_that("Design to descriptive statistics", {
