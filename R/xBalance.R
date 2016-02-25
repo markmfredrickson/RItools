@@ -68,7 +68,7 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
-##' @param weights.case NOT YET IMPLEMENTED: Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
+##' @param case.weights NOT YET IMPLEMENTED: Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
@@ -190,7 +190,7 @@ xBalance <- function(fmla,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
-                     weights.case,
+                     case.weights,
                      stratum.weights = harmonic,
                      subset,
                      na.rm = FALSE,
@@ -210,15 +210,17 @@ xBalance <- function(fmla,
   if (missing(data)) 
      data <- environment(formula)
   mf <- match.call(expand.dots = FALSE)
-  m <- match(c("formula", "data", "subset", "weights.case"), names(mf), 0L)
+  m <- match(c("formula", "data", "subset", "case.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("weights.case", m, nomatch=0))
+  if (cwpos <- match("case.weights", m, nomatch=0))
       names(mf)[cwpos] <- "weights"
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
   mf$na.action <- quote(stats::na.pass)
   data <- eval(mf, parent.frame())
-
+  if (!cwpos)
+      data$'(weights)' <- 1
+  
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
   valid.for.report <- c("adj.means","adj.mean.diffs","chisquare.test",
