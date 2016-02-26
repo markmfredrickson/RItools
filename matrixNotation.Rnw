@@ -31,7 +31,8 @@ Nothing missing on $X_4$.
 X <- matrix(rnorm(32), nrow = 8)
 @ 
 
-We need to make \emph{per-variable} weights based on non-missingness. We want to drop any units in strata that have all missing treated or all missing control. At the end of the day, we want a matrix that is $n \times p$, where $p$ is the number of variables we're considering.
+We need to make \emph{per-variable} case weights, based on case
+weights (if provided) and on non-missingness. For each variable we want to drop any units in strata that have all missing treated or all missing control. At the end of the day, we want a matrix that is $n \times p$, where $p$ is the number of variables we're considering.
 
 <<>>=
 ZZ <- S * matrix(Z, ncol = ncol(S),# this matrix indicates for each  
@@ -41,29 +42,31 @@ S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p
 S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p also
 S.has.both <- !(S.missing.0 | S.missing.1) 
 use.units <- (S %*% S.has.both) # n * p
+use.units <- use.units * (M>0)
+pv.c.wt <- use.units * M
 
 # zero out any "missing" entries
-X.use  <- X * use.units
-X2.use <- X.use^2 
+X.use  <- X * pv.c.wt
+X2.use <- X * X.use
 @ 
 
-We can get the per variable $n$:
+We can get the per variable sum of case weights: %$n$:
 <<>>=
-n1 <- t(use.units) %*% Z # p * 1
-n0 <- t(use.units) %*% (1 - Z) # p * 1
+n1 <- t(pv.c.wt) %*% Z # p * 1
+n0 <- t(pv.c.wt) %*% (1 - Z) # p * 1
 @ 
 
-Then we can get ETT strata weights per variable:
+Then we can get ``ETT'' strata weights per variable:
 <<>>=
-(ETT <- S %*% t(ZZ) %*% use.units) # n * p
+(ETT <- S %*% t(ZZ) %*% pv.c.wt) # n * p
 @ 
 
 Then we can compute the simple treated unit averages as:
 <<>>=
-(treated.avg <- t(X * use.units) %*% Z / n1) # p * 1
+(treated.avg <- t(X * pv.c.wt) %*% Z / n1) # p * 1
 @ 
 
-The control averages are ETT weighted, instead we do:
+The control averages are ``ETT'' weighted, instead we do:
 <<>>=
 n0.ett <- t(ETT) %*% (1 - Z)
 (control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)

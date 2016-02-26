@@ -4,22 +4,22 @@
 
 #' Design S4 class
 #'
-#' @slot Z Z
-#' @slot StrataMatrices StrataMatrices
-#' @slot StrataFrame StrataFrame
-#' @slot Cluster Cluster
-#' @slot OriginalVariables OriginalVariables
-#' @slot Covariates Covariates
-#' @slot NotMissing NotMissing
+#' @slot Z Logical indicating treatment assignment
+#' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
+#' @slot StrataFrame Factors indicating strata (not the sparse matrices, as we use them in the weighting function)
+#' @slot Cluster Factor indicating who's in the same cluster with who
+#' @slot OriginalVariables Look up table to remind us which Covariates columns correspond to which provide variables
+#' @slot Covariates Numeric matrix encoding variable values, analogous to a design matrix
+#' @slot NotMissing Case weight, unless value is missing (in which case 0); for clusters, sum of non-missing case weights
 setClass("Design",
          representation = list(
            Z                 = "logical",
-           StrataMatrices    = "list", # this is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratafication
-           StrataFrame       = "data.frame", # this is just the factors (not the sparse matrices, as we use them in the weighting function)
+           StrataMatrices    = "list", 
+           StrataFrame       = "data.frame",  
            Cluster           = "factor",
            OriginalVariables = "character",
            Covariates        = "matrix",
-           NotMissing        = "matrix") # 1 is the value in covariates was not missing, 0 if it was imputed
+           NotMissing        = "matrix") 
          )
 
 #
@@ -49,7 +49,14 @@ setClass("Design",
 ##' @param include.NA.flags Flag NA's?
 ##' @return Design
 makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.flags = TRUE) {
-  ts <- terms(fmla, data = data, specials = c("cluster", "strata"))
+
+    cweights <- as.vector(model.weights(data))
+    if (is.null(cweights))
+        stop("makeDesign() expects its data arg to be a model frame containing weights")
+    stopifnot(is.numeric(cweights), all(!is.na(cweights)), all(cweights>=0))
+
+    ts <- terms(fmla, data = data[setdiff(colnames(data), '(weights)')],
+                specials = c("cluster", "strata"))
 
   if (attr(ts, "response") == 0) {
     stop("You must include a treatment assignment variable on the left hand side")
@@ -77,8 +84,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))))
   str.tms  <- terms(str.fmla, data = data, specials = c("cluster", "strata"))
   str.data <- model.frame(str.tms, data = data, na.action = na.pass, drop.unused.levels=TRUE)
-
-
+    
   ## check that strata and clusters have the proper relationships with treatment assignment
   treatmentCol <- colnames(str.data)[attr(str.tms, "response")]
   clusterCol <- colnames(str.data)[attr(str.tms, "specials")$cluster]
@@ -168,7 +174,8 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   clist <- clist[!sapply(clist, is.null)]
 
   data.mm         <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
-  data.notmissing <- 1 - is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist))
+  data.notmissing <- ifelse(is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist)),
+                            0, cweights)
 
   # now we need to find if we added any NA flags
   toAdd <- dim(data.mm)[2] - dim(data.notmissing)[2]
@@ -205,11 +212,11 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
 }
 
 # Add stratum weights to a design
-#' Weighted Design
+#' Stratum Weighted Design
 #'
-#' @slot Weights Weights
-setClass("WeightedDesign",
-         representation = list(Weights = "list"),
+#' @slot Sweights stratum weights
+setClass("StratumWeightedDesign",
+         representation = list(Sweights = "list"),
          contains = "Design")
 
 ##' Create a weighted Design
@@ -218,7 +225,7 @@ setClass("WeightedDesign",
 ##' @param design Design
 ##' @param stratum.weights Stratum weights
 ##' @param normalize.weights Normalize weights?
-##' @return WeightedDesign
+##' @return StratumWeightedDesign
 weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
   stopifnot(inherits(design, "Design"))
 
@@ -303,8 +310,8 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
   }
   wtlist
 
-  design <- as(design, "WeightedDesign")
-  design@Weights <- wtlist
+  design <- as(design, "StratumWeightedDesign")
+  design@Sweights <- wtlist
   return(design)
 }
 
@@ -340,7 +347,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     use.units   <- S %*% S.has.both * design@NotMissing
 
     X.use  <- design@Covariates * use.units
-    X2.use <- X.use^2
+    X2.use <- design@Covariates^2 * use.units
 
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
@@ -457,7 +464,7 @@ aggregateDesign <- function(design) {
 ##' @return List
 alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
-  stopifnot(inherits(design, "WeightedDesign")) # defensive programming
+  stopifnot(inherits(design, "StratumWeightedDesign")) # defensive programming
 
   vars   <- colnames(design@Covariates)
   strata <- names(design@StrataMatrices)
@@ -479,7 +486,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
 
     Covs <- design@Covariates[keep, , drop = FALSE]
     NotMiss <- design@NotMissing[keep, , drop = FALSE]
-    wtr <- design@Weights[[s]]$wtratio[keep]
+    wtr <- design@Sweights[[s]]$wtratio[keep]
 
     ZtH <- S %*% n.inv %*% n1
     ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (Covs * wtr), column = FALSE)
@@ -487,9 +494,9 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
 
     # see note at the bottom of this file why we use this function instead of SparseM's version
-    # we use residuals in the first term to subtract of the mean of the stratum
-    # we use fitted in the second term to normalize by average cluster size in the stratum
+    # align weighted observations within stratum by subtracting stratum mean of weight * obs
     a <- slm.fit.csr.fixed(S, Covs)$residuals
+    # this is used to normalize within each stratum by the average of unit weights
     b <- slm.fit.csr.fixed(S, NotMiss)$fitted
 
     # this is needed for the case when a strata has all missing in either the treated or control group

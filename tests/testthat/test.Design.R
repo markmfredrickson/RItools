@@ -18,6 +18,8 @@ test_that("Creating design objects", {
       z.good      = rep(c(0,1), 250),
       z.bad       = sample(c(0,1), size = 500, replace = T))
 
+  d$'(weights)' = 1 # meet expectation of a weights column
+
   # checking input
   expect_error(makeDesign(~ x, data = d), "treatment")
   expect_error(makeDesign(z.bad ~ x + strata(strata.good) + cluster(cluster), data = d), "cluster")
@@ -58,6 +60,8 @@ test_that("Design to descriptive statistics", {
       s = rep(c(1:4, NA), 100),
       z = rep(c(0,1), 250))
 
+  d$'(weights)' = 1 # meet expectation of a weights column
+  
   simple <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
   
   descriptives <- RItools:::designToDescriptives(simple)
@@ -94,7 +98,8 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
       s = rep(c(1:4, NA), 100),
       paired = rep(c(0,1), each = 250),
       z = rep(c(0,1), 250))
-
+  d$'(weights)' = 1
+  
   d.missing <- d
 
   d.missing$x[d.missing$x < -1] <- NA
@@ -138,6 +143,7 @@ test_that("Aggegating designs by clusters", {
       s = rep(c(1:4, NA), 100),
       z = rep(c(0,1), 250))
 
+  d$'(weights)' <- 1
   # grab a bunch of rows and duplicate them
   d <- rbind(d, d[sample(1:dim(d)[1], size = 100), ])
   
@@ -161,7 +167,8 @@ test_that("aggregateDesign treats NA covariates as 0's" ,{
                     clus=factor(c(1,1,2:4)),
                     z=c(TRUE, rep(c(TRUE, FALSE), 2)),
                     x=rep(c(NA, 1), c(3,2))
-                  )
+                    )
+  dat$'(weights)' <- 1
   design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
   aggDesign <- RItools:::aggregateDesign(design)
   expect_equal(aggDesign@Covariates[1:2,'x'], c(0, 0))
@@ -177,7 +184,7 @@ test_that("NA flags are optional", {
       s = rep(c(1:4, NA), 100),
       paired = rep(c(0,1), each = 250),
       z = rep(c(0,1), 250))
-
+  d$'(weights)' <- 1
 
   d$x[sample.int(500, size = 10)] <- NA
 
