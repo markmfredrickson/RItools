@@ -166,7 +166,8 @@ test_that("aggregateDesign treats NA covariates as 0's" ,{
                   )
   design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
   aggDesign <- RItools:::aggregateDesign(design)
-  expect_equal(aggDesign@Covariates[1:2,'x'], c(0, 0))
+  expect_equal(aggDesign@Covariates[,'x'], c(0, 0, 1, 1) )
+  expect_equal(aggDesign@NotMissing[,colnames(aggDesign@Covariates)=='x'], c(0,0,1,1) )
 })
 
 test_that("NA flags are optional", {
