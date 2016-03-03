@@ -195,3 +195,38 @@ test_that("NA flags are optional", {
   expect_equal(dim(design.flags@Covariates)[2], 5)
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })
+
+test_that("Case weights",{
+  ##set.seed(20130801)
+
+  d.short <- data.frame(
+      x = rnorm(500),
+      f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
+      c = rep(1:100, 5),
+      s = rep(c(1:4, NA), 100),
+      z = rep(c(0,1), 250))
+
+  
+  ## grab a bunch of rows and duplicate them
+  newrows <- c(1:nrow(d.short), sample(1:nrow(d.short), size=100, replace=T) )
+  d.tall <- d.short[newrows,]
+  d.tall$'(weights)' <- 1
+  d.short$'(weights)' <- as.vector(table(newrows))
+
+  design.tall <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.tall)
+  aggDesign.tall <- RItools:::aggregateDesign(design.tall) 
+
+    design.short <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.short)
+  aggDesign.short <- RItools:::aggregateDesign(design.short) 
+
+  ## we should wind up in the same place.
+  expect_equal(aggDesign.tall, aggDesign.short)
+
+  d2 <- d.tall
+  d2$'(weights)' <- 2
+  design.d2 <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d2)
+  aggDesign.d2 <- RItools:::aggregateDesign(design.d2)
+  
+  expect_equal(2* aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
+  expect_equal(2* aggDesign.tall@Covariates, aggDesign.d2@Covariates) #(this may change)
+          })
