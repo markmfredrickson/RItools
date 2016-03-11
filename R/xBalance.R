@@ -212,7 +212,7 @@ xBalance <- function(fmla,
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "case.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("case.weights", m, nomatch=0))
+  if (cwpos <- match("case.weights", names(mf), nomatch=0))
       names(mf)[cwpos] <- "weights"
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
