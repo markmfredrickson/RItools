@@ -4,15 +4,14 @@
 
 <<>>=
 set.seed(20151001)
+library(testthat)
 @ 
 
+\section*{Goal and running example}
 Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p$ (this varies from our previous missingness indicators that will only have a column for each variable that is missing. We need to expand to get the matrix ops to work out. Also, since the we've already done model matrix expansion, we'll need a matrix that corresponds to missingness in the original variable, so many columns many be indentical as they represent the same categorical variable). $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
 
 Goal: express all operations required for \texttt{xBalance} computations with respect to these matrices.
 
-\section*{Descriptive Statistics}
-
-All descriptive statistics are computed without respect to clustering.
 
 Some examples to check that we get what we want. 2 sets of 3 and one
 set of 2. We'll use column matrices to make sure we have the right
@@ -21,74 +20,145 @@ $X_1$ (but not other $X$), both of group~2's treated units missing on
 $X_2$ but not other $X$es, and both of group~1's control units missing on $X_3$. 
 Nothing missing on $X_4$.  
 <<>>=
-(Z <- matrix(c(1,0,0,1,1,0,0,1), nrow = 8))
-(S <- matrix(c(rep(c(1,0,0), 3), rep(c(0,1,0), 3), rep(c(0,0,1), 2)), nrow = 8, byrow = T))
-(M <- matrix(c(0,0,0,0,0,0,0,1, # X_1
+X <- matrix(rnorm(32), nrow = 8)
+colnames(X) <- paste0("X", 1:4)
+
+Z <- c(1,0,0,1,1,0,0,1) 
+S <- matrix(c(rep(c(1,0,0), 3), rep(c(0,1,0), 3), rep(c(0,0,1), 2)), nrow = 8, byrow = T)
+colnames(S) <- letters[1:3]
+cbind("Z"=Z, S)
+
+missing <- matrix(c(0,0,0,0,0,0,0,1, # X_1
                0,0,0,1,1,0,0,0, # X_2
                0,1,1,0,0,0,0,0, # X_3
                0,0,0,0,0,0,0,0),# X_4
-             nrow = 8))
-X <- matrix(rnorm(32), nrow = 8)
+             nrow = 8)
+colnames(missing) <- colnames(X)
+NotMissing <- 0 + !missing #we prefer a numeric matrix, 
+NotMissing                 #for upcoming generalizations
 @ 
 
-We need to make \emph{per-variable} case weights, based on case
-weights (if provided) and on non-missingness. For each variable we want to drop any units in strata that have all missing treated or all missing control. At the end of the day, we want a matrix that is $n \times p$, where $p$ is the number of variables we're considering.
+\section*{Strata but no case weights or clusters}
+
+\subsection*{Means \& mean differences}
+
+For each variable we want to drop any units in
+strata that have all missing treated or all missing control. 
 
 <<>>=
-ZZ <- S * matrix(Z, ncol = ncol(S),# this matrix indicates for each  
-                 nrow = nrow(Z))   # stratum, which units are treated
-WW <- S * matrix(1 - Z, ncol = ncol(S), nrow = nrow(Z)) 
-S.missing.0 <- t(ZZ) %*% (1 - M) == 0 # result is s * p
-S.missing.1 <- t(WW) %*% (1 - M) == 0 # s * p also
-S.has.both <- !(S.missing.0 | S.missing.1) 
+ZZ <- S * Z# this matrix indicates which units are treated, by stratum
+S.missing.1s <- t(ZZ) %*% NotMissing ==0 # result is s * p
+S.missing.0s <- t(S * !Z ) %*% NotMissing == 0# s * p also
+( S.has.both <- 0 + # again we prefer a numeric to a logical matrix
+     !(S.missing.0s | S.missing.1s)  # coercion to logical treats pos values as TRUE
+ )
+@ 
+
+At the end of the day, we want a matrix that is $n \times p$, where $p$ is
+the number of variables we're considering.
+<<>>=
 use.units <- (S %*% S.has.both) # n * p
-use.units <- use.units * (M>0)
-pv.c.wt <- use.units * M
-
-# zero out any "missing" entries
-X.use  <- X * pv.c.wt
-X2.use <- X * X.use
+use.units <- use.units * NotMissing
 @ 
 
-We can get the per variable sum of case weights: %$n$:
+
+Counts of non-missing observations, separately for treatment
+and control:
 <<>>=
-n1 <- t(pv.c.wt) %*% Z # p * 1
-n0 <- t(pv.c.wt) %*% (1 - Z) # p * 1
+n1 <- t(use.units) %*% Z # p * 1
+n0 <- t(use.units) %*% (1 - Z) # p * 1
+t(cbind(n1, n0, n1 + n0)) # 3 * p
 @ 
 
-Then we can get ``ETT'' strata weights per variable:
+
+Deal with missing values.
 <<>>=
-(ETT <- S %*% t(ZZ) %*% pv.c.wt) # n * p
+
+X.use  <- X * use.units
+
 @ 
 
-Then we can compute the simple treated unit averages as:
+Means of non-missing observations in the treatment group.
 <<>>=
-(treated.avg <- t(X * pv.c.wt) %*% Z / n1) # p * 1
+treated.avg <- t(X.use) %*% Z / n1 # p * 1
+
 @ 
 
-The control averages are ``ETT'' weighted, instead we do:
+Which is basically the same as what \texttt{mean(\ldots, na.rm=T)} would
+have delivered:
 <<>>=
-n0.ett <- t(ETT) %*% (1 - Z)
-(control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)
+
+zapsmall(treated.avg -
+    apply(ifelse(NotMissing * as.vector(Z),
+               X, NA_real_),
+          2, function(x) mean(x, na.rm=T)
+          )
+         )==0
+
+
+@ 
+The discrepancy for \texttt{X3} being caused by its lacking \textit{control}
+group observations in stratum a, which for this reason gets dropped
+from the calculation:
+ 
+<<>>=
+S.missing.1s
+
+expect_true(all( abs(treated.avg -
+    apply(ifelse(use.units * as.vector(Z),
+               X, NA_real_),
+          2, function(x) mean(x, na.rm=T)
+          ))<=.Machine$double.eps^.5
+         ) )
+
 @ 
 
-Next up, pooled standard deviations. 
+To determine a weighting scheme with which to prepare corresponding
+control group  averages, we can use the treatment group
+as the standard population, so that the contributions from a given
+stratum are up-or down-weighted in proportion to the fraction of the
+stratum assigned to treatment.   We'll refer to this as ``ETT weighting.''
+ Here are the ETT weights, by stratum and variable: 
+<<>>=
+t(ZZ) %*% use.units
+@
+Note that strata which don't admit of a
+comparison are implicitly dropped, due to the \texttt{S.has.both}
+factor in the earlier calculation of \texttt{use.units}.
+
+Although these weights attach to the stratum rather than
+the case, our present reference implementation 
+uses the name \texttt{ETT} for the case by variable
+representation of them: 
+<<>>=
+ETT <- S %*%  (t(ZZ) %*% use.units )   # n * p
+@ 
+
+So the ETT-weighted averages of the control group are
+<<>>=
+n0.ett <- t( use.units * ETT ) %*%  (1 - Z) 
+(control.avg <- t(X.use * ETT ) %*% (1 - Z) / n0.ett)
+@ 
+
+\subsection*{Scale \& scaled mean differences}
+Next up, pooled standard deviations.  \textbf{NB: \texttt{var.0} is broken,
+please fix!}
 
 <<>>=
-
+X2.use <- X^2 * use.units # same exclusions as w/ X1.use
 var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
-var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
+var.0 <- t(X2.use * ETT) %*% (1 - Z) - n0 * control.avg^2
 
 (pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
-apply(X.use, 2, function(i) { sd(i[i != 0]) }) # in general, this wouldn't work, but we know that exactly zero means missing in this data set.
+apply(ifelse(use.units, 
+             X, NA_real_), 
+      2, function(var) summary(lm(var~Z))$sigma )
 @
 
-Pretty close. Good. We wouldn't expect them to be identical. 
 
 The standardized differences:
 <<>>=
 (adjustedDifferences    <- treated.avg - control.avg)
 (standardizeDifferences <- adjustedDifferences / pooled)
 @ 
-
 \end{document}
