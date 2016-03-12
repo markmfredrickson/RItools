@@ -1,7 +1,7 @@
 
 R version 3.2.3 (2015-12-10) -- "Wooden Christmas-Tree"
 Copyright (C) 2015 The R Foundation for Statistical Computing
-Platform: x86_64-apple-darwin13.4.0 (64-bit)
+Platform: x86_64-apple-darwin15.3.0 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -163,7 +163,7 @@ Loading required package: xtable
              strata  Unstrat        
              stat   std.diff       z
 vars                                
-date                  1.2880  0.0372
+date                  0.0204  0.0372
 t1                    0.0982  0.2830
 t2                    0.9941  2.4674
 cap                   0.3568  0.8948
@@ -244,17 +244,17 @@ cap               0.3544  0.9188   0.3568  0.8948
 ne               -0.2176 -0.1445  -0.1675 -0.4334
 ct               -0.3350 -0.5828  -0.3147 -0.8121
 bw                0.0776 -0.3088   0.0450  0.1202
-cum.nF1          -0.1023 -0.0711  -0.0746 -0.2217
-cum.nF2           0.0429  0.2007   0.0648  0.0629
-cum.nF3          -0.1023 -0.0711  -0.0746 -0.2217
-cum.nF5           0.2218  0.5776   0.2361  0.4543
-cum.nF6          -0.3190 -0.4669  -0.3078 -0.5267
-cum.nF8           0.5986  0.7667   0.5124  1.0690
-cum.nF11          0.5986  0.6211   0.5124  1.0690
-cum.nF12          0.2218  0.5776   0.2361  0.4543
-cum.nF14         -0.3190 -0.4669  -0.3078 -0.5267
-cum.nF15         -0.3190 -0.4669  -0.3078 -0.5267
-cum.nF16         -0.3190 -0.4669  -0.3078 -0.5267
+cum.nF1          -0.2406 -0.0711  -0.2100 -0.2217
+cum.nF2          -0.0658  0.2007  -0.0418  0.0629
+cum.nF3          -0.2406 -0.0711  -0.2100 -0.2217
+cum.nF5           0.1507  0.5776   0.1667  0.4543
+cum.nF6          -0.3759 -0.4669  -0.3639 -0.5267
+cum.nF8           0.5606  0.7667   0.4487  1.0690
+cum.nF11          0.5606  0.6211   0.4487  1.0690
+cum.nF12          0.1507  0.5776   0.1667  0.4543
+cum.nF14         -0.3759 -0.4669  -0.3639 -0.5267
+cum.nF15         -0.3759 -0.4669  -0.3639 -0.5267
+cum.nF16         -0.3759 -0.4669  -0.3639 -0.5267
 cum.nFNA         -0.4347 -1.0206  -0.4465 -1.0783
 > 
 > ##This isn't right either.
@@ -301,4 +301,4 @@ Error in makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flag
 > 
 > proc.time()
    user  system elapsed 
-  0.824   0.038   0.852 
+  1.046   0.052   1.096 

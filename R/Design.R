@@ -350,7 +350,7 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     treated.avg <- t(X.use) %*% Z / n1
 
-    n0.ett <- t(ETT) %*% (1 - Z)
+    n0.ett <- t(use.units * ETT) %*% (1 - Z)
     control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
 
     var.1 <- (t(X2.use) %*% Z - n1 * treated.avg^2) / (n1 - 1)
