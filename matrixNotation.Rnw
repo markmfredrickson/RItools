@@ -161,4 +161,113 @@ The standardized differences:
 (adjustedDifferences    <- treated.avg - control.avg)
 (standardizeDifferences <- adjustedDifferences / pooled)
 @ 
+
+\section*{Enhancement: unify pruning of strata \& weighting by stratum}
+
+The operations of stratum weighting (``ETT'') and kicking out strata
+that don't admit of a comparison should be unified.  This will
+simplify the calculations and make it easier to create a slot for
+alternate weighting schemes.\ldots
+
+
+\section*{Strata and case weights}
+
+Although the header doesn't say anything about clusters, the intention
+is that these adaptations will address those also, by dint of the following.
+
+\begin{quote}
+  \textit{Assumptions.}  If the user specified a clustering variable
+  alongside of an element-by-variable table (and potentially element
+  weights), then that data frame 
+  has already been processed into cluster-by-variable matrices
+  \texttt{X} and \texttt{pv.c.wt}. Furthermore
+  \begin{enumerate}
+  \item \label{item:1} Each \texttt{X} entry represents a weighted \textit{mean}
+    over the non-missing values of the variable for the cluster in
+    question, with weights equal to user-provided element weights. 
+  \item Each \texttt{pv.c.wt} entry records a \textit{sum} of
+    user-provided element
+    weights, over elements within the cluster for which the variable
+    was not missing.
+  \end{enumerate}
+\end{quote}
+(\ref{item:1} might equally well have used weighted sums as opposed to
+weighted means. I favor this convention mostly for future-proofing: we
+may at some point wish to enable merges of cluster-level data frames
+with Design objects we've aggregated from element to cluster level.)
+
+\subsection*{Means \& mean differences}
+We need to make \emph{per-variable} case weights,
+``\texttt{pv.c.wt},'' products of user-provided case weights (implicit
+$1$'s when the user hasn't specified a weight) and per-variable
+missingness indicators. 
+
+<<>>=
+case.weights <- rep(1,8) # for now
+pv.c.wt <- use.units * case.weights
+@ 
+
+This time the moment calculations begin as follows.% reorganize this for coherence
+                                      %w/ subsequent blocks?
+
+<<>>=
+
+X.use  <- X * pv.c.wt
+X2.use <- X * X.use
+
+@ 
+Note that \texttt{pv.c.wt} is doing two things here, imposing case
+weights on a per-variable basis plus zeroing out the missing entries.
+We'll do the same thing to calculate ``\texttt{n1}'' and
+``\texttt{n0}.''   This is now an abuse of notation, however, since
+they're not sample sizes but per variable sums of case weights:
+<<>>=
+n1 <- t(pv.c.wt) %*% Z # p * 1
+n0 <- t(pv.c.wt) %*% (1 - Z) # p * 1
+t(cbind(n1, n0, n1 + n0)) # 3 * p
+@ 
+(When we start with constant case weights, \texttt{n1} differences across variables are
+due entirely to differences in missingness patterns [and similarly for
+\texttt{n0}].)
+
+To compute weighted means over the 
+treatment group, applying case weights
+and downweighting missing items to 0 
+(but with no adjustment for strata), do:
+<<>>=
+(treated.avg <- t(X.use) %*% Z / n1) # p * 1
+@ 
+
+ETT weights (by case and variable) are computed as follows.
+<<>>=
+(ETT <- S %*% t(ZZ) %*% pv.c.wt) # n * p
+@ 
+
+Now weighted averages of the control group, using the weighted
+treatment group as a standard population, are computed by:
+<<>>=
+n0.ett <- t(ETT) %*% (1 - Z)
+(control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)
+@ 
+
+\subsection*{Scale \& scaled mean differences}
+Next up, pooled standard deviations. 
+
+<<>>=
+
+var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
+var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
+
+(pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
+apply(X.use, 2, function(i) { sd(i[i != 0]) }) # in general this would not work; but we know that exactly zero means missing in this data set.
+@
+
+Pretty close. Good. We wouldn't expect them to be identical. 
+
+The standardized differences:
+<<>>=
+(adjustedDifferences    <- treated.avg - control.avg)
+(standardizeDifferences <- adjustedDifferences / pooled)
+@ 
+
 \end{document}
