@@ -255,29 +255,37 @@ ETT weights (by case and variable) are computed as follows.
 
 Now weighted averages of the control group, using the weighted
 treatment group as a standard population, are computed by:
+
 <<>>=
-n0.ett <- t(ETT) %*% (1 - Z)
-(control.avg <- t(X * ETT) %*% (1 - Z) / n0.ett)
+n0.ett <- t( use.units * ETT ) %*%  (1 - Z) 
+(control.avg <- t(X.use * ETT ) %*% (1 - Z) / n0.ett)
 @ 
 
 \subsection*{Scale \& scaled mean differences}
+
 Next up, pooled standard deviations. 
 
 <<>>=
+X2.use <- X^2 * use.units # same exclusions as w/ X1.use
+var.1 <- ( t(X2.use) %*% Z - n1 * treated.avg^2 )/(n1 -1 )
+var.0 <- ( t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2 )/n0.ett
+var.0 <- var.0 * n0/(n0-1)
+@ 
 
-var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
-var.0 <- t(X2.use) %*% (1 - Z) - n0 * control.avg^2
+Comparing to the unweighted, pooled variances calc (which isn't really
+expected to give the same thing):
+<<>>=
 
-(pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
-apply(X.use, 2, function(i) { sd(i[i != 0]) }) # in general this would not work; but we know that exactly zero means missing in this data set.
+(pooled <- sqrt((var.1*(n1-1) + var.0*(n0-1)) / (n1 + n0 - 2)))
+apply(ifelse(use.units, 
+             X, NA_real_), 
+      2, function(var) summary(lm(var~Z))$sigma )
 @
 
-Pretty close. Good. We wouldn't expect them to be identical. 
 
 The standardized differences:
 <<>>=
 (adjustedDifferences    <- treated.avg - control.avg)
 (standardizeDifferences <- adjustedDifferences / pooled)
 @ 
-
 \end{document}
