@@ -47,12 +47,15 @@ For each variable we want to drop any units in
 strata that have all missing treated or all missing control. 
 
 <<>>=
-ZZ <- S * Z# this matrix indicates which units are treated, by stratum
+
+ZZ <-  S * Z # this matrix indicates which units are treated, by stratum
+WW <-  S * !Z # which units are control, again by stratum 
 S.missing.1s <- t(ZZ) %*% NotMissing ==0 # result is s * p
-S.missing.0s <- t(S * !Z ) %*% NotMissing == 0# s * p also
+S.missing.0s <- t(WW) %*% NotMissing == 0# s * p also
 ( S.has.both <- 0 + # again we prefer a numeric to a logical matrix
      !(S.missing.0s | S.missing.1s)  # coercion to logical treats pos values as TRUE
  )
+
 @ 
 
 At the end of the day, we want a matrix that is $n \times p$, where $p$ is
@@ -119,21 +122,23 @@ To determine a weighting scheme with which to prepare corresponding
 control group  averages, we can use the treatment group
 as the standard population, so that the contributions from a given
 stratum are up-or down-weighted in proportion to the fraction of the
-stratum assigned to treatment.   We'll refer to this as ``ETT weighting.''
- Here are the ETT weights, by stratum and variable: 
+stratum assigned to treatment.   Specifically, a weighting factor
+equal to the odds of assignment to treatment is to be applied to each
+control.  
+ Here are these factors, by stratum and variable: 
 <<>>=
-t(ZZ) %*% use.units
+Z.odds <- ( t(ZZ) %*% use.units ) / ( t(WW) %*% use.units )
+( Z.odds <- ifelse(S.has.both, Z.odds, 0) ) # s * p
 @
 Note that strata which don't admit of a
-comparison are implicitly dropped, due to the \texttt{S.has.both}
-factor in the earlier calculation of \texttt{use.units}.
+comparison have to be explicitly dropped, via \texttt{S.has.both}.
 
 Although these weights attach to the stratum rather than
 the case, our present reference implementation 
-uses the name \texttt{ETT} for the case by variable
+uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the case by variable
 representation of them: 
 <<>>=
-ETT <- S %*%  (t(ZZ) %*% use.units )   # n * p
+ETT <- S %*%  Z.odds  # n * p
 @ 
 
 So the ETT-weighted averages of the control group are
@@ -143,15 +148,20 @@ n0.ett <- t( use.units * ETT ) %*%  (1 - Z)
 @ 
 
 \subsection*{Scale \& scaled mean differences}
-Next up, pooled standard deviations.  \textbf{NB: \texttt{var.0} is broken,
-please fix!}
+Next up, pooled standard deviations.  
 
 <<>>=
 X2.use <- X^2 * use.units # same exclusions as w/ X1.use
-var.1 <- t(X2.use) %*% Z - n1 * treated.avg^2
-var.0 <- t(X2.use * ETT) %*% (1 - Z) - n0 * control.avg^2
+var.1 <- ( t(X2.use) %*% Z - n1 * treated.avg^2 )/(n1 -1 )
+var.0 <- ( t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2 )/n0.ett
+var.0 <- var.0 * n0/(n0-1)
+@ 
 
-(pooled <- sqrt((var.1 + var.0) / (n1 + n0 - 2)))
+Comparing to the unweighted, pooled variances calc (which isn't really
+expected to give the same thing):
+<<>>=
+
+(pooled <- sqrt((var.1*(n1-1) + var.0*(n0-1)) / (n1 + n0 - 2)))
 apply(ifelse(use.units, 
              X, NA_real_), 
       2, function(var) summary(lm(var~Z))$sigma )
