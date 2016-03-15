@@ -8,17 +8,16 @@ Description: Tools for randomization inference.
 License: GPL (>=2)
 Depends:
     R (>= 2.2.0),
-    stats,
-    methods,
-    graphics,
-    SparseM,
-    utils,
-    survival
+    SparseM
 Imports:
     grDevices,
     abind,
     xtable,
-    svd
+    svd,
+    stats,
+    graphics,
+    methods,
+    survival
 Suggests:
     testthat,
     MASS,
