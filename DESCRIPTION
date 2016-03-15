@@ -6,6 +6,7 @@ Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
+LazyData: true
 Depends:
     R (>= 2.2.0),
     SparseM
