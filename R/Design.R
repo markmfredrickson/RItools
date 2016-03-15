@@ -353,7 +353,11 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
 
-    ETT <- S %*% (t(ZZ) %*% use.units)
+    Z.odds <- (t(ZZ) %*% use.units)/(t(WW) %*% use.units)
+    Z.odds <- as.matrix(Z.odds)
+    Z.odds <- ifelse(S.has.both, Z.odds, 0)
+
+    ETT <- S %*% Z.odds
 
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     treated.avg <- t(X.use) %*% Z / n1
@@ -362,7 +366,8 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
 
     var.1 <- (t(X2.use) %*% Z - n1 * treated.avg^2) / (n1 - 1)
-    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / (n0.ett - 1)
+    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / n0.ett
+    var.0 <- var.0* n0/(n0 - 1)
 
     pooled <- sqrt((var.1 + var.0) / 2)
 
