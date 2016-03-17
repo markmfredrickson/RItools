@@ -181,7 +181,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
   # now we need to find if we added any NA flags
   toAdd <- dim(data.mm)[2] - dim(data.notmissing)[2]
   if (toAdd > 0) {
-    xtra <- matrix(1, ncol = toAdd, nrow = dim(data.mm)[1])
+    xtra <- matrix(cweights, ncol = toAdd, nrow = dim(data.mm)[1])
     data.notmissing <- cbind(data.notmissing, xtra)
   }
 
