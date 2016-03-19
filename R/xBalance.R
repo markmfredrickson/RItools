@@ -68,7 +68,7 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
-##' @param case.weights NOT YET IMPLEMENTED: Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
+##' @param case.weights Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
@@ -95,8 +95,6 @@
 ##'   control group (defining these groups according to whether the
 ##'   LHS of \code{formula} is greater than or equal to 0).  Also, see
 ##'   details.
-##' @param normalize.weights If \code{TRUE}, then stratum weights are
-##'   normalized so as to sum to 1.  Defaults to \code{TRUE}.
 ##' @param impfn A function to impute missing values when
 ##'   \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute
 ##'   means use \code{\link{mean.default}}.
@@ -197,7 +195,6 @@ xBalance <- function(fmla,
                      impfn = median,
                      include.NA.flags = TRUE,
                      covariate.scaling = NULL,
-                     normalize.weights = TRUE,
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 
@@ -247,7 +244,7 @@ xBalance <- function(fmla,
   # going forward, we use the user's weights, not ETT always
   aggDesign.weighted <- as(aggDesign, "StratumWeightedDesign")
   aggDesign.weighted@Sweights <-
-      DesignWeights(aggDesign, stratum.weights, normalize.weights)
+      DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 

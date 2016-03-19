@@ -226,10 +226,9 @@ setClass("StratumWeightedDesign",
 ##' suitable to be associated with an existing design and used in further calcs.
 ##' @param design Design
 ##' @param stratum.weights Stratum weights
-##' @param normalize.weights Normalize weights?
 ##' @return data frame with a row for each stratum and two cols,
 ##' \code{sweights}  and \code{wtratio}. 
-DesignWeights <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
+DesignWeights <- function(design, stratum.weights = harmonic) {
   stopifnot(inherits(design, "Design"))
 
   n.strata <- dim(design@StrataFrame)[2]
@@ -293,7 +292,6 @@ DesignWeights <- function(design, stratum.weights = harmonic, normalize.weights 
     if (any(sweights<0))
       stop("stratum weights must be nonnegative")
 
-    if (normalize.weights)
       sweights <- sweights/sum(sweights, na.rm=TRUE)
 
     if (identical(harmonic, swt.ls[[nn]])) {
