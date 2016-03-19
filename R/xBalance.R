@@ -92,8 +92,6 @@
 ##'   control group (defining these groups according to whether the
 ##'   LHS of \code{formula} is greater than or equal to 0).  Also, see
 ##'   details.
-##' @param normalize.weights If \code{TRUE}, then stratum weights are
-##'   normalized so as to sum to 1.  Defaults to \code{TRUE}.
 ##' @param impfn A function to impute missing values when
 ##'   \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute
 ##'   means use \code{\link{mean.default}}.
@@ -192,7 +190,6 @@ xBalance <- function(fmla,
                      impfn = median,
                      include.NA.flags = TRUE,
                      covariate.scaling = NULL,
-                     normalize.weights = TRUE,
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 
@@ -226,7 +223,8 @@ xBalance <- function(fmla,
 
   aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
-  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
+
+  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 
