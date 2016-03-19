@@ -321,11 +321,11 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
 ##' Use a design object to generate descriptive statistics that ignore
 ##' clustering. Stratum weights are respected.
 ##' @param design A Design
-##' @param covariate.scaling Should covs be scaled?
+##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
 ##' @return Descriptives
-designToDescriptives <- function(design, covariate.scaling = TRUE) {
+designToDescriptives <- function(design, covariate.scaling = NULL) {
   stopifnot(inherits(design, "Design")) # defensive programming
-
+  if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
   vars   <- colnames(design@Covariates)
   strata <- colnames(design@StrataFrame)
 
