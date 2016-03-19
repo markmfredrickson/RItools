@@ -191,7 +191,7 @@ xBalance <- function(fmla,
                      na.rm = FALSE,
                      impfn = median,
                      include.NA.flags = TRUE,
-                     covariate.scaling = TRUE,
+                     covariate.scaling = NULL,
                      normalize.weights = TRUE,
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
