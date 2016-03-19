@@ -220,14 +220,16 @@ setClass("StratumWeightedDesign",
          representation = list(Sweights = "list"),
          contains = "Design")
 
-##' Create a weighted Design
+##' Create stratum weights to be associated with a Design
 ##'
-##' Adds weights to existing Design.
+##' Apply weighting function to a Design by stratum, returning results in a format
+##' suitable to be associated with an existing design and used in further calcs.
 ##' @param design Design
 ##' @param stratum.weights Stratum weights
 ##' @param normalize.weights Normalize weights?
-##' @return StratumWeightedDesign
-weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
+##' @return data frame with a row for each stratum and two cols,
+##' \code{sweights}  and \code{wtratio}. 
+DesignWeights <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
   stopifnot(inherits(design, "Design"))
 
   n.strata <- dim(design@StrataFrame)[2]
@@ -310,10 +312,6 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     NULL
   }
   wtlist
-
-  design <- as(design, "StratumWeightedDesign")
-  design@Sweights <- wtlist
-  return(design)
 }
 
 ##' Generate Descriptives

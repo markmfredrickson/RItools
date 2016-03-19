@@ -245,7 +245,9 @@ xBalance <- function(fmla,
 
   aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
-  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
+  aggDesign.weighted <- as(aggDesign, "StratumWeightedDesign")
+  aggDesign.weighted@Sweights <-
+      DesignWeights(aggDesign, stratum.weights, normalize.weights)
 
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 
