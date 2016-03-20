@@ -116,6 +116,19 @@ expect_true(all( abs(treated.avg -
 
 @ 
 
+
+To generalize this in order to get corresponding averages for
+controls, we conceptualize these weights as Horwitz-Thompson type
+weights, proportional to the inverse probability of assignment; but
+then we also associate weights with strata that are prortional to the
+number of units assigned to treatment in that stratum. For treatment
+group members, the product of these two factors is 1; for controls,
+it's the ``treatment odds'' or a priori odds of assignment to
+treatment.  The treatment group is in effect serving to define a standard
+population. This scheme has the advantage of culminating naturally in
+treatment and control group means that are each interpretable as a 
+combined ratio estimates of means over that standard population.
+
 To determine a weighting scheme with which to prepare corresponding
 control group  averages, we can use the treatment group
 as the standard population, so that the contributions from a given
@@ -123,7 +136,8 @@ stratum are up-or down-weighted in proportion to the fraction of the
 stratum assigned to treatment.   Specifically, a weighting factor
 equal to the odds of assignment to treatment is to be applied to each
 control.  
- Here are these factors, by stratum and variable: 
+
+Here are these factors, by stratum and variable: 
 <<>>=
 Z.odds <- ( t(ZZ) %*% use.units ) / ( t(WW) %*% use.units )
 ( Z.odds <- ifelse(S.has.both, Z.odds, 0) ) # s * p
@@ -132,12 +146,16 @@ Note that strata which don't admit of a
 comparison have to be explicitly dropped, via \texttt{S.has.both}.
 
 Although these weights attach to the stratum rather than
-the element, our present reference implementation 
+the element, an earlier reference implementation 
 uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the element by variable
 representation of them: 
 <<>>=
 ETT <- S %*%  Z.odds  # n * p
 @ 
+(At 9a84617 this writeup fell a little behind the development w/in the
+clusters branch; there weights for both treatments and controls are
+calculated explicity from a combo of aggregated element weights and
+stratum weights.)
 
 So the ETT-weighted averages of the control group are
 <<>>=
