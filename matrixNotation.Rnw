@@ -38,7 +38,7 @@ NotMissing <- 0 + !missing #we prefer a numeric matrix,
 NotMissing                 #for upcoming generalizations
 @ 
 
-\section*{Strata but no case weights or clusters}
+\section*{Strata but no element weights or clusters}
 
 \subsection*{Means \& mean differences}
 
@@ -132,8 +132,8 @@ Note that strata which don't admit of a
 comparison have to be explicitly dropped, via \texttt{S.has.both}.
 
 Although these weights attach to the stratum rather than
-the case, our present reference implementation 
-uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the case by variable
+the element, our present reference implementation 
+uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the element by variable
 representation of them: 
 <<>>=
 ETT <- S %*%  Z.odds  # n * p
@@ -180,7 +180,7 @@ simplify the calculations and make it easier to create a slot for
 alternate weighting schemes.\ldots
 
 
-\section*{Strata and case weights}
+\section*{Strata and element weights}
 
 Although the header doesn't say anything about clusters, the intention
 is that these adaptations will address those also, by dint of the following.
@@ -207,14 +207,14 @@ may at some point wish to enable merges of cluster-level data frames
 with Design objects we've aggregated from element to cluster level.)
 
 \subsection*{Means \& mean differences}
-We need to make \emph{per-variable} case weights,
-``\texttt{pv.c.wt},'' products of user-provided case weights (implicit
+We need to make \emph{per-variable} element weights,
+``\texttt{pv.c.wt},'' products of user-provided element weights (implicit
 $1$'s when the user hasn't specified a weight) and per-variable
 missingness indicators. 
 
 <<>>=
-case.weights <- rep(1,8) # for now
-pv.c.wt <- use.units * case.weights
+element.weights <- rep(1,8) # for now
+pv.c.wt <- use.units * element.weights
 @ 
 
 This time the moment calculations begin as follows.% reorganize this for coherence
@@ -226,36 +226,36 @@ X.use  <- X * pv.c.wt
 X2.use <- X * X.use
 
 @ 
-Note that \texttt{pv.c.wt} is doing two things here, imposing case
+Note that \texttt{pv.c.wt} is doing two things here, imposing element
 weights on a per-variable basis plus zeroing out the missing entries.
 We'll do the same thing to calculate ``\texttt{n1}'' and
 ``\texttt{n0}.''   This is now an abuse of notation, however, since
-they're not sample sizes but per variable sums of case weights:
+they're not sample sizes but per variable sums of element weights:
 <<>>=
 n1 <- t(pv.c.wt) %*% Z # p * 1
 n0 <- t(pv.c.wt) %*% (1 - Z) # p * 1
 t(cbind(n1, n0, n1 + n0)) # 3 * p
 @ 
-(When we start with constant case weights, \texttt{n1} differences across variables are
+(When we start with constant element weights, \texttt{n1} differences across variables are
 due entirely to differences in missingness patterns [and similarly for
 \texttt{n0}].)
 
 To compute weighted means over the 
-treatment group, applying case weights
+treatment group, applying element weights
 and downweighting missing items to 0 
 (but with no adjustment for strata), do:
 <<>>=
 (treated.avg <- t(X.use) %*% Z / n1) # p * 1
 @ 
 
-ETT weighting factor (by case and variable) are computed as follows.
+ETT weighting factor (by element and variable) are computed as follows.
 <<>>=
 Z.odds <- ( t(ZZ) %*% use.units ) / ( t(WW) %*% use.units )
 ( Z.odds <- ifelse(S.has.both, Z.odds, 0) ) # s * p
 (ETT <- S %*% Z.odds) # n * p
 @ 
 
-Notice that the case weights don't come into play yet -- this
+Notice that the element weights don't come into play yet -- this
 weighting factor is separated from those weights, which on the other
 hand get baked directly into \texttt{X.use}, \texttt{X2.use}.
 

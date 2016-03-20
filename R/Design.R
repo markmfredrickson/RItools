@@ -10,7 +10,7 @@
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table to remind us which Covariates columns correspond to which provide variables
 #' @slot Covariates Numeric matrix encoding variable values, analogous to a design matrix
-#' @slot NotMissing Case weight, unless value is missing (in which case 0); for clusters, sum of non-missing case weights
+#' @slot NotMissing Element weight, unless value is missing (in which case 0); for clusters, sum of non-missing element weights
 setClass("Design",
          representation = list(
            Z                 = "logical",
@@ -50,10 +50,10 @@ setClass("Design",
 ##' @return Design
 makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.flags = TRUE) {
 
-    cweights <- as.vector(model.weights(data))
-    if (is.null(cweights))
+    eweights <- as.vector(model.weights(data))
+    if (is.null(eweights))
         stop("makeDesign() expects its data arg to be a model frame containing weights")
-    stopifnot(is.numeric(cweights), all(!is.na(cweights)), all(cweights>=0))
+    stopifnot(is.numeric(eweights), all(!is.na(eweights)), all(eweights>=0))
 
     ts <- terms(fmla, data = data[setdiff(colnames(data), '(weights)')],
                 specials = c("cluster", "strata"))
@@ -176,12 +176,12 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
 
   data.mm         <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
   data.notmissing <- ifelse(is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist)),
-                            0, cweights)
+                            0, eweights)
 
   # now we need to find if we added any NA flags
   toAdd <- dim(data.mm)[2] - dim(data.notmissing)[2]
   if (toAdd > 0) {
-    xtra <- matrix(cweights, ncol = toAdd, nrow = dim(data.mm)[1])
+    xtra <- matrix(eweights, ncol = toAdd, nrow = dim(data.mm)[1])
     data.notmissing <- cbind(data.notmissing, xtra)
   }
 

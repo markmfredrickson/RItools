@@ -200,7 +200,7 @@ test_that("NA flags are optional", {
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })
 
-test_that("Case weights",{
+test_that("Element weights",{
   ##set.seed(20130801)
 
   d.short <- data.frame(

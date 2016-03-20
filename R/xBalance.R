@@ -68,7 +68,7 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
-##' @param case.weights Per-case weights. If there are clusters, the cluster weight is the sum of the included case weights.  Within each stratum, cluster and case weights will be normalized to sum to 1.
+##' @param element.weights Per-element weights. If there are clusters, the cluster weight is the sum of weights of elements within the cluster.  Within each stratum, cluster and element weights will be normalized to sum to 1.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
@@ -188,7 +188,7 @@ xBalance <- function(fmla,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
-                     case.weights,
+                     element.weights,
                      stratum.weights = harmonic,
                      subset,
                      na.rm = FALSE,
@@ -207,9 +207,9 @@ xBalance <- function(fmla,
   if (missing(data)) 
      data <- environment(formula)
   mf <- match.call(expand.dots = FALSE)
-  m <- match(c("formula", "data", "subset", "case.weights"), names(mf), 0L)
+  m <- match(c("formula", "data", "subset", "element.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("case.weights", names(mf), nomatch=0))
+  if (cwpos <- match("element.weights", names(mf), nomatch=0))
       names(mf)[cwpos] <- "weights"
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
