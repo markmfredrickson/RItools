@@ -238,9 +238,13 @@ xBalance <- function(fmla,
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
+  aggDesign       <- aggregateDesign(design)
+
+  design <- as(design, "StratumWeightedDesign")
+  design@Sweights <- DesignWeights(aggDesign, # Have to aggregate 1st to figure stratum weights properly
+                                   effectOfTreatmentOnTreated) #For now we override any user-provided stratum.weights
   descriptives    <- designToDescriptives(design, covariate.scaling)
 
-  aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
   aggDesign.weighted <- as(aggDesign, "StratumWeightedDesign")
   aggDesign.weighted@Sweights <-

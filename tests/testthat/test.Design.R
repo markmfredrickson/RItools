@@ -65,6 +65,7 @@ test_that("Design to descriptive statistics", {
   d$'(weights)' = 1 # meet expectation of a weights column
   
   simple <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
+
   
   descriptives <- RItools:::designToDescriptives(simple)
 

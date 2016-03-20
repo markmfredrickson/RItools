@@ -220,6 +220,12 @@ setClass("StratumWeightedDesign",
          representation = list(Sweights = "list"),
          contains = "Design")
 
+## NB: Maybe later there'll a ClusterWeightedDesign class also,
+## with methods for passing between the two.  ClusterWeighted would
+## associate weights with each cluster, representing products of stratum
+## weights and within-stratum HT-type weights.  Designs other than complete
+## random assignment within blocks could be represented with such a structure.
+
 ##' Create stratum weights to be associated with a Design
 ##'
 ##' Apply weighting function to a Design by stratum, returning results in a format
@@ -323,17 +329,33 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   stopifnot(inherits(design, "Design")) # defensive programming
   if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
   vars   <- colnames(design@Covariates)
-  strata <- colnames(design@StrataFrame)
+  stratifications <- colnames(design@StrataFrame)
 
   ans <- array(NA,
-               dim = c(length(vars), 5, length(strata)),
+               dim = c(length(vars), 5, length(stratifications)),
                dimnames = list(
                    "vars" = vars,
                    "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
-                   "strata" = strata))
-  for (s in strata) {
+                   "strata" = stratifications))
+  for (s in stratifications) {
 
     S <- design@StrataMatrices[[s]]
+    if (ncol(S)!=nlevels(design@StrataFrame[[s]]))
+        stop(paste("Levels of StrataFrame don't match StratMatrices colnames, stratification", s))
+    stratlevs <- levels(design@StrataFrame[[s]])
+    if (inherits(design, "StratumWeightedDesign") & length(stratlevs)>1)
+        {
+            Sweights <- design@Sweights[[s]][['sweights']]
+            if (!all(names(Sweights) %in% stratlevs))
+                stop(paste("Strata weights/names mismatch, stratification", s) )
+            Swts <- rep(0, length(stratlevs))
+            names(Swts) <- stratlevs
+            Swts[names(Sweights)] <- Sweights
+        } else {
+            Swts <- rep(1, length(stratlevs))
+            names(Swts) <- stratlevs
+                }
+    
     Z <- as.numeric(design@Z)
     ZZ <- S * Z
     WW <- S * (1 - Z)
@@ -348,21 +370,32 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
 
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
-
-    Z.odds <- (t(ZZ) %*% use.units)/(t(WW) %*% use.units)
-    Z.odds <- as.matrix(Z.odds)
-    Z.odds <- ifelse(S.has.both, Z.odds, 0)
-
-    ETT <- S %*% Z.odds
-
+    
+    ## Now calculate assignment/stratum weights
+    cluster.representatives <- !duplicated(design@Cluster)
+    txcts <- table(as.logical(Z[cluster.representatives]),
+                   design@StrataFrame[cluster.representatives, s])
+    stratcts <- txcts["TRUE",,drop=FALSE] + txcts["FALSE",,drop=FALSE]
+    ## HT-type assignment weights
+    tx.wt <- ifelse(txcts["TRUE",,drop=FALSE],stratcts/txcts["TRUE",,drop=FALSE], 0)
+    ctl.wt <-ifelse(txcts["FALSE",,drop=FALSE],stratcts/txcts["FALSE",,drop=FALSE], 0)
+    ## multiplying through for assignment/stratum weights
+    tx.wt <- t(tx.wt[,stratlevs,drop=FALSE]) * Swts
+    ctl.wt <- t(ctl.wt[,stratlevs, drop=FALSE]) * Swts
+    ## now expand these up to match dimensions of data
+    tx.wts <- as.vector(as.matrix(S %*% tx.wt))
+    ctl.wts <- as.vector(as.matrix(S %*% ctl.wt))
+    
     # ok, now that preliminaries are out of the way, compute some useful stuff.
-    treated.avg <- t(X.use) %*% Z / n1
+    wtsum.tx <-  t(use.units * tx.wts) %*% Z
+    treated.avg <- t(X.use *tx.wts) %*% Z / wtsum.tx
 
-    n0.ett <- t(use.units * ETT) %*% (1 - Z)
-    control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
+    wtsum.ctl <- t(use.units * ctl.wts) %*% (1 - Z)
+    control.avg <- t(X.use * ctl.wts) %*% (1 - Z) / wtsum.ctl
 
-    var.1 <- (t(X2.use) %*% Z - n1 * treated.avg^2) / (n1 - 1)
-    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / n0.ett
+    var.1 <- (t(X2.use *tx.wts) %*% Z - wtsum.tx * treated.avg^2) / wtsum.tx
+    var.1 <- var.1 * n1/(n1 - 1)
+    var.0 <- (t(X2.use * ctl.wts) %*% (1 - Z) - wtsum.ctl * control.avg^2) / wtsum.ctl
     var.0 <- var.0* n0/(n0 - 1)
 
     pooled <- sqrt((var.1 + var.0) / 2)
@@ -405,7 +438,7 @@ SparseMMFromFactor <- function(thefactor) {
   nlev <- nlevels(thefactor)
   nobs <- length(thefactor)
   theint <- as.integer(thefactor)
-  if (any(theNA)) theint[theNA] <- 1L#nlev + 1L:sum(theNA)
+  if (any(theNA)) theint[theNA] <- 1L# odd; but note how we compensate in def of ra slot below
   new("matrix.csr",
       ja=theint,
       ia=1L:(nobs+1L),
