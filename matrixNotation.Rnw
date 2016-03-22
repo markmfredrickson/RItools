@@ -7,10 +7,80 @@ set.seed(20151001)
 library(testthat)
 @ 
 
-\section*{Goal and running example}
-Let $X$ be a (model) matrix of covariates with dimension $n \times p$. Any missing values have been imputed. Let $M$ be a matrix of missingness indicators with dimension $n \times p$ (this varies from our previous missingness indicators that will only have a column for each variable that is missing. We need to expand to get the matrix ops to work out. Also, since the we've already done model matrix expansion, we'll need a matrix that corresponds to missingness in the original variable, so many columns many be indentical as they represent the same categorical variable). $C$ is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. $S$ is a $n \times s$ (sparse) matrix indicating membership in the $s$ strata. While each row of $C$ has one and only one finite entry, it may be the case that some units are not in any stratum. $Z$ is a vector of treatment assignment. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata. Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
 
-Goal: express all operations required for \texttt{xBalance} computations with respect to these matrices.
+
+\section{Purposes and premises: Descriptive stats}
+
+
+
+
+This document lays out calculations behind
+\texttt{xBalance}'s ``descriptives,'' e.g. means and SDs of the groups
+being compared, with allowances for missing values, clustering,
+stratification, stratum weights, ie weights associating with each of a
+collection of strata that serve to define a ``standard population,''
+amd element weights, ie weights associating with elements,
+deaggregated units of observation.  In the same display and output
+\texttt{xBalance}  furnishes additional statistics, ``inferentials'',
+designed under somewhat different premises (and laid out in a separate
+document).  Its z statistics, p values and chisquare statistics all
+fall under the Inferential banner.
+
+Our descriptives aim to describe the sample as simply as is possible
+while being consistent with the user's stated design.   For both
+treatment and control samples, the descriptives are calculated in such
+a way as to estimate the corresponding quantity in the study
+population: treatment and control group means both estimate study
+population means; treatment and control group SDs both estimate study
+population SDs.  (More specifically, if strata are present they
+estimate an appropriately means/SDs within a standard population based
+on the study population, with standardization weights equal to those
+specified via \texttt{stratum.weights}.)   
+
+In order to present treatment and control group averages that can
+properly be described as such, we use ``ratio estimates,'' as opposed
+to the intrinsically unbiased Horwitz-Thompson-type estimates, which
+do not in general line up with wieghted means of observations under
+any coherent weighting scheme. (They are weighted sums across the
+sample divided by sums of weights across the broader population. These
+weights are a little different, but still the numerator weights
+needn't add up to the same thing as the denominator weights.)  Our
+treatment group average is the ratio of a weighted sum of treatment
+group observations divided by the sum of treatment group weights, or
+equivalently the ratio of Horwitz-Thompson-type estimates,
+extrapolated from the sample of the treatment group to the population
+of the study group as a whole, of the population total of the variable
+and of the population size.  Similarly our control group average is a
+ratio of HT estimates of means projected from the sample of the
+control group out to the study population as a whole; and our
+treatment and control group variances are based on HT estimates of
+second moments, extrapolated out from the treatment and control groups
+respectively.
+
+Unlike Horwitz-Thomson estimates, ratio estimates are subject to
+finite-sample bias.  denominator sum and the numerator sum are both
+sums within \textit{and across} strata: these are ``combined ratio''
+estimates. (Combined ratio estimators are consistent under weaker
+assumptions than those required for ``separate ratio'' estimators.)
+
+Our descriptives will also avoid imputation of missing values.
+Instead they can be viewed as downweighting missing observations to 0,
+while adding a check for differences between the two groups in terms
+of the presence of missing values.  There's a tension between the
+first of these maneuvers and interpretations of weights as inclusion
+or assignment probabilities; that tension is addressed below, in
+Section~\ref{sec:element-weights}.
+
+\subsection{Simple strata, no element weights or clusters}
+
+
+Let \texttt{X} be a (model) matrix of covariates with dimension $n \times
+p$. For computational reasons, in each column with missing values these NAs will have been replaced with a single reference value; however, the locations of these imputations are recorded indirectly in a separate matrix of the same dimensions, \texttt{NotMissing}. 
+%% (this varies from our previous missingness indicators that will only have a column for each variable that is missing. We need to expand to get the matrix ops to work out. Also, since the we've already done model matrix expansion, we'll need a matrix that corresponds to missingness in the original variable, so many columns many be indentical as they represent the same categorical variable). 
+
+\texttt{S} is a $n \times s$ (sparse) matrix indicating membership in the $s$
+strata. It may be the case that some units are not in any stratum.   $Z$ is a vector of treatment assignment. 
+Furthermore, all strata have at least one treated and at least one control (if not we set members of those strata to zero everywhere).
 
 
 Some examples to check that we get what we want. 2 sets of 3 and one
@@ -38,9 +108,8 @@ NotMissing <- 0 + !missing #we prefer a numeric matrix,
 NotMissing                 #for upcoming generalizations
 @ 
 
-\section*{Strata but no element weights or clusters}
 
-\subsection*{Means \& mean differences}
+\subsubsection{Means \& mean differences}
 
 For each variable we want to drop any units in
 strata that have all missing treated or all missing control. 
@@ -117,17 +186,6 @@ expect_true(all( abs(treated.avg -
 @ 
 
 
-To generalize this in order to get corresponding averages for
-controls, we conceptualize these weights as Horwitz-Thompson type
-weights, proportional to the inverse probability of assignment; but
-then we also associate weights with strata that are prortional to the
-number of units assigned to treatment in that stratum. For treatment
-group members, the product of these two factors is 1; for controls,
-it's the ``treatment odds'' or a priori odds of assignment to
-treatment.  The treatment group is in effect serving to define a standard
-population. This scheme has the advantage of culminating naturally in
-treatment and control group means that are each interpretable as a 
-combined ratio estimates of means over that standard population.
 
 To determine a weighting scheme with which to prepare corresponding
 control group  averages, we can use the treatment group
@@ -135,7 +193,7 @@ as the standard population, so that the contributions from a given
 stratum are up-or down-weighted in proportion to the fraction of the
 stratum assigned to treatment.   Specifically, a weighting factor
 equal to the odds of assignment to treatment is to be applied to each
-control.  
+control.  (This assumes assignment probabilities never vary within a stratum.)
 
 Here are these factors, by stratum and variable: 
 <<>>=
@@ -145,17 +203,12 @@ Z.odds <- ( t(ZZ) %*% use.units ) / ( t(WW) %*% use.units )
 Note that strata which don't admit of a
 comparison have to be explicitly dropped, via \texttt{S.has.both}.
 
-Although these weights attach to the stratum rather than
-the element, an earlier reference implementation 
+An earlier reference implementation 
 uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the element by variable
-representation of them: 
+representation of these weights: 
 <<>>=
 ETT <- S %*%  Z.odds  # n * p
 @ 
-(At 9a84617 this writeup fell a little behind the development w/in the
-clusters branch; there weights for both treatments and controls are
-calculated explicity from a combo of aggregated element weights and
-stratum weights.)
 
 So the ETT-weighted averages of the control group are
 <<>>=
@@ -163,7 +216,7 @@ n0.ett <- t( use.units * ETT ) %*%  (1 - Z)
 (control.avg <- t(X.use * ETT ) %*% (1 - Z) / n0.ett)
 @ 
 
-\subsection*{Scale \& scaled mean differences}
+\subsubsection{Scale \& scaled mean differences}
 Next up, pooled standard deviations.  
 
 <<>>=
@@ -190,41 +243,79 @@ The standardized differences:
 (standardizeDifferences <- adjustedDifferences / pooled)
 @ 
 
-\section*{Enhancement: unify pruning of strata \& weighting by stratum}
-
-The operations of stratum weighting (``ETT'') and kicking out strata
-that don't admit of a comparison should be unified.  This will
-simplify the calculations and make it easier to create a slot for
-alternate weighting schemes.\ldots
+\subsection{Stratum weights and other complications}
 
 
-\section*{Strata and element weights}
+To generalize our stratum combination scheme above in order to get corresponding averages for
+controls, we conceptualize the weight attaching to each
+unit as the product of a  Horwitz-Thompson type inverse probability
+of assignment weight and a stratum weight, which may have been
+communicated by the user.   By default, the stratum
+weights are prortional to the
+number of units assigned to treatment in that stratum. In the absence
+of element weights, for treatment
+group members the product of these two factors is 1, as above; for controls,
+it's the ``treatment odds'' or a priori odds of assignment to
+treatment.  The treatment group is in effect serving to define a standard
+population. This scheme has the advantage of culminating naturally in
+treatment and control group means that are each interpretable as a 
+combined ratio estimates of means over that standard population.
 
-Although the header doesn't say anything about clusters, the intention
-is that these adaptations will address those also, by dint of the following.
+%% The operations of stratum weighting (``ETT'') and kicking out strata
+%% that don't admit of a comparison should be unified.  This will
+%% simplify the calculations and make it easier to create a slot for
+%% alternate weighting schemes.\ldots
 
-\begin{quote}
-  \textit{Assumptions.}  If the user specified a clustering variable
-  alongside of an element-by-variable table (and potentially element
-  weights), then that data frame 
-  has already been processed into cluster-by-variable matrices
-  \texttt{X} and \texttt{pv.c.wt}. Furthermore
-  \begin{enumerate}
-  \item \label{item:1} Each \texttt{X} entry represents a weighted \textit{mean}
-    over the non-missing values of the variable for the cluster in
-    question, with weights equal to user-provided element weights. 
-  \item Each \texttt{pv.c.wt} entry records a \textit{sum} of
-    user-provided element
-    weights, over elements within the cluster for which the variable
-    was not missing.
-  \end{enumerate}
-\end{quote}
-(\ref{item:1} might equally well have used weighted sums as opposed to
-weighted means. I favor this convention mostly for future-proofing: we
-may at some point wish to enable merges of cluster-level data frames
-with Design objects we've aggregated from element to cluster level.)
 
-\subsection*{Means \& mean differences}
+(At 9a84617 this writeup fell a little behind the development w/in the
+clusters branch; there weights for both treatments and controls are
+calculated explicity from a combo of aggregated element weights and
+stratum weights.)
+
+
+
+\subsection{Element weights} \label{sec:element-weights}
+
+Now let's suppose that, separate from any stratum weights, the user
+has communicated observation-specific weights. These weights are assumed invariant to treatment
+assignment.  For reasons to be explained with the extension to
+clustering, to distinguish these weights from stratum weights we'll
+call them element weights.  The element weights may represent proportions of a target
+population that a given observation is to be taken to
+represent, as the would if the study population were in fact a
+probability sample, and the weights were determined as reciprocals of
+sample inclusion probabilities. 
+
+Now we have two sets of weights to take into account, the element or
+inclusion weights and the assignment weights mentioned in the
+previous section. Our basic response is to multiply the two sets of
+weights together. 
+
+As mentioned above, our descriptives can be viewed as downweighting missing
+observations to 0.   This sort of selective weighting is at odds with
+Horwitz-Thompson interpretations of weights --- as reciprocals of
+sample inclusion and/or treatment assignment probabilities, or perhaps
+products thereof --- but this interpretation will be rescued in the
+following way.  First, anytime we observe a missing observation in \texttt{myvar} we
+place a 1 in that row of \texttt{myvar.NA}, a variable constructed by
+us; balance calculations are presented for this variable as well as
+for \texttt{myvar}.  Second, we consider our ratio estimator to be the
+ratio of HT estimates of the study population totals of \texttt{myvar
+  * !myvar.NA}, and \texttt{!myvar.NA}, respectively.  
+
+
+A computational issue, to be addressed: as of this writing we're not
+properly adjusting for weights in our calls to
+\texttt{slm.fit.csr.corrected()}: rather than upweighting Covs by
+weights, we should upweight them and the design matrix both by
+square-rooted weights, or in some other way sneak a diagonal matrix of
+weights in between the $Y'$ and the $X$ and in between the $X'$ and the
+$X$. See e.g. \texttt{slm.wfit.csr}.  But note that in that code there
+doesn't appear to be any allowance made for having used an upweighted
+Y and upweighted design matrix in fitting once it's time to extract
+fitted values or residuals; a correction appears to be needed. 
+
+\subsubsection{Means \& mean differences}
 We need to make \emph{per-variable} element weights,
 ``\texttt{pv.c.wt},'' products of user-provided element weights (implicit
 $1$'s when the user hasn't specified a weight) and per-variable
@@ -285,7 +376,7 @@ n0.ett <- t( pv.c.wt * ETT ) %*%  (1 - Z)
 (control.avg <- t(X.use * ETT ) %*% (1 - Z) / n0.ett)
 @ 
 
-\subsection*{Scale \& scaled mean differences}
+\subsubsection{Scale \& scaled mean differences}
 
 Next up, pooled standard deviations. 
 
@@ -312,4 +403,58 @@ The standardized differences:
 (adjustedDifferences    <- treated.avg - control.avg)
 (standardizeDifferences <- adjustedDifferences / pooled)
 @ 
+
+
+\subsection{Clusters}
+
+The intention of the design for calcs with strata and element weights,
+above, is that these adaptations will address clusters also, by dint of the following.
+
+\begin{quote}
+  \textit{Assumptions.}  If the user specified a clustering variable
+  alongside of an element-by-variable table (and potentially element
+  weights), then that data frame 
+  has already been processed into cluster-by-variable matrices
+  \texttt{X} and \texttt{pv.c.wt}. Furthermore
+  \begin{enumerate}
+  \item \label{item:1} Each \texttt{X} entry represents a weighted \textit{mean}
+    over the non-missing values of the variable for the cluster in
+    question, with weights equal to user-provided element weights. 
+  \item Each \texttt{pv.c.wt} entry records a \textit{sum} of
+    user-provided element
+    weights, over elements within the cluster for which the variable
+    was not missing.
+  \end{enumerate}
+\end{quote}
+(\ref{item:1} might equally well have used weighted sums as opposed to
+weighted means. I favor this convention mostly for future-proofing: we
+may at some point wish to enable merges of cluster-level data frames
+with Design objects we've aggregated from element to cluster level.)
+
+
+\texttt{C} is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. 
+Each row of \texttt{C} has one and only one finite entry. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata.
+
+\section{Purposes and premises: Univariate inferentials}
+
+to explain: Alignment.  Z-effects, ie appropriately weighted
+regression effects, as opposed to adjusted mean
+differences; Z effect sd's.  Grand mean imputation is convenient but
+inflates variances when there's meaningful between stratum variation.
+Better to impute to stratum means, if you have to impute. (Not clear
+that one does, although it's recommended by the missingness as data
+principle,  plus the absence of a likelihood model for the covariates.)
+
+
+\section{Purposes and premises: Multivariate inferentials}
+
+Need to impute missings here rather than omit them, in order to have
+consistent data dimensions across vars. Although differences among
+treatment and control HT estimates are blind to the value chosen for
+imputations, covariances are not.  Imputing to the stratum mean
+minimizes the variance of Z-effect along the imputed variable. 
+
+I think we should hard code the use of ``harmonic'' weights\ldots
+
+
 \end{document}
