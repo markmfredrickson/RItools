@@ -234,3 +234,22 @@ test_that("Element weights",{
   expect_equal(2* aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
   expect_equal(2* aggDesign.tall@Covariates, aggDesign.d2@Covariates) #(this may change)
           })
+
+test_that("Residuals from weighted regressions w/ sparse designs",
+          {
+              quickfac <- factor(rep(letters[1:2], each=2))
+              quickY <- 1:4
+              slm.u <- SparseM:::slm.fit(SparseMMFromFactor(quickfac), quickY)
+              slm.w <- SparseM:::slm.wfit(SparseMMFromFactor(quickfac), quickY,
+                                         weights=rep(1:2, each=2)
+                                         )
+              expect_equal(coef(slm.u),
+                           coef(slm.w))
+
+              ## However, since it doesn't compensate for weighting of design matrix:
+              expect_false(all(abs(slm.u$resid - slm.w$resid) < .Machine$double.eps^.5))
+              expect_false(all(abs(slm.u$fitted - slm.w$fitted) < .Machine$double.eps^.5))
+
+              ## (Should also add a test of intercept only model fitting, ie the scenario
+              ## that Mark wrote `slm.fit.csr.fixed` to address.)
+          })
