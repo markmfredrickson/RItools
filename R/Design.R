@@ -24,14 +24,6 @@ setClass("Design",
 
 #
 #
-# The formula must have a left hand side that can be converted to a logical.
-#
-# On the RHS:
-#  - It may have at most one cluster() argument.
-#  - It may have one or more strata() arguments.
-#  - All other variables are considered covariates.
-#
-# NB: should we make this more like glm() to pick up environment? Probably
 ##' Create a Design object from a formula and some data
 ##'
 ##' The formula must have a left hand side that can be converted to a logical.
@@ -41,7 +33,8 @@ setClass("Design",
 ##'  - It may have one or more strata() arguments.
 ##'  - All other variables are considered covariates.
 ##'
-##' NB: should we make this more like glm() to pick up environment? Probably
+##' NAs in a cluster() or strata() variable will be dropped.  NAs in covariates will be imputed.
+##' 
 ##' @param fmla Formula
 ##' @param data Data
 ##' @param imputefn Function to impute
@@ -392,9 +385,7 @@ SparseMMFromFactor <- function(thefactor) {
   theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
     is.na(thefactor)
 
-  if (all(theNA)) stop("No non-NA's in thefactor") else {
-    if (any(theNA) && !inherits(thefactor, "optmatch")) warning("NA's found in thefactor.")
-  }
+  if (all(theNA)) stop("No non-NA's in thefactor") 
 
   nlev <- nlevels(thefactor)
   nobs <- length(thefactor)
