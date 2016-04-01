@@ -10,7 +10,7 @@
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table to remind us which Covariates columns correspond to which provide variables
 #' @slot Covariates Numeric matrix encoding variable values, analogous to a design matrix
-#' @slot NotMissing Element weight, unless value is missing (in which case 0); for clusters, sum of non-missing element weights
+#' @slot Eweights Matrix of element weights or cluster sums of them, with missing values contributing 0s.
 setClass("Design",
          representation = list(
            Z                 = "logical",
@@ -19,7 +19,7 @@ setClass("Design",
            Cluster           = "factor",
            OriginalVariables = "character",
            Covariates        = "matrix",
-           NotMissing        = "matrix") 
+           Eweights        = "matrix") 
          )
 
 #
@@ -201,7 +201,7 @@ makeDesign <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA.
              StrataFrame       = strata.frame,
              Cluster           = factor(Cluster),
              Covariates        = data.mm,
-             NotMissing        = data.notmissing,
+             Eweights        = data.notmissing,
              OriginalVariables = originals))
 }
 
@@ -353,10 +353,10 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ZZ <- S * Z
     WW <- S * (1 - Z)
 
-    S.missing.0 <- as.matrix((t(ZZ) %*% design@NotMissing)) == 0
-    S.missing.1 <- as.matrix((t(WW) %*% design@NotMissing)) == 0
+    S.missing.0 <- as.matrix((t(ZZ) %*% design@Eweights)) == 0
+    S.missing.1 <- as.matrix((t(WW) %*% design@Eweights)) == 0
     S.has.both  <- !(S.missing.0 | S.missing.1)
-    use.units   <- S %*% S.has.both * design@NotMissing
+    use.units   <- S %*% S.has.both * design@Eweights
 
     X.use  <- design@Covariates * use.units
     X2.use <- design@Covariates^2 * use.units
@@ -455,8 +455,8 @@ aggregateDesign <- function(design) {
   Cluster <- design@Cluster[!dupes]
 
   C <- SparseMMFromFactor(design@Cluster)
-  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@NotMissing))
-  NotMissing <- as.matrix(t(C) %*% design@NotMissing)
+  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@Eweights))
+  Eweights <- as.matrix(t(C) %*% design@Eweights)
 
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
     tmp <- t(C) %*% S
@@ -472,7 +472,7 @@ aggregateDesign <- function(design) {
       StrataMatrices = StrataMatrices,
       StrataFrame = StrataFrame,
       Cluster = Cluster,
-      NotMissing = NotMissing,
+      Eweights = Eweights,
       Covariates = as.matrix(Covariates),
       # OriginalVariables = c("Cluster Size", design@OriginalVariables))
       OriginalVariables = design@OriginalVariables)
@@ -511,7 +511,7 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     n0 <- t(S) %*% (1 - Z)
 
     Covs <- design@Covariates[keep, , drop = FALSE]
-    NotMiss <- design@NotMissing[keep, , drop = FALSE]
+    NotMiss <- design@Eweights[keep, , drop = FALSE]
     wtr <- design@Sweights[[s]]$wtratio[keep]
 
     ZtH <- S %*% n.inv %*% n1

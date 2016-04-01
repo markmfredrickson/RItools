@@ -176,7 +176,7 @@ test_that("aggregateDesign treats NA covariates as 0's" ,{
   design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
   aggDesign <- RItools:::aggregateDesign(design)
   expect_equal(aggDesign@Covariates[,'x'], c(0, 0, 1, 1) )
-  expect_equal(aggDesign@NotMissing[,colnames(aggDesign@Covariates)=='x'], c(0,0,1,1) )
+  expect_equal(aggDesign@Eweights[,colnames(aggDesign@Covariates)=='x'], c(0,0,1,1) )
 })
 
 test_that("NA flags are optional", {
@@ -200,7 +200,7 @@ test_that("NA flags are optional", {
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })
 
-test_that("Element weights",{
+test_that("Aggregation of element weights to cluster level",{
   ##set.seed(20130801)
 
   d.short <- data.frame(
@@ -231,7 +231,7 @@ test_that("Element weights",{
   design.d2 <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d2)
   aggDesign.d2 <- RItools:::aggregateDesign(design.d2)
   
-  expect_equal(2* aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
+  expect_equal(2* aggDesign.tall@Eweights, aggDesign.d2@Eweights)
   expect_equal(2* aggDesign.tall@Covariates, aggDesign.d2@Covariates) #(this may change)
           })
 
