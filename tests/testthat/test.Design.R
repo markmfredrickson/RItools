@@ -161,7 +161,7 @@ test_that("Aggegating designs by clusters", {
   expect_equal(dim(aggDesign@Covariates), c(100, 4))
 
   # now spot check some cluster totals of totals
-  expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == 1,]))
+  expect_equal(aggDesign@Covariates[1, ], colMeans(design@Covariates[design@Cluster == 1,]))
 
 })
 
@@ -232,6 +232,6 @@ test_that("Aggregation of element weights to cluster level",{
   aggDesign.d2 <- RItools:::aggregateDesign(design.d2)
   
   expect_equal(2* aggDesign.tall@Eweights, aggDesign.d2@Eweights)
-  expect_equal(2* aggDesign.tall@Covariates, aggDesign.d2@Covariates) #(this may change)
+  expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
           })
 

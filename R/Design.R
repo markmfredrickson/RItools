@@ -420,9 +420,11 @@ aggregateDesign <- function(design) {
   Cluster <- design@Cluster[!dupes]
 
   C <- SparseMMFromFactor(design@Cluster)
-  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@Eweights))
+  
   Eweights <- as.matrix(t(C) %*% design@Eweights)
-
+  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@Eweights))
+  Covariates <- ifelse(Eweights>0, Covariates/Eweights, 0)
+  
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
     tmp <- t(C) %*% S
     tmp@ra <- rep(1, length(tmp@ra))
@@ -476,24 +478,14 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     n0 <- t(S) %*% (1 - Z)
 
     Covs <- design@Covariates[keep, , drop = FALSE]
-    NotMiss <- design@Eweights[keep, , drop = FALSE]
+    Ewts <- design@Eweights[keep, , drop = FALSE]
     wtr <- design@Sweights[[s]]$wtratio[keep]
 
-    ZtH <- S %*% n.inv %*% n1
-    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% (Covs * wtr), column = FALSE)
-
-    wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
-
-    # see note at the bottom of this file why we use this function instead of SparseM's version
-    # align weighted observations within stratum by subtracting stratum mean of weight * obs
-    a <- slm.fit.csr.fixed(S, Covs)$residuals
-    # this is used to normalize within each stratum by the average of unit weights
-    b <- slm.fit.csr.fixed(S, NotMiss)$fitted
-
-    # this is needed for the case when a strata has all missing in either the treated or control group
-    # setting this to the value closet to zero will give us a zero in the appropriate place in tmat, so all is good
-    b[b == 0] <- .Machine$double.eps
-    tmat <- a / b
+    # see note in ./utils.R on why we use this function instead of SparseM's version
+    # align weighted observations within stratum by subtracting weighted stratum means
+    Covs.Sctr <- Covs
+    for (jj in 1:ncol(Covs))
+      Covs.Sctr[,jj] <- slm.wfit.csr(S, Covs[,jj], weights=Ewts[,jj])$residuals
 
     # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
@@ -501,28 +493,32 @@ alignDesignByStrata <- function(design, post.align.transform = NULL) {
     tmp@ra <- 1 / (tmp@ra - 1)
 
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * wtr^2
-    ssvar <-  colSums(dv  * tmat^2)
+
 
     if (!is.null(post.align.transform)) {
-      # Transform the columns of tmat using the function in post.align.trans
-      tmat.new <- apply(tmat, 2, post.align.transform)
+      # Transform the columns of Covs.Sctr using the function in post.align.trans
+      Covs.Sctr.new <- apply(Covs.Sctr, 2, post.align.transform)
 
-      # Ensure that post.align.trans wasn't something that changes the size of tmat (e.g. mean).
+      # Ensure that post.align.trans wasn't something that changes the size of Covs.Sctr (e.g. mean).
       # It would crash later anyway, but this is more informative
-      if (is.null(dim(tmat.new)) || !all(dim(tmat) == dim(tmat.new))) {
+      if (is.null(dim(Covs.Sctr.new)) || !all(dim(Covs.Sctr) == dim(Covs.Sctr.new))) {
         stop("Invalid post.alignment.transform given")
       }
-      ## recenter on stratum means
-      tmat <- slm.fit.csr.fixed(S, tmat.new)$residuals
-      tmat <- tmat * wtr
+      ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
+    for (jj in 1:ncol(Covs)) {
+      Covs.Sctr[,jj] <- slm.wfit.csr(S, Covs.Sctr.new[,jj], weights=Ewts[,jj])$residuals }
 
-      # Recalculate on transformed data the difference of treated sums and their null expectations
-      # (NB: since tmat has just been recentered,
-      ssn <- t(Z) %*% tmat
-      ssvar <- colSums(dv * tmat^2)
-    } else {
-      tmat <- tmat * wtr
-    }
+  }
+
+    
+    tmat <- Covs.Sctr * Ewts * wtr
+    ZtH <- S %*% n.inv %*% n1
+    ssn <- sparseToVec(t(matrix(Z, ncol = 1) - ZtH) %*% tmat, column = FALSE)
+    ssvar <- colSums(dv * tmat^2)
+  
+    ##  wtsum is the sum across strata of twice the harmonic mean of n1, n0 - we should rename it
+    wtsum <- sum((n.inv %*% (n1 * n0))@ra) # the ra slot is where SparseM keeps the non-zero values)
+
 
     # save everything as we drop some of the observations and we need all the dims/etc to line up
     ans[[s]] <- list(zz = Z,
