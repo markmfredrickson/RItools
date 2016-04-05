@@ -295,37 +295,3 @@ xBalance <- function(fmla,
   class(ans) <- c("xbal", "list")
   ans
 }
-
-xBalance.make.stratum.mean.matrix <- function(ss, mm) {
-  stopifnot(inherits(ss, "factor")) # just in case a numeric variable is passed in.
-
-  post.nobs <- dim(mm)[1]
-  nlev <- nlevels(ss)
-
-  # for this matrix, finding the indices of the rows is easy, as there is only one
-  # item per row, and there post.nobs number of rows.
-  tR <- new("matrix.csr",
-            ja = as.integer(as.integer(ss)),
-            ia = as.integer(1:(post.nobs+ 1)),
-            ra = unsplit(1/tapply(ss,ss,length),ss),
-            dimension = c(post.nobs,nlev))
-
-  # With many items per row, we need to break the list of strata
-  # down into indices of where each row starts and ends
-  # e.g. Say ss = 0 0 0 0 1 1 1 1 1 1 1 2 2 2 2 the row indices would be
-  # 1 5 12 16 (where 16 is the start of the non existant 4th row)
-
-  L <- new("matrix.csr", #ifelse(oldver,"tripletMatrix","dgTMatrix"),
-           ia = as.integer(1:(post.nobs + 1)),
-           ja = as.integer(as.integer(ss)),
-           ra = rep(1,length(ss)),
-           dimension = c(post.nobs,nlev))
-
-
-  msmn <- t(tR) %*% mm
-  msmn <- L %*% msmn
-
-  msmn <- as.matrix(msmn)
-
-  return(msmn)
-}
