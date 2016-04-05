@@ -1,5 +1,7 @@
 \documentclass{article}
 \usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{natbib}
 \begin{document}
 
 <<>>=
@@ -435,18 +437,145 @@ with Design objects we've aggregated from element to cluster level.)
 \texttt{C} is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. 
 Each row of \texttt{C} has one and only one finite entry. We can assume it has been validated that all members of the same cluster have the same $Z_i$ value and all clusters are nested within strata.
 
-\section{Purposes and premises: Univariate inferentials}
-
-to explain: Alignment.  Z-effects, ie appropriately weighted
-regression effects, as opposed to adjusted mean
-differences; Z effect sd's.  Grand mean imputation is convenient but
-inflates variances when there's meaningful between stratum variation.
-Better to impute to stratum means, if you have to impute. (Not clear
-that one does, although it's recommended by the missingness as data
-principle,  plus the absence of a likelihood model for the covariates.)
+\section{Purposes and premises: Inferential statistics}
 
 
-\section{Purposes and premises: Multivariate inferentials}
+Here we calculate the ``adjusted differences,'' ``combined
+differences'' and associated $p$-values  of \citet{hansen:bowers:2008}, but with a couple additional wrinkles
+to handle missingness.  Given strata $1, \ldots, B$, stratum weights
+$\{w_{b}\}$; for each stratum $b$ a length-$n_{b}$ treatment
+assignment vector $\mathbf{Z}_{b}$, an $n_{b} \times p$ matrix
+$\mathbf{x}_{b} $ of cluster \textit{totals}, and an $n_{b}$-vector
+$\mathbf{m}_{b}$ of cluster sizes, the adjusted mean difference was
+\begin{equation*}
+  d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B w_b \left\{  \mathbf{Z}_{b}'
+                       \mathbf{x}_{b}/(\bar{m}_{b} n_{tb}) -
+(\mathbf{1} - \mathbf{Z}_{b})'\mathbf{x}_{b}/[\bar{m}_{b}(n_{b} - n_{tb})] \right\} 
+\end{equation*}
+or, equivalently,
+\begin{equation*}
+   d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B w_b h_b^{-1} \bar{m}_b^{-1} \mathbf{Z}_{b}' \mathbf{x}_{b} - \sum_{b=1}^B w_b
+  \bar{m}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{x}_{b}  , 
+\end{equation*}
+where $h_{b} = n_{tb}(n_{b} - n_{tb})/n_{b} = [n_{tb}^{-1} + (n_{b} -
+n_{tb})^{-1}]^{-1}$ is half the harmonic mean of the sizes of the
+treatment and control groups --- in terms of clusters, not elements
+--- in stratum $b$.  
+
+The additional wrinkles to handle missingness:
+\begin{enumerate}
+\item Cluster size $m_{bi}$ is replaced by the more general $w_{bi} $, indicating the sum of weights of
+  non-NA elements within the cluster $i$ of stratum $b$. 
+\item In addition, $w_{bi}$ is allowed to differ for different
+  variables, following different missingness patterns.  So instead of
+  $n_{b}$-vectors $\mathbf{m}_{b}$ we have $m \times p$ matrices $\mathbf{w}_{b}$; also
+  $\bar{w}_{b}$ is a $p$-vector.
+\item In addition, we'll think of the $\mathbf{x}_{b} $'s
+  as matrices of weighted \textit{means}, not totals, with weight
+  matrices $\mathbf{w}_{b} $ standing in the background.  
+\end{enumerate}
+
+With these modifications, with $\mathbf{x}_{(j)}$, $\mathbf{x}_{b(j)}$ used to indicate
+the $j$th column of $\mathbf{x} $ and $\mathbf{x}_{b} $ respectively,
+and with $\mathbf{a} \cdot \mathbf{b} $ used to indicate the
+element-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
+and $\textbf{b}$, adjusted mean differences are expressible as
+\begin{align}
+  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B w_b \left\{  \mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
+(\mathbf{1} -
+                                    \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+                                    \mathbf{w}_{b(j)})/[\bar{w}_{b(j)}(n
+                                    - n_{tb})] \right\} \nonumber  \\
+  &= \sum_{b=1}^B w_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
+    (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - \sum_{b=1}^B w_b
+  \bar{w}_{b(j)}^{-1} (n_b - n_{tb})^{-1}
+    \mathbf{1}'(\mathbf{x}_{b(j)} \cdot\mathbf{w}_{b(j)})  .\label{eq:1} 
+\end{align}
+
+Admittedly, this equation is rather an ugly duckling. But it gives us some better options for handling NAs,
+while also preserving the covariance structure we'll need for the
+multivariate inferentials. 
+
+Operationally, our first step will be to \textit{align} the
+$\mathbf{x}_{b}$ submatrices, ie to shift them in such a way that their
+weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$.  This simplifies \eqref{eq:1}  by causing its
+second term to vanish.  
+Then we'll apply the $\bar{w}_{b}^{-1}$
+stratum-wise weight factors, by multiplying them through by weight
+matrices $\tilde{\mathbf{w}}_{b}$, where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
+$\mathbf{w}_{b(j)}  = \mathbf{0} $, otherwise
+$\tilde{\mathbf{w}}_{b(j)} = 
+\bar{w}_{b(j)}^{-1} \mathbf{w}_{b(j)}$. 
+So \eqref{eq:1} becomes
+\begin{equation} \label{eq:2}
+  d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B \frac{w_b}{h_b}
+  \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+  \tilde{\mathbf{w}}_{b}), 
+\end{equation}
+where $\cdot $ indicates element-wise product. 
+
+Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
+effect, they're imputed to weighted stratum means.  In terms of its
+effects on the values of $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
+$\mathbf{E}_{0}[d(\mathbf{Z}, \mathbf{x}_{(j)}) ]$, this imputation is
+the same as omitting records that have NAs on the $j$-th $x$
+variable.  To instead impute the mean of $\mathbf{x}_{(j)}$ across
+strata $b$, as \texttt{xBalance} did in \texttt{RItools} version
+0.1.14 and earlier, would have given the same values for $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
+$\mathbf{E}_{0}[d(\mathbf{Z}, \mathbf{x}_{(j)}) ]$, but would lead to
+somewhat larger calculated values of $\mathrm{Var}_{0}[d(\mathbf{Z}_{b},
+\mathbf{x}_{b(j)}) ]$, and in turn $\mathrm{Var}_{0}[d(\mathbf{Z},
+\mathbf{x}_{(j)}) ]$: \textit{stratum}-mean imputation is
+variance-minimizing, with the end result that the overall balance
+check is more sensitive than it otherwise would be.  (Hansen \& Bowers
+[\citeyear{hansen:bowers:2008}] give formulas for these moments.) 
+
+Notes about weighting:
+\begin{itemize}
+\item Although $\{h_{b}\}$ is not normalized to sum to 1, it's assumed
+  that $w_{b} $ is. 
+\item Expression \eqref{eq:2} somewhat obscures the important
+  expectation that the unit weights $w_{bi}$ should play a role in
+  determining the stratum weights.  For instance, for the default
+  weighting suggested by H\&B 2008, one should have $w_{b} \propto
+  \bar{w}_{b}h_{b}$.
+\item Stratum weights are presumed to be the same for all covariates.
+  So the $\bar{w}_{b}$ figuring in a stratum weighting might be based
+  on unit weights without attention to NAs, for example.  
+\item The inferential calcs assume that the weights don't vary by
+  treatment assignment. This rules out effect of treatment weighting
+  in the strict sense, at least as far as Inferentials are concerned
+  and in the case that the unit weights vary within strata.
+\end{itemize}
+
+Additional notes:
+\begin{itemize}
+\item The reason to keep $\tilde{\mathbf{x}}$ and $\tilde{\mathbf{w}} $
+  separate, instead of rolling them into one, is to be able to apply a
+  post-alignment transformation to the $x$es.  (E.g., take ranks, as
+  in the Hodges-Lehmann aligned rank statistic.) 
+\item Speaking of aligned ranks, when \citet{small:etal:2007} used
+  them in a cluster randomized study, they aligned and transformed to
+  ranks \textit{prior to} aggregating within the cluster.  Something I hope
+  we'll enable soon (\#64).
+\item By normalizing weights within block, the onus of accounting for
+  differences in sample/population size across blocks is placed
+  entirely on $\{w_{b}\} $.
+\item That said, the weight normalization
+  $w \mapsto \tilde{w} $ and covariate alignment $x \mapsto \tilde{x}$  
+  have the property that you can apply them either before or after aggregating to the cluster
+  level, with the same result. 
+\item The advantage of imputation as opposed to simple omission is to
+preserve the common structure across $x$ variables, which will in
+general have different missingness patterns. This in turn is needed
+for multivariate inferentials.
+\end{itemize}
+
+
+
+
+\subsection{Multivariate inferentials}
 
 Need to impute missings here rather than omit them, in order to have
 consistent data dimensions across vars. Although differences among
@@ -456,5 +585,30 @@ minimizes the variance of Z-effect along the imputed variable.
 
 I think we should hard code the use of ``harmonic'' weights\ldots
 
+
+\bibliographystyle{plainnat}
+%\bibliography{abbrev_long,causalinference,computing,misc}
+\begin{thebibliography}{2}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Hansen and Bowers(2008)]{hansen:bowers:2008}
+Ben~B. Hansen and Jake Bowers.
+\newblock Covariate balance in simple, stratified and clustered comparative
+  studies. \newblock \textit{Statistical Science}
+\newblock 23\penalty0 (2):\penalty0 219--236, 2008.
+
+\bibitem[Small et~al.(2008)Small, Ten~Have, and Rosenbaum]{small:etal:2007}
+Dylan Small, Thomas~R. Ten~Have, and Paul Rosenbaum.
+\newblock Randomization inference in a group-randomized trial of treatments for
+  depression: covariate adjustment, noncompliance and quantile effects.
+\newblock \textit{Journal of the American Statistical Association}
+\newblock 103\penalty0 (481):\penalty0 271--279, 2008.
+\newblock ISSN 0162-1459.
+
+\end{thebibliography}
 
 \end{document}

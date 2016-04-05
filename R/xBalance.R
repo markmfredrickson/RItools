@@ -242,22 +242,26 @@ xBalance <- function(fmla,
   if("all" %in% report)
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
-  design          <- makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
-  aggDesign       <- aggregateDesign(design)
+  design          <- makeDesigns(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
 
-  design <- as(design, "StratumWeightedDesign")
+  ## We need aggDesign to make descriptives because the stratum weights need to be calculated from the aggregated setup
+  ## however we're not going to feed aggDesign itself to `designToDescriptives()`, so we don't risk "polluting"
+  ## the descriptives calcs w/imputation that's being done along with the aggregation procedure
+  aggDesign       <- aggregateDesigns(design)
+
+  design <- as(design, "StratumWeightedDesignOptions")
   design@Sweights <- DesignWeights(aggDesign, # Have to aggregate 1st to figure stratum weights properly
                                    effectOfTreatmentOnTreated) #For now we override any user-provided stratum.weights
   descriptives    <- designToDescriptives(design, covariate.scaling)
 
   # going forward, we use the user's weights, not ETT always
-  aggDesign.weighted <- as(aggDesign, "StratumWeightedDesign")
+  aggDesign.weighted <- as(aggDesign, "StratumWeightedDesignOptions")
   aggDesign.weighted@Sweights <-
       DesignWeights(aggDesign, stratum.weights)
 
-  strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
+  strataAligned <- alignDesignsByStrata(aggDesign.weighted, post.alignment.transform)
 
-  tmp <- lapply(strataAligned, function(i) { do.call(alignedToInferentials, i) })
+  tmp <- lapply(strataAligned, alignedToInferentials)
   names(tmp) <- names(aggDesign@StrataMatrices)
 
   ans <- list()

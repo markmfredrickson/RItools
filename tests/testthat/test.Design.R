@@ -1,10 +1,10 @@
 ################################################################################
-# Tests for Design objects
+# Tests for DesignOptions objects
 ################################################################################
 
 library("testthat")
 
-context("Design objects")
+context("DesignOptions objects")
 
 test_that("Creating design objects", {
   set.seed(20130801)
@@ -21,28 +21,28 @@ test_that("Creating design objects", {
   d$'(weights)' = 1 # meet expectation of a weights column
 
   # checking input
-  expect_error(makeDesign(~ x, data = d), "treatment")
-  expect_error(makeDesign(z.bad ~ x + strata(strata.good) + cluster(cluster), data = d), "cluster")
-  expect_error(makeDesign(z.good ~ x + strata(strata.bad) + cluster(cluster), data = d), "strata")
-  expect_error(makeDesign(z.good ~ x + cluster(id) + cluster(cluster), data = d), "cluster")
-  expect_error(makeDesign(z.good ~ x - 1, data = d, "stratification"))
+  expect_error(makeDesigns(~ x, data = d), "treatment")
+  expect_error(makeDesigns(z.bad ~ x + strata(strata.good) + cluster(cluster), data = d), "cluster")
+  expect_error(makeDesigns(z.good ~ x + strata(strata.bad) + cluster(cluster), data = d), "strata")
+  expect_error(makeDesigns(z.good ~ x + cluster(id) + cluster(cluster), data = d), "cluster")
+  expect_error(makeDesigns(z.good ~ x - 1, data = d, "stratification"))
 
   # actually testing that the output is as expected
-  simple <- makeDesign(z.good ~ x, data = d)
+  simple <- makeDesigns(z.good ~ x, data = d)
   expect_equal(dim(simple@StrataFrame)[2], 1)
   expect_equivalent(simple@Covariates[, "x"], d$x)
   expect_equivalent(simple@Z, as.logical(d$z.good))
   expect_equal(nlevels(simple@Cluster), 500) # a cluster per individual
   
-  clustered <- makeDesign(z.good ~ x + cluster(cluster), data = d)
+  clustered <- makeDesigns(z.good ~ x + cluster(cluster), data = d)
   expect_equal(dim(clustered@StrataFrame)[2], 1)
   expect_true(nlevels(clustered@Cluster) > 1)
 
-  clustStrata <- makeDesign(z.good ~ x + cluster(cluster) + strata(strata.good), data = d)
+  clustStrata <- makeDesigns(z.good ~ x + cluster(cluster) + strata(strata.good), data = d)
   expect_equal(dim(clustStrata@StrataFrame)[2], 2)
 
   # dropping the overall comparison
-  expect_equal(dim(makeDesign(z.good ~ x + cluster(cluster) + strata(strata.good) - 1, data = d)@StrataFrame)[2], 1)
+  expect_equal(dim(makeDesigns(z.good ~ x + cluster(cluster) + strata(strata.good) - 1, data = d)@StrataFrame)[2], 1)
    
   ## More tests to write:
   # - All NA strata variables
@@ -52,7 +52,7 @@ test_that("Creating design objects", {
   #   see ./test.clusters.R  
 })
 
-test_that("Design to descriptive statistics", {
+test_that("DesignOptions to descriptive statistics", {
   set.seed(20130801)
 
   d <- data.frame(
@@ -64,7 +64,7 @@ test_that("Design to descriptive statistics", {
 
   d$'(weights)' = 1 # meet expectation of a weights column
   
-  simple <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
+  simple <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
 
   
   descriptives <- RItools:::designToDescriptives(simple)
@@ -73,7 +73,7 @@ test_that("Design to descriptive statistics", {
   expect_equal(dim(descriptives), c(4, 5, 2))
 
   # descriptives ignore clustering
-  design.noclus <- RItools:::makeDesign(z ~ x + f + strata(s), data = d)
+  design.noclus <- RItools:::makeDesigns(z ~ x + f + strata(s), data = d)
   expect_equal(descriptives, RItools:::designToDescriptives(design.noclus))
   
   # the strata should imply different stats
@@ -107,13 +107,13 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
 
   d.missing$x[d.missing$x < -1] <- NA
 
-  simple.all <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
+  simple.all <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
   
   descriptives.all <- RItools:::designToDescriptives(simple.all)
   expect_equal(descriptives.all["x", "Treatment", "Unstrat"], mean(d$x[d$z == 1]))
   expect_equal(descriptives.all["x", "Treatment", "s"], mean(d$x[d$z == 1 & !is.na(d$s)]))
 
-  simple.missing <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.missing)
+  simple.missing <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d.missing)
   
   descriptives.missing <- RItools:::designToDescriptives(simple.missing)
 
@@ -128,7 +128,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   expect_false(identical(descriptives.all, descriptives.missing))
 
   # ETT weighting
-  design.paired   <- RItools:::makeDesign(z ~ x + f + strata(paired) + strata(s), data = d) 
+  design.paired   <- RItools:::makeDesigns(z ~ x + f + strata(paired) + strata(s), data = d) 
   descriptives.paired <- RItools:::designToDescriptives(design.paired)
 
   with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
@@ -154,8 +154,8 @@ test_that("Aggegating designs by clusters", {
   d <- d[sample(1:dim(d)[1]), ]
 
 
-  design <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
-  aggDesign <- RItools:::aggregateDesign(design) 
+  design <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
+  aggDesign <- RItools:::aggregateDesigns(design) 
 
   # one row per cluster, with columns x, fa, fb, fc
   expect_equal(dim(aggDesign@Covariates), c(100, 4))
@@ -165,7 +165,7 @@ test_that("Aggegating designs by clusters", {
 
 })
 
-test_that("aggregateDesign treats NA covariates as 0's" ,{
+test_that("aggregateDesigns treats NA covariates as 0's" ,{
   dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
                     z=c(TRUE, rep(c(TRUE, FALSE), 2)),
@@ -173,8 +173,8 @@ test_that("aggregateDesign treats NA covariates as 0's" ,{
                     )
   dat$'(weights)' <- 1
 
-  design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
-  aggDesign <- RItools:::aggregateDesign(design)
+  design <- RItools:::makeDesigns(z~x+strata(strat)+cluster(clus)-1, dat)
+  aggDesign <- RItools:::aggregateDesigns(design)
   expect_equal(aggDesign@Covariates[,'x'], c(0, 0, 1, 1) )
   expect_equal(aggDesign@Eweights[,colnames(aggDesign@Covariates)=='x'], c(0,0,1,1) )
 })
@@ -193,8 +193,8 @@ test_that("NA flags are optional", {
 
   d$x[sample.int(500, size = 10)] <- NA
 
-  design.flags   <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d)
-  design.noFlags <- RItools:::makeDesign(z ~ x + f + strata(s), data = d, include.NA.flags = FALSE)
+  design.flags   <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
+  design.noFlags <- RItools:::makeDesigns(z ~ x + f + strata(s), data = d, include.NA.flags = FALSE)
 
   expect_equal(dim(design.flags@Covariates)[2], 5)
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
@@ -217,19 +217,19 @@ test_that("Aggregation of element weights to cluster level",{
   d.tall$'(weights)' <- 1
   d.short$'(weights)' <- as.vector(table(newrows))
 
-  design.tall <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.tall)
-  aggDesign.tall <- RItools:::aggregateDesign(design.tall) 
+  design.tall <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d.tall)
+  aggDesign.tall <- RItools:::aggregateDesigns(design.tall) 
 
-    design.short <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d.short)
-  aggDesign.short <- RItools:::aggregateDesign(design.short) 
+    design.short <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d.short)
+  aggDesign.short <- RItools:::aggregateDesigns(design.short) 
 
   ## we should wind up in the same place.
   expect_equal(aggDesign.tall, aggDesign.short)
 
   d2 <- d.tall
   d2$'(weights)' <- 2
-  design.d2 <- RItools:::makeDesign(z ~ x + f + strata(s) + cluster(c), data = d2)
-  aggDesign.d2 <- RItools:::aggregateDesign(design.d2)
+  design.d2 <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d2)
+  aggDesign.d2 <- RItools:::aggregateDesigns(design.d2)
   
   expect_equal(2* aggDesign.tall@Eweights, aggDesign.d2@Eweights)
   expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
