@@ -111,13 +111,13 @@ RItest <- function(
 
   sharp.null <- function(y, z) { y }
 
-  cl <- match.call()
+  thecl <- match.call()
 
   sharp.null.test <- new("SharpNullTest",
                         doit(sharp.null)(),
                         observed.statistic = test.stat(y, z),
                         samples = dim(randomizations$samples)[2],
-                        call = cl)
+                        call = thecl)
 
   if (!is.null(moe)) {
 
@@ -126,7 +126,7 @@ RItest <- function(
       observed.statistic = sharp.null.test@observed.statistic,
       sharp.null = sharp.null.test,
       samples = sharp.null.test@samples,
-      call = cl))
+      call = thecl))
 
   } else {
     return(sharp.null.test)

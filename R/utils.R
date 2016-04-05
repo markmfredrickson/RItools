@@ -93,8 +93,8 @@ farray <- function(f, p) {
   j <- sapply(p, length)
   k <- prod(j)
 
-  args <- make_args_mtx(p)
-  x <- vapply(args, FUN.VALUE = numeric(1), function(a) {
+  theargs <- make_args_mtx(p)
+  x <- vapply(theargs, FUN.VALUE = numeric(1), function(a) {
     if (!is.list(a)) {
       f(a)
     } else {
