@@ -419,7 +419,7 @@ above, is that these adaptations will address clusters also, by dint of the foll
   has already been processed into cluster-by-variable matrices
   \texttt{X} and \texttt{pv.c.wt}. Furthermore
   \begin{enumerate}
-  \item \label{item:1} Each \texttt{X} entry represents a weighted \textit{mean}
+  \item \label{item:0} Each \texttt{X} entry represents a weighted \textit{mean}
     over the non-missing values of the variable for the cluster in
     question, with weights equal to user-provided element weights. 
   \item Each \texttt{pv.c.wt} entry records a \textit{sum} of
@@ -428,7 +428,7 @@ above, is that these adaptations will address clusters also, by dint of the foll
     was not missing.
   \end{enumerate}
 \end{quote}
-(\ref{item:1} might equally well have used weighted sums as opposed to
+(\ref{item:0} might equally well have used weighted sums as opposed to
 weighted means. I favor this convention mostly for future-proofing: we
 may at some point wish to enable merges of cluster-level data frames
 with Design objects we've aggregated from element to cluster level.)
@@ -453,10 +453,10 @@ $\mathbf{m}_{b}$ of cluster sizes, the adjusted mean difference was
 (\mathbf{1} - \mathbf{Z}_{b})'\mathbf{x}_{b}/[\bar{m}_{b}(n_{b} - n_{tb})] \right\} 
 \end{equation*}
 or, equivalently,
-\begin{equation*}
+\begin{equation}\label{eq:HB08eq4}
    d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B w_b h_b^{-1} \bar{m}_b^{-1} \mathbf{Z}_{b}' \mathbf{x}_{b} - \sum_{b=1}^B w_b
   \bar{m}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{x}_{b}  , 
-\end{equation*}
+\end{equation}
 where $h_{b} = n_{tb}(n_{b} - n_{tb})/n_{b} = [n_{tb}^{-1} + (n_{b} -
 n_{tb})^{-1}]^{-1}$ is half the harmonic mean of the sizes of the
 treatment and control groups --- in terms of clusters, not elements
@@ -470,6 +470,9 @@ The additional wrinkles to handle missingness:
   variables, following different missingness patterns.  So instead of
   $n_{b}$-vectors $\mathbf{m}_{b}$ we have $m \times p$ matrices $\mathbf{w}_{b}$; also
   $\bar{w}_{b}$ is a $p$-vector.
+\item To avoid a notation conflict, the stratum weights of
+  \eqref{eq:HB08eq4} will be denoted as $s_{b}$, not $w_{b}$.  (And
+  they'll soon be supplanted anyway.)
 \item In addition, we'll think of the $\mathbf{x}_{b} $'s
   as matrices of weighted \textit{means}, not totals, with weight
   matrices $\mathbf{w}_{b} $ standing in the background.  
@@ -481,14 +484,14 @@ and with $\mathbf{a} \cdot \mathbf{b} $ used to indicate the
 element-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
 and $\textbf{b}$, adjusted mean differences are expressible as
 \begin{align}
-  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B w_b \left\{  \mathbf{Z}_{b}'
+  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_b \left\{  \mathbf{Z}_{b}'
                        (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
 (\mathbf{1} -
                                     \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
                                     \mathbf{w}_{b(j)})/[\bar{w}_{b(j)}(n
-                                    - n_{tb})] \right\} \nonumber  \\
-  &= \sum_{b=1}^B w_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
-    (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - \sum_{b=1}^B w_b
+                                    - n_{tb})] \right\} \label{eq:0}  \\
+  &= \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
+    (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - \sum_{b=1}^B s_b
   \bar{w}_{b(j)}^{-1} (n_b - n_{tb})^{-1}
     \mathbf{1}'(\mathbf{x}_{b(j)} \cdot\mathbf{w}_{b(j)})  .\label{eq:1} 
 \end{align}
@@ -509,7 +512,7 @@ $\tilde{\mathbf{w}}_{b(j)} =
 \bar{w}_{b(j)}^{-1} \mathbf{w}_{b(j)}$. 
 So \eqref{eq:1} becomes
 \begin{equation} \label{eq:2}
-  d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B \frac{w_b}{h_b}
+  d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B \frac{s_b}{h_b}
   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
   \tilde{\mathbf{w}}_{b}), 
 \end{equation}
@@ -531,15 +534,15 @@ variance-minimizing, with the end result that the overall balance
 check is more sensitive than it otherwise would be.  (Hansen \& Bowers
 [\citeyear{hansen:bowers:2008}] give formulas for these moments.) 
 
-Notes about weighting:
-\begin{itemize}
+Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
+\begin{enumerate}
 \item Although $\{h_{b}\}$ is not normalized to sum to 1, it's assumed
-  that $w_{b} $ is. 
+  that $\{s_{b} \}$ is. \label{item:1}
 \item Expression \eqref{eq:2} somewhat obscures the important
   expectation that the unit weights $w_{bi}$ should play a role in
   determining the stratum weights.  For instance, for the default
-  weighting suggested by H\&B 2008, one should have $w_{b} \propto
-  \bar{w}_{b}h_{b}$.
+  weighting suggested by H\&B 2008, one should have $s_{b} \propto
+  \bar{w}_{b}h_{b}$.\label{item:2}
 \item Stratum weights are presumed to be the same for all covariates.
   So the $\bar{w}_{b}$ figuring in a stratum weighting might be based
   on unit weights without attention to NAs, for example.  
@@ -547,7 +550,80 @@ Notes about weighting:
   treatment assignment. This rules out effect of treatment weighting
   in the strict sense, at least as far as Inferentials are concerned
   and in the case that the unit weights vary within strata.
-\end{itemize}
+\end{enumerate}
+
+Suppose that we were to  adopt the
+semantic convention 
+that the user will have communicated sample inclusion probabilities via the
+element weights.  There's no additional role for stratum weights per
+se; instead, in which case what remains to be factored in are the
+inverse probabilities of assignment,
+$\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  Relaxing \ref{item:1}--\ref{item:2} so
+that we can set stratum weights $s_{b}$ to be proportional to the sum of sample inclusion weights
+for stratum $b$, $\left(\sum_{i} w_{bi} \right) =
+n_{b}\bar{w}_{b} $, in order to align with a target population for
+inference, one has
+\begin{align*}
+  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_{b}\left\{  \mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
+(\mathbf{1} -
+                                    \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+                                    \mathbf{w}_{b(j)})/[\bar{w}_{b(j)}(n
+                                    - n_{tb})] \right\}   \\
+%% &= \sum_{b} \frac{s_{b}}{\bar{w}_{b}}  \left\{  \mathbf{Z}_{b}'
+%%                        (\mathbf{x}_{b(j)} \cdot
+%%   \tilde{\mathbf{w}}_{b(j)}) \frac{\bar{w}_{b}}{n_{tb}} -
+%% (\mathbf{1} - \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+%%                                     \tilde{\mathbf{w}}_{b(j)})\frac{\bar{w}_{b}}{n_{b}
+%%                                     - n_{tb}} \right\}   \\
+&=      \sum_{b}  \frac{s_{b}}{n_{b}}\left\{  \frac{\mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot
+  \tilde{\mathbf{w}}_{b(j)}) }{\pi_{tb}} -
+\frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+                                    \tilde{\mathbf{w}}_{b(j)}) }{ 1 -
+  \pi_{tb}} \right\} \\
+&= \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1}     \sum_{b}  \bar{w}_{b}\left\{  \frac{\mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot
+  \tilde{\mathbf{w}}_{b(j)}) }{\pi_{tb}} -
+\frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+                                    \tilde{\mathbf{w}}_{b(j)}) }{ 1 -
+  \pi_{tb}} \right\},\, \mathrm{or} \\
+                                  &=     \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1}  \sum_{b}  \frac{\bar{w}_{b}}{\bar{w}_{b(j)}}\left\{  \frac{\mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot {\mathbf{w}}_{b(j)})}{\pi_{tb}} -
+\frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+                                    {\mathbf{w}}_{b(j)})}{ 1 -
+  \pi_{tb}} \right\}, 
+\end{align*}
+where the factor ${\bar{w}_{b}}/{\bar{w}_{b(j)}}$ is as would be suggested by an assumption of
+missingness at random within the stratum ($b$). As seen earlier, this is the same as to say 
+\begin{equation*}
+  d(\mathbf{Z}, \mathbf{x}) = \frac{s_{b}}{h_{b}} \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+    \tilde{\mathbf{w}}_{b}) = \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1} \frac{n_{b}\bar{w}_{b}}{h_{b}} \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+    \tilde{\mathbf{w}}_{b}) . 
+\end{equation*}
+Perhaps these should be the default stratum weights for univariate
+inferentials.  They might even be enforced, ie removed from user
+control, eventually. But only for univariate inferentials; for multivariate
+inferentials we might be better advised to stick with the \citet{hansen:bowers:2008}
+recommendation that $s_{b} \propto h_{b} \bar{w}_{b}$. 
+%% \begin{align*}
+%%   d(\mathbf{Z}, \mathbf{x}) &= \sum_{b} \bar{w}_{b}\left\{  \frac{\mathbf{Z}_{b}'
+%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{w}}_{b})}{\pi_{tb}} -
+%% \frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b}\cdot
+%%                                     \tilde{\mathbf{w}}_{b})}{ 1 -  \pi_{tb}} \right\} \\
+%%   &=  \sum_{b} \bar{w}_{b}\left\{ \mathbf{Z}_{b}'
+%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{w}}_{b})
+%%     (\pi_{tb}^{-1} + (1-\pi_{tb})^{-1}) - \frac{\mathbf{1}'(\mathbf{x}_{b}\cdot
+%%                                     \tilde{\mathbf{w}}_{b})}{ 1 -
+%%     \pi_{tb}} \right\} \\
+%%   & = \sum_{b} \bar{w}_{b} (\pi_{tb}^{-1} + (1-\pi_{tb})^{-1})
+%%     \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+%%     \tilde{\mathbf{w}}_{b}) \\
+%%   &= \sum_{b} n_{b}\bar{w}_{b} (n_{tb}^{-1} + (n_{b} - n_{tb})^{-1})   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+%%     \tilde{\mathbf{w}}_{b}) \\
+%%   &= \sum_{b} \frac{n_{b}\bar{w}_{b}}{h_{b}}   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+%%     \tilde{\mathbf{w}}_{b}).
+%% \end{align*}
 
 Additional notes:
 \begin{itemize}
@@ -559,9 +635,6 @@ Additional notes:
   them in a cluster randomized study, they aligned and transformed to
   ranks \textit{prior to} aggregating within the cluster.  Something I hope
   we'll enable soon (\#64).
-\item By normalizing weights within block, the onus of accounting for
-  differences in sample/population size across blocks is placed
-  entirely on $\{w_{b}\} $.
 \item That said, the weight normalization
   $w \mapsto \tilde{w} $ and covariate alignment $x \mapsto \tilde{x}$  
   have the property that you can apply them either before or after aggregating to the cluster
