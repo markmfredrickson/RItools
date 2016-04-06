@@ -27,6 +27,7 @@ fastmean <- function(ys){
 }
 
 ##' @rdname test.stat.means
+##' @export
 mean.difference  <-  function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
   z  <-  as.logical(z)
@@ -34,6 +35,7 @@ mean.difference  <-  function(ys, z) {
 }
 
 ##' @rdname test.stat.means
+##' @export
 mean.diff.lsfit <- function(ys,z){
   ##Try using something that calls compiled code
   ##Gives same answer as mean.difference for balanced blocks and should be like harmonic.mean.difference for unbalanced blocks.
@@ -41,12 +43,14 @@ mean.diff.lsfit <- function(ys,z){
 }
 
 ##' @rdname test.stat.means
+##' @export
 mean.diff.vect <- function(ys,z){
   X <- model.matrix(ys~z)
   solve(qr(X, LAPACK=TRUE), ys)[2] ## qr.coef(qr(X,LAPACK=TRUE),ys) ## to handle near singular X
 }
 
 ##' @rdname test.stat.means
+##' @export
 t.mean.difference  <-  function(ys, z) {
   # z is usually a vector of 1s and 0s. make it logical
   z  <-  as.logical(z)
@@ -54,6 +58,7 @@ t.mean.difference  <-  function(ys, z) {
 }
 
 ##' @rdname test.stat.means
+##' @export
 fastvar <- function(ys){
   ## See var for this. Right now it removes missing values
   .Call(stats:::C_cov,ys,NULL,5,FALSE)
@@ -67,6 +72,7 @@ fastvar <- function(ys){
 ##' @param z Vector that can be made logical
 ##' @return sum
 ##' @name rank.sum.functions
+##' @export
 rank.sum  <-  function(ys, z) {
   z  <-  as.logical(z)
   ys.ranks  <-  rank(ys)
@@ -74,6 +80,7 @@ rank.sum  <-  function(ys, z) {
 }
 
 ##' @rdname rank.sum.functions
+##' @export
 paired.sgnrank.sum  <-  function(ys, z){
   stopifnot(length(unique(z)) == 2) ##require binary treatment for now
 
@@ -108,6 +115,7 @@ paired.sgnrank.sum  <-  function(ys, z){
 ##' @param y y
 ##' @param z z
 ##' @return odds ratio
+##' @export
 odds.ratio  <-  function(y, z) {
   c11  <-  sum(y == 1 & z == 1)
   c10  <-  sum(y == 1 & z == 0)
@@ -126,6 +134,7 @@ odds.ratio  <-  function(y, z) {
 ##' @param y y
 ##' @param z z
 ##' @return d
+##' @export
 d.stat  <-  function(y, z) {
   tmp  <-  xBalance(z ~ y,
                   data = data.frame(y, z),
@@ -140,6 +149,7 @@ d.stat  <-  function(y, z) {
 ##'
 ##' @slot asymptotic function
 ##' @import kSamples
+##' @export
 setClass("AsymptoticTestStatistic",
          representation = c(asymptotic = "function"),
          contains = "function")
@@ -243,6 +253,8 @@ harmonic.mean.difference  <-  new("AsymptoticTestStatistic",
              test.statistic = wilcox.test))
 }
 
+##' Man Whitney U
+##' @export
 mann.whitney.u  <-   new("AsymptoticTestStatistic",
                        # the basic implementation
                        function(ys, z) {
@@ -266,6 +278,7 @@ mann.whitney.u  <-   new("AsymptoticTestStatistic",
 ##' points of the eCDF
 ##' @param quantiles quantiles
 ##' @return value
+##' @export
 quantileAbsoluteDifference  <-  function(quantiles) {
   function(y, z) {
     z1  <-  ecdf(y[z == 1])
@@ -281,6 +294,7 @@ quantileAbsoluteDifference  <-  function(quantiles) {
 ##' @param q2 Upper quartile
 ##' @param type type
 ##' @return IQR
+##' @export
 iqrDiff  <-  function(q1=.25,q2=.75,type=7){
   function(ys,z){
     ## Inter-quartile / quantile difference
@@ -298,6 +312,7 @@ iqrDiff  <-  function(q1=.25,q2=.75,type=7){
 ##' @param ys ys
 ##' @param z z
 ##' @return diff
+##' @export
 madDiff  <-  function(ys,z){
   ## Median absolute deviation (which is scaled to be asymp. same as sd of a Normal)
   ## see help("mad")
@@ -308,6 +323,7 @@ madDiff  <-  function(ys,z){
 ##'
 ##' @param q quantiles
 ##' @return diff
+##' @export
 quantileDifference  <-  function(q=.5){
   function(ys,z){
     ## difference at a quantile
@@ -340,6 +356,8 @@ quantileDifference  <-  function(q=.5){
              test.statistic = ks.test))
 }
 
+##' KS Test Statistic
+##' @export
 ksTestStatistic  <-  new("AsymptoticTestStatistic",
                        function(y, z) {
                          # next borrowed from KS test
@@ -386,6 +404,8 @@ ksTestStatistic  <-  new("AsymptoticTestStatistic",
              test.statistic = ad.test))
 }
 
+##' Anderson Darling Test Statistic
+##' @export
 adTestStatistic  <-  new("AsymptoticTestStatistic",
                        function(y, z) {
                          x  <-  y[z == 1]
@@ -404,6 +424,7 @@ adTestStatistic  <-  new("AsymptoticTestStatistic",
 ##' (and using F as the test statistic)
 ##' @param S S
 ##' @return AsymptoticTestStatistic
+##' @export
 ssrTSmaker <- function(S){
   force(S)
   return(new("AsymptoticTestStatistic",
@@ -456,6 +477,7 @@ ssrTSmaker <- function(S){
              test.statistic = ssrTestStatistic))
 }
 
+##' @export
 ssrTestStatistic  <-  new("AsymptoticTestStatistic",
                         function(y, z, d) {
                           ##  return(summary(lm(y~z+d))$sigma)
@@ -494,6 +516,7 @@ ssrTestStatistic  <-  new("AsymptoticTestStatistic",
              test.statistic = cvm.test))
 }
 
+##' @export
 cvmTestStatistic  <-  new("AsymptoticTestStatistic",
                         function(y, z) {
                           ## next borrowed from  cvm.stat.disc
@@ -549,6 +572,7 @@ cvmTestStatistic  <-  new("AsymptoticTestStatistic",
 ##' @param binn binn
 ##' @param location location
 ##' @return vector
+##' @export
 quasireldist <- function(y,yo,binn=100,location="median"){
   ### This version follows the methods in 9.1.2.3 and 9.2 of Handcock and Morris, Relative Dist.
   ## first part is rmdata (from reldist.R)
@@ -619,6 +643,7 @@ quasireldist <- function(y,yo,binn=100,location="median"){
 ##' @param location location
 ##' @return function
 ##' @import ddst
+##' @export
 ddstTestStatistic <- function(binn=100,location="median"){
   function(ys,z){
     ## Neyman's Smooth test with data driven tuning parameter choice from Ledwina
@@ -639,6 +664,7 @@ ddstTestStatistic <- function(binn=100,location="median"){
 ##' @param location location
 ##' @return function
 ##' @import mgcv
+##' @export
 entropyRelDistTestStatistic <- function(smooth=.01,binn=100,location="median"){
   function(ys,z){
   ## from Reldist rcdist
@@ -664,12 +690,6 @@ entropyRelDistTestStatistic <- function(smooth=.01,binn=100,location="median"){
 }
 
 
-
-
-
-
-
-
 ## Entropy (From reldist)
 
 ##' Subset / subgroup Analysis
@@ -678,6 +698,7 @@ entropyRelDistTestStatistic <- function(smooth=.01,binn=100,location="median"){
 ##' @param statistic statistic
 ##' @param ... Add'l arguments to subset
 ##' @return function
+##' @export
 subsetStatistic  <-  function(statistic, ...) {
   function(y, z) {
     statistic(subset(y, ...), subset(z, ...))
