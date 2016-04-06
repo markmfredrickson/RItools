@@ -238,8 +238,6 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
     names(swt.ls) <- strata.names
   }
 
-  if (is.list(stratum.weights) & !all(strata.names %in% names(stratum.weights)))
-    stop("list stratum.weights must have entry names matching those of stratifying factors")
 
   if (!is.list(stratum.weights) & !is.function(stratum.weights) & n.strata > 1)
     stop("stratum weights must be specified for each stratifying factor")
@@ -249,9 +247,15 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
     names(swt.ls) <- strata.names
   }
 
+  if (is.list(stratum.weights) & !all(strata.names %in% c("Unstrat", names(stratum.weights))))
+    stop("list stratum.weights must have entry names matching those of stratifying factors")
+
   if (is.list(stratum.weights) & !is.function(stratum.weights)) {
-    swt.ls <- stratum.weights
-    names(swt.ls) <- strata.names
+
+      if (("Unstrat" %in% strata.names) && !("Unstrat" %in% names(stratum.weights)) )
+          stratum.weights <- c(stratum.weights, list("Unstrat"=NULL))
+
+      swt.ls <- stratum.weights[strata.names]
   }
 
 
@@ -260,6 +264,14 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
   wtlist <- list()
   for (nn in names(swt.ls)) {
 
+      if (nlevels(factor(design@StrataFrame[[nn]]))==1)
+          {
+              wtlist[[nn]] <- 
+                  list(sweights=rep(1, length(design@Z)),  
+                       wtratio=rep(1, length(design@Z))
+                       )
+          next
+          }
     if (is.function(swt.ls[[nn]])) {
       sweights <-
         do.call(swt.ls[[nn]],
@@ -461,8 +473,8 @@ aggregateDesigns <- function(design) {
 #' stratum weights, represented here by the StrataWeightRatio slot. As of this writing the semantics
 #' of this slot are in transition: it now has an entry for each unit, representing ratio of user provided
 #' or specified stratum weight to h_b, half the harmonic mean of n_{tb} and n_{cb}; I intend for it to
-#' become a shorter vector, each stratum b the ratio of stratum weight to h_b \bar{m}_b. In the interim, I'm
-#' interpreting it as ratios to  h_b \bar{m}_b, even though we calculate it to be a ratio to h_b.
+#' become a shorter vector, each stratum b the ratio of stratum weight to h_b bar{m}_b. In the interim, I'm
+#' interpreting it as ratios to  h_b bar{m}_b, even though we calculate it to be a ratio to h_b.
 #' 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
