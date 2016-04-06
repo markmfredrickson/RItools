@@ -221,6 +221,7 @@ slm.fit.csr.fixed <- function (x, y, ...)
 ##'
 ##' @param x As slm.wfit
 ##' @param y As slm.wfit
+##' @param weights As slm.wfit
 ##' @param ... As slm.wfit
 ##' @return As slm.wfit
 ##' @import SparseM
