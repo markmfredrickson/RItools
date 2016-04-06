@@ -30,14 +30,15 @@
 ##'
 ##' @slot inverse inverse
 setClass("UniformityModel",
-  contains = "function",
-  representation(inverse = "function"))
+         contains = "function",
+         representation(inverse = "function"))
 
 ##' Create new UniformityModel
 ##'
 ##' @param f Function
 ##' @param inv Inverse
 ##' @return UniformityModel
+##' @export
 UniformityModel <- function(f, inv) { new("UniformityModel", f, inverse = inv)}
 
 ##' Invert a model
@@ -59,7 +60,7 @@ invertModel <- function(m, y_0, z, ...) {
 ##' @param ... Add'l arguments
 ##' @return Output
 setGeneric("givenParams", function(model, ...)
-  standardGeneric("givenParams"))
+           standardGeneric("givenParams"))
 
 
 ##' givenParams for function
@@ -68,12 +69,12 @@ setGeneric("givenParams", function(model, ...)
 ##' @param ... Add'l arguments
 ##' @return Output
 setMethod("givenParams", "function",
-function(model, ...) {
-  dots <- match.call(expand.dots = FALSE)[["..."]]
-  function(y, z, b, ...) {
-    do.call(model, c(list(y, z, b, ...), dots))
-  }
-})
+          function(model, ...) {
+            dots <- match.call(expand.dots = FALSE)[["..."]]
+            function(y, z, b, ...) {
+              do.call(model, c(list(y, z, b, ...), dots))
+            }
+          })
 
 ##' givenParams for UniformityModel
 ##'
@@ -81,16 +82,16 @@ function(model, ...) {
 ##' @param ... Add'l arguments
 ##' @return Output
 setMethod("givenParams", "UniformityModel",
-function(model, ...) {
-  dots <- match.call(expand.dots = FALSE)[["..."]]
-  UniformityModel(
-    function(y, z, ...) {
-      do.call(model, c(list(y, z, ...), dots))
-    },
-    function(y0, z, ...) {
-      do.call(invertModel, c(list(model, y0, z), dots))
-    })
-})
+          function(model, ...) {
+            dots <- match.call(expand.dots = FALSE)[["..."]]
+            UniformityModel(
+                            function(y, z, ...) {
+                              do.call(model, c(list(y, z, ...), dots))
+                            },
+                            function(y0, z, ...) {
+                              do.call(invertModel, c(list(model, y0, z), dots))
+                            })
+          })
 
 ## levelEffectModel: for each level in Z, applies a specific function to create uniformity
 ## each function is itself a model.
@@ -331,8 +332,8 @@ testSize <- function(analysis, alpha = NULL, tol = .Machine$double.eps ^ 0.5) {
   p.truths <- smash[idx,]
 
   res <- t(sapply(alpha, function(a) {
-    c(nominal.alpha = a, realized.alpha = mean((p.truths - a) <= tol))
-  }))
+                    c(nominal.alpha = a, realized.alpha = mean((p.truths - a) <= tol))
+                            }))
 
   return(res)
 
