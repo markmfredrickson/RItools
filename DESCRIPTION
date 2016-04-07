@@ -22,6 +22,7 @@ Imports:
     survival
 Suggests:
     testthat,
+    roxygen2,
     MASS,
     RSVGTipsDevice
 Enhances: optmatch
