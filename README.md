@@ -11,7 +11,7 @@ methodology of:
       stratified and clustered comparative studies. Statistical Science.
       23(2):219--236.
 
-See the online documentation for `xbalance` for more details.
+See the online documentation for `xBalance` for more details.
 
 The package also provides outcome analysis of simple or block randomized
 trials (or matched observational studies) based on user defined models and

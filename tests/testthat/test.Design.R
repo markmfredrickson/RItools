@@ -46,6 +46,8 @@ test_that("Creating design objects", {
   # - All NA strata variables
   # - Missing z or cluster
   # - strata with extra levels but no observations (which can be safely dropped)
+  #   (NB: extra levels tested upstream, in xBalance, as of commit 34861515; 
+  #   see ./test.clusters.R  
 })
 
 test_that("Design to descriptive statistics", {
@@ -154,6 +156,18 @@ test_that("Aggegating designs by clusters", {
   # now spot check some cluster totals of totals
   expect_equal(aggDesign@Covariates[1, ], colSums(design@Covariates[design@Cluster == 1,]))
 
+})
+
+test_that("aggregateDesign treats NA covariates as 0's" ,{
+  dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x=rep(c(NA, 1), c(3,2))
+                  )
+  design <- RItools:::makeDesign(z~x+strata(strat)+cluster(clus)-1, dat)
+  aggDesign <- RItools:::aggregateDesign(design)
+  expect_equal(aggDesign@Covariates[,'x'], c(0, 0, 1, 1) )
+  expect_equal(aggDesign@NotMissing[,colnames(aggDesign@Covariates)=='x'], c(0,0,1,1) )
 })
 
 test_that("NA flags are optional", {

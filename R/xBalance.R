@@ -1,4 +1,4 @@
-##' Given covariates, a treatment variable, and a stratifying factor,
+##' Given covariates, a treatment variable and, optionally, a stratifying factor,
 ##' calculates standardized mean differences along each covariate,
 ##' with and without the stratification and tests for conditional
 ##' independence of the treatment variable and the covariates within
@@ -17,7 +17,7 @@
 ##' control units (b) in the stratum; this weighting is optimal under
 ##' certain modeling assumptions (discussed in Kalton 1968, Hansen and
 ##' Bowers 2008).  This weighting can be modified using the
-##' \code{stratum.weights} argument; see below.
+##' \code{stratum.weights} argument; see below. 
 ##'
 ##' When the treatment variable, the variable specified by the
 ##' left-hand side of \code{fmla}, is not binary, \code{xBalance}
@@ -46,6 +46,11 @@
 ##' vector of non-negative weights with stratum codes as names; for an
 ##' example, do \code{getFromNamespace("harmonic", "RItools")}.
 ##'
+##' If the stratifying factor has NAs, these cases are dropped.  On the other
+##' hand, if NAs in a covariate are found then the default behavior is to
+##' mean-impute while adding a dummy variable for whether NAs are found (and
+##' checking balance for it as well).
+##' 
 ##' If \code{covariate.scaling} is not \code{NULL}, no scaling is
 ##' applied. This behavior is likely to change in future versions.
 ##' (If you want no scaling, set \code{covariate.scaling=1}, as this
@@ -92,8 +97,6 @@
 ##'   control group (defining these groups according to whether the
 ##'   LHS of \code{formula} is greater than or equal to 0).  Also, see
 ##'   details.
-##' @param normalize.weights If \code{TRUE}, then stratum weights are
-##'   normalized so as to sum to 1.  Defaults to \code{TRUE}.
 ##' @param impfn A function to impute missing values when
 ##'   \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute
 ##'   means use \code{\link{mean.default}}.
@@ -191,8 +194,7 @@ xBalance <- function(fmla,
                      na.rm = FALSE,
                      impfn = median,
                      include.NA.flags = TRUE,
-                     covariate.scaling = TRUE,
-                     normalize.weights = TRUE,
+                     covariate.scaling = NULL,
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 
@@ -226,7 +228,8 @@ xBalance <- function(fmla,
 
   aggDesign       <- aggregateDesign(design)
   # going forward, we use the user's weights, not ETT always
-  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights, normalize.weights)
+
+  aggDesign.weighted <- weightedDesign(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignByStrata(aggDesign.weighted, post.alignment.transform)
 

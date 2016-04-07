@@ -6,14 +6,10 @@ Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
 License: GPL (>=2)
+LazyData: true
 Depends:
     R (>= 2.2.0),
-    stats,
-    methods,
-    graphics,
-    SparseM,
-    utils,
-    survival
+    SparseM
 Imports:
     grDevices,
     abind,
@@ -25,8 +21,14 @@ Imports:
     kSamples,
     mgcv,
     lattice
+    svd,
+    stats,
+    graphics,
+    methods,
+    survival
 Suggests:
     testthat,
+    roxygen2,
     MASS,
     RSVGTipsDevice,
     parallel

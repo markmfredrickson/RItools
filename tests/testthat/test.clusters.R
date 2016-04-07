@@ -50,6 +50,17 @@ test_that("Clusters must be aligned to treatment assignment and nested within st
   resNC <- xBalance(z.good ~ x + strata(strata.good), data = d)
 
   expect_false(identical(resC, resNC))
+
+  ## unused levels shouldn't affect anything
+  d$altclus <- factor(d$cluster)
+  levels(d$altclus) <- c(levels(d$altclus), "dummylevel")
+  expect_true( isTRUE(all.equal(d$altclus, factor(d$cluster), check.attributes = FALSE)) )
+  resC.alt1 <- xBalance(z.good ~ x + strata(strata.good) + cluster(altclus), data = d)
+  expect_true(isTRUE(all.equal(resC, resC.alt1, check.attributes=FALSE)) )
+  d$strata.good.alt <- factor(d$strata.good)
+  levels(d$strata.good.alt) <-   c(levels(d$strata.good.alt), "sillylevel")
+  resC.alt2 <- xBalance(z.good ~ x + strata(strata.good.alt) + cluster(cluster), data = d)
+  expect_true(isTRUE(all.equal(resC, resC.alt2, check.attributes=FALSE)) )
   
   # when the cluster is a single observation, we should get exactly the same answers
   expect_equivalent(resNC, xBalance(z.good ~ x + strata(strata.good) + cluster(id), data = d))

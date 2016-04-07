@@ -24,14 +24,6 @@ setClass("Design",
 
 #
 #
-# The formula must have a left hand side that can be converted to a logical.
-#
-# On the RHS:
-#  - It may have at most one cluster() argument.
-#  - It may have one or more strata() arguments.
-#  - All other variables are considered covariates.
-#
-# NB: should we make this more like glm() to pick up environment? Probably
 ##' Create a Design object from a formula and some data
 ##'
 ##' The formula must have a left hand side that can be converted to a logical.
@@ -41,7 +33,8 @@ setClass("Design",
 ##'  - It may have one or more strata() arguments.
 ##'  - All other variables are considered covariates.
 ##'
-##' NB: should we make this more like glm() to pick up environment? Probably
+##' NAs in a cluster() or strata() variable will be dropped.  NAs in covariates will be imputed.
+##' 
 ##' @param fmla Formula
 ##' @param data Data
 ##' @param imputefn Function to impute
@@ -217,9 +210,8 @@ setClass("WeightedDesign",
 ##' Adds weights to existing Design.
 ##' @param design Design
 ##' @param stratum.weights Stratum weights
-##' @param normalize.weights Normalize weights?
-##' @return WeightedDesign
-weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights = TRUE) {
+##' ##' @return WeightedDesign
+weightedDesign <- function(design, stratum.weights = harmonic) {
   stopifnot(inherits(design, "Design"))
 
   n.strata <- dim(design@StrataFrame)[2]
@@ -283,7 +275,6 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
     if (any(sweights<0))
       stop("stratum weights must be nonnegative")
 
-    if (normalize.weights)
       sweights <- sweights/sum(sweights, na.rm=TRUE)
 
     if (identical(harmonic, swt.ls[[nn]])) {
@@ -313,11 +304,11 @@ weightedDesign <- function(design, stratum.weights = harmonic, normalize.weights
 ##' Use a design object to generate descriptive statistics that ignore
 ##' clustering. Stratum weights are respected.
 ##' @param design A Design
-##' @param covariate.scaling Should covs be scaled?
+##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
 ##' @return Descriptives
-designToDescriptives <- function(design, covariate.scaling = TRUE) {
+designToDescriptives <- function(design, covariate.scaling = NULL) {
   stopifnot(inherits(design, "Design")) # defensive programming
-
+  if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
   vars   <- colnames(design@Covariates)
   strata <- colnames(design@StrataFrame)
 
@@ -345,16 +336,21 @@ designToDescriptives <- function(design, covariate.scaling = TRUE) {
     n1 <- t(use.units) %*% Z
     n0 <- t(use.units) %*% (1 - Z)
 
-    ETT <- S %*% (t(ZZ) %*% use.units)
+    Z.odds <- (t(ZZ) %*% use.units)/(t(WW) %*% use.units)
+    Z.odds <- as.matrix(Z.odds)
+    Z.odds <- ifelse(S.has.both, Z.odds, 0)
+
+    ETT <- S %*% Z.odds
 
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     treated.avg <- t(X.use) %*% Z / n1
 
-    n0.ett <- t(ETT) %*% (1 - Z)
+    n0.ett <- t(use.units * ETT) %*% (1 - Z)
     control.avg <- t(X.use * ETT) %*% (1 - Z) / n0.ett
 
     var.1 <- (t(X2.use) %*% Z - n1 * treated.avg^2) / (n1 - 1)
-    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / (n0.ett - 1)
+    var.0 <- (t(X2.use * ETT) %*% (1 - Z) - n0.ett * control.avg^2) / n0.ett
+    var.0 <- var.0* n0/(n0 - 1)
 
     pooled <- sqrt((var.1 + var.0) / 2)
 
@@ -389,9 +385,7 @@ SparseMMFromFactor <- function(thefactor) {
   theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
     is.na(thefactor)
 
-  if (all(theNA)) stop("No non-NA's in thefactor") else {
-    if (any(theNA) && !inherits(thefactor, "optmatch")) warning("NA's found in thefactor.")
-  }
+  if (all(theNA)) stop("No non-NA's in thefactor") 
 
   nlev <- nlevels(thefactor)
   nobs <- length(thefactor)
@@ -422,7 +416,7 @@ aggregateDesign <- function(design) {
   Cluster <- design@Cluster[!dupes]
 
   C <- SparseMMFromFactor(design@Cluster)
-  Covariates <- as.matrix(t(C) %*% design@Covariates)
+  Covariates <- as.matrix(t(C) %*% (design@Covariates * design@NotMissing))
   NotMissing <- as.matrix(t(C) %*% design@NotMissing)
 
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
