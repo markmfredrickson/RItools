@@ -30,6 +30,6 @@ On the RHS:
  - It may have one or more strata() arguments.
  - All other variables are considered covariates.
 
-NB: should we make this more like glm() to pick up environment? Probably
+NAs in a cluster() or strata() variable will be dropped.  NAs in covariates will be imputed.
 }
 

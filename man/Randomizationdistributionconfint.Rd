@@ -9,9 +9,9 @@
 \usage{
 \method{confint}{RandomizationDistribution}(object, parm, level = 0.95, ...)
 
-\method{summary}{RandomizationDistributionConfInt}(object, ...)
+summary.RandomizationDistributionConfInt(object, ...)
 
-\method{plot}{RandomizationDistributionConfInt}(object, ...)
+plot.RandomizationDistributionConfInt(object, ...)
 }
 \arguments{
 \item{object}{RandomizationDistribution}

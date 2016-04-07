@@ -4,17 +4,13 @@
 \alias{weightedDesign}
 \title{Create a weighted Design}
 \usage{
-weightedDesign(design, stratum.weights = harmonic, normalize.weights = TRUE)
+weightedDesign(design, stratum.weights = harmonic)
 }
 \arguments{
 \item{design}{Design}
 
-\item{stratum.weights}{Stratum weights}
-
-\item{normalize.weights}{Normalize weights?}
-}
-\value{
-WeightedDesign
+\item{stratum.weights}{Stratum weights
+##' @return WeightedDesign}
 }
 \description{
 Adds weights to existing Design.

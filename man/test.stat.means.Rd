@@ -18,7 +18,7 @@ fastmean(ys)
 
 \method{mean}{diff.vect}(ys, z)
 
-\method{t}{mean.difference}(ys, z)
+t.mean.difference(ys, z)
 
 fastvar(ys)
 }

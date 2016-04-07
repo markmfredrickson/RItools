@@ -20,8 +20,7 @@ Imports:
     dgof,
     kSamples,
     mgcv,
-    lattice
-    svd,
+    lattice,
     stats,
     graphics,
     methods,

@@ -7,9 +7,8 @@
 xBalance(fmla, data, strata = NULL, report = c("std.diffs", "z.scores",
   "adj.means", "adj.mean.diffs", "chisquare.test", "p.values", "all")[1:2],
   stratum.weights = harmonic, na.rm = FALSE, impfn = median,
-  include.NA.flags = TRUE, covariate.scaling = TRUE,
-  normalize.weights = TRUE, post.alignment.transform = NULL,
-  p.adjust.method = "holm")
+  include.NA.flags = TRUE, covariate.scaling = NULL,
+  post.alignment.transform = NULL, p.adjust.method = "holm")
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment
@@ -64,9 +63,6 @@ control group (defining these groups according to whether the
 LHS of \code{formula} is greater than or equal to 0).  Also, see
 details.}
 
-\item{normalize.weights}{If \code{TRUE}, then stratum weights are
-normalized so as to sum to 1.  Defaults to \code{TRUE}.}
-
 \item{post.alignment.transform}{Optional transformation applied to
 covariates just after their stratum means are subtracted off.}
 
@@ -79,7 +75,7 @@ An object of class \code{c("xbal", "list")}.  There are
   examples.
 }
 \description{
-Given covariates, a treatment variable, and a stratifying factor,
+Given covariates, a treatment variable and, optionally, a stratifying factor,
 calculates standardized mean differences along each covariate,
 with and without the stratification and tests for conditional
 independence of the treatment variable and the covariates within
@@ -127,6 +123,11 @@ argument, a data frame containing the variables in \code{data} and
 additionally \code{Tx.grp} and \code{stratum.code}, and return a
 vector of non-negative weights with stratum codes as names; for an
 example, do \code{getFromNamespace("harmonic", "RItools")}.
+
+If the stratifying factor has NAs, these cases are dropped.  On the other
+hand, if NAs in a covariate are found then the default behavior is to
+mean-impute while adding a dummy variable for whether NAs are found (and
+checking balance for it as well).
 
 If \code{covariate.scaling} is not \code{NULL}, no scaling is
 applied. This behavior is likely to change in future versions.

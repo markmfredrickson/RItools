@@ -4,12 +4,12 @@
 \alias{designToDescriptives}
 \title{Generate Descriptives}
 \usage{
-designToDescriptives(design, covariate.scaling = TRUE)
+designToDescriptives(design, covariate.scaling = NULL)
 }
 \arguments{
 \item{design}{A Design}
 
-\item{covariate.scaling}{Should covs be scaled?}
+\item{covariate.scaling}{Scale estimates for covs, to use instead of internally calculated pooled SDs}
 }
 \value{
 Descriptives
