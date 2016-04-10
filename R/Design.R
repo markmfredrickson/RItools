@@ -135,7 +135,7 @@ makeDesigns <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
-  data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", "1", vnames[str.idx]))))
+  data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", vnames[str.idx]))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
   # knock out any levels that are not used
@@ -167,9 +167,16 @@ makeDesigns <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA
   })
   clist <- clist[!sapply(clist, is.null)]
 
-  data.mm         <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
-  data.notmissing <- ifelse(is.na(model.matrix(terms(data.data), data.data, constrasts.arg = clist)),
-                            0, eweights)
+    data.mm <- model.matrix(terms(data.data.imp), data.data.imp, contrasts.arg = clist)
+    assign.mm <- attr(data.mm, "assign")
+    data.mm <- data.mm[, assign.mm>0, drop=FALSE] #remove intercept
+    attr(data.mm, "assign") <- assign.mm[assign.mm>0]
+
+
+    data.notmissing <- model.matrix(terms(data.data), data.data, constrasts.arg = clist)
+    assign.nm <- attr(data.notmissing, "assign")
+    data.notmissing <- data.notmissing[,assign.nm>0, drop=FALSE] #remove intercept
+    data.notmissing <- ifelse(is.na(data.notmissing), 0, eweights)
 
   # now we need to find if we added any NA flags
   toAdd <- dim(data.mm)[2] - dim(data.notmissing)[2]

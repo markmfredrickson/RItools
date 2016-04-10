@@ -6,7 +6,7 @@ library("testthat")
 
 context("DesignOptions objects")
 
-test_that("Creating design objects", {
+test_that("Creating DesignOptions objects", {
   set.seed(20130801)
 
   d <- data.frame(
@@ -51,6 +51,30 @@ test_that("Creating design objects", {
   #   (NB: extra levels tested upstream, in xBalance, as of commit 34861515; 
   #   see ./test.clusters.R  
 })
+
+test_that("DesignOptions generates correct .NA variables",
+          {
+  dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x1=rep(c(NA, 1), c(3,2)),
+                    x2=c(1:5),
+                    fac=factor(c(rep(1:2,2), NA))
+                    )
+  dat$'(weights)' <- 1
+
+  simple <- RItools:::makeDesigns(z ~ x1 + x2  + strata(strat) + cluster(clus), data = dat)
+  expect_false(any(grepl("NAFALSE", colnames(simple@Covariates))))
+  expect_match(colnames(simple@Covariates), "x1.*NA", all=FALSE)
+  expect_false(any(grepl("x2.*NA", colnames(simple@Covariates))))
+
+  simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+  expect_false(any(grepl("NAFALSE", colnames(simple2@Covariates))))
+  expect_match(colnames(simple2@Covariates), "x1.*NA", all=FALSE)
+  expect_false(any(grepl("x2.*NA", colnames(simple2@Covariates))))
+  expect_match(colnames(simple2@Covariates), "fac.*NA", all=FALSE)
+                    
+          })
 
 test_that("DesignOptions to descriptive statistics", {
   set.seed(20130801)
