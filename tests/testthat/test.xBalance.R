@@ -15,16 +15,21 @@ test_that("xBal univariate descriptive means agree w/ lm",{
                         )
      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
 
-     lm1 <- lm(x1~z, data=dat)
+
+    lm1 <- lm(x1~z, data=dat)
      xb1 <- xBalance(z~x1+strata(s), data=dat, report=c("adj.mean.diffs"))
      expect_equal(xb1$results["x1", "adj.diff", "Unstrat"], coef(lm1)["z"], check.attributes=F)
 
-     ## try to match default ETT weighting
-     pihat <- fitted(lm(z~s, data=dat))     
+     ## try to match default ETT weighting    
+    pihat <- fitted(lm(z~s, data=dat))     
      lm2a <- lm(x1~z+s, data=dat, weights=ifelse(pihat==1,1, (1-pihat)^-1))
+     expect_equivalent(xb1$results["x1", "adj.diff", "s"], coef(lm2a)["z"])
 
-     expect_equal(xb1$results["x1", "adj.diff", "s"], coef(lm2a)["z"], check.attributes=F)
-
+    ## a little more explicitly:
+    d <- split(dat, dat$s)
+    mndiffs <- sapply(d, function(Data) {with(Data, mean(x1[z==1]) - mean(x1[z==0]))})
+    cmndiff <- weighted.mean(mndiffs, w = sapply(d, function(Data) sum(Data$z==1)))
+    expect_equivalent(xb1$results["x1", "adj.diff", "s"], cmndiff)
 
 })
 

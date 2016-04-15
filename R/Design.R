@@ -498,24 +498,33 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     
     ## Now calculate assignment/stratum weights
     cluster.representatives <- !duplicated(design@Cluster)
-    txcts <- table(as.logical(Z[cluster.representatives]),
-                   design@StrataFrame[cluster.representatives, s])
-    stratcts <- txcts["TRUE",,drop=FALSE] + txcts["FALSE",,drop=FALSE]
-    ## HT-type assignment weights
-    tx.wt <- ifelse(txcts["TRUE",,drop=FALSE],stratcts/txcts["TRUE",,drop=FALSE], 0)
-    ctl.wt <-ifelse(txcts["FALSE",,drop=FALSE],stratcts/txcts["FALSE",,drop=FALSE], 0)
+    txclus.by.strat <- t(ZZ) %*% as.matrix(cluster.representatives)
+    txclus.by.strat <- as.matrix(txclus.by.strat)
+    ctlclus.by.strat <- t(WW) %*% as.matrix(cluster.representatives)
+    ctlclus.by.strat <- as.matrix(ctlclus.by.strat)
+    nclus.by.strat <- txclus.by.strat + ctlclus.by.strat
+    strat.sum.eweights <- t(S) %*% as.matrix(design@ElementWeights)
+    strat.sum.eweights <- as.matrix(strat.sum.eweights)
+    ## Horwitz Thompson-type assignment weights
+    tx.wt <- ifelse(txclus.by.strat, nclus.by.strat/txclus.by.strat, 0)
+    ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
+    tx.wt <- tx.wt/strat.sum.eweights   # appropriate HT weights for estimating
+    ctl.wt <- ctl.wt/strat.sum.eweights # stratum-wise means
     ## multiplying through for assignment/stratum weights
-    tx.wt <- t(tx.wt[,stratlevs,drop=FALSE]) * Swts
-    ctl.wt <- t(ctl.wt[,stratlevs, drop=FALSE]) * Swts
+    tx.wt <- tx.wt * Swts
+    ctl.wt <- ctl.wt * Swts
     ## now expand these up to match dimensions of data
     tx.wts <- as.vector(as.matrix(S %*% tx.wt))
     ctl.wts <- as.vector(as.matrix(S %*% ctl.wt))
     
     # ok, now that preliminaries are out of the way, compute some useful stuff.
+    ## ratio estimates of means for a "domain" equal to intersection of
+    ## treatment group with elements for which which the covariate is non-missing
     wtsum.tx <-  t(use.units * tx.wts) %*% Z
     wtsum.tx <- wtsum.tx[covars.nmcols, ]
     treated.avg <- t(X.use *tx.wts) %*% Z / wtsum.tx
 
+    ## ratio estimates of means over similarly defined domains within the control group
     wtsum.ctl <- t(use.units * ctl.wts) %*% (1 - Z)
     wtsum.ctl <- wtsum.ctl[covars.nmcols, ]
     control.avg <- t(X.use * ctl.wts) %*% (1 - Z) / wtsum.ctl
