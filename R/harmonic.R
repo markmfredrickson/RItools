@@ -8,7 +8,7 @@ harmonic <- function(data) {
 }
 
 effectOfTreatmentOnTreated <- function(data) {
-  tapply(data$Tx.grp, data$stratum.code, function(x) {
-    sum(x > 0) / length(x)
+    txcts <- table(as.logical(data$Tx.grp), data$stratum.code)
+    txcts["TRUE",]
   })
 }
