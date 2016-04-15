@@ -167,14 +167,41 @@ test_that("NA in stratify factor are dropped", {
 test_that("Use of subset argument", {
   data(nuclearplants)
 
+  xb1 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants)
+  xb2 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants, subset=pt<=1)
+  expect_equal(xb1, xb2)
+
   n2 <- nuclearplants
   n2 <- rbind(n2, n2[1,])
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
-  xb1 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants)
-  xb2 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = nuclearplants, subset=pt<=1)
+  xb3 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1)
+  expect_equal(xb1, xb3)
+})
 
-  expect_equal(xb1, xb2)
+test_that("Observations not meeting subset condition are retained although downweighted to 0",{
+
+    data(nuclearplants)
+    ## first, check assumptions about offsets that are made within the code
+    mf0 <- model.frame(cost~date + offset(date<68), data=nuclearplants, offset=(cap>1000))
+    expect_equal(sum(names(mf0)=='(offset)'), 1L)
+    expect_equivalent(mf0$'(offset)', nuclearplants$cap>1000)
+    
+    n2 <- nuclearplants
+    nuclearplants$pt <- factor(nuclearplants$pt)
+    n2 <- rbind(n2, n2[1,])
+    n2[nrow(nuclearplants)+1, "pt"] <- 2
+    n2$pt <- factor(n2$pt)
+
+    ## this indirect test relies on xBal's dropping unused factor levels
+    xb1 <- xBalance(pr ~ ., data = nuclearplants)
+    xb2 <- xBalance(pr ~ ., data = n2, subset=pt!='2')
+    ## confirm that we still see the '2' level, even if it receives no weight
+    expect_match(dimnames(xb2$results)[[1]], "pt2", all=FALSE)
+    expect_equivalent(xb1$results[,'std.diff',], #only the descriptives should be the same for
+                      xb2$results[ dimnames(xb2$results)[[1]]!="pt2" ,'std.diff',]) #these two
+    expect_true(is.na(xb2$results[ "pt2" ,'std.diff',]) | # presently this is NA, but
+                    xb2$results[ "pt2" ,'std.diff',]==0) # it might ideally be a 0
 })
 
 

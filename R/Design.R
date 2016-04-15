@@ -127,10 +127,16 @@ makeDesigns <- function(fmla, data, imputefn = median, na.rm = FALSE, include.NA
 
     tbl <- table(str.data[, c(treatmentCol, s)])
     isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 2 })
+    if (!any(isGood))
+        stop("In ", s, " there were no strata with both treatment and control units")
+    ## otherwise, just ignore the bad strata
+    str.data[ str.data[, s]%in%colnames(tbl)[!isGood], s] <- NA
+
     if (!(all(isGood))) {
-      stop("In ", s, ", the following stratum levels did not include both treated and control units: ",
-           paste(collapse = ", ", colnames(tbl)[!isGood]))
-    }
+        warning("Dropped ", sum(!isGood), " levels of ", s, " which did not include both treated and control units")
+###      warning("In ", s, ", dropping the following stratum levels (which do not include both treated and control units):\n",
+###           paste(collapse = ", ", colnames(tbl)[!isGood]))
+  }
   }
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data

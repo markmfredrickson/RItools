@@ -73,7 +73,7 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
-##' @param element.weights Per-element weights. If there are clusters, the cluster weight is the sum of weights of elements within the cluster.  Within each stratum, cluster and element weights will be normalized to sum to 1.
+##' @param element.weights Per-element weight, or 0 if element does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of weights of elements within the cluster.  Within each stratum, cluster and element weights will be normalized to sum to 1.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
@@ -84,7 +84,7 @@
 ##'   list of such functions, or a data frame of stratum weighting
 ##'   schemes corresponding to the different stratifying factors of
 ##'   \code{strata}.  See details.
-##' @param subset Optional vector specifying a subset of observations to be used.
+##' @param subset Optional; condition or vector specifying a subset of observations to be given positive element weights.
 ##' @param na.rm Whether to remove rows with NAs on any variables
 ##'   mentioned on the RHS of \code{fmla} (i.e. listwise deletion).
 ##'   Defaults to \code{FALSE}, wherein rows aren't deleted but for
@@ -202,6 +202,11 @@ xBalance <- function(fmla,
                      covariate.scaling = NULL,
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
+### API Assumptions:
+### - no ... in the xBal formula
+### (if this assumption ceases to be met then we have to add an explicit check that
+### the user hasn't tried to specify an offset, given that we're repurposing that
+### model.frame option)
 
   if (!is.null(strata)) {
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?xBalance for details.")
@@ -214,14 +219,30 @@ xBalance <- function(fmla,
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "element.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("element.weights", names(mf), nomatch=0))
+  if (cwpos <- match("element.weights", names(mf), nomatch=0L))
       names(mf)[cwpos] <- "weights"
+  ## Here's where we rely on assumption of no ... in the xBal formula
+  ## it helps us avoid adding a second offset argument to the model frame call
+  if (sspos <- match("subset", names(mf), nomatch=0L))
+      names(mf)[sspos] <- "offset"
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
   mf$na.action <- quote(stats::na.pass)
   data <- eval(mf, parent.frame())
   if (!cwpos)
       data$'(weights)' <- 1
+  if (sspos)
+      {
+          ss <- data$'(offset)'
+          ss <- as.logical(ss)
+          if (any(is.na(ss)))
+              {
+                  ss[is.na(ss)] <- FALSE
+                  warning("subset specification gave NAs; interpreting these as FALSE")
+              }
+          data$'(weights)' <- ss * data$'(weights)'
+          data$'(offset)' <- NULL
+      }
   
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
