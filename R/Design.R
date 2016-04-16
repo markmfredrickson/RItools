@@ -508,9 +508,9 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ## Horwitz Thompson-type assignment weights
     tx.wt <- ifelse(txclus.by.strat, nclus.by.strat/txclus.by.strat, 0)
     ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
-    tx.wt <- tx.wt/strat.sum.eweights   # appropriate HT weights for estimating
-    ctl.wt <- ctl.wt/strat.sum.eweights # stratum-wise means
-    ## multiplying through for assignment/stratum weights
+    tx.wt <- tx.wt/strat.sum.eweights   # appropriate HT weights for estimating, by stratum,
+    ctl.wt <- ctl.wt/strat.sum.eweights # (total eweighted measurements)/(total eweights)
+    ## factor in stratum weights
     tx.wt <- tx.wt * Swts
     ctl.wt <- ctl.wt * Swts
     ## now expand these up to match dimensions of data
@@ -579,6 +579,7 @@ aggregateDesigns <- function(design) {
                        0)
   NotMissing <- ifelse(matrix(element.weights>0, nrow(Eweights), ncol(Eweights)),
                        Eweights/element.weights, 0)
+  colnames(NotMissing) <- colnames(design@NotMissing)
   
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
     tmp <- t(C) %*% S

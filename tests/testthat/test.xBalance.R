@@ -7,7 +7,7 @@ library("testthat")
 
 context("xBalance Functions")
 
-test_that("xBal univariate descriptive means agree w/ lm",{
+test_that("xBal univariate descriptive means agree w/ reference calculations",{
     set.seed(20160406)
     n <- 7 
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
