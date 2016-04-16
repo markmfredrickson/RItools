@@ -85,25 +85,13 @@
 ##'   schemes corresponding to the different stratifying factors of
 ##'   \code{strata}.  See details.
 ##' @param subset Optional; condition or vector specifying a subset of observations to be given positive element weights.
-##' @param na.rm Whether to remove rows with NAs on any variables
-##'   mentioned on the RHS of \code{fmla} (i.e. listwise deletion).
-##'   Defaults to \code{FALSE}, wherein rows aren't deleted but for
-##'   each variable with \code{NA}s a missing-data indicator variable
-##'   is added to the variables on which balance is calculated and
-##'   medians are imputed for the variable with missing data (in
-##'   RItools versions 0.1-9 and before the default imputation was the
-##'   mean, in RItools versions 0.1-11 and henceforth the default is
-##'   the median). See the example below.
 ##' @param covariate.scaling A scale factor to apply to covariates in
 ##'   calculating \code{std.diffs}.  If \code{NULL}, \code{xBalance}
 ##'   pools standard deviations of each variable in the treatment and
 ##'   control group (defining these groups according to whether the
 ##'   LHS of \code{formula} is greater than or equal to 0).  Also, see
 ##'   details.
-##' @param impfn A function to impute missing values when
-##'   \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute
-##'   means use \code{\link{mean.default}}.
-##' @param include.NA.flags Should NA flags be included?
+##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
 ##' @return An object of class \code{c("xbal", "list")}.  There are
@@ -170,15 +158,7 @@
 ##' testdata<-nuclearplants
 ##' testdata$date[testdata$date<68]<-NA
 ##'
-##' ##na.rm=FALSE by default
-##' xBalance(pr ~ date, data = testdata, report="all")
-##' xBalance(pr ~ date, data = testdata, na.rm = TRUE,report="all")
 ##'
-##' ##To match versions of RItools 0.1-9 and older, impute means
-##' #rather than medians.
-##' ##Not run, impfn option is not implemented in the most recent version
-##' \dontrun{xBalance(pr ~ date, data = testdata, na.rm = FALSE,
-##'            report="all", impfn=mean.default)}
 ##'
 ##' ##Comparing unstratified to stratified, just one-by-one wilcoxon
 ##' #rank sum tests and omnibus test of multivariate differences on
@@ -196,8 +176,6 @@ xBalance <- function(fmla,
                      element.weights,
                      stratum.weights = harmonic,
                      subset,
-                     na.rm = FALSE,
-                     impfn = median,
                      include.NA.flags = TRUE,
                      covariate.scaling = NULL,
                      post.alignment.transform = NULL,
@@ -263,7 +241,7 @@ xBalance <- function(fmla,
   if("all" %in% report)
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
-  design          <- makeDesigns(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags)
+  design          <- makeDesigns(fmla, data)
 
   ## We need aggDesign to make descriptives because the stratum weights need to be calculated from the aggregated setup
   ## however we're not going to feed aggDesign itself to `designToDescriptives()`, so we don't risk "polluting"
@@ -281,7 +259,8 @@ xBalance <- function(fmla,
       DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignsByStrata(aggDesign.weighted, post.alignment.transform)
-
+  origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
+  
   tmp <- lapply(strataAligned, alignedToInferentials)
   names(tmp) <- names(aggDesign@StrataMatrices)
 
@@ -305,18 +284,20 @@ xBalance <- function(fmla,
   ans$overall <- inferentials
   ans$results <- descriptives
 
-  # do p.value adjustment
-  ans$results[, "p", ] <- p.adjust(ans$results[, "p", ], method = p.adjust.method)
-  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
+  ## do p.value adjustment
+  for (s in 1L:dim(descriptives)[3])
+  ans$results[, "p", s] <- p.adjust(ans$results[, "p", s], method = p.adjust.method)
+##  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
 
+  attr(ans$results, "originals") <- origvars
+  attr(ans$results, "term.labels") <- design@TermLabels
+  attr(ans$results, "include.NA.flags") <- include.NA.flags # hinting for print and plot methods
 
-  attr(ans$results, "originals") <- design@OriginalVariables
   attr(ans$overall, "tcov") <- lapply(tmp, function(r) {
     r$tcov
   })
   attr(ans, "fmla") <- formula(fmla)
   attr(ans, "report") <- report # hinting to our summary method later
-
   class(ans) <- c("xbal", "list")
   ans
 }

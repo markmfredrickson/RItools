@@ -7,7 +7,7 @@ library("testthat")
 
 context("xBalance Functions")
 
-test_that("xBal univariate desriptive means agree w/ lm",{
+test_that("xBal univariate descriptive means agree w/ lm",{
     set.seed(20160406)
     n <- 7 
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
@@ -108,7 +108,12 @@ test_that("xBalance returns covariance of tests", {
   expect_false(is.null(tcov))
 
   expect_equal(length(tcov), 2)
-  expect_equal(dim(tcov[[1]]), c(4,4))
+
+  ## Developer note: to strip out entries corresponding to intercept -- which has var 0,
+  ## except when there's variation in element weights and/or cluster sizes --
+  ## have to filter out rows and cols named "(element weight)", separately for each
+  ## entry in list tcov.  (Recording while updating test that follows, `c(4,4)` --> `c(5,5)`)
+  expect_equal(dim(tcov[[1]]), c(5,5))
 
 })
 
@@ -134,7 +139,8 @@ test_that("Passing post.alignment.transform, #26", {
   expect_false(isTRUE(all.equal(res4,res5)))
 
   # a wilcoxon rank sum test, asymptotic and w/o continuity correction
-  res6 <- xBalance(pr ~ cost, data=nuclearplants, post.alignment.transform = rank, report="all")
+  res6 <- xBalance(pr ~ cost, data=nuclearplants, post.alignment.transform = rank,
+                   report="all", p.adjust.method='none')
 
   expect_equal(res6$results["cost", "p", "Unstrat"],
                wilcox.test(cost~pr, data=nuclearplants, exact=FALSE, correct=FALSE)$p.value)
@@ -217,7 +223,47 @@ test_that("p.adjust.method argument", {
   res.holm <- xBalance(pr ~ . + strata(pt),
                        data = nuclearplants,
                        report = c("p.value", "chisquare"))
+  T_or_NA <- function(vec) {ans <- as.logical(vec) ; ans[is.na(ans)] <- TRUE; ans}
+  
+  expect_true(all(T_or_NA(res.holm$result[, "p", ] >= res.none$result[, "p", ])))
+  expect_true(all(T_or_NA(res.holm$overall[, "p.value"] >= res.none$overall[, "p.value"])))
 
-  expect_true(all(res.holm$result[, "p", ] >= res.none$result[, "p", ]))
-  expect_true(all(res.holm$overall[, "p.value"] >= res.none$overall[, "p.value"]))
+### with just one covar, holm should do the same as none
+
+    res1.none <- xBalance(pr ~ cost + strata(pt),
+                       data = nuclearplants,
+                       report = c("p.value", "chisquare"),
+                       p.adjust.method = "none")
+  
+  res1.holm <- xBalance(pr ~ cost + strata(pt),
+                       data = nuclearplants,
+                       report = c("p.value", "chisquare"))
+
+  expect_equal(res1.holm$result[, "p", ], res1.none$result[, "p", ])
+  expect_equal(res1.holm$overall[, "p.value"], res1.none$overall[, "p.value"])
+
+})
+
+## To do: adapt the below to test print.xbal instead of lower level functions
+##test_that("printing of NA comparisons is optional",
+replicate(0,
+{
+    set.seed(20130801)
+
+  d <- data.frame(
+      x = rnorm(500),
+      f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
+      c = rep(1:100, 5),
+      s = rep(c(1:4, NA), 100),
+      paired = rep(c(0,1), each = 250),
+      z = rep(c(0,1), 250))
+  d$'(weights)' <- 1
+
+  d$x[sample.int(500, size = 10)] <- NA
+
+  design.flags   <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
+  design.noFlags <- RItools:::makeDesigns(z ~ x + f + strata(s), data = d, include.NA.flags = FALSE)
+
+  expect_equal(dim(design.flags@Covariates)[2], 5)
+  expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })

@@ -126,10 +126,18 @@ subset.xbal <- function(x,
   res <- x$results[vars, stats, strata, drop = F]
   ovr <- x$overall[strata, tests, drop = F]
 
+  if (!is.null(ovr))
+      attr(ovr, "tcov") <- attr(x$overall, "tcov")[strata]
+  
   attr(res, "originals") <- attr(x$results, "originals")[res.dmns$vars %in% vars]
+  attr(res, "term.labels") <- attr(x$results, "term.labels")
+  attr(res, "include.NA.flags") <-  attr(x$results, "include.NA.flags")
 
+  
   tmp <- list(results = res, overall = ovr)
   class(tmp) <- c("xbal", "list")
+  attr(tmp, "fmla") <- attr(x, "fmla")
+  attr(tmp, "report") <-  attr(x, "report") 
 
   return(tmp)
 }

@@ -18,7 +18,8 @@ test_that("xbal formula method", {
 })
 
 test_that("Select a subset of xbal results (for printing, etc)", {
-  # create a quick xBalance result
+
+### create a quick xBalance result
   set.seed(20121129)
   n <- 100
   df <- data.frame(Z = rep(c(1,0), n/2),
@@ -40,8 +41,8 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   # variables
   xb.noneU <- subset(xb, strata = c("Unstrat", "cut(U, 3)"))
 
-  expect_equivalent(dim(xb$results), c(18, 7, 3))
-  expect_equivalent(dim(xb.noneU$results), c(18, 7, 2))
+  expect_equivalent(dim(xb$results)[1:2], dim(xb.noneU$results)[1:2])
+  expect_equivalent(dim(xb$results)[3]-1, dim(xb.noneU$results)[3])
   expect_equal(attr(xb$results, "originals"),
                attr(xb.noneU$results, "originals"))
 
@@ -49,18 +50,18 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   # repectively
 
   xb.zp <- subset(xb, stats = c("z", "p"))
-  xb.chip <- subset(xb, tests = c("chisquare", "p.value"))
-
-  expect_equivalent(xb.chip$results, xb$results)
-
-  expect_equivalent(dim(xb.zp$results), c(18, 2, 3))
-  expect_equivalent(dim(xb.chip$overall), c(3, 2))
-
   expect_equal(attr(xb$results, "originals"),
                attr(xb.zp$results, "originals"))
+  expect_equal(xb$overall, xb.zp$overall)
+  expect_equivalent(dim(xb.zp$results)[c(1,3)], dim(xb$results)[c(1,3)])
+  expect_equivalent(dim(xb.zp$results)[2], 2)
 
-  expect_equal(attr(xb$results, "originals"),
-               attr(xb.chip$results, "originals"))
+  xb.chip <- subset(xb, tests = c("chisquare", "p.value"))
+  expect_equal(xb.chip$results, xb$results)
+### don't need next one if prev expectation checks out
+###  expect_equal(attr(xb$results, "originals"),
+###               attr(xb.chip$results, "originals"))
+  expect_equivalent(dim(xb.chip$overall), c(3, 2))
 
   # for vars and groups, we might want the arguments to interact more directly
   # e.g. subseting vars only returns groups that include the vars

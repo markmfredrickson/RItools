@@ -84,6 +84,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                         report = NULL, ...) {
   ##Notes: right now we've decided that you can't print both signif stars and p-values. make a choice.
 
+    ## ToDo: check x's include.NA.flags attribute to see if user doesn't want to see them.
+    ## If not, apply subset.xbal to get rid of the NotMissing variables.
 
   # withOptions will allow us to safely reset the digits
   # even if an error is thrown the option should be the same after this function
