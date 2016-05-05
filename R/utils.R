@@ -25,8 +25,8 @@ formula.xbal<-function(x,...){
 ##' @return Result of \code{fun}.
 withOptions <- function(optionsToChange, fun) {
   oldOpts <- options()
-  do.call(options, optionsToChange)
-  tryCatch(fun(), finally = do.call(options, oldOpts))
+  options(optionsToChange)
+  tryCatch(fun(), finally = options(oldOpts))
 }
 
 ##Our own version of these to handle the signif stars.
