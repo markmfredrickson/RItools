@@ -2,15 +2,11 @@
 This version no longer includes cran-comments.md. It is now listed in .Rbuildignore
 
 ## Test environments
-* local OS X install, R 3.2.3
+* local OS X install, R 3.3.0
 * win-builder (devel and release)
 
 ## R CMD check results
 
-There was 1 NOTE with R stable and development from `devtools::build_win()`:
-
-* checking package dependencies ... NOTE
-  Package suggested but not available for checking: 'RSVGTipsDevice'
 
 ## Downstream dependencies
 
