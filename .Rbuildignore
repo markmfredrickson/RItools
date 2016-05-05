@@ -5,3 +5,4 @@ load.R
 inst/docs
 cran-comments.md
 matrixNotation.Rnw
+^\.travis\.yml$

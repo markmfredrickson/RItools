@@ -1,5 +1,7 @@
 Stable version: [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](http://cran.r-project.org/package=RItools)
 
+[![Travis-CI Build Status](https://travis-ci.org/markmfredrickson/ritools.svg?branch=master)](https://travis-ci.org/markmfredrickson/ritools)
+
 # RItools: Randomization Inference Tools
 
 The `RItools` package implements useful functions for implementing
