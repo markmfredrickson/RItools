@@ -79,9 +79,10 @@ test_that("Select a subset of xbal results (for printing, etc)", {
 
 test_that("data.table options issue #69", {
 
-  data(nuclearplants)
-  library(data.table)
-  f <- function() 1
-  expect_equal(withOptions(list(), f), 1)
+  if (suppressMessages(suppressWarnings(require(data.table)))) {
+    data(nuclearplants)
+    f <- function() 1
+    expect_equal(withOptions(list(), f), 1)
+  }
 
 })
