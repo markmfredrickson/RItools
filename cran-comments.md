@@ -7,6 +7,7 @@ This version no longer includes cran-comments.md. It is now listed in .Rbuildign
 
 ## R CMD check results
 
+Only error from lack of RSVGTipsDevice library on win-builder server.
 
 ## Downstream dependencies
 
