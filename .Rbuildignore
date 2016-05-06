@@ -6,3 +6,4 @@ inst/docs
 cran-comments.md
 matrixNotation.Rnw
 ^\.travis\.yml$
+^revdep$
