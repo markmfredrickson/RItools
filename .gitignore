@@ -3,3 +3,4 @@
 .local
 RItools_*
 RITOOLS_TIMESTAMP
+revdep/checks.rds
