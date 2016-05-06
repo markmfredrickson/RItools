@@ -1,3 +1,7 @@
+CHANGES IN RITOOLS VERSION 0.1-14
+
+* Bug fix given changes in data.table
+
 CHANGES IN RITOOLS VERSION 0.1-13
 
 * With `xBalance`, you can now specify strata "foo" and "bar" by including
