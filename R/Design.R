@@ -487,6 +487,7 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     S.missing.1 <- as.matrix((t(WW) %*% Eweights)) == 0
     S.has.both  <- !(S.missing.0 | S.missing.1)
     use.units   <- S %*% S.has.both * Eweights
+    use.units <- as.matrix(use.units)
 
     X.use  <- covars * use.units[, covars.nmcols]
     X2.use <- covars^2 * use.units[, covars.nmcols]
