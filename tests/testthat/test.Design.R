@@ -134,6 +134,9 @@ test_that("Creating DesignOptions objects", {
   clustStrata <- RItools:::makeDesigns(z.good ~ x + cluster(cluster) + strata(strata.good), data = d)
   expect_equal(dim(clustStrata@StrataFrame)[2], 2)
 
+    clustStrata.c <- RItools:::makeDesigns(z.good ~ x + cluster(cluster) + strata(strata.good, strata.good), data = d)
+    expect_equivalent(clustStrata, clustStrata.c)
+    
   # dropping the overall comparison
   expect_equal(dim(RItools:::makeDesigns(z.good ~ x + cluster(cluster) + strata(strata.good) - 1, data = d)@StrataFrame)[2], 1)
    
