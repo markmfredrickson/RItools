@@ -370,8 +370,9 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
 
   wtlist <- list()
   for (nn in names(swt.ls)) {
-
-      if (nlevels(factor(design@StrataFrame[[nn]]))==1)
+      stratifier <- factor(design@StrataFrame[[nn]])
+      
+      if (nlevels(stratifier)==1)
           {
               wtlist[[nn]] <- data.frame(sweights=1, wtratio=1, row.names='1')
               next
@@ -382,11 +383,16 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
         do.call(swt.ls[[nn]],
                 args = list(data =
                     data.frame(Tx.grp = design@Z,
-                               stratum.code = factor(design@StrataFrame[[nn]]),
+                               stratum.code = stratifier,
                                design@Covariates,
                                check.names = FALSE)),
                 envir=parent.frame())
-      Eweight.stratum.means <- tapply(design@ElementWeights, design@StrataFrame[[nn]], mean)
+      Eweight.stratum.means <- tapply(design@ElementWeights, stratifier, mean)
+      if (!all(names(sweights)==names(Eweight.stratum.means))) # not sure this would
+          {                                                    # ever be invoked...
+              stopifnot(setequal(names(sweights), names(Eweight.stratum.means)))
+              Eweight.stratum.means <- Eweight.stratum.means[names(sweights)]
+          }
       sweights <- Eweight.stratum.means * sweights
     } else {
       if (!is.numeric(swt.ls[[nn]]))
@@ -395,10 +401,10 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
       if (is.null(names(swt.ls[[nn]])))
         stop ("if stratum.weights is a vector, must have names")
 
-      if (!(all(levels(factor(design@StrataFrame[[nn]])) %in% names(swt.ls[[nn]])) ))
+      if (!(all(levels(stratifier) %in% names(swt.ls[[nn]])) ))
         stop("if stratum.weights is a vector, must have a name for each stratum")
 
-      sweights <- swt.ls[[nn]][levels(factor(design@StrataFrame[[nn]]))]
+      sweights <- swt.ls[[nn]][levels(stratifier)]
     }
 
     if (all(is.na(sweights)))
@@ -416,13 +422,13 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
       hwts <- sweights
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
-                                  stratum.code=factor(design@StrataFrame[[nn]]),
+                                  stratum.code=stratifier,
                                   check.names = FALSE))
     }
     hwts <- hwts/sum(hwts, na.rm=TRUE)
 
       wtratio <- sweights/hwts
-#    wtratio <- unsplit(sweights/hwts, design@StrataFrame[[nn]], drop=TRUE)
+#    wtratio <- unsplit(sweights/hwts, stratifier, drop=TRUE)
 #    wtratio[is.na(wtratio)] <- 0
     wtlist[[nn]] <- data.frame(sweights=sweights,wtratio=wtratio)
     NULL

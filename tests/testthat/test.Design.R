@@ -397,7 +397,6 @@ test_that("Model matrix material is properly formed",
           }
           )
 
-### Tests to write...
 context("alignDesignsByStrata")
 test_that("alignDesigns, designToDescriptives output alignment", {
 
@@ -421,5 +420,6 @@ test_that("alignDesigns, designToDescriptives output alignment", {
 
 })
 
+### Tests to write...
 ##test_that("alignDesigns properly tracks ElementWeights vs NotMissing",{})
 ##test_that("",{})
