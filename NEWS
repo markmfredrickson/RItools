@@ -1,7 +1,12 @@
 CHANGES IN RITOOLS VERSION 0.1-15
 
+This is a maintenance release.
+
 * Fixed an obscure bug in which we indirectly fiddled with `data.table` related
   global options (#69)
+* Disabled tests of RSVGTipsDevice-dependent functionality on Windows platforms,
+  where (as of this writing) RSVGTipsDevice does not build and check reliably and
+  is not distributed in binary through CRAN (#71)
 
 CHANGES IN RITOOLS VERSION 0.1-14
 
