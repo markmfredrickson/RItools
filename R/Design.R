@@ -515,8 +515,8 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ## Horwitz Thompson-type assignment weights
     tx.wt <- ifelse(txclus.by.strat, nclus.by.strat/txclus.by.strat, 0)
     ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
-    tx.wt <- tx.wt/strat.sum.eweights   # appropriate HT weights for estimating, by stratum,
-    ctl.wt <- ctl.wt/strat.sum.eweights # (total eweighted measurements)/(total eweights)
+    tx.wt <- ifelse(strat.sum.eweights, tx.wt/strat.sum.eweights, 0)  # approp. HT weights to estimate, by stratum,
+    ctl.wt <-ifelse(strat.sum.eweights, ctl.wt/strat.sum.eweights, 0) # (total eweighted measurements)/(total eweights)
     ## factor in stratum weights
     tx.wt <- tx.wt * Swts
     ctl.wt <- ctl.wt * Swts
