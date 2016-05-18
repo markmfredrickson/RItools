@@ -218,7 +218,7 @@ xBalance <- function(fmla,
                   ss[is.na(ss)] <- FALSE
                   warning("subset specification gave NAs; interpreting these as FALSE")
               }
-          data$'(weights)' <- ss * data$'(weights)'
+          data$'(weights)' <- ifelse(ss, data$'(weights)', 0)
           data$'(offset)' <- NULL
       }
 
