@@ -776,7 +776,7 @@ alignedToInferentials <- function(alignedcovs) {
     # set up 1/(n-1)
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
-    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) * wtr^2
+    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     
     tmat <- Covs * Eweights * #the sum statistic we're about to compute corresponds 
         wtr # to averaging within-stratum difference w/ stratum weights proportion to
