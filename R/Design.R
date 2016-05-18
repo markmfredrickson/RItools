@@ -332,7 +332,13 @@ setClass("StratumWeightedDesignOptions",
 ##' @param design DesignOptions
 ##' @param stratum.weights Stratum weights
 ##' @return list with two entries, \code{sweights}  and \code{wtratio}.
-##' each is in turn a list with an entry for each stratum
+##' Each is in turn a list with an entry for each stratum.
+##' The \code{sweights} will sum to 1.  \code{wtratio} is a constant multiple
+##' of the ratio of the stratum weight s_b to h_b, the harmonic mean of n_{tb} and n_{cb},
+##' the numbers of treatment and control clusters in stratum b. Not h_b times something
+##' having to do with cluster sizes or weights, just h_b. the arbitrary constant multiple
+##' out front is harmless b/c this is only used in inferential calcs; that constant will be
+##' washed out en route to calculating z statistics and the d^2 stat.
 
 DesignWeights <- function(design, stratum.weights = harmonic) {
   stopifnot(inherits(design, "DesignOptions"))
@@ -370,7 +376,9 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
 
   wtlist <- list()
   for (nn in names(swt.ls)) {
+
       stratifier <- factor(design@StrataFrame[[nn]])
+      Eweight.stratum.means <- tapply(design@ElementWeights, stratifier, mean)
       
       if (nlevels(stratifier)==1)
           {
@@ -387,11 +395,11 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
                                design@Covariates,
                                check.names = FALSE)),
                 envir=parent.frame())
-      Eweight.stratum.means <- tapply(design@ElementWeights, stratifier, mean)
+
       if (!all(names(sweights)==names(Eweight.stratum.means))) # not sure this would
           {                                                    # ever be invoked...
               stopifnot(setequal(names(sweights), names(Eweight.stratum.means)))
-              Eweight.stratum.means <- Eweight.stratum.means[names(sweights)]
+              sweights <- sweights[names(Eweight.stratum.means)]
           }
       sweights <- Eweight.stratum.means * sweights
     } else {
@@ -416,20 +424,25 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
     if (any(sweights<0))
       stop("stratum weights must be nonnegative")
 
-      sweights <- sweights/sum(sweights, na.rm=TRUE)
 
     if (identical(harmonic, swt.ls[[nn]])) {
-      hwts <- sweights
+      wtratio <- Eweight.stratum.means
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
                                   stratum.code=stratifier,
                                   check.names = FALSE))
-    }
-    hwts <- hwts/sum(hwts, na.rm=TRUE)
-
-      wtratio <- sweights/hwts
-#    wtratio <- unsplit(sweights/hwts, stratifier, drop=TRUE)
-#    wtratio[is.na(wtratio)] <- 0
+      
+      if (!all(names(hwts)==names(Eweight.stratum.means))) # not sure this would
+          {                                                    # ever be invoked...
+              stopifnot(setequal(names(hwts), names(Eweight.stratum.means)))
+              hwts <- hwts[names(Eweight.stratum.means)]
+          }
+      wtratio <- sweights/hwts #normalization not necessary, only used in inferentials
+  }
+      sum.sweights <- sum(sweights, na.rm=TRUE) 
+      wtratio <- wtratio/sum.sweights
+      sweights <- sweights/sum.sweights
+      
     wtlist[[nn]] <- data.frame(sweights=sweights,wtratio=wtratio)
     NULL
   }
@@ -637,7 +650,7 @@ aggregateDesigns <- function(design) {
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
 #' @slot Covariates Numeric matrix, as in DesignMatrix, except here we presume columns to have been aligned (stratum-centered)
-#' @slot NotMissing matrix of element weights, normalized by stratum to sum to 1. (As otherwise, NAs are 0s)
+#' @slot NotMissing matrix of element weights, normalized within stratum to have mean 1. (As otherwise, NAs are 0s)
 setClass("AlignedCovs",
          slots = list(
              Z                 = "logical",
@@ -722,7 +735,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     colnames(covars.Sctr) <- vars
     ewts.mns <- slm.fit.csr.fixed(S, ewts)$fitted
     ewts.mns <-  ifelse(ewts.mns==0, 1, ewts.mns)
-    ewts.normed <- ewts/ewts.mns
+    ewts.normed <- ewts/ewts.mns # i.e., the \tilde{w} of the accompanying vignette
       
       new("AlignedCovs",
           Z=as.logical(design@Z[keep]),

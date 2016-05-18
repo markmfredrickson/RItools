@@ -64,23 +64,23 @@ test_that("Alternate formats for stratum.weights argument", {
 
     hwts <- with(dat, colSums(table(z, s)^-1)^-1 ) # 2*harmonic means of (n_{tb}, n_{cb}), not normalized
     xb1a <- xBalance(z~x1+strata(s)-1, data=dat, stratum.weights=hwts, report="all")
-    expect_identical(xb1, xb1a)
+    expect_equal(xb1, xb1a)
 
     xb2 <- xBalance(z~x1+strata(s), data=dat, report="all")
     xb2a <- xBalance(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=c("1"=1), s=hwts), report="all")
-    expect_identical(xb2, xb2a)
+    expect_equal(xb2, xb2a)
     xb2b <- xBalance(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=1, s=hwts), report="all")
-    expect_identical(xb2, xb2b)
+    expect_equal(xb2, xb2b)
     xb2c <- xBalance(z~x1+strata(s), data=dat,
                      stratum.weights=list(Unstrat="cheese!", #shouldn't matter in 1-stratum case
                                                    s=hwts), report="all")
-    expect_identical(xb2, xb2c)
+    expect_equal(xb2, xb2c)
     xb2d <- xBalance(z~x1+strata(s), data=dat,
                      stratum.weights=list(Unstrat=NULL, s=hwts), report="all")
-    expect_identical(xb2, xb2d)
+    expect_equal(xb2, xb2d)
     xb2e <- xBalance(z~x1+strata(s), data=dat,
                      stratum.weights=list(s=hwts), report="all")
-    expect_identical(xb2, xb2e)
+    expect_equal(xb2, xb2e)
 
 } )
 test_that("xBalance returns covariance of tests", {
@@ -186,7 +186,9 @@ test_that("Use of subset argument", {
   n2 <- rbind(n2, n2[1,])
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
-  xb3 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1)
+  expect_warning(xb3 <- xBalance(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1),
+                 "ropped") #if we get rid of warning re dropping levels which did not include
+                                        #both treated and control, get rid of expect_warning here too
   expect_equal(xb1, xb3)
 })
 

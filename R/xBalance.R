@@ -221,6 +221,8 @@ xBalance <- function(fmla,
           data$'(weights)' <- ss * data$'(weights)'
           data$'(offset)' <- NULL
       }
+
+  if (any(is.na(data$'(weights)'))) stop("NAs detected in weights")
   
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
