@@ -215,6 +215,12 @@ test_that("Observations not meeting subset condition are retained although downw
                       xb2$results[ dimnames(xb2$results)[[1]]!="pt2" ,'std.diff',]) #these two
     expect_true(is.na(xb2$results[ "pt2" ,'std.diff',]) | # presently this is NA, but
                     xb2$results[ "pt2" ,'std.diff',]==0) # it might ideally be a 0
+
+## Currently the below doesn't work. How come?
+##  xb4 <- xBalance(pr ~ . - pt, data=n2, subset=pt<1)
+##  xb5 <- xBalance(pr ~ . - pt, data=subset(n2,pt<1))
+##  expect_equivalent(xb4, xb5)
+
 })
 
 
