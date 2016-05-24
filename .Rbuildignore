@@ -4,4 +4,4 @@ lexicon.txt
 load.R
 inst/docs
 cran-comments.md
-+^\.travis\.yml$
+^\.travis\.yml$
