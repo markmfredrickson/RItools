@@ -43,9 +43,9 @@ test_that("xBal univariate inferentials, incl. agreement w/ Rao score test for c
      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
     
     xb1b <- xBalance(z~x1+strata(s), data=dat, report=c("z.scores"))
-     cl1 <- clogit(z~x1, data=dat)
-     cl2 <- clogit(z~x1+strata(s), data=dat)
-
+    cl1 <- suppressWarnings( # fitter may not converge w/ n>7 or so; it's no big deal
+        clogit(z~x1, data=dat) )
+     cl2 <- suppressWarnings( clogit(z~x1+strata(s), data=dat) )
 
     expect_equal(summary(cl1)$sctest['test'],(xb1b$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
     expect_equal(summary(cl2)$sctest['test'],(xb1b$results["x1", "z", "s"])^2 , check.attributes=F)
