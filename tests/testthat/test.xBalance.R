@@ -36,27 +36,37 @@ test_that("xBal univariate descriptive means agree w/ reference calculations",{
 test_that("xBal inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
-    n <- 51 # increase at your peril -- clogit gets slow quickly as stratum size increases
+    n <- 51 # increase at your peril -- clogit can suddenly get slow as stratum size increases
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
                         s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
                         )
-     dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+     dat = transform(dat, z=as.numeric( (x1+rnorm(n))>0 ) )
     
     xb1 <- xBalance(z~x1+strata(s), data=dat, report=c("z.scores"))
-    cl1a <- suppressWarnings( # fitter may not converge; it's no big deal
+    cl1a <- suppressWarnings( # may warn about non-convergence
         clogit(z~x1, data=dat, iter.max=1) )
      cl1b <- suppressWarnings( clogit(z~x1+strata(s), data=dat, iter.max=1) )
 
-    expect_equal(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
-    expect_equal(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 , check.attributes=F)
+    expect_equivalent(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "Unstrat"])^2 )
+    expect_equivalent(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 )
 
     xb2 <- xBalance(z~x1+x2+strata(s), data=dat, report=c("chisq"))
-    cl2a <- suppressWarnings( # fitter may not converge; it's no big deal
+    cl2a <- suppressWarnings( # may warn about non-convergence
         clogit(z~x1+x2, data=dat, iter.max=1) )
      cl2b <- suppressWarnings( clogit(z~x1+x2+strata(s), data=dat, iter.max=1) )
 
-    expect_equal(summary(cl2a)$sctest['test'],(xb2$overall["Unstrat", "chisquare"]) , check.attributes=F)
-    expect_equal(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) , check.attributes=F)
+    expect_equivalent(summary(cl2a)$sctest['test'],(xb2$overall["Unstrat", "chisquare"]) )
+    expect_equivalent(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) )
+
+    xb3 <- xBalance(z~w1+w2+strata(s),
+                    data=transform(dat, w1=x2+.1*x1, w2=x2-.1*x1),
+                    report=c("z.scores", "chisq"))
+    expect_equivalent(xb2$overall["Unstrat", "chisquare"], xb3$overall["Unstrat", "chisquare"])
+    expect_equivalent(xb2$overall["s", "chisquare"], xb3$overall["s", "chisquare"])
+
+    ## the below documents how the chi-square statistic can be larger than the sum of squared z
+    ## statistics.  Unremarkable here, but can be alarming when you see it on the screen (cf #75 ). 
+    expect_true(all(colSums(xb3$results[,'z',]^2, na.rm=T) < xb3$overall[,'chisquare']))
 }
           )
 
@@ -264,6 +274,7 @@ test_that("p.adjust.method argument", {
   expect_equal(res1.holm$overall[, "p.value"], res1.none$overall[, "p.value"])
 
 })
+
 
 ## To do: adapt the below to test print.xbal instead of lower level functions
 ##test_that("printing of NA comparisons is optional",
