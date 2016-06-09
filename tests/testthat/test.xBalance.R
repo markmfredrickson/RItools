@@ -33,22 +33,30 @@ test_that("xBal univariate descriptive means agree w/ reference calculations",{
 
 })
 
-test_that("xBal univariate inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
+test_that("xBal inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
-    n <- 7 # increase at your peril -- clogit gets slow quickly as stratum size increases
+    n <- 51 # increase at your peril -- clogit gets slow quickly as stratum size increases
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
                         s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
                         )
      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
     
-    xb1b <- xBalance(z~x1+strata(s), data=dat, report=c("z.scores"))
-    cl1 <- suppressWarnings( # fitter may not converge w/ n>7 or so; it's no big deal
-        clogit(z~x1, data=dat) )
-     cl2 <- suppressWarnings( clogit(z~x1+strata(s), data=dat) )
+    xb1 <- xBalance(z~x1+strata(s), data=dat, report=c("z.scores"))
+    cl1a <- suppressWarnings( # fitter may not converge; it's no big deal
+        clogit(z~x1, data=dat, iter.max=1) )
+     cl1b <- suppressWarnings( clogit(z~x1+strata(s), data=dat, iter.max=1) )
 
-    expect_equal(summary(cl1)$sctest['test'],(xb1b$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
-    expect_equal(summary(cl2)$sctest['test'],(xb1b$results["x1", "z", "s"])^2 , check.attributes=F)
+    expect_equal(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
+    expect_equal(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 , check.attributes=F)
+
+    xb2 <- xBalance(z~x1+x2+strata(s), data=dat, report=c("chisq"))
+    cl2a <- suppressWarnings( # fitter may not converge; it's no big deal
+        clogit(z~x1+x2, data=dat, iter.max=1) )
+     cl2b <- suppressWarnings( clogit(z~x1+x2+strata(s), data=dat, iter.max=1) )
+
+    expect_equal(summary(cl2a)$sctest['test'],(xb2$overall["Unstrat", "chisquare"]) , check.attributes=F)
+    expect_equal(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) , check.attributes=F)
 }
           )
 
