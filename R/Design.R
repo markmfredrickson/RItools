@@ -678,6 +678,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   Ewts  <- design@ElementWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, design@NM.Covariates, drop = FALSE],
                  design@Covariates[, , drop = FALSE], 0)
+  k.Covs <- ncol(Covs)
   NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
   Covs <- cbind(Covs, design@NotMissing[,NMcolperm])
   vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
@@ -707,25 +708,29 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
     # align weighted observations within stratum by subtracting weighted stratum means
     covars.Sctr <- covars
-    for (jj in 1L:ncol(covars)) 
+    for (jj in 1L:ncol(covars))
+        {
         covars.Sctr[,jj] <-
             suppressWarnings( #throws singularity warning if covar is linear in S
                 slm.wfit.csr( # see note in ./utils.R on why we use our own 
                     S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
                     weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
-                )
+            )
+    }
 
     if (!is.null(post.align.transform)) {
-      # Transform the columns of covars.Sctr using the function in post.align.trans
-      covars.Sctr.new <- apply(covars.Sctr, 2, post.align.transform)
+        ## Transform the columns of covars.Sctr using the function in post.align.trans
+        ## only do so for actual covariates, however, not missingness weights
+      covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2, post.align.transform)
 
       # Ensure that post.align.trans wasn't something that changes the size of covars.Sctr (e.g. mean).
       # It would crash later anyway, but this is more informative
-      if (is.null(dim(covars.Sctr.new)) || !all(dim(covars.Sctr) == dim(covars.Sctr.new))) {
+      if (is.null(dim(covars.Sctr.new)) || nrow(covars.Sctr) != nrow(covars.Sctr.new) ||
+          ncol(covars.Sctr.new) != k.Covs) {
         stop("Invalid post.alignment.transform given")
       }
       ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
-    for (jj in 1L:ncol(covars)) {
+    for (jj in 1L:k.Covs) {
         covars.Sctr[,jj] <- suppressWarnings(
             slm.wfit.csr(S, covars.Sctr.new[,jj],
                          weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
