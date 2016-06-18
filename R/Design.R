@@ -695,6 +695,8 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     S <- SparseMMFromFactor(ss)
 
     ewts <- Ewts[keep,,drop=FALSE]
+    NM <- design@NotMissing[keep,,drop=FALSE]
+    NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
     
     stopifnot(nlevels(ss)==1 ||
@@ -716,6 +718,12 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
                     S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
                     weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
             )
+        ## A value that was missing might have received an odd residual.
+        ## Although such values don't themselves contribute anything, they'll affect a
+        ## post alignment transformation such as `rank`.  So, per #47 we set them to 0 (the stratum mean).
+        if (jj<= k.Covs)
+            covars.Sctr[ !NM[, NMCovs[jj] ], # picks out rows w/ missing observations
+                   jj] <- 0
     }
 
     if (!is.null(post.align.transform)) {
