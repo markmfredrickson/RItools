@@ -1,4 +1,4 @@
-#' Plot of balance across multiple strata 
+#' Plot of balance across multiple strata
 #'
 #' The plot allows a quick visual comparison of the effect of different
 #' stratification designs on the comparability of different
@@ -37,8 +37,7 @@
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
 #' @import abind
-#' @S3method plot xbal
-#' @method plot xbal
+#' @export
 plot.xbal <- function(x,
                       xlab = "Standardized Differences",
                       statistic = "std.diff",
@@ -229,6 +228,7 @@ prepareXbalForPlot <- function(x,
 #' \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
+#' @import grDevices
 balanceplot <- function(x,
                         ordered = FALSE,
                         segments = TRUE,
@@ -237,7 +237,7 @@ balanceplot <- function(x,
                         segments.args = list(col = "grey"),
                         points.args = list(cex = 1),
                         xlab = "Balance",
-                        xrange = NULL, 
+                        xrange = NULL,
                         groups = NULL,
                         tiptext = NULL,
                         include.legend = TRUE,
@@ -291,7 +291,7 @@ balanceplot <- function(x,
     nagrp <- is.na(groups)
     ngrps <- length(unique(groups[which(!nagrp)]))
   }
- 
+
   if(is.null(xrange)){
   xrange <- range(x, na.rm = TRUE)
   xrange <- xrange + xrange * 0.25
@@ -401,10 +401,10 @@ balanceplot <- function(x,
   for(i in 1:nstrat) {
 
     for (j in seq_along(ypos)) {
-      
+
       if (tts) {
         # note that these indices are reversed versus convention [i, j, k] notation
-        # i is strata (the columns of our tiptext object) 
+        # i is strata (the columns of our tiptext object)
         # j is the variable (the rows of the tips)
         if (dim(tiptext)[3] == 2) {
           RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
@@ -418,7 +418,7 @@ balanceplot <- function(x,
               append(list(x[j, i],
                           ypos[j],
                           pch = shapes[j, i],
-                          col = colors[j, i]), 
+                          col = colors[j, i]),
                      points.args))
     }
   }

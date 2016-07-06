@@ -207,9 +207,9 @@ test_that("preparing xbalance objects for plotting, includes groups", {
                   x4 = sample(c(T,F), 100, replace = T),
                   x5 = sample(c("A", "B", "C"), 100, replace = T))
 
-  xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
+  xb <- xBalance(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
 
-  xbp <- prepareXbalForPlot(xb)
+  xbp <- RItools:::prepareXbalForPlot(xb)
 
   grps <- attr(xbp, "groups")
 
@@ -226,7 +226,9 @@ test_that("Plotting using RSVGTips", {
   # this is just an existance proof: it should go through without errors
   set.seed(20140137)
   
-  if(require(RSVGTipsDevice)) {
+  if(.Platform[['OS.type']]!='windows' && # #71: As of now there are errors in Windows build of
+     require('RSVGTipsDevice') #the RSVGTipsDevice package; only consider running this on other platforms
+     ) {
     f <- tempfile()
 
     x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
@@ -237,7 +239,7 @@ test_that("Plotting using RSVGTips", {
                     x5 = sample(c("A", "B", "C"), 100, replace = T),
                     x6 = sample(c("X", "Y", "Z", "W"), 100, replace = T))
 
-    xb <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~ x4, bar = ~ x5), report = 'all')
+    xb <- xBalance(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
     xb$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 2
 
     devSVGTips(paste0(f, "1.svg"), height = 8, width = 8)
@@ -247,7 +249,7 @@ test_that("Plotting using RSVGTips", {
     dev.off()
 
 
-    xb2 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(bar = ~ x5), report = 'all')
+    xb2 <- xBalance(z ~ x1 * x2 * x3 + strata(x5), data = x, report = 'all')
 
     devSVGTips(paste0(f, "2.svg"), height = 8, width = 8)
 
@@ -255,7 +257,7 @@ test_that("Plotting using RSVGTips", {
 
     dev.off()
 
-    xb3 <- xBalance(z ~ x1 * x2 * x3, data = x, strata = list(foo = ~x4, bar = ~ x5, none = NULL), report = 'all')
+    xb3 <- xBalance(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
     xb3$results[, "std.diff", 1] <- xb$results[, "std.diff", 1] * 2
     xb3$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 4
 

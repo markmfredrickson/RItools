@@ -1,9 +1,9 @@
 citHeader("To cite RItools in publications use:")
 
-if(!exists("meta") || is.null(meta)) meta <- packageDescription("RItools")	      
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date) 
+if(!exists("meta") || is.null(meta)) meta <- packageDescription("RItools")
+year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
 vers <- paste("R package version", meta$Version)
-     
+
 
 citEntry(entry="article",
          Author = personList(as.person("Ben B. Hansen"),
@@ -27,7 +27,7 @@ citEntry(entry="Manual",
 	Note = vers,
 	##Month = "SomeMonth",
 	Year = year ,
-        url = "http://www.jakebowers.org/RItools.html",
+        url = "http://jakebowers.org/RItools.html",
         textVersion = paste("Jake Bowers, Mark Fredrickson, and Ben Hansen (",
                     year,
                     "). RItools:Randomization Inference Tools. ",
