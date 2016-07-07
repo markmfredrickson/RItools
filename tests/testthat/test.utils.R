@@ -7,11 +7,11 @@ library("testthat")
 context("Utility Functions")
 
 test_that("xbal formula method", {
-  # create a quick xBalance result
+  # create a quick balanceTest result
   df <- data.frame(Z = rep(c(1,0), 10),
                    X = rnorm(20))
 
-  xb <- xBalance(Z ~ X, data = df)
+  xb <- balanceTest(Z ~ X, data = df)
 
   # we expect to have a no intercept formula
   expect_equal(Z ~ X, as.formula(xb))
@@ -19,7 +19,7 @@ test_that("xbal formula method", {
 
 test_that("Select a subset of xbal results (for printing, etc)", {
 
-### create a quick xBalance result
+### create a quick balanceTest result
   set.seed(20121129)
   n <- 100
   df <- data.frame(Z = rep(c(1,0), n/2),
@@ -33,7 +33,7 @@ test_that("Select a subset of xbal results (for printing, etc)", {
 
   # the data are will be grouped as (X, XY) and (all levels W by all levels
   # K), Y is not in an explicit group
-  xb <- xBalance(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
+  xb <- balanceTest(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
                  data = df,
                  report = 'all')
 

@@ -1,11 +1,24 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
+##' xBalance helper function
+##'
+##' Make engine
+##' @param ss ss
+##' @param zz zz
+##' @param mm mm
+##' @param report report
+##' @param swt swt
+##' @param s.p s.p
+##' @param normalize.weights normalize.weights
+##' @param zzname zzname
+##' @param post.align.trans post.align.trans
+##' @param p.adjust.method Method to adjust P.
+##' @return List
+balanceTestEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans, p.adjust.method) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
   cnms <-
     c(
-      if ('adj.means'%in%report) c(paste(zzname,"0",sep="="),paste(zzname,"1",sep="=")) else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
+      if ('adj.means'%in%report) c("Control", "Treatment") else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
       if ('adj.mean.diffs'%in%report) 'adj.diff' else character(0),
-      if ('adj.mean.diffs.null.sd'%in%report) 'adj.diff.null.sd' else character(0),
       if ('std.diffs'%in%report) 'std.diff' else character(0),
       if ('z.scores'%in%report) 'z' else character(0),
       if ('p.values'%in%report) 'p' else 'p'#character(0) turns out that it may be useful to have p-values in the object whether or not they are requested for printing
@@ -44,8 +57,8 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   if ("adj.means"%in%report) 	{
     postwt0 <- unsplit(swt$sweights/tapply(zz<=0, ss, sum),
 		       ss[zz<=0], drop=TRUE)
-    ans[[paste(zzname,"0",sep="=")]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
-    ans[[paste(zzname,"1",sep="=")]] <- ans[[paste(zzname,"0",sep="=")]] + post.diff
+    ans[["Control"]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
+    ans[["Treatment"]] <- ans[["Treatment"]] + post.diff
   }
 
 
@@ -55,12 +68,6 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   ##dv is sample variance of treatment by stratum
   dv <- unsplit(tapply(zz,ss,var),ss)
   ssvar <- apply(dv*swt$wtratio^2*tmat*tmat, 2, sum) ## for 1 column in  mm, sum(tmat*tmat)/(nrow(tmat)-1)==var(mm) and sum(dv*(mm-mean(mm))^2)=ssvar or wtsum*var(mm)
-
-  ##report (1/h)s^2. Since ssvar=(h)*s^2 multiply by (1/h)^2 to get (1/h)s^2.
-  if ('adj.mean.diffs.null.sd' %in% report) {
-    ans[['adj.diff.null.sd']] <- sqrt(ssvar*(1/wtsum)^2)
-  }
-
 
   if (!is.null(post.align.trans)) {
     # Transform the columns of tmat using the function in post.align.trans
@@ -79,7 +86,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     # (NB: since tmat has just been recentered,
     # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
     ssn <- drop(crossprod(zz, tmat))
-    ssvar <- apply(dv*tmat*tmat, 2, sum) 
+    ssvar <- apply(dv*tmat*tmat, 2, sum)
   } else {
       tmat <- tmat *swt$wtratio
   }
@@ -88,10 +95,13 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     if ('z.scores' %in% report) {
     ans['z'] <- ifelse(ssvar<=.Machine$double.eps,0, ssn/sqrt(ssvar))
   }
-  if (any(c("adj.means","adj.mean.diffs","adj.mean.diffs.null.sd","std.diffs","z.scores","p.values") %in% report)) {
+  if (any(c("adj.means","adj.mean.diffs","std.diffs","z.scores","p.values") %in% report)) {
     ##always produce a pvalue to use to create signif stars.
-    ans['p'] <- ifelse(ssvar<=.Machine$double.eps,1,
-		       2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
+    ans['p'] <- p.adjust(
+      ifelse(ssvar <= .Machine$double.eps,
+             1,
+             2 * pnorm(abs(ssn/sqrt(ssvar)), lower.tail=FALSE)),
+      p.adjust.method)
   }
 
   if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
@@ -126,6 +136,42 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   }
 
   list(dfr   = ans,
-       chisq = c('chisquare' = csq, 'df' = DF),
+       chisq = c('chiquare' = csq, 'df' = DF),
        tcov  = tcov) # test statistic covariance matrix
+}
+
+
+
+xBalance.make.stratum.mean.matrix <- function(ss, mm) {
+  stopifnot(inherits(ss, "factor")) # just in case a numeric variable is passed in.
+
+  post.nobs <- dim(mm)[1]
+  nlev <- nlevels(ss)
+
+  # for this matrix, finding the indices of the rows is easy, as there is only one
+  # item per row, and there post.nobs number of rows.
+  tR <- new("matrix.csr",
+            ja = as.integer(as.integer(ss)),
+            ia = as.integer(1:(post.nobs+ 1)),
+            ra = unsplit(1/tapply(ss,ss,length),ss),
+            dimension = c(post.nobs,nlev))
+
+  # With many items per row, we need to break the list of strata
+  # down into indices of where each row starts and ends
+  # e.g. Say ss = 0 0 0 0 1 1 1 1 1 1 1 2 2 2 2 the row indices would be
+  # 1 5 12 16 (where 16 is the start of the non existant 4th row)
+
+  L <- new("matrix.csr", #ifelse(oldver,"tripletMatrix","dgTMatrix"),
+           ia = as.integer(1:(post.nobs + 1)),
+           ja = as.integer(as.integer(ss)),
+           ra = rep(1,length(ss)),
+           dimension = c(post.nobs,nlev))
+
+
+  msmn <- t(tR) %*% mm
+  msmn <- L %*% msmn
+
+  msmn <- as.matrix(msmn)
+
+  return(msmn)
 }
