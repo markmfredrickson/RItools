@@ -73,6 +73,13 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     expect_equal(simple5@NM.terms, 1+c(0,1,2))
  
 })
+
+test_that("Issue #76: Using I() in formulas", {
+  x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+  x$"(weights)" <- 1
+  d <- makeDesigns(z ~ I(x * sin(y)), data = x)
+})
+
 test_that("Duplicated missingness patterns handled appropriately",{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
@@ -419,6 +426,7 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[[1]]@Covariates))
 
 })
+
 
 ### Tests to write...
 ##test_that("alignDesigns properly tracks ElementWeights vs NotMissing",{})

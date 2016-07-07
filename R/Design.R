@@ -45,72 +45,82 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##' @param ... passed to `model.matrix.default` (and further)
 ##' @return DesignMatrix instance of an S4 class that enriches model matrices with missing data info
 ##' @author Ben B Hansen
-design_matrix <- function(object, data=environment(object), remove.intercept=TRUE, ...)
-    {
-        mf <- model.frame(object, data, na.action=na.pass)
-        tms <- attr(mf, "terms")
-        term.labels <- attr(tms, "term.labels")
+design_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
+  mf <- model.frame(object, data, na.action = na.pass)
+  tms <- attr(mf, "terms")
+  term.labels <- attr(tms, "term.labels")
 
-        covariates <- model.matrix(object=object, data=mf, ...) 
-        assign <- attr(covariates, "assign")
-        attr(covariates, "assign") <- NULL
-        stopifnot(all(assign %in% 0:length(term.labels)))
-
-        contrasts <- attr(covariates, "contrasts")
-        attr(covariates, "contrasts") <- NULL
-
-        if (remove.intercept &&
-            (iloc <- match("(Intercept)", colnames(covariates), nomatch=0))
-            ) {
-            assign <- assign[-iloc]
-            covariates <- covariates[,-iloc, drop=FALSE]
-            }
-        
-
-        cols.by.term <- lapply(1L:length(term.labels),
-                               function(whichterm) (1:ncol(covariates))[assign==whichterm])
-        ccs.by.term <-
-            lapply(cols.by.term, function(whichcols) {
-                complete.cases(covariates[,whichcols])
-            })
-        terms.with.missings <- !sapply(ccs.by.term, all)
-
-        nm.covs <- integer(ncol(covariates))
-        nm.terms <- integer(length(term.labels))
-
-        if (any(terms.with.missings)) {
-            nmdf <- as.data.frame(ccs.by.term[terms.with.missings])
-            colnames(nmdf) <-  term.labels[terms.with.missings]
-            nmdf.char <- sapply(nmdf, function(x) paste(as.integer(x), collapse="."))
-            nmdf.dupes <- duplicated.default(nmdf.char, fromLast=FALSE)
-            if (any(nmdf.dupes))
-                {
-                    nmdf <- nmdf[!nmdf.dupes]
-                    nm.terms[terms.with.missings][!nmdf.dupes] <- 1L:ncol(nmdf)
-                    nm.terms[terms.with.missings][nmdf.dupes] <-
-                        match(nmdf.char[nmdf.dupes], nmdf.char[!nmdf.dupes])
-                } else nm.terms[terms.with.missings] <- 1L:ncol(nmdf)
-            nm.covs[assign>0] <- nm.terms[assign[assign>0]]
-            notmissing <- as.matrix(nmdf)
-        } else {
-            notmissing <- matrix(FALSE, nrow(covariates), 0)
-        }
-
-        ## add in a 1st column of 1s, to ease bookkeeping later on
-        notmissing <- cbind(matrix(TRUE, nrow(covariates), 1), notmissing)
-        colnames(notmissing)[1] <- "element weight"
-        nm.covs <- nm.covs + 1L
-        nm.terms <- nm.terms + 1L
-
-        new("DesignMatrix",
-            Covariates=covariates,
-                  OriginalVariables=assign,
-                  TermLabels=term.labels,
-                  Contrasts=contrasts,
-                  NotMissing=notmissing,
-                  NM.Covariates=nm.covs,
-                  NM.terms=nm.terms )
+  # we want our own contrast function for the factors that expands each level to its own dummy
+  clist <- lapply(data, function(x) {
+    if (is.factor(x)) {
+      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
+    } else {
+      NULL
     }
+  })
+  names(clist) <- colnames(data)
+  clist <- clist[!sapply(clist, is.null)]
+
+  covariates <- model.matrix(object = object, data = mf, contrasts.arg = clist,...) 
+  assign <- attr(covariates, "assign")
+  attr(covariates, "assign") <- NULL
+  stopifnot(all(assign %in% 0:length(term.labels)))
+
+  contrasts <- attr(covariates, "contrasts")
+  attr(covariates, "contrasts") <- NULL
+
+  if (remove.intercept &&
+      (iloc <- match("(Intercept)", colnames(covariates), nomatch=0))
+      ) {
+    assign <- assign[-iloc]
+    covariates <- covariates[,-iloc, drop=FALSE]
+  }
+  
+
+  cols.by.term <- lapply(1L:length(term.labels),
+                         function(whichterm) (1:ncol(covariates))[assign==whichterm])
+  ccs.by.term <-
+    lapply(cols.by.term, function(whichcols) {
+      complete.cases(covariates[,whichcols])
+    })
+  terms.with.missings <- !sapply(ccs.by.term, all)
+
+  nm.covs <- integer(ncol(covariates))
+  nm.terms <- integer(length(term.labels))
+
+  if (any(terms.with.missings)) {
+    nmdf <- as.data.frame(ccs.by.term[terms.with.missings])
+    colnames(nmdf) <-  term.labels[terms.with.missings]
+    nmdf.char <- sapply(nmdf, function(x) paste(as.integer(x), collapse="."))
+    nmdf.dupes <- duplicated.default(nmdf.char, fromLast=FALSE)
+    if (any(nmdf.dupes))
+    {
+      nmdf <- nmdf[!nmdf.dupes]
+      nm.terms[terms.with.missings][!nmdf.dupes] <- 1L:ncol(nmdf)
+      nm.terms[terms.with.missings][nmdf.dupes] <-
+        match(nmdf.char[nmdf.dupes], nmdf.char[!nmdf.dupes])
+    } else nm.terms[terms.with.missings] <- 1L:ncol(nmdf)
+    nm.covs[assign>0] <- nm.terms[assign[assign>0]]
+    notmissing <- as.matrix(nmdf)
+  } else {
+    notmissing <- matrix(FALSE, nrow(covariates), 0)
+  }
+
+  ## add in a 1st column of 1s, to ease bookkeeping later on
+  notmissing <- cbind(matrix(TRUE, nrow(covariates), 1), notmissing)
+  colnames(notmissing)[1] <- "element weight"
+  nm.covs <- nm.covs + 1L
+  nm.terms <- nm.terms + 1L
+
+  new("DesignMatrix",
+      Covariates=covariates,
+      OriginalVariables=assign,
+      TermLabels=term.labels,
+      Contrasts=contrasts,
+      NotMissing=notmissing,
+      NM.Covariates=nm.covs,
+      NM.terms=nm.terms )
+}
 
 
 ################################################################################
@@ -260,26 +270,7 @@ makeDesigns <- function(fmla, data) {
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", vnames[str.idx]))))
-  data.data <- model.frame(data.fmla, data, na.action = na.pass) #
-
-  # knock out any levels that are not used
-  fcts <- colnames(data.data)[sapply(data.data, is.factor)]
-  for (f in fcts) {
-    data.data[, f] <- factor(data.data[, f])
-  }
-
-  # we want our own contrast function for the factors that expands each level to its own dummy
-  clist <- lapply(data.data, function(x) {
-    if (is.factor(x)) {
-      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
-    } else {
-      NULL
-    }
-})
-    names(clist) <- colnames(data.data)
-    clist <- clist[!sapply(clist, is.null)]
-
-    desm <- design_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
+  desm <- design_matrix(data.fmla, data, remove.intercept=TRUE) #, contrasts.arg = clist)
 
   if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]
