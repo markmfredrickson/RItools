@@ -167,7 +167,7 @@
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"),
 ##' 	 post.alignment.transform=rank)
-xBalance <- function(fmla,
+balanceTest <- function(fmla,
                      data,
                      strata = NULL,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
