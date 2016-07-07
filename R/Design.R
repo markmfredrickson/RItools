@@ -46,22 +46,13 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##' @return DesignMatrix instance of an S4 class that enriches model matrices with missing data info
 ##' @author Ben B Hansen
 design_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
-  mf <- model.frame(object, data, na.action = na.pass)
-  tms <- attr(mf, "terms")
+  # mf <- model.frame(object, data, na.action = na.pass)
+  tms <- terms(object)
   term.labels <- attr(tms, "term.labels")
 
-  # we want our own contrast function for the factors that expands each level to its own dummy
-  clist <- lapply(data, function(x) {
-    if (is.factor(x)) {
-      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
-    } else {
-      NULL
-    }
-  })
-  names(clist) <- colnames(data)
-  clist <- clist[!sapply(clist, is.null)]
+  covariates <- model.matrix(object = object, data = data, ...) 
 
-  covariates <- model.matrix(object = object, data = mf, contrasts.arg = clist,...) 
+
   assign <- attr(covariates, "assign")
   attr(covariates, "assign") <- NULL
   stopifnot(all(assign %in% 0:length(term.labels)))
@@ -270,7 +261,26 @@ makeDesigns <- function(fmla, data) {
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", vnames[str.idx]))))
-  desm <- design_matrix(data.fmla, data, remove.intercept=TRUE) #, contrasts.arg = clist)
+  data.data <- model.frame(data.fmla, data, na.action = na.pass) #
+
+  # knock out any levels that are not used
+  fcts <- colnames(data.data)[sapply(data.data, is.factor)]
+  for (f in fcts) {
+    data.data[, f] <- factor(data.data[, f])
+  }
+
+  # we want our own contrast function for the factors that expands each level to its own dummy
+  clist <- lapply(data.data, function(x) {
+    if (is.factor(x)) {
+      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
+    } else {
+      NULL
+    }
+})
+    names(clist) <- colnames(data.data)
+    clist <- clist[!sapply(clist, is.null)]
+
+    desm <- design_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
 
   if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]

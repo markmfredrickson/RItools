@@ -31,7 +31,8 @@ test_that("Missingingess gets passed through in Covariates, recorded in NotMissi
                     fac=factor(c(rep(1:2,2), NA))
                     )
               dat$'(weights)' <- 1
-              simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data=dat)
+              datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
+              simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
               expect_equivalent(colnames(simple2@NotMissing), c("element weight", "x1", "fac"))
               
@@ -46,26 +47,36 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
                     fac=factor(c(rep(1:2,2), NA))
                     )
     dat$'(weights)' <- 1
-    simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data=dat)
+    datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass)
+    simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data=datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c("x1", "x2", "fac"))
     expect_equal(simple2@NM.Covariates, 1+c(1,0,2))
     expect_equal(simple2@NM.terms, 1+c(1,0,2))
+
     ## check that complex term don't spell trouble in themselves
-    simple3 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data=dat)
+    datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
+                         na.action = na.pass)
+    simple3 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf)
     expect_equal(simple3@OriginalVariables, 1:3)
     expect_equal(simple3@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
     expect_equal(simple3@NM.Covariates, 1+c(1,0,2))
     expect_equal(simple3@NM.terms, 1+c(1,0,2))
+
     ## now try a complex term that actually expands to multiple columns
-    simple4 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data=dat,
+    datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
+                         na.action = na.pass)
+    simple4 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x2, c(0, 3, 6))"=diag(2)))
     expect_equal(simple4@OriginalVariables, c(1,2,2,3))
     expect_equal(simple4@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
     expect_equal(simple4@NM.Covariates, 1+c(1,0,0,2))
     expect_equal(simple4@NM.terms, 1+c(1,0,2))
+
     ## now put NAs in the multi-column complex term
-    simple5 <- RItools:::design_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data=dat,
+    datmf <- model.frame(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = dat,
+                         na.action = na.pass)
+    simple5 <- RItools:::design_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x1, c(0, 3, 6))"=diag(2)))
     expect_equal(simple5@OriginalVariables, c(1,2,2,3))
     expect_equal(simple5@TermLabels, c("x2", "cut(x1, c(0, 3, 6))", "fac"))
@@ -90,14 +101,17 @@ test_that("Duplicated missingness patterns handled appropriately",{
                     fac=factor(c(rep(1:2,2), NA))
                     )
     dat$'(weights)' <- 1
-    simple2 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data=dat)
+    datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
+    simple2 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(simple2@NM.Covariates, 1+c(1,1,2))
     expect_equal(simple2@NM.terms, 1+c(1,1,2))
+
     ## If exactly two terms have missing data but in the same pattern, then
     ## NotMissing is a matrix w/ n rows and 1 col.
-    simple3 <- RItools:::design_matrix(z ~ x1 + I(x1^2), data=dat)
+    datmf <- model.frame(z ~ x1 + I(x1^2), data=dat, na.action = na.pass)
+    simple3 <- RItools:::design_matrix(z ~ x1 + I(x1^2), data = datmf)
     expect_equal(simple3@OriginalVariables, 1:2)
     expect_equal(simple3@TermLabels, c("x1", "I(x1^2)"))
     expect_equal(ncol(simple3@NotMissing), 2)
@@ -379,9 +393,11 @@ test_that("Model matrix material is properly formed",
      fff <- update(ff, .~.-1)
      trees2 <- trees
      trees2[1, "Volume"] <- NA # LHS variable, shouldn't affect anything
-     expect_equivalent(model.matrix(fff, m), as.matrix(design_matrix(fff, trees2)))
+     expect_equivalent(model.matrix(fff, m), as.matrix(design_matrix(fff, model.frame(fff, trees2, na.action = na.pass))))
      trees2[1, "Height"] <- NA # RHS variable, but still shouldn't cause rows to be dropped
-     expect_equal(dim(model.matrix(fff, m)), dim(as.matrix(design_matrix(fff, trees2))))
+     expect_equal(dim(model.matrix(fff, m)), dim(as.matrix(design_matrix(fff,
+model.frame(fff, trees2, na.action = na.pass)
+                                                                                ))))
 
 
      ## specified contrasts
