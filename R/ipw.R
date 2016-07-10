@@ -18,7 +18,7 @@
 ipwts_blockRCT <- function(z,strat,clus=NULL)
   {
             stopifnot(length(z)==length(strat), is.null(clus) | length(clus)==length(strat),
-                                        !all(z==z[1]))
+                                        !all(z==z[1], na.rm=TRUE))
                     strat <- as.factor(strat)
                     if (is.ordered(z)) warning("I received an ordinal z. I'll treat it the same as any other factor (FYI).")
 
@@ -65,7 +65,9 @@ ipwts_blockRCT <- function(z,strat,clus=NULL)
               {
                 zval <- as.numeric(colnames(strat.by.z)[zz])
                 htvals <- HT.by.strat[, zz, drop=TRUE]
-                ans[z==zval] <- htvals[strat[z==zval]]
+                toreplace <- z==zval
+                toreplace[is.na(z)] <- FALSE
+                ans[toreplace] <- htvals[strat[toreplace]]
               }
             ans
           }
