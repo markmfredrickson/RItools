@@ -1,6 +1,7 @@
 ##' Assemble inverse probability of assignment weights on the fly,
 ##' e.g. as part of evaluation of `weights` argument to a `glm` or similar
-##' function.   Assumes a designs that is completely randomized, either by cluster or by
+##' function.   Also calculates inverse odds of assignment weights.
+##' Assumes a design that is completely randomized, either by cluster or by
 ##' the unit of observation, potentially within strata or blocks.
 ##'
 ##' The function assumes complete random assignment, within (optional)
@@ -12,20 +13,33 @@
 ##'
 ##' @title Inverse probability weighting suitable for completely randomized designs
 ##' @param z categorical variable recording distinctions among assignments to treatment conditions
-##' @param strat categorical variable recording blocks
+##' @param strata categorical variable recording blocks
 ##' @param clus optional categorical variable indicating cluster membership
-##' @return vector of inverse probability of assignment weights
-##' @author Bendek B. Hansen
-ipr <- function(z,strata,clus=NULL)
+##' @param type character string naming desired type of weight. See Details for options other than inverse probability
+##' @return vector of weights
+##' @export
+##' @author Ben B. Hansen
+ipr <- function(z,strata,clus=NULL, type="inverse probability")
   {
             stopifnot(length(z)==length(strata), is.null(clus) | length(clus)==length(strata),
-                                        !all(z==z[1], na.rm=TRUE))
-                    strata <- as.factor(strata)
-                    if (is.ordered(z)) warning("I received an ordinal z. I'll treat it the same as any other factor (FYI).")
+                      !all(z==z[1], na.rm=TRUE), is.character(type), substr(type, 1, 4) %in% c('inve', 'odds'))
 
-                    if (is.character(z)) z <- as.factor(z)
-                    z <- as.numeric(z)
+            strata <- as.factor(strata)
+            if (is.ordered(z)) warning("I received an ordinal z. I'll treat it the same as any other factor (FYI).")
 
+            z <- as.factor(z)
+            
+            if (tolower(substr(type, 1, 4))=='odds')
+                {
+            reflev <-
+                getRefLev(type[1], levels(z),
+                              errmsg=paste0('For odds please specify reference category, e.g.type="odds vs ',
+                                  levels(z)[nlevels(z)], '"')
+                              )
+            type <- "odds"
+        }
+                    
+            
                     if (!is.null(clus))
                       {
                         ## input checking
@@ -54,21 +68,75 @@ ipr <- function(z,strata,clus=NULL)
 
 
             strat.by.z <- table(strat.c, z)
-            strat.all <- apply(strat.by.z, 1, # are *all* levels of z represented in
+            strat.keep <- apply(strat.by.z, 1, # are *all* levels of z represented in
                                all) # the stratum? If not we're going to exclude it
+            wt.by.strat <- if (type=="odds")
+                {
+                    strat.reflev <- strat.by.z[,reflev,drop=TRUE]
+                    ifelse(rep(strat.keep, ncol(strat.by.z)),
+                           strat.reflev/strat.by.z, 0)
+                } else 
+                    {
             strat.tot <- apply(strat.by.z, 1, sum)
-            HT.by.strat <- ifelse(rep(strat.all, ncol(strat.by.z)),
+            ifelse(rep(strat.keep, ncol(strat.by.z)),
                                   strat.tot/strat.by.z, 0)
-            dim(HT.by.strat) <- dim(strat.by.z)
-            
+        }
+            dim(wt.by.strat) <- dim(strat.by.z)
+
             ans <- numeric(length(strata))
-            for (zz in 1L:ncol(strat.by.z))
+            for (zz in 1L:nlevels(z))
               {
-                zval <- as.numeric(colnames(strat.by.z)[zz])
-                htvals <- HT.by.strat[, zz, drop=TRUE]
+                zval <- levels(z)[zz]
+                wtvals <- wt.by.strat[, zz, drop=TRUE]
                 toreplace <- z==zval
                 toreplace[is.na(z)] <- FALSE
-                ans[toreplace] <- htvals[strat[toreplace]]
+                ans[toreplace] <- wtvals[strata[toreplace]]
               }
             ans
           }
+
+getRefLev <- function(typestring, tab, errmsg="I can't infer the desired reference level")
+    {
+        stopifnot(is.character(typestring), length(typestring)==1,
+                  is.character(tab))
+        if (tolower(substr(typestring, 1L, 4L))!="odds") stop(errmsg)
+        nc <- nchar(typestring)
+        if (nc==4) stop(errmsg)
+
+        startfrom <- 5L
+        if (substr(typestring,5L,6L)=='vs' & nc>6) startfrom <- 7L
+        if (substr(typestring,5L,7L)==' vs' & nc>7) startfrom <- 8L
+        if (substr(typestring,5L,7L)=='.vs' & nc>7) startfrom <- 8L
+        if (substr(typestring,5L,8L)==' vs ' & nc>8) startfrom <- 9L
+        if (substr(typestring,5L,8L)=='.vs ' & nc>8) startfrom <- 9L
+        if (substr(typestring,5L,8L)=='.vs.' & nc>8) startfrom <- 9L
+
+        reflevspec <- substr(typestring,startfrom,nchar(typestring))
+
+                            
+        strReverse <- function(x)
+            sapply(lapply(strsplit(x, NULL), rev), paste, collapse = "")
+
+        rlevs <- strReverse(tab)
+        rtype <- strReverse(reflevspec)
+
+        matches <- match(rlevs,rtype, nomatch=0)
+        if (!any(matches))
+            {
+                matches <- charmatch(rlevs,rtype, nomatch=-1)
+                if (all(matches<0)) stop(errmsg)
+                if (!any(matches==1))
+                    stop(paste("I can't determine which of these reference levels you want:\n",
+                               paste(tab[matches==0], collapse=" ")) )
+                matches[matches<0] <- 0
+            }
+        ## If we've come this far then there's at least one candidate for a match
+        matches <- as.logical(matches)
+        
+        longestmatch <- max(nchar(rlevs)[matches])
+        if (sum(nchar(rlevs)[matches]==longestmatch)>1)
+            stop(paste("I can't determine which of these reference levels you want:\n",
+                       paste(tab[matches], collapse=" "))
+                 )
+        tab[matches][nchar(rlevs)[matches]==longestmatch]
+    }
