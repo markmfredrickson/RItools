@@ -1,6 +1,7 @@
 ##' Assemble inverse probability of assignment weights on the fly,
 ##' e.g. as part of evaluation of `weights` argument to a `glm` or similar
-##' function.
+##' function.   Assumes a designs that is completely randomized, either by cluster or by
+##' the unit of observation, potentially within strata or blocks.
 ##'
 ##' The function assumes complete random assignment, within (optional)
 ##' blocks.  This can be complete random assignment of clusters; in this situation
@@ -9,17 +10,17 @@
 ##' and any block without all conditions represented will be dropped, as are observations
 ##' that are NA on the blocking variable.
 ##'
-##' @title 
+##' @title Inverse probability weighting suitable for completely randomized designs
 ##' @param z categorical variable recording distinctions among assignments to treatment conditions
 ##' @param strat categorical variable recording blocks
 ##' @param clus optional categorical variable indicating cluster membership
 ##' @return vector of inverse probability of assignment weights
 ##' @author Bendek B. Hansen
-ipwts_blockRCT <- function(z,strat,clus=NULL)
+ipr <- function(z,strata,clus=NULL)
   {
-            stopifnot(length(z)==length(strat), is.null(clus) | length(clus)==length(strat),
+            stopifnot(length(z)==length(strata), is.null(clus) | length(clus)==length(strata),
                                         !all(z==z[1], na.rm=TRUE))
-                    strat <- as.factor(strat)
+                    strata <- as.factor(strata)
                     if (is.ordered(z)) warning("I received an ordinal z. I'll treat it the same as any other factor (FYI).")
 
                     if (is.character(z)) z <- as.factor(z)
@@ -36,7 +37,7 @@ ipwts_blockRCT <- function(z,strat,clus=NULL)
                                                                                                             paste(collapse = ", ", colnames(tbl)[!isGood]))
                                                                             }
                         ## each cluster should be nested entirely within a single stratum
-                        tbl <- table(strat, clus, useNA = "ifany")
+                        tbl <- table(strata, clus, useNA = "ifany")
                         isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 1 })
                         if (!(all(isGood))) {
                           stop("In ", s, ", the following clusters were not nested within stratum levels: ",
@@ -45,11 +46,11 @@ ipwts_blockRCT <- function(z,strat,clus=NULL)
 
                         cluster.representatives <- !duplicated(clus)
                         z <- z[cluster.representatives]
-                        strat.c <- strat[cluster.representatives,
+                        strat.c <- strata[cluster.representatives,
                                          drop=FALSE] # Can there be levels that
                         ## don't get represented? Not sure but if so then this is safer
                       } else
-            strat.c <- strat
+            strat.c <- strata
 
 
             strat.by.z <- table(strat.c, z)
@@ -60,7 +61,7 @@ ipwts_blockRCT <- function(z,strat,clus=NULL)
                                   strat.tot/strat.by.z, 0)
             dim(HT.by.strat) <- dim(strat.by.z)
             
-            ans <- numeric(length(strat))
+            ans <- numeric(length(strata))
             for (zz in 1L:ncol(strat.by.z))
               {
                 zval <- as.numeric(colnames(strat.by.z)[zz])
