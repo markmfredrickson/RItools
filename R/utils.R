@@ -154,7 +154,6 @@ subset.xbal <- function(x,
 ##' @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
 ##' @param thefactor Factor variable, or object inheriting from class factor
 ##' @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
-##' @import SparseM
 ##' @export
 ##' @author Ben Hansen
 ##' @examples
@@ -192,7 +191,7 @@ SparseMMFromFactor <- function(thefactor) {
 ##' @param y As slm.fit.csr
 ##' @param ... As slm.fit.csr
 ##' @return As slm.fit.csr
-##' @import SparseM
+##' @importFrom SparseM chol backsolve
 slm.fit.csr.fixed <- function (x, y, ...)
 {
     if (is.matrix(y))
@@ -232,7 +231,7 @@ slm.fit.csr.fixed <- function (x, y, ...)
 ##' @param weights As slm.wfit
 ##' @param ... As slm.wfit
 ##' @return As slm.wfit
-##' @import SparseM
+##' @importFrom SparseM is.matrix.csr
 
 
 slm.wfit.csr <- function (x, y, weights, ...) 

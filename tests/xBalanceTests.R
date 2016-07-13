@@ -5,23 +5,23 @@ data(nuclearplants)
 ##################################################
 ### Basic uses
 ##################################################
-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants)
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants)
 
-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
 
-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
 
-(xb0 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+(xb0 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
 )
 ##########################################################################################
 ### Oddness on LHS of formula
 ##########################################################################################Q
-balanceTest(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xBalance(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data=nuclearplants,
          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test')
          )
@@ -44,20 +44,24 @@ if (require('xtable'))
 #####################################################
 ######               include.means                ###
 #####################################################
-###balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+###xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ###         ~factor(pt), nuclearplants,
 ###         covariate.scaling=1, include.means=TRUE)
-###balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+###xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ###         ~factor(pt), nuclearplants, include.means=TRUE)
 ###
 ###
+#####################################################
+######  na.rm=FALSE with missing covariates       ###
+#####################################################
 ### Should create a new variable (0=not missing,1=missing) and impute missing values with the mean (median is new default)
 
 set.seed(123)
 testdata<-nuclearplants
 testdata$date[sample(1:32,10)]<-NA
 
-balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data = testdata) 
+xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data = testdata,
+    na.rm = FALSE,impfn=mean.default) ##first using the mean to match up with previous versions
 
 #####################################################
 ######  handling factor with no obs for a level in a strata  ###
@@ -73,13 +77,32 @@ table(testdata$pt,testdata$cum.n)
 ##  0 4 3 4 2 1 1 1  0  2  1  1  1  1  1  1  1  1
 ##  1 0 0 0 0 0 1 2  3  0  0  0  0  0  0  0  0  0
 
-## First no missing levels, same in both strata --- looks ok
-balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata)
+##First no missing levels, same in both strata --- looks ok
+xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,impfn=mean.default)
 
-## Second two missing levels, same in both strata
+##Second two missing levels, same in both strata
+##This doesn't look as good --- we'd prefer to drop levels that don't exist.
 
 testdata$cum.nF[testdata$cum.n>16]<-NA
 testdata$cum.nF[testdata$cum.n==7]<-NA
 table(testdata$pt,testdata$cum.nF,exclude=c()) ##Notice that the levels don't disappear by default.
-balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata)
+xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=FALSE,impfn=mean.default)
 
+##This isn't right either.
+xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=TRUE,impfn=mean.default)
+
+
+#####################################################
+######  handling factor with no levels strata=argument  ###
+#####################################################
+testdata$badStrat <- rep(NA, dim(testdata)[1])
+try(xBalance(pr ~ date + strata(badStrat),
+             data=testdata), FALSE)
+
+#####################################################
+######             WISHLIST                       ###
+#####################################################
+###
+###
+###
+###

@@ -164,6 +164,7 @@ xBalance <- function(fmla, strata=list(unstrat=NULL),
     })
   }
   class(ans) <- c("xbal", "list")
+  attr(ans, "report") <- report
   ans
 }
 

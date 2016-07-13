@@ -110,7 +110,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     lookup <- c("std.diffs" = "std.diff", "z.scores" = "z",
                 "adj.mean.diffs" = "adj.diff",
                 "p.values" = "p",
-                "pooled.sd" = "pooled.sd")
+                "pooled.sd" = "pooled.sd",
+                "adj.mean.diffs.null.sd" = "pooled.sd")
 
     stopifnot(all(report %in% c("all", "chisquare.test", "adj.means", names(lookup))))
 
@@ -163,7 +164,9 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
     }
 
+    if (!is.null(theresults)) {
     thevartab <- ftabler(theresults) # we'll update this variable later if we include p-values or significance stars
+    }
 
     if (show.signif.stars && !show.pvals && !is.null(theresults) && hasP ) {
 
