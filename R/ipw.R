@@ -9,7 +9,7 @@
 ##' and any block without all conditions represented will be dropped, as are observations
 ##' that are NA on the blocking variable.
 ##'
-##' @title 
+##' @title Inverse propensity weights for blocked and/or clustered RCTs.
 ##' @param z categorical variable recording distinctions among assignments to treatment conditions
 ##' @param strat categorical variable recording blocks
 ##' @param clus optional categorical variable indicating cluster membership
