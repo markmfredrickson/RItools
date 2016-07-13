@@ -31,7 +31,7 @@ The following object is masked from 'package:base':
 > ##################################################
 > ### Basic uses
 > ##################################################
-> xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants)
+> balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants)
       strata  Unstrat        
       stat   std.diff       z
 vars                         
@@ -44,7 +44,7 @@ ct            -0.3113 -0.8121
 bw             0.0445  0.1202
 cum.n         -0.1005 -0.2598
 > 
-> xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
+> balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data=nuclearplants,
 +          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
       strata   Unstrat                                    
       stat   Treatment  Control adj.diff std.diff        z
@@ -61,7 +61,7 @@ cum.n           8.1000   8.7273  -0.6273  -0.1005  -0.2598
         chisquare df       p.value 
 Unstrat "11.463"  " 8.000" " 0.177"
 > 
-> xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+> balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 +          data=nuclearplants,
 +          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
       strata        pt                                       Unstrat                                    
@@ -80,7 +80,7 @@ cum.n           8.1000   8.7158  -0.6158  -0.1041  -0.3397    8.1000   8.7273  -
 pt      "10.775"  " 8.000" " 0.354"
 Unstrat "11.463"  " 8.000" " 0.354"
 > 
-> (xb0 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+> (xb0 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 +          data=nuclearplants,
 +          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test'))
 + )
@@ -102,7 +102,7 @@ Unstrat "11.463"  " 8.000" " 0.354"
 > ##########################################################################################
 > ### Oddness on LHS of formula
 > ##########################################################################################Q
-> xBalance(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+> balanceTest(I(pr==1) ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 +          data=nuclearplants,
 +          report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test')
 +          )
@@ -141,10 +141,10 @@ Loading required package: xtable
 > #####################################################
 > ######               include.means                ###
 > #####################################################
-> ###xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+> ###balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 > ###         ~factor(pt), nuclearplants,
 > ###         covariate.scaling=1, include.means=TRUE)
-> ###xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+> ###balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 > ###         ~factor(pt), nuclearplants, include.means=TRUE)
 > ###
 > ###
@@ -157,7 +157,7 @@ Loading required package: xtable
 > testdata<-nuclearplants
 > testdata$date[sample(1:32,10)]<-NA
 > 
-> xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data = testdata,
+> balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n, data = testdata,
 +     na.rm = FALSE,impfn=mean.default) ##first using the mean to match up with previous versions
              strata  Unstrat        
              stat   std.diff       z
@@ -192,7 +192,7 @@ date.NATRUE          -1.2613 -2.5308
 > ##  1 0 0 0 0 0 1 2  3  0  0  0  0  0  0  0  0  0
 > 
 > ##First no missing levels, same in both strata --- looks ok
-> xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,impfn=mean.default)
+> balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,impfn=mean.default)
          strata       pt          Unstrat        
          stat   std.diff       z std.diff       z
 vars                                             
@@ -232,7 +232,7 @@ cum.nF21         -0.2702 -0.6070  -0.3015 -0.6742
   0    4 3 4 2 1 0 1  0  2  1  1  1  0  0  0  0  0    6
   1    0 0 0 0 0 0 2  3  0  0  0  0  0  0  0  0  0    1
   <NA> 0 0 0 0 0 0 0  0  0  0  0  0  0  0  0  0  0    0
-> xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=FALSE,impfn=mean.default)
+> balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=FALSE,impfn=mean.default)
          strata       pt          Unstrat        
          stat   std.diff       z std.diff       z
 vars                                             
@@ -257,7 +257,7 @@ cum.nF16         -0.3190 -0.4669  -0.3536 -0.5267
 cum.nFNA         -0.4656 -1.0206  -0.4403 -1.0783
 > 
 > ##This isn't right either.
-> xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=TRUE,impfn=mean.default)
+> balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.nF + strata(pt), data = testdata,na.rm=TRUE,impfn=mean.default)
          strata       pt          Unstrat        
          stat   std.diff       z std.diff       z
 vars                                             
@@ -285,7 +285,7 @@ cum.nF16         -0.3062 -0.6547  -0.3536 -0.7500
 > ######  handling factor with no levels strata=argument  ###
 > #####################################################
 > testdata$badStrat <- rep(NA, dim(testdata)[1])
-> try(xBalance(pr ~ date + strata(badStrat),
+> try(balanceTest(pr ~ date + strata(badStrat),
 +              data=testdata), FALSE)
 Error in makeDesign(fmla, data, imputefn = impfn, na.rm = na.rm, include.NA.flags = include.NA.flags) : 
   All levels in strata(badStrat) are NA

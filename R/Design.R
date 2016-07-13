@@ -23,7 +23,7 @@ setClass("DesignMatrix",
                   NM.terms="integer" )
          )
 
-##' @export
+#' @export
 as.matrix.DesignMatrix <- function(x, ...)
     {
         ans <- x@Covariates
@@ -160,6 +160,7 @@ setClass("DesignOptions",
 ##' @param fmla Formula
 ##' @param data Data
 ##' @return DesignOptions
+##' @import stats 
 makeDesigns <- function(fmla, data) {
 
     eweights <- as.vector(model.weights(data))

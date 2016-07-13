@@ -123,20 +123,20 @@
 ##'   118--136.
 ##' @author Ben Hansen and Jake Bowers and Mark Fredrickson
 ##' @keywords design nonparametric
-##' @import SparseM svd
+##' @import SparseM svd stats
 ##' @examples
 ##' data(nuclearplants)
 ##' ##No strata, default output
-##' xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ##'          data=nuclearplants)
 ##'
 ##' ##No strata, all output
-##' xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ##'          data=nuclearplants,
 ##'          report=c("all"))
 ##'
 ##' ##Stratified, all output
-##' xBalance(pr~.-cost-pt + strata(pt),
+##' balanceTest(pr~.-cost-pt + strata(pt),
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "adj.mean.diffs",
 ##'                   "chisquare.test", "std.diffs",
@@ -144,13 +144,13 @@
 ##'
 ##' ##Comparing unstratified to stratified, just adjusted means and
 ##' #omnibus test
-##' xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"))
 ##'
 ##' ##Comparing unstratified to stratified, just adjusted means and
 ##' #omnibus test
-##' xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"))
 ##'
@@ -163,7 +163,7 @@
 ##' ##Comparing unstratified to stratified, just one-by-one wilcoxon
 ##' #rank sum tests and omnibus test of multivariate differences on
 ##' #rank scale.
-##' xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"),
 ##' 	 post.alignment.transform=rank)

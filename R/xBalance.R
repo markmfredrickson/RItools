@@ -1,3 +1,4 @@
+#' @export
 xBalance <- function(fmla, strata=list(unstrat=NULL),
                      data,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs","adj.mean.diffs.null.sd",
