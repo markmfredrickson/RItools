@@ -8,8 +8,12 @@
 ##' blocks.  This can be complete random assignment of clusters; in this situation
 ##' the user avoids having to manage aggregation to the cluster level in order
 ##' properly to infer treatment probabilities.  There need to be at least two conditions,
-##' and any block without all conditions represented will be dropped, as are observations
-##' that are NA on the blocking variable.
+##' and any block without all conditions represented will be dropped, ie given observation 
+##' weights of 0, as are observations that are NA on the blocking variable.
+##'
+##' NAs in the assignment variable also translate to zero.  If they occur within a
+##' non-NA block, probabilities or odds for that block are calculated as though the 
+##' observations with NAs for \code{z} just weren't there. 
 ##'
 ##' @title Inverse probability weighting suitable for completely randomized designs
 ##' @param z categorical variable recording distinctions among assignments to treatment conditions
