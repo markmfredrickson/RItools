@@ -94,6 +94,7 @@ ipr <- function(z,strata,clus=NULL, type="inverse probability")
                 wtvals <- wt.by.strat[, zz, drop=TRUE]
                 toreplace <- z==zval
                 toreplace[is.na(z)] <- FALSE
+                toreplace[is.na(strata)] <- FALSE
                 ans[toreplace] <- wtvals[strata[toreplace]]
               }
             ans

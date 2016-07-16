@@ -21,7 +21,19 @@ tx2 <- c(1,0,1,0,NA)
 fac1 <- rep(letters[1:2], c(2,3))
 fac1 <- as.factor(fac1)
 expect_equivalent(ipr(tx2,fac1), c(rep(2,4),0))
-          })
+})
+
+test_that("NA handling for strata variable",
+          {
+              tx1 <- c(1,0,1,0,0)
+              tx2 <- c(1,0,1,0,NA)
+              fac2 <- rep(letters[1:2], c(2,3))
+              fac2 <- as.factor(fac2)
+              fac2[5] <- NA
+              expect_equivalent(RItools:::ipr(tx1,fac2), c(rep(2,4),0))
+              expect_equivalent(RItools:::ipr(tx2,fac2), c(rep(2,4),0))
+          }
+          )
 
 test_that("Utility function for specification of reference levels",
           {
