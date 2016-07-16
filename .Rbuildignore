@@ -6,3 +6,5 @@ load.R
 inst/docs
 cran-comments.md
 matrixNotation.Rnw
+.git
+.local
