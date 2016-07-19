@@ -226,7 +226,9 @@ test_that("Plotting using RSVGTips", {
   # this is just an existance proof: it should go through without errors
   set.seed(20140137)
   
-  if(require(RSVGTipsDevice)) {
+  if(.Platform[['OS.type']]!='windows' && # #71: As of now there are errors in Windows build of
+     require('RSVGTipsDevice') #the RSVGTipsDevice package; only consider running this on other platforms
+     ) {
     f <- tempfile()
 
     x <- data.frame(z  = rep(c(TRUE, FALSE), 50),

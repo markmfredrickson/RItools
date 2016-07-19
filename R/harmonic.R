@@ -10,5 +10,5 @@ harmonic <- function(data) {
 effectOfTreatmentOnTreated <- function(data) {
     txcts <- table(as.logical(data$Tx.grp), data$stratum.code)
     txcts["TRUE",]
-  }
+}
 

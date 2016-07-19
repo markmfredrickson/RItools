@@ -1,5 +1,4 @@
 Makefile
-Rprofile
 checkspelling.R
 lexicon.txt
 load.R
@@ -8,3 +7,5 @@ cran-comments.md
 matrixNotation.Rnw
 .git
 .local
+^\.travis\.yml$
+^revdep$

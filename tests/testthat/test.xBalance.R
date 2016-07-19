@@ -7,6 +7,40 @@ library("testthat")
 
 context("xBalance Functions")
 
+test_that("xBal univariate desriptive means agree w/ lm",{
+    set.seed(20160406)
+    n <- 7 
+     dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+     dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+
+     lm1 <- lm(x1~z, data=dat)
+     xb1 <- xBalance(z~x1, strata = list(Unstrat = NULL, s = ~s), data=dat, report=c("adj.mean.diffs"))
+     expect_equal(xb1$results["x1", "adj.diff", "Unstrat"], coef(lm1)["z"], check.attributes=F)
+
+     lm2a <- lm(x1~z+s, data=dat) 
+     expect_equivalent(xb1$results["x1", "adj.diff", "s"], coef(lm2a)[["z"]])
+})
+
+test_that("xBal univariate inferentials agree w/ conditional logistic Rao score test",{
+    library(survival)
+    set.seed(20160406)
+    n <- 7 
+     dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+     dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+    xb1b <- xBalance(z~x1, strata = list(Unstrat = NULL, s = ~s), data=dat, report=c("z.scores"))
+     cl1 <- clogit(z~x1, data=dat)
+     cl2 <- clogit(z~x1+strata(s), data=dat)
+
+
+    expect_equal(summary(cl1)$sctest['test'],(xb1b$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
+    expect_equal(summary(cl2)$sctest['test'],(xb1b$results["x1", "z", "s"])^2 , check.attributes=F)
+}
+          )
+
 test_that("xBalance returns covariance of tests", {
   set.seed(20130801)
   n <- 500
@@ -98,8 +132,8 @@ test_that("partial arguments to report", {
   expect_true(all(colnames(res.a.m.d.n1$results) == c("adj.diff.null.sd", "p")))
   expect_true(all(colnames(res.a.m.d.n2$results) == c("adj.diff.null.sd", "p")))
 
-  expect_true(all(colnames(res.mult1$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
-  expect_true(all(colnames(res.mult2$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult1$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult2$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
   expect_true(!is.null(colnames(res.chi1$overall)))
   expect_true(!is.null(colnames(res.chi2$overall)))
 

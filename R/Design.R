@@ -426,7 +426,6 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
     if (any(sweights<0))
       stop("stratum weights must be nonnegative")
 
-
     if (identical(harmonic, swt.ls[[nn]])) {
       wtratio <- Eweight.stratum.means
     } else {
@@ -472,8 +471,6 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   stratifications <- colnames(design@StrataFrame)
 
   Eweights <- design@ElementWeights * design@NotMissing
-#  Eweights <- Eweights
-
 
   ans <- array(NA,
                dim = c(length(vars), 5, length(stratifications)),
