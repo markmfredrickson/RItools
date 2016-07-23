@@ -26,7 +26,8 @@
 ipr <- function(z,strata,clus=NULL, type="inverse probability")
   {
             stopifnot(length(z)==length(strata), is.null(clus) | length(clus)==length(strata),
-                      !all(z==z[1], na.rm=TRUE), is.character(type), substr(type, 1, 4) %in% c('inve', 'odds'))
+                      !all(is.na(z)), !all(z==z[which.min(is.na(z))], na.rm=TRUE),
+                      is.character(type), substr(type, 1, 4) %in% c('inve', 'odds'))
 
             strata <- as.factor(strata)
             if (is.ordered(z)) warning("I received an ordinal z. I'll treat it the same as any other factor (FYI).")
