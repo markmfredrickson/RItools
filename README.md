@@ -29,38 +29,52 @@ test statistics. See the online documentation of
 ##  Using a development version of RItools
 
 These directions will install development version in a way that will not
-overwrite an existing installation of `RItools` from CRAN. You will will need
-to know the name of the branch you wish to install.
+overwrite an existing installation of `RItools` from CRAN. You will will need to
+know the name of the branch you wish to install.
 
-1. `master`: The current released version of `RItools` and a holding place for small bug changes.
+1. `master`: The current released version of `RItools` and a holding place for
+   small bug changes.
 2. `randomization-distribution`: Experimental work on outcome analysis using
-   user defined models of effects and test statistics. This branch contains
-   the tools necessary to compute estimated treatment effects, p-values, and
+   user defined models of effects and test statistics. This branch contains the
+   tools necessary to compute estimated treatment effects, p-values, and
    confidence intervals (regions) using direct simulation from the randomization
    distribution implied by the design of the experiment (or using the exact
-	   randomization distribution if the number of possible ways for the treatment to
-	   be assigned is relatively small).
+   randomization distribution if the number of possible ways for the treatment
+   to be assigned is relatively small).
+
+We recommend using `dev_mode` from the `devtools` package to install the
+development branch so that you can keep the current CRAN version as the primary
+package. Activating `dev_mode` creates a secondary library of packages which can
+only be accessed while in `dev_mode`. Packages normally installed can still be
+used, but if different versions are installed normally and in `dev_mode`, the
+`dev_mode` version takes precedent if in `dev_mode`.
 
 Install and load the `devtools` package:
 
     > install.packages("devtools")
     > library("devtools")
 
-Next, pick a location to install the package. For example, create a
-directory called `~/R/RItools.experimental/` (`~` is short for my home directory on a
-UNIX system). For this session, we will set the library path to look in this
-location first and install the package there:
+Activate `dev_mode`:
 
-    > .libPaths("~/R/RItools.experimental/") # <- your path here
-    > install_github("markmfredrickson/RItools")
+    > dev_mode()
+    d>
 
-The function `install_github` will load the package automatically.  To
-install from a branch of the repository, e.g. the
-randomization-distribution branch, instead use
+Note that the prompt changes from `>` to `d>` to let you know you're in
+`dev_mode`. Now choose the development branch you want to use. To install
+`master`:
 
-    > install_github("markmfredrickson/RItools@randomization-distribution")
+    d> install_github("markmfredrickson/RItools")
 
-In the future, if you wish load the downloaded version of `RItools` in a new `R`
-session you can use this one-liner:
+or to install the `randomization-distribution branch`:
 
-    > library("RItools", lib.loc = "~/R/RItools.experimental") # <- your path here
+    d> install_github("markmfredrickson/RItools@randomization-distribution")
+
+Now, while in `dev_mode`, using `library(RItools)` will load the development
+branch. If you are not in `dev_mode` (To disable, run the command again:
+
+    d> dev_mode()
+    >
+
+) then `library(RItools)` will load the version from CRAN.
+
+We suggest re-starting R if you want to switch between versions.
