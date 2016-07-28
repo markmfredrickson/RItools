@@ -65,12 +65,13 @@ Note that the prompt changes from `>` to `d>` to let you know you're in
 
     d> install_github("markmfredrickson/RItools")
 
-or to install the `randomization-distribution branch`:
+or to install the `randomization-distribution` branch:
 
     d> install_github("markmfredrickson/RItools@randomization-distribution")
 
 Now, while in `dev_mode`, using `library(RItools)` will load the development
-branch. If you are not in `dev_mode` (To disable, run the command again:
+branch. If you are not in `dev_mode` (to disable `dev_mode`, run the command
+again:
 
     d> dev_mode()
     >
