@@ -43,9 +43,8 @@ know the name of the branch you wish to install.
    to be assigned is relatively small).
 
 We recommend using `dev_mode` from the `devtools` package to install
-in-development versions of the package.
-so that you can keep the current CRAN version as the primary
-package.
+in-development versions of the package so that you can keep the current CRAN
+version as the primary package.
 Activating `dev_mode` creates a secondary library of packages which can
 only be accessed while in `dev_mode`. Packages normally installed can still be
 used, but if different versions are installed normally and in `dev_mode`, the
