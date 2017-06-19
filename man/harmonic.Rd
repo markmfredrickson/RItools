@@ -15,4 +15,3 @@ Harmonic mean.
 \description{
 Calculate harmonic mean
 }
-

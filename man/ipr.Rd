@@ -40,4 +40,3 @@ observations with NAs for \code{z} just weren't there.
 \author{
 Ben B. Hansen
 }
-

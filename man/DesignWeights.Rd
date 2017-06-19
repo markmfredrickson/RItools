@@ -31,4 +31,3 @@ not also the wtratio's.  Weight ratios are used downstream in alignedToInferenti
 the material in the harmonic means calcs is already being assembled there for other
 reasons.  An improvement for another day...)
 }
-

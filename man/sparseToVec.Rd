@@ -17,4 +17,3 @@ vector
 \description{
 Convert Matrix to vector
 }
-

@@ -19,4 +19,3 @@ pooled SD
 \description{
 Make pooled SD
 }
-

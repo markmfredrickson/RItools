@@ -29,4 +29,3 @@ A \code{xbal} object with just the appropriate items
 If any of the arguments are not specified, all the of relevant
 items are included.
 }
-

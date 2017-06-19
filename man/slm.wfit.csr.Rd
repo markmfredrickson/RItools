@@ -23,4 +23,3 @@ slm.wfit shares the intercept-only issue with slm.fit,
 and in addition has an issue where it carries forward
 incorrect residuals and fitted values.
 }
-

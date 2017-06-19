@@ -48,11 +48,7 @@ schemes corresponding to the different stratifying factors of
 \item{include.NA.flags}{Present item missingness comparisons as well as covariates themselves?}
 
 \item{covariate.scaling}{A scale factor to apply to covariates in
-calculating \code{std.diffs}.  If \code{NULL}, \code{xBalance}
-pools standard deviations of each variable in the treatment and
-control group (defining these groups according to whether the
-LHS of \code{formula} is greater than or equal to 0).  Also, see
-details.}
+calculating \code{std.diffs} (currently ignored).}
 
 \item{post.alignment.transform}{Optional transformation applied to
 covariates just after their stratum means are subtracted off.}
@@ -66,44 +62,59 @@ An object of class \code{c("xbal", "list")}.  There are
   examples.
 }
 \description{
-Given covariates, a treatment variable and, optionally, a stratifying factor,
-calculates standardized mean differences along each covariate,
-with and without the stratification and tests for conditional
-independence of the treatment variable and the covariates within
-strata.
+Given an assignment variable, variables on which to compare
+groups assigned to treatment and control conditions and,
+optionally, a clustering variable and/or
+one or more stratifying factors,
+compares univariate and multivariate measures suitable for comparing
+the two groups and for testing the proposition that assignment
+was random or effectively random within levels of a stratifying factor.
 }
 \details{
-In the unstratified case, the standardized difference of covariate
-means is the mean in the treatment group minus the mean in the
-control group, divided by the S.D. (standard deviation) in the
-same variable estimated by pooling treatment and control group
-S.D.s on the same variable.  In the stratified case, the
-denominator of the standardized difference remains the same but
-the numerator is a weighted average of within-stratum differences
-in means on the covariate.  By default, each stratum is weighted
-in proportion to the harmonic mean \eqn{1/[(1/a +
+The function assembles various univariate descriptive statistics
+for the groups to be compared: (weighted) means of treatment and
+control groups; differences of these (adjusted differences); and
+adjusted differences as multiples of a pooled S.D. of the variable
+in the treatment and control groups (standard differences). This
+is done separately for each provided stratifying factor and, by
+default, for the unstratified comparison, in each case reflecting
+a standardization appropriate to the designated (post-)
+stratification of the sample.  In the case without stratification
+or clustering, the only weighting used to calculate treatment and
+control group means is that provided by the user as an
+\code{element.weight}; in the absence of such an argument, these
+means are unweighted.  When there are strata, within-stratum means
+of treatment or of control observations are calculated using
+\code{element.weights}, if provided, and then these are combined
+across strata according to a \sQuote{effect of treatment on
+treated}-type weighting scheme. (The function's
+\code{stratum.weights} argument figures in the function's
+inferential calculations but not these descriptive calculations.)
+To figure a stratum's effect of treatment on treated weight, the
+sum of all \code{element.weights} associated with treatment or
+control group observations within the stratum is multiplied by the
+fraction of clusters in that stratum that are associated with the
+treatment rather than the control condition.  (Unless this
+fraction is 0 or 1, in which case the stratum is downweighted to
+0.)
+
+The function also calculates univariate and multivariate inferential
+statistics, targeting the hypothesis that assignment was random within strata. These
+calculations also pool \code{element.weight}-ed, within-stratum group means across strata,
+but the default weighting of strata differs from that of the descriptive calculations, and is
+determined by the \code{stratum.weights} argument. By default, each stratum is weighted
+in proportion to the product of the stratum mean of \code{element.weight}s and
+the harmonic mean \eqn{1/[(1/a +
 1/b)/2]=2*a*b/(a+b)} of the number of treated units (a) and
 control units (b) in the stratum; this weighting is optimal under
 certain modeling assumptions (discussed in Kalton 1968, Hansen and
-Bowers 2008).  This weighting can be modified using the
-\code{stratum.weights} argument; see below.
+Bowers 2008).  The multivariate assessment is based on a Mahalanobis-type
+distance that combines each of the univariate mean differences while accounting
+for correlations among them. It's similar to the Hotelling's T-squared statistic,
+except standarized using a permutation covariance.  See Hansen and Bowers (2008).
 
-When the treatment variable, the variable specified by the
-left-hand side of \code{fmla}, is not binary, \code{xBalance}
-calculates the covariates' regressions on the treatment variable,
-in the stratified case pooling these regressions across strata
-using weights that default to the stratum-wise sum of squared
-deviations of the treatment variable from its stratum mean.
-(Applied to binary treatment variables, this recipe gives the same
-result as the one given above.)  In the numerator of the
-standardized difference, we get a ``pooled S.D.'' from separating
-units into two groups, one in which the treatment variable is 0 or
-less and another in which it is positive.  If \code{report}
-includes "adj.means", covariate means for the former of these
-groups are reported, along with the sums of these means and the
-covariates' regressions on either the treatment variable, in the
-unstratified (``pre'') case, or the treatment variable and the
-strata, in the stratified (``post'') case.
+In contrast to the earlier function \code{xBalance} that it is intended to replace,
+\code{balanceTest} accepts only binary assignment variables (for now).
 
 \code{stratum.weights} can be either a function or a numeric
 vector of weights.  If it is a numeric vector, it should be
@@ -112,33 +123,32 @@ its names should be equal to the levels of the factor specified by
 \code{strata}.) If it is a function, it should accept one
 argument, a data frame containing the variables in \code{data} and
 additionally \code{Tx.grp} and \code{stratum.code}, and return a
-vector of non-negative weights with stratum codes as names; for an
-example, do \code{getFromNamespace("harmonic", "RItools")}.
+vector of non-negative weighting factors with stratum codes as names.
+(To see the function that's applied by default, 
+do \code{getFromNamespace("harmonic", "RItools")}.)  These weighting factors
+will be multipled by the stratum mean of \code{element.weights} to determine
+the stratum weights used for inferential calculations.
 
 If the stratifying factor has NAs, these cases are dropped.  On the other
-hand, if NAs in a covariate are found then the default behavior is to
-mean-impute while adding a dummy variable for whether NAs are found (and
-checking balance for it as well).
-
-If \code{covariate.scaling} is not \code{NULL}, no scaling is
-applied. This behavior is likely to change in future versions.
-(If you want no scaling, set \code{covariate.scaling=1}, as this
-is likely to retain this meaning in the future.)
+hand, if NAs in a covariate are found then those observations are dropped for descriptive
+calculations and "imputed" to the stratum mean of the variable for inferential calculations. 
+When covariate values are dropped due to missingness, proportions of observations not missing on
+that variable are recorded and returned.  The printed output presents non-missing proportions alongside of
+the variables themselves, distinguishing the former by placing them at the bottom of the list and enclosing the
+variable's name in parentheses.  If a variable shares a missingness pattern with other another variable,
+its missingness information may be labeled with the name of the other variable in the output.
 }
 \note{
 Evidence pertaining to the hypothesis that a treatment
   variable is not associated with differences in covariate values
-  is assessed by comparing the differences of means (or regression
-  coefficients), without standardization, to their distributions
+  is assessed by comparing the differences of means, without standardization, to their distributions
   under hypothetical shuffles of the treatment variable, a
   permutation or randomization distribution.  For the unstratified
   comparison, this reference distribution consists of differences
-  (more generally, regression coefficients) when the treatment
-  variable is permuted without regard to strata.  For the
-  stratified comparison, the reference distribution is determined
-  by randomly permuting the treatment variable within strata, then
-  re-calculating the treatment-control differences (regressions of
-  each covariate on the permuted treatment variable). Significance
+  as the treatment
+  assignments of clusters are freely permuted.  For
+  stratified comparisons, the reference distributions describes re-randomizations of
+  this type performed separately in each stratum. Significance
   assessments are based on the large-sample Normal approximation
   to these reference distributions.
 }
@@ -186,9 +196,6 @@ balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          report=c("adj.means", "chisquare.test"),
 	 post.alignment.transform=rank)
 }
-\author{
-Ben Hansen and Jake Bowers and Mark Fredrickson
-}
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Balance in Simple, Stratified and Clustered Comparative
@@ -198,6 +205,8 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
 }
+\author{
+Ben Hansen and Jake Bowers and Mark Fredrickson
+}
 \keyword{design}
 \keyword{nonparametric}
-
