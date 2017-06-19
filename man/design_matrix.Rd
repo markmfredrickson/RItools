@@ -26,4 +26,3 @@ encoding missingness patterns in RHS variables of a model frame.
 \author{
 Ben B Hansen
 }
-

@@ -17,4 +17,3 @@ The formula corresponding to \code{xbal}.
 \description{
 Returns \code{formula} attribute of an \code{xbal} object.
 }
-

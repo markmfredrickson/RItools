@@ -17,4 +17,3 @@ list List of `AlignedCovs` objects
 \description{
 Align DesignOptions by Strata
 }
-

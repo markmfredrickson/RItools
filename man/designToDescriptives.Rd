@@ -18,4 +18,3 @@ Descriptives
 Use a design object to generate descriptive statistics that ignore clustering. 
 Stratum weights are respected.
 }
-

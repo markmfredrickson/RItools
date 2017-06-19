@@ -23,4 +23,3 @@ list
 \description{
 Makes strata weights
 }
-

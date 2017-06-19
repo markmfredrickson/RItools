@@ -17,4 +17,3 @@ Result of \code{fun}.
 \description{
 Safe way to temporarily override options()
 }
-
