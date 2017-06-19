@@ -18,7 +18,11 @@ Imports:
     stats,
     graphics,
     methods,
-    survival
+    survival,
+    dplyr,
+    tibble,
+    ggplot2,
+    tidyr
 Suggests:
     testthat,
     roxygen2,
