@@ -11,8 +11,10 @@
 #' @param legend.position Where the legend should go ("bottom", "right")
 #' @param legend.title Title of legend (blank by default)
 #' @param var.order Vector of variable names (variable.labels if non-NULL) defining ordering. Otherwise alphabetical. Only one of `var.order` and `var.groupings` can be non-NULL.
-#' @param var.groupings List of named vectors of variables names (variable.labels if non-NULL) which should be grouped. The name of the list entry is the grouping label. Only one of `var.order` and `var.groupings` can be non-NULL.
-#' @param ...
+#' @param var.grouping List of named vectors of variables names (variable.labels if non-NULL) which should be grouped. The name of the list entry is the grouping label. Only one of `var.order` and `var.groupings` can be non-NULL.
+#' @param point.size Size of points (default is 1). Increase to embiggen points (useful for presentations).
+#' @param theme.size Size of theme (default is 11). Increase to embiggen axes, the grid, and text (useful for presentations).
+#' @param ... Additional arguments.
 #'
 #' @export
 #' @importFrom tibble rownames_to_column
@@ -32,11 +34,13 @@ plotggxbal <- function(x,
                        legend.title = "",
                        var.order = NULL,
                        var.grouping = NULL,
+                       point.size = 1,
+                       theme.size = 11,
                        ...) {
 
   stopifnot(is.null(var.order) | is.null(var.grouping))
 
-  x <- as.data.frame(RItools:::prepareXbalForPlot(x, statistic, absolute,
+  x <- as.data.frame(prepareXbalForPlot(x, statistic, absolute,
                                         strata.labels, variable.labels))
 
   # Tidyverse doesn't like rownames
@@ -83,7 +87,8 @@ plotggxbal <- function(x,
                                        shape = strata)) +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::geom_line(ggplot2::aes(group = rowname), color = "black") +
-    ggplot2::geom_point() +
+    ggplot2::geom_point(size = point.size) +
+    ggplot2::theme_gray(theme.size) +
     ggplot2::theme(legend.position = legend.position) +
     ggplot2::labs(color = legend.title,
                   shape = legend.title,

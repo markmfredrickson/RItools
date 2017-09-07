@@ -7,7 +7,8 @@
 plotggxbal(x, xlab = "Standardized Differences", statistic = "std.diff",
   colors = NULL, symbols = NULL, absolute = FALSE, strata.labels = NULL,
   variable.labels = NULL, legend.position = "bottom", legend.title = "",
-  var.order = NULL, ...)
+  var.order = NULL, var.grouping = NULL, point.size = 1,
+  theme.size = 11, ...)
 }
 \arguments{
 \item{x}{Balance object}
@@ -30,9 +31,15 @@ plotggxbal(x, xlab = "Standardized Differences", statistic = "std.diff",
 
 \item{legend.title}{Title of legend (blank by default)}
 
-\item{var.order}{List of variable names (variable.labels if non-NULL) defining ordering. Otherwise alphabetical.}
+\item{var.order}{Vector of variable names (variable.labels if non-NULL) defining ordering. Otherwise alphabetical. Only one of `var.order` and `var.groupings` can be non-NULL.}
 
-\item{...}{}
+\item{var.grouping}{List of named vectors of variables names (variable.labels if non-NULL) which should be grouped. The name of the list entry is the grouping label. Only one of `var.order` and `var.groupings` can be non-NULL.}
+
+\item{point.size}{Size of points (default is 1). Increase to embiggen points (useful for presentations).}
+
+\item{theme.size}{Size of theme (default is 11). Increase to embiggen axes, the grid, and text (useful for presentations).}
+
+\item{...}{Additional arguments.}
 }
 \description{
 ggplot2 based balance plot
