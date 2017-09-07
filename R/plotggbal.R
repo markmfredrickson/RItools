@@ -78,7 +78,9 @@ plotggxbal <- function(x,
 
 
 
-
+  if (!is.null(strata.labels)) {
+    x$strata <- factor(x$strata, levels = strata.labels)
+  } 
 
   plot <- ggplot2::ggplot(x,
                           ggplot2::aes(y = rowname,
