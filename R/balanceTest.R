@@ -1,11 +1,13 @@
-
-##' Given an assignment variable, variables on which to compare
-##' groups assigned to treatment and control conditions and,
-##' optionally, a clustering variable and/or
-##' one or more stratifying factors,
-##' compares univariate and multivariate measures suitable for comparing
-##' the two groups and for testing the proposition that assignment
-##' was random or effectively random within levels of a stratifying factor. 
+##' Covariate balance, with treatment/covariate association tests
+##'
+##' Given a grouping variable (treatment assignment, exposure status, etc)
+##' and variables on which to compare the groups, compare averages across groups
+##' and test hypothesis of no selection into groups on the basis of that variable.
+##' The multivariate test is the method of combined differences discussed by
+##' Hansen and Bowers (2008, Statist. Sci.), a variant of Hotelling's T-squared
+##' test; the univariate tests are presented with multiplicity adjustments, the
+##' details of which can be controlled by the user. Clustering, weighting and/or
+##' stratification variables can be provided, and are addressed by the tests.
 ##'
 ##' The function assembles various univariate descriptive statistics
 ##' for the groups to be compared: (weighted) means of treatment and
@@ -37,14 +39,14 @@
 ##' The function also calculates univariate and multivariate inferential
 ##' statistics, targeting the hypothesis that assignment was random within strata. These
 ##' calculations also pool \code{element.weight}-ed, within-stratum group means across strata,
-##' but the default weighting of strata differs from that of the descriptive calculations, and is
-##' determined by the \code{stratum.weights} argument. By default, each stratum is weighted
+##' but the default weighting of strata differs from that of the descriptive calculations.
+##' With \code{stratum.weights=harmonic} (the default), each stratum is weighted
 ##' in proportion to the product of the stratum mean of \code{element.weight}s and
 ##' the harmonic mean \eqn{1/[(1/a +
 ##' 1/b)/2]=2*a*b/(a+b)} of the number of treated units (a) and
 ##' control units (b) in the stratum; this weighting is optimal under
-##' certain modeling assumptions (discussed in Kalton 1968, Hansen and
-##' Bowers 2008).  The multivariate assessment is based on a Mahalanobis-type
+##' certain modeling assumptions (discussed in Kalton 1968 and Hansen and
+##' Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 ##' distance that combines each of the univariate mean differences while accounting
 ##' for correlations among them. It's similar to the Hotelling's T-squared statistic,
 ##' except standarized using a permutation covariance.  See Hansen and Bowers (2008).  

@@ -1,4 +1,4 @@
-################################################################################
+###############################################################################
 # DesignMatrix Objects: covariates with term-specific missingness info & indexing
 ################################################################################
 
@@ -6,6 +6,19 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' DesignMatrix S4 class
 ##'
 ##' If the Covariates matrix has an intercept, it will only be in the first column.
+##'
+##' More on NotMissing slot: It's matrix of numbers in [0,1].
+##' First col is entirely \code{TRUE} or 1, like an intercept, unless corresponding
+##' ElementWeight is 0, in which case it may also be 0 (see below). Subsequent cols
+##' present only if there are missing covariate values, in which case these cols are
+##' named for terms (of the original calling formula or data frame) that possess 
+##' missing values.  Terms with the same missing data pattern are mapped to a single
+##' column of this matrix.  If the DesignMatrix is representing elements, each column should
+##' be all 1s and 0s, indicating which elements have non-missing values for the term
+##' represented by that column.  If the DesignMatrix as a whole represents clusters,
+##' then there can be fractional values, but that situation should only arise in the
+##' DesignOptions class exension of this class, so it's documented there. 
+##' 
 ##' @slot Covariates The numeric matrix that `model.matrix` would have returned.
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
 ##' @slot term.labels labels of terms of the originating model formula
@@ -13,6 +26,8 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as Covariates but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 1.)
 ##' @slot NM.terms integer look-up table mapping term labels to  columns of NotMissing
+##' @keywords internal
+##' 
 setClass("DesignMatrix",
          slots=c(Covariates="matrix",
                   OriginalVariables="integer",
@@ -45,6 +60,8 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##' @param ... passed to `model.matrix.default` (and further)
 ##' @return DesignMatrix instance of an S4 class that enriches model matrices with missing data info
 ##' @author Ben B Hansen
+##' @keywords internal
+##' 
 design_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
   # mf <- model.frame(object, data, na.action = na.pass)
   tms <- terms(object)
@@ -121,16 +138,19 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 #' DesignOptions S4 class
 #'
 #' Extends the DesignMatrix class
-#' 
+#'
+##' If the DesignOptions represents clusters of elements, its NotMissing slot is
+##' populated as follows. As otherwise, columns represent terms.  They
+##' column consists of weighted averages of element-wise non-missingness indicators
+##' over clusters, with weights given by (the element-level precursor to) the ElementWeights
+##' vector.
+
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
 #' @slot StrataFrame Factors indicating strata (not the sparse matrices, as we use them in the weighting function)
 #' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot NotMissing Matrix of numbers in [0,1], cluster means of element weights with missing values
-#' contributing 0s.  First col is entirely T or 1, like an intercept, unless corresponding
-#' ElementWeight is 0, in which case it may also be 0. Subsequent cols present only if
-#' there are missing covariate values, in which case these cols are named for terms that
-#' possess missing values.  Terms with the same missing data pattern are mapped to a single
+#' @slot ElementWeights vector of weights associated w/ rows of the DesignMatrix
+#' @keywords internal
 #' 
 setClass("DesignOptions",
          representation = list(
@@ -160,7 +180,9 @@ setClass("DesignOptions",
 ##' @param fmla Formula
 ##' @param data Data
 ##' @return DesignOptions
-##' @import stats 
+##' @import stats
+##' @keywords internal
+##' 
 makeDesigns <- function(fmla, data) {
 
     eweights <- as.vector(model.weights(data))
@@ -327,20 +349,26 @@ setClass("StratumWeightedDesignOptions",
 ##' Apply weighting function to a DesignOptions by stratum, returning results in a format
 ##' suitable to be associated with an existing design and used in further calcs.
 ##'
-##' (Developer note: There's no real reason not to simplify by only returning the sweights,
-##' not also the wtratio's.  Weight ratios are used downstream in alignedToInferentials, but
-##' the material in the harmonic means calcs is already being assembled there for other
-##' reasons.  An improvement for another day...)
-##' @param design DesignOptions
-##' @param stratum.weights Stratum weights
-##' @return list with two entries, \code{sweights}  and \code{wtratio}.
-##' Each is in turn a list with an entry for each stratum.
+##' About the value of this function:
+##' Each entry in this list is in turn a data frame of of two variables,
+##' \code{sweights}  and \code{wtratio}, with rows representing strata.
 ##' The \code{sweights} will sum to 1.  \code{wtratio} is a constant multiple
 ##' of the ratio of the stratum weight s_b to h_b, the harmonic mean of n_{tb} and n_{cb},
 ##' the numbers of treatment and control clusters in stratum b. Not h_b times something
 ##' having to do with cluster sizes or weights, just h_b. the arbitrary constant multiple
 ##' out front is harmless b/c this is only used in inferential calcs; that constant will be
 ##' washed out en route to calculating z statistics and the d^2 stat.
+
+##' 
+##' (Developer note: There's no real reason not to simplify by only returning the sweights,
+##' not also the wtratio's.  Weight ratios are used downstream in alignedToInferentials, but
+##' the material in the harmonic means calcs is already being assembled there for other
+##' reasons.  An improvement for another day...)
+##' @param design DesignOptions
+##' @param stratum.weights Stratum weights
+##' @return list with entries corresponding to stratifying variables.  
+##'
+##' @keywords internal
 
 DesignWeights <- function(design, stratum.weights = harmonic) {
   stopifnot(inherits(design, "DesignOptions"))
@@ -457,6 +485,8 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
 ##' @param design A DesignOptions object
 ##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
 ##' @return Descriptives
+##' @keywords internal
+##' 
 designToDescriptives <- function(design, covariate.scaling = NULL) {
   stopifnot(inherits(design, "DesignOptions")) # defensive programming
   if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
@@ -566,9 +596,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
 
 ##' Aggregate DesignOptions
 ##'
-##' totals up all the covariates
+##' Totals up all the covariates, as well as user-provided element weights.
+##' (What it does to NotMissing entries is described in docs for DesignOptions class.)
+##' 
 ##' @param design DesignOptions
-##' @return Aggregates
+##' @return another DesignOptions representing the clusters
+##' @keywords internal
+##' 
 aggregateDesigns <- function(design) {
   n.clusters <- nlevels(design@Cluster)
 
@@ -667,6 +701,8 @@ setClass("AlignedCovs",
 ##' @param design DesignOptions
 ##' @param post.align.transform A post-align transform
 ##' @return list List of `AlignedCovs` objects
+##' @keywords internal
+##' 
 alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
   stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
