@@ -140,8 +140,8 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 #' Extends the DesignMatrix class
 #'
 ##' If the DesignOptions represents clusters of elements, its NotMissing slot is
-##' populated as follows. As otherwise, columns represent terms.  They
-##' column consists of weighted averages of element-wise non-missingness indicators
+##' populated as follows. As otherwise, columns represent terms.  These
+##' columns consist of weighted averages of element-wise non-missingness indicators
 ##' over clusters, with weights given by (the element-level precursor to) the ElementWeights
 ##' vector.
 
@@ -348,6 +348,16 @@ setClass("StratumWeightedDesignOptions",
 ##'
 ##' Apply weighting function to a DesignOptions by stratum, returning results in a format
 ##' suitable to be associated with an existing design and used in further calcs.
+##'
+##' The function expects its DesignOptions argument to represent aggregated data,
+##' i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
+##' is ordinarily a function that is applied to a data frame representing clusters
+##' (with variables \code{Tx.grp}, \code{stratum.code} and covariates as named in the 
+##' \code{design} argument (a DesignOptions object)) that returns a 
+##' weighting factor to be associated with each stratum, this factor determining the stratum 
+##' weight be being multiplied by mean of element weights over clusters in that stratum. It can
+##' also be a named list of such functions, with an entry for each of one or more
+##' stratifying variables, or a similarly-named list of numeric vectors of stratum weights.
 ##'
 ##' About the value of this function:
 ##' Each entry in this list is in turn a data frame of of two variables,
@@ -666,8 +676,9 @@ aggregateDesigns <- function(design) {
 #'
 #' Just as the covariates are presumed to have been aligned, the NotMissing weights carried
 #' in this class are presumed to have been normalized: in each stratum, either all
-#' weights are 0, or they've been rescaled to sum to 1. In order to handle different
-#' NA patterns for different covariates, this normalization is done separately for each variable.
+#' weights are 0, or they've been rescaled to sum to 1. They are nonnegative but not
+#' limited from above. In order to handle different NA patterns for
+#' different covariates, this normalization is done separately for each variable.
 #'
 #' In addition, unlike DesignOptions this class has no ElementWeights slot.
 #' So the burden of representing differences in stratum
