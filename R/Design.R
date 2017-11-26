@@ -355,25 +355,33 @@ setClass("StratumWeightedDesignOptions",
 ##' (with variables \code{Tx.grp}, \code{stratum.code} and covariates as named in the 
 ##' \code{design} argument (a DesignOptions object)) that returns a 
 ##' weighting factor to be associated with each stratum, this factor determining the stratum 
-##' weight be being multiplied by mean of element weights over clusters in that stratum. It can
+##' weight by being multiplied by mean of element weights over clusters in that stratum. It can
 ##' also be a named list of such functions, with an entry for each of one or more
-##' stratifying variables, or a similarly-named list of numeric vectors of stratum weights.
+##' stratifying variables, or a similarly-named list of numeric vectors giving these weighting 
+##' factors explicitly.
 ##'
 ##' About the value of this function:
-##' Each entry in this list is in turn a data frame of of two variables,
+##' Each entry in this list is in turn a data frame of two variables,
 ##' \code{sweights}  and \code{wtratio}, with rows representing strata.
-##' The \code{sweights} will sum to 1.  \code{wtratio} is a constant multiple
-##' of the ratio of the stratum weight s_b to h_b, the harmonic mean of n_{tb} and n_{cb},
-##' the numbers of treatment and control clusters in stratum b. Not h_b times something
-##' having to do with cluster sizes or weights, just h_b. the arbitrary constant multiple
-##' out front is harmless b/c this is only used in inferential calcs; that constant will be
-##' washed out en route to calculating z statistics and the d^2 stat.
-
+##' The code \code{sweights} vector represents products of internally
+##' calculated or user-provided \code{stratum.weights} with stratum
+##' means of unit weights; it will have been normalized to sum to 1.
+##' It's similar to w_b of Hansen & Bowers (2008), with the difference
+##' that it incorporates a factor equal to the stratum mean of element
+##' weights. \code{wtratio} is the ratio of \code{sweights} to the harmonic
+##' mean of n_{tb} and n_{cb}, the numbers of treatment and control
+##' clusters in stratum b.  Not h_b times something having to do with
+##' cluster sizes or weights, such as the m-bar_b of Hansen & Bowers
+##' (2008); just h_b. The comparison to h_b is expected downstream in
+##' \code{AlignedToInferentials} (in its internal calculations
+##' involving \sQuote{\code{wtr}}).
 ##' 
-##' (Developer note: There's no real reason not to simplify by only returning the sweights,
-##' not also the wtratio's.  Weight ratios are used downstream in alignedToInferentials, but
-##' the material in the harmonic means calcs is already being assembled there for other
-##' reasons.  An improvement for another day...)
+##' (Developer note: One might simplify by only returning the sweights,
+##' not also the wtratio's.  [Or perhaps conversely.]  sweights are used in descriptives
+##' calculations.  wtratio's are used downstream in 
+##' alignedToInferentials, but the material in the harmonic means calcs is already 
+##' being assembled there for other reasons.  An improvement for another day...)
+##' 
 ##' @param design DesignOptions
 ##' @param stratum.weights Stratum weights
 ##' @return list with entries corresponding to stratifying variables.  
@@ -381,7 +389,8 @@ setClass("StratumWeightedDesignOptions",
 ##' @keywords internal
 
 DesignWeights <- function(design, stratum.weights = harmonic) {
-  stopifnot(inherits(design, "DesignOptions"))
+  stopifnot(inherits(design, "DesignOptions"),
+	    !is.null(design@ElementWeights), all(design@ElementWeights >= 0 ) )
 
   n.strata <- dim(design@StrataFrame)[2]
   strata.names <- colnames(design@StrataFrame)
@@ -427,7 +436,7 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
           }
 
     if (is.function(swt.ls[[nn]])) {
-      sweights <-
+      swts <-
         do.call(swt.ls[[nn]],
                 args = list(data =
                     data.frame(Tx.grp = design@Z,
@@ -436,12 +445,11 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
                                check.names = FALSE)),
                 envir=parent.frame())
 
-      if (!all(names(sweights)==names(Eweight.stratum.means))) # not sure this would
+      if (!all(names(swts)==names(Eweight.stratum.means))) # not sure this would
           {                                                    # ever be invoked...
-              stopifnot(setequal(names(sweights), names(Eweight.stratum.means)))
-              sweights <- sweights[names(Eweight.stratum.means)]
+              stopifnot(setequal(names(swts), names(Eweight.stratum.means)))
+              swts <- swts[names(Eweight.stratum.means)]
           }
-      sweights <- Eweight.stratum.means * sweights
     } else {
       if (!is.numeric(swt.ls[[nn]]))
         stop("stratum.weights must be an expression or numeric vector")
@@ -452,20 +460,20 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
       if (!(all(levels(stratifier) %in% names(swt.ls[[nn]])) ))
         stop("if stratum.weights is a vector, must have a name for each stratum")
 
-      sweights <- swt.ls[[nn]][levels(stratifier)]
+      swts <- swt.ls[[nn]][levels(stratifier)]
     }
 
-    if (all(is.na(sweights)))
+    if (all(is.na(swts)))
       stop(paste("All stratum weights NA (strat.",nn,")."))
-    if (any(is.na(sweights))) {
-      sweights[is.na(sweights)] <- 0
+    if (any(is.na(swts))) {
+      swts[is.na(swts)] <- 0
       warning(paste("NAs in stratum weights (",nn," strat.); to be interpreted as 0s.", sep=""))
     }
-    if (any(sweights<0))
+    if (any(swts<0))
       stop("stratum weights must be nonnegative")
 
     if (identical(harmonic, swt.ls[[nn]])) {
-      wtratio <- Eweight.stratum.means
+      wtratio <- rep(1, length(swts))
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
                                   stratum.code=stratifier,
@@ -476,11 +484,15 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
               stopifnot(setequal(names(hwts), names(Eweight.stratum.means)))
               hwts <- hwts[names(Eweight.stratum.means)]
           }
-      wtratio <- sweights/hwts #normalization not necessary, only used in inferentials
+      wtratio <- swts/hwts 
   }
+
+      sweights <- swts * Eweight.stratum.means
       sum.sweights <- sum(sweights, na.rm=TRUE) 
-      wtratio <- wtratio/sum.sweights
-      sweights <- sweights/sum.sweights
+      sweights <- sweights / sum.sweights
+      
+      wtratio <- wtratio * Eweight.stratum.means
+      wtratio <- wtratio / sum.sweights
       
     wtlist[[nn]] <- data.frame(sweights=sweights,wtratio=wtratio)
     NULL
@@ -569,7 +581,9 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
     tx.wt <- ifelse(strat.sum.eweights, tx.wt/strat.sum.eweights, 0)  # approp. HT weights to estimate, by stratum,
     ctl.wt <-ifelse(strat.sum.eweights, ctl.wt/strat.sum.eweights, 0) # (total eweighted measurements)/(total eweights)
-    ## factor in stratum weights
+    ## Next factor in stratum weights, `Swts`. Ordinarily these arose via
+    ## `DesignWeights(<...>, stratum.weights=effectOfTreatmentOnTreated)`
+    ## and amount to `(txclus.by.strat/nclus.by.strat)*strat.sum.eweights`
     tx.wt <- tx.wt * Swts
     ctl.wt <- ctl.wt * Swts
     ## now expand these up to match dimensions of data
