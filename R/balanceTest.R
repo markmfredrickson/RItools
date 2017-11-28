@@ -258,23 +258,20 @@ balanceTest <- function(fmla,
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesigns(fmla, data)
-
-  ## We need aggDesign to make descriptives because the stratum weights need to be calculated from the aggregated setup
-  ## however we're not going to feed aggDesign itself to `designToDescriptives()`, so we don't risk "polluting"
-  ## the descriptives calcs w/imputation that's being done along with the aggregation procedure
   aggDesign       <- aggregateDesigns(design)
-
-  design <- as(design, "StratumWeightedDesignOptions")
-  design@Sweights <- DesignWeights(aggDesign, # Have to aggregate 1st to figure stratum weights properly
-                                   effectOfTreatmentOnTreated) #For now we override any user-provided stratum.weights
+  ## (Creation of stratum weightings for use in 
+  ##  descriptives calculations would go here, if 
+  ## we wanted to allow departures from the ETT default.
+  ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
   descriptives    <- designToDescriptives(design, covariate.scaling)
 
-  # going forward, we use the user's weights, not ETT always
-  aggDesign.weighted <- as(aggDesign, "StratumWeightedDesignOptions")
-  aggDesign.weighted@Sweights <-
+  # these weights govern inferential but not descriptive calculations
+
+  aggDesign <- as(aggDesign, "StratumWeightedDesignOptions")
+  aggDesign@Sweights <-
       DesignWeights(aggDesign, stratum.weights)
 
-  strataAligned <- alignDesignsByStrata(aggDesign.weighted, post.alignment.transform)
+  strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
   
   tmp <- lapply(strataAligned, alignedToInferentials)

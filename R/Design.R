@@ -503,7 +503,14 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
 ##' Generate Descriptives
 ##'
 ##' Use a design object to generate descriptive statistics that ignore clustering. 
-##' Stratum weights are respected.
+##' Stratum weights are respected if provided (by passing a design arg of 
+##' class StratumWeightedDesignOptions). If not provided, stratum weights 
+##' default to "Effect of Treatment on Treated" weighting.  That is, when 
+##' combining within-stratum averages (which will themselves have been
+##' weighted by element weights), each stratum receives a weight equal to
+##' the product of the stratum sum of element weights with the fraction
+##' of clusters within the stratum that were assigned to the treatment 
+##' condition. 
 ##' @param design A DesignOptions object
 ##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
 ##' @return Descriptives
@@ -545,8 +552,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
             names(Swts) <- stratlevs
             Swts[names(Sweights)] <- Sweights
         } else {
-            Swts <- rep(1, length(stratlevs))
-            names(Swts) <- stratlevs
+          if (length(stratlevs)==1) {Swts <- 1
+          ## if the stratifier has just 1 level, we don't
+          ## need stratum weights, so just use 1.  If it has more 
+          ## than 1 level, then we're here because stratum weights
+          ## were not passed down, and we'll need to use defaults,
+          ## which are more convenient to set only implictly; see further down.
+            names(Swts) <- stratlevs} else Swts <- NULL
                 }
     
     Z <- as.numeric(design@Z)
@@ -576,17 +588,22 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     nclus.by.strat <- txclus.by.strat + ctlclus.by.strat
     strat.sum.eweights <- t(S) %*% as.matrix(design@ElementWeights)
     strat.sum.eweights <- as.matrix(strat.sum.eweights)
+    if (!is.null(Swts)) ## this means stratum weights were passed
+    {
     ## Horwitz Thompson-type assignment weights
     tx.wt <- ifelse(txclus.by.strat, nclus.by.strat/txclus.by.strat, 0)
     ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
     tx.wt <- ifelse(strat.sum.eweights, tx.wt/strat.sum.eweights, 0)  # approp. HT weights to estimate, by stratum,
     ctl.wt <-ifelse(strat.sum.eweights, ctl.wt/strat.sum.eweights, 0) # (total eweighted measurements)/(total eweights)
-    ## Next factor in stratum weights, `Swts`. Ordinarily these arose via
-    ## `DesignWeights(<...>, stratum.weights=effectOfTreatmentOnTreated)`
-    ## and amount to `(txclus.by.strat/nclus.by.strat)*strat.sum.eweights`
+    ## Next factor in stratum weights, `Swts`. 
     tx.wt <- tx.wt * Swts
     ctl.wt <- ctl.wt * Swts
-    ## now expand these up to match dimensions of data
+    } else { # in this condition no Swts were passed, so we default to 
+      ## strat.sum.eweights *(txclus.by.strat / nclus.by.strat)
+      tx.wt <- ifelse(txclus.by.strat, 1, 0)  
+      ctl.wt <-ifelse(ctlclus.by.strat, txclus.by.strat/ctlclus.by.strat, 0)
+      }
+    ## now expand up tx.wt and ctl.wt to match dimensions of data
     tx.wts <- as.vector(as.matrix(S %*% tx.wt))
     ctl.wts <- as.vector(as.matrix(S %*% ctl.wt))
     
