@@ -17,13 +17,13 @@ library(testthat)
 
 
 This document lays out calculations behind
-\texttt{xBalance}'s ``descriptives,'' e.g. means and SDs of the groups
+\texttt{balanceTest}'s ``descriptives,'' e.g. means and SDs of the groups
 being compared, with allowances for missing values, clustering,
 stratification, stratum weights, ie weights associating with each of a
 collection of strata that serve to define a ``standard population,''
 amd element weights, ie weights associating with elements,
 deaggregated units of observation.  In the same display and output
-\texttt{xBalance}  furnishes additional statistics, ``inferentials'',
+\texttt{balanceTest}  furnishes additional statistics, ``inferentials'',
 designed under somewhat different premises (and laid out in a separate
 document).  Its z statistics, p values and chisquare statistics all
 fall under the Inferential banner.
