@@ -216,7 +216,8 @@ makeDesigns <- function(fmla, data) {
   treatment.name <- vnames[attr(ts, "response")]
   str.idx <- c(attr(ts, "specials")$cluster, attr(ts, "specials")$strata)
 
-  str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))))
+  str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))),
+                      env=environment(fmla))
   str.tms  <- terms(str.fmla, data = data, specials = c("cluster", "strata"))
   str.data <- model.frame(str.tms, data = data, na.action = na.pass, drop.unused.levels=TRUE)
 

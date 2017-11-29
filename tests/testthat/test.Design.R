@@ -21,7 +21,7 @@ test_that("If no missing data, then NotMissing is a matrix w n rows and 0 cols",
   expect_equivalent(dim(simple@NotMissing), c(500,1))
 
 })
-test_that("Missingingess gets passed through in Covariates, recorded in NotMissing",{
+test_that("Missingness gets passed through in Covariates, recorded in NotMissing",{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
@@ -89,6 +89,13 @@ test_that("Issue #76: Using I() in formulas", {
   x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
+})
+
+test_that("Issue #86: makeDesigns finds variables outside data arg",{
+data(nuclearplants)
+foo <- nuclearplants$pt
+nuclearplants$"(weights)" <- 1
+makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
 })
 
 test_that("Duplicated missingness patterns handled appropriately",{
