@@ -133,8 +133,8 @@ test_that("balanceTreturns covariance of tests", {
   expect_equal(length(tcov), 2)
 
   ## Developer note: to strip out entries corresponding to intercept -- which has var 0,
-  ## except when there's variation in element weights and/or cluster sizes --
-  ## have to filter out rows and cols named "(element weight)", separately for each
+  ## except when there's variation in unit weights and/or cluster sizes --
+  ## have to filter out rows and cols named "(unit weight)", separately for each
   ## entry in list tcov.  (Recording while updating test that follows, `c(4,4)` --> `c(5,5)`)
   expect_equal(dim(tcov[[1]]), c(5,5))
 

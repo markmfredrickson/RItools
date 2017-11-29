@@ -19,17 +19,17 @@
 ##' a standardization appropriate to the designated (post-)
 ##' stratification of the sample.  In the case without stratification
 ##' or clustering, the only weighting used to calculate treatment and
-##' control group means is that provided by the user as an
-##' \code{element.weight}; in the absence of such an argument, these
+##' control group means is that provided by the user as 
+##' \code{unit.weights}; in the absence of such an argument, these
 ##' means are unweighted.  When there are strata, within-stratum means
 ##' of treatment or of control observations are calculated using
-##' \code{element.weights}, if provided, and then these are combined
+##' \code{unit.weights}, if provided, and then these are combined
 ##' across strata according to a \sQuote{effect of treatment on
 ##' treated}-type weighting scheme. (The function's
 ##' \code{stratum.weights} argument figures in the function's
 ##' inferential calculations but not these descriptive calculations.)
 ##' To figure a stratum's effect of treatment on treated weight, the
-##' sum of all \code{element.weights} associated with treatment or
+##' sum of all \code{unit.weights} associated with treatment or
 ##' control group observations within the stratum is multiplied by the
 ##' fraction of clusters in that stratum that are associated with the
 ##' treatment rather than the control condition.  (Unless this
@@ -38,10 +38,10 @@
 ##'
 ##' The function also calculates univariate and multivariate inferential
 ##' statistics, targeting the hypothesis that assignment was random within strata. These
-##' calculations also pool \code{element.weight}-ed, within-stratum group means across strata,
+##' calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 ##' but the default weighting of strata differs from that of the descriptive calculations.
 ##' With \code{stratum.weights=harmonic} (the default), each stratum is weighted
-##' in proportion to the product of the stratum mean of \code{element.weight}s and
+##' in proportion to the product of the stratum mean of \code{unit.weights} and
 ##' the harmonic mean \eqn{1/[(1/a +
 ##' 1/b)/2]=2*a*b/(a+b)} of the number of treated units (a) and
 ##' control units (b) in the stratum; this weighting is optimal under
@@ -64,7 +64,7 @@
 ##' vector of non-negative weighting factors with stratum codes as names.
 ##' (To see the function that's applied by default, 
 ##' do \code{getFromNamespace("harmonic", "RItools")}.)  These weighting factors
-##' will be multipled by the stratum mean of \code{element.weights} to determine
+##' will be multipled by the stratum mean of \code{unit.weights} to determine
 ##' the stratum weights used for inferential calculations.
 ##'
 ##' If the stratifying factor has NAs, these cases are dropped.  On the other
@@ -94,7 +94,7 @@
 ##'   null-hypothesis of no effect. The option "all" requests all
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
-##' @param element.weights Per-element weight, or 0 if element does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of weights of elements within the cluster.  Within each stratum, cluster and element weights will be normalized to sum to 1.
+##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Weights to be applied when aggregating
 ##'   across strata specified by \code{strata}, defaulting to weights
 ##'   proportional to the harmonic mean of treatment and control group
@@ -105,7 +105,7 @@
 ##'   list of such functions, or a data frame of stratum weighting
 ##'   schemes corresponding to the different stratifying factors of
 ##'   \code{strata}.  See details.
-##' @param subset Optional; condition or vector specifying a subset of observations to be given positive element weights.
+##' @param subset Optional; condition or vector specifying a subset of observations to be given positive unit weights.
 ##' @param covariate.scaling A scale factor to apply to covariates in
 ##'   calculating \code{std.diffs} (currently ignored). 
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
@@ -187,7 +187,7 @@ balanceTest <- function(fmla,
                      report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
-                     element.weights,
+                     unit.weights,
                      stratum.weights = harmonic,
                      subset,
                      include.NA.flags = TRUE,
@@ -209,9 +209,9 @@ balanceTest <- function(fmla,
   if (missing(data)) 
      data <- environment(formula)
   mf <- match.call(expand.dots = FALSE)
-  m <- match(c("formula", "data", "subset", "element.weights"), names(mf), 0L)
+  m <- match(c("formula", "data", "subset", "unit.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("element.weights", names(mf), nomatch=0L))
+  if (cwpos <- match("unit.weights", names(mf), nomatch=0L))
       names(mf)[cwpos] <- "weights"
   ## Here's where we rely on assumption of no ... in the xBal formula
   ## it helps us avoid adding a second offset argument to the model frame call

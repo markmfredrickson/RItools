@@ -16,17 +16,16 @@ library(testthat)
 
 
 
-This document lays out calculations behind
-\texttt{balanceTest}'s ``descriptives,'' e.g. means and SDs of the groups
-being compared, with allowances for missing values, clustering,
-stratification, stratum weights, ie weights associating with each of a
-collection of strata that serve to define a ``standard population,''
-amd element weights, ie weights associating with elements,
-deaggregated units of observation.  In the same display and output
-\texttt{balanceTest}  furnishes additional statistics, ``inferentials'',
-designed under somewhat different premises (and laid out in a separate
-document).  Its z statistics, p values and chisquare statistics all
-fall under the Inferential banner.
+This document lays out calculations behind \texttt{balanceTest}'s
+``descriptives,'' e.g. means and SDs of the groups being compared,
+with allowances for missing values, clustering, stratification,
+stratum weights, ie weights associating with each of a collection of
+strata that serve to define a ``standard population,'' and per-observation unit
+weights.  In the same display and output
+\texttt{balanceTest} furnishes additional statistics,
+``inferentials'', designed under somewhat different premises (and laid
+out in a separate document).  Its z statistics, p values and chisquare
+statistics all fall under the Inferential banner.
 
 Our descriptives aim to describe the sample as simply as is possible
 while being consistent with the user's stated design.   For both
@@ -71,9 +70,9 @@ while adding a check for differences between the two groups in terms
 of the presence of missing values.  There's a tension between the
 first of these maneuvers and interpretations of weights as inclusion
 or assignment probabilities; that tension is addressed below, in
-Section~\ref{sec:element-weights}.
+Section~\ref{sec:unit-weights}.
 
-\subsection{Simple strata, no element weights or clusters}
+\subsection{Simple strata, no unit weights or clusters}
 
 
 Let \texttt{X} be a (model) matrix of covariates with dimension $n \times
@@ -206,7 +205,7 @@ Note that strata which don't admit of a
 comparison have to be explicitly dropped, via \texttt{S.has.both}.
 
 An earlier reference implementation 
-uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the element by variable
+uses the name \texttt{ETT} (for ``effect of treatment on treated'') for the unit by variable
 representation of these weights: 
 <<>>=
 ETT <- S %*%  Z.odds  # n * p
@@ -255,7 +254,7 @@ of assignment weight and a stratum weight, which may have been
 communicated by the user.   By default, the stratum
 weights are prortional to the
 number of units assigned to treatment in that stratum. In the absence
-of element weights, for treatment
+of unit weights, for treatment
 group members the product of these two factors is 1, as above; for controls,
 it's the ``treatment odds'' or a priori odds of assignment to
 treatment.  The treatment group is in effect serving to define a standard
@@ -271,24 +270,23 @@ combined ratio estimates of means over that standard population.
 
 (At 9a84617 this writeup fell a little behind the development w/in the
 clusters branch; there weights for both treatments and controls are
-calculated explicity from a combo of aggregated element weights and
+calculated explicity from a combo of aggregated unit weights and
 stratum weights.)
 
 
 
-\subsection{Element weights} \label{sec:element-weights}
+\subsection{Unit weights} \label{sec:unit-weights}
 
 Now let's suppose that, separate from any stratum weights, the user
 has communicated observation-specific weights. These weights are assumed invariant to treatment
-assignment.  For reasons to be explained with the extension to
-clustering, to distinguish these weights from stratum weights we'll
-call them element weights.  The element weights may represent proportions of a target
+assignment.  To distinguish these weights from stratum weights we'll
+call them unit weights.  The unit weights may represent proportions of a target
 population that a given observation is to be taken to
 represent, as the would if the study population were in fact a
 probability sample, and the weights were determined as reciprocals of
 sample inclusion probabilities. 
 
-Now we have two sets of weights to take into account, the element or
+Now we have two sets of weights to take into account, the unit or
 inclusion weights and the assignment weights mentioned in the
 previous section. Our basic response is to multiply the two sets of
 weights together. 
@@ -318,14 +316,14 @@ Y and upweighted design matrix in fitting once it's time to extract
 fitted values or residuals; a correction appears to be needed. 
 
 \subsubsection{Means \& mean differences}
-We need to make \emph{per-variable} element weights,
-``\texttt{pv.c.wt},'' products of user-provided element weights (implicit
+We need to make \emph{per-variable} unit weights,
+``\texttt{pv.c.wt},'' products of user-provided unit weights (implicit
 $1$'s when the user hasn't specified a weight) and per-variable
 missingness indicators. 
 
 <<>>=
-element.weights <- rep(1,8) # for now
-pv.c.wt <- use.units * element.weights
+unit.weights <- rep(1,8) # for now
+pv.c.wt <- use.units * unit.weights
 @ 
 
 This time the moment calculations begin as follows.% reorganize this for coherence
@@ -337,36 +335,36 @@ X.use  <- X * pv.c.wt
 X2.use <- X * X.use
 
 @ 
-Note that \texttt{pv.c.wt} is doing two things here, imposing element
+Note that \texttt{pv.c.wt} is doing two things here, imposing unit
 weights on a per-variable basis plus zeroing out the missing entries.
 We'll do the same thing to calculate ``\texttt{n1}'' and
 ``\texttt{n0}.''   This is now an abuse of notation, however, since
-they're not sample sizes but per variable sums of element weights:
+they're not sample sizes but per variable sums of unit weights:
 <<>>=
 n1 <- t(pv.c.wt) %*% Z # p * 1
 n0 <- t(pv.c.wt) %*% (1 - Z) # p * 1
 t(cbind(n1, n0, n1 + n0)) # 3 * p
 @ 
-(When we start with constant element weights, \texttt{n1} differences across variables are
+(When we start with constant unit weights, \texttt{n1} differences across variables are
 due entirely to differences in missingness patterns [and similarly for
 \texttt{n0}].)
 
 To compute weighted means over the 
-treatment group, applying element weights
+treatment group, applying unit weights
 and downweighting missing items to 0 
 (but with no adjustment for strata), do:
 <<>>=
 (treated.avg <- t(X.use) %*% Z / n1) # p * 1
 @ 
 
-ETT weighting factor (by element and variable) are computed as follows.
+ETT weighting factor (by unit and variable) are computed as follows.
 <<>>=
 Z.odds <- ( t(ZZ) %*% use.units ) / ( t(WW) %*% use.units )
 ( Z.odds <- ifelse(S.has.both, Z.odds, 0) ) # s * p
 (ETT <- S %*% Z.odds) # n * p
 @ 
 
-Notice that the element weights don't come into play yet -- this
+Notice that the unit weights don't come into play yet -- this
 weighting factor is separated from those weights, which on the other
 hand get baked directly into \texttt{X.use}, \texttt{X2.use}.
 
@@ -409,29 +407,29 @@ The standardized differences:
 
 \subsection{Clusters}
 
-The intention of the design for calcs with strata and element weights,
+The intention of the design for calcs with strata and unit weights,
 above, is that these adaptations will address clusters also, by dint of the following.
 
 \begin{quote}
   \textit{Assumptions.}  If the user specified a clustering variable
-  alongside of an element-by-variable table (and potentially element
+  alongside of an unit-by-variable table (and potentially unit
   weights), then that data frame 
   has already been processed into cluster-by-variable matrices
   \texttt{X} and \texttt{pv.c.wt}. Furthermore
   \begin{enumerate}
   \item \label{item:0} Each \texttt{X} entry represents a weighted \textit{mean}
     over the non-missing values of the variable for the cluster in
-    question, with weights equal to user-provided element weights. 
+    question, with weights equal to user-provided unit weights. 
   \item Each \texttt{pv.c.wt} entry records a \textit{sum} of
-    user-provided element
-    weights, over elements within the cluster for which the variable
+    user-provided unit
+    weights, over units within the cluster for which the variable
     was not missing.
   \end{enumerate}
 \end{quote}
 (\ref{item:0} might equally well have used weighted sums as opposed to
 weighted means. I favor this convention mostly for future-proofing: we
 may at some point wish to enable merges of cluster-level data frames
-with Design objects we've aggregated from element to cluster level.)
+with Design objects we've aggregated from unit to cluster level.)
 
 
 \texttt{C} is a $n \times c$ (sparse) matrix indicating cluster membership with 1, zero otherwise for $c$ clusters. 
@@ -459,17 +457,19 @@ or, equivalently,
 \end{equation}
 where $h_{b} = n_{tb}(n_{b} - n_{tb})/n_{b} = [n_{tb}^{-1} + (n_{b} -
 n_{tb})^{-1}]^{-1}$ is half the harmonic mean of the sizes of the
-treatment and control groups --- in terms of clusters, not elements
+treatment and control groups --- in terms of clusters, not units
 --- in stratum $b$.  
 
 The additional wrinkles to handle missingness:
 \begin{enumerate}
-\item Cluster size $m_{bi}$ is replaced by the more general $w_{bi} $, indicating the sum of weights of
-  non-NA elements within the cluster $i$ of stratum $b$. 
+\item Cluster size $m_{bi}$ is replaced by the more general $w_{bi}$,
+  indicating the sum of the unit weights associating with non-NA
+  elements (dis-aggregated units of observation) within the cluster
+  $i$ of stratum $b$.
 \item In addition, $w_{bi}$ is allowed to differ for different
   variables, following different missingness patterns.  So instead of
-  $n_{b}$-vectors $\mathbf{m}_{b}$ we have $m \times p$ matrices $\mathbf{w}_{b}$; also
-  $\bar{w}_{b}$ is a $p$-vector.
+  $n_{b}$-vectors $\mathbf{m}_{b}$ we have $m \times p$ matrices
+  $\mathbf{w}_{b}$; also $\bar{w}_{b}$ is a $p$-vector.
 \item To avoid a notation conflict, the stratum weights of
   \eqref{eq:HB08eq4} will be denoted as $s_{b}$, not $w_{b}$.  (And
   they'll soon be supplanted anyway.)
@@ -481,7 +481,7 @@ The additional wrinkles to handle missingness:
 With these modifications, with $\mathbf{x}_{(j)}$, $\mathbf{x}_{b(j)}$ used to indicate
 the $j$th column of $\mathbf{x} $ and $\mathbf{x}_{b} $ respectively,
 and with $\mathbf{a} \cdot \mathbf{b} $ used to indicate the
-element-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
+unit-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
 and $\textbf{b}$, adjusted mean differences are expressible as
 \begin{align}
   d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_b \left\{  \mathbf{Z}_{b}'
@@ -516,7 +516,7 @@ So \eqref{eq:1} becomes
   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
   \tilde{\mathbf{w}}_{b}), 
 \end{equation}
-where $\cdot $ indicates element-wise product. 
+where $\cdot $ indicates unit-wise product. 
 
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
 effect, they're imputed to weighted stratum means.  In terms of its
@@ -555,7 +555,7 @@ Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
 Suppose that we were to  adopt the
 semantic convention 
 that the user will have communicated sample inclusion probabilities via the
-element weights.  There's no additional role for stratum weights per
+unit weights.  There's no additional role for stratum weights per
 se; instead, in which case what remains to be factored in are the
 inverse probabilities of assignment,
 $\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  Relaxing \ref{item:1}--\ref{item:2} so

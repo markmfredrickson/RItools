@@ -34,7 +34,7 @@ test_that("Missingingess gets passed through in Covariates, recorded in NotMissi
               datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
               simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
-              expect_equivalent(colnames(simple2@NotMissing), c("element weight", "x1", "fac"))
+              expect_equivalent(colnames(simple2@NotMissing), c("unit weight", "x1", "fac"))
               
 })
 test_that("lookup tables OK, even w/ complex & multi-column terms",{
@@ -330,7 +330,7 @@ test_that("aggregateDesigns treats NA covariates as 0's" ,{
 })
 
 
-test_that("Aggregation of element weights to cluster level",{
+test_that("Aggregation of unit weights to cluster level",{
   ##set.seed(20130801)
 
   d.short <- data.frame(
@@ -361,7 +361,7 @@ test_that("Aggregation of element weights to cluster level",{
   design.d2 <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d2)
   aggDesign.d2 <- RItools:::aggregateDesigns(design.d2)
 
-  expect_equal(2*aggDesign.tall@ElementWeights,aggDesign.d2@ElementWeights)
+  expect_equal(2*aggDesign.tall@UnitWeights,aggDesign.d2@UnitWeights)
   expect_equal(aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
   expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
           })
@@ -445,5 +445,5 @@ test_that("alignDesigns, designToDescriptives output alignment", {
 
 
 ### Tests to write...
-##test_that("alignDesigns properly tracks ElementWeights vs NotMissing",{})
+##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})
 ##test_that("",{})
