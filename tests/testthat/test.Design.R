@@ -176,6 +176,68 @@ test_that("Creating DesignOptions objects", {
   #   see ./test.clusters.R ) 
 })
 
+test_that("NotMissing vars correctly generated",
+          {
+
+  dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x1=rep(c(NA, TRUE), c(3,2)),
+                    x2 = c(1:5), 
+                    x3=c(TRUE, FALSE, NA, TRUE, FALSE),
+                    fac=factor(c(rep(1:2,2), NA))
+                    )
+  dat$'(weights)' <- 1
+
+  simple <- RItools:::makeDesigns(z ~ x1 + x2  + strata(strat) + cluster(clus), data = dat)
+  expect_match(colnames(simple@NotMissing), "x1", all=FALSE)
+  expect_false(any(grepl("x2", colnames(simple@NotMissing))))
+  expect_true(any(grepl("TRUE", colnames(simple@Covariates))))
+  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+
+  simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+  expect_match(colnames(simple2@NotMissing), "x1", all=FALSE)
+  expect_false(any(grepl("x2", colnames(simple2@NotMissing))))
+  expect_match(colnames(simple2@NotMissing), "fac", all=FALSE)
+  expect_true(any(grepl("TRUE", colnames(simple2@Covariates))))            
+  expect_false(any(grepl("FALSE", colnames(simple2@Covariates))))
+
+  simple3 <- RItools:::makeDesigns(z ~ x1 + x3 + fac+ strata(strat) + cluster(clus), data = dat)
+  expect_match(colnames(simple3@NotMissing), "x1", all=FALSE)
+  expect_match(colnames(simple3@NotMissing), "x3", all=FALSE)
+  expect_match(colnames(simple3@NotMissing), "fac", all=FALSE)
+  expect_true(any(grepl("TRUE", colnames(simple3@Covariates))))            
+  expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))
+              
+          })
+
+test_that("Issue 88: logical Covariates correctly generated",
+          {
+
+  dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x1=rep(c(NA, TRUE), c(3,2)),
+                    x2 = c(1:5), 
+                    x3=c(TRUE, FALSE, NA, TRUE, FALSE),
+                    fac=factor(c(rep(1:2,2), NA))
+                    )
+  dat$'(weights)' <- 1
+
+  simple1 <- RItools:::makeDesigns(z ~ x1 + x2, data = dat)
+  expect_true(any(grepl("TRUE", colnames(simple@Covariates))))
+  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+              
+  simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat), data = dat)
+  expect_true(any(grepl("TRUE", colnames(simple@Covariates))))
+  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+
+## Piece that doesn't currently work, per #88              
+##  simple3 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat) - 1, data = dat)
+##  expect_true(any(grepl("TRUE", colnames(simple3@Covariates))))            
+##  expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))            
+          })
+
 
 test_that("DesignOptions to descriptive statistics", {
   set.seed(20130801)
