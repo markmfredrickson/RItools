@@ -116,7 +116,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 
   ## add in a 1st column of 1s, to ease bookkeeping later on
   notmissing <- cbind(matrix(TRUE, nrow(covariates), 1), notmissing)
-  colnames(notmissing)[1] <- "unit weight"
+  colnames(notmissing)[1] <- "Intercept"
   nm.covs <- nm.covs + 1L
   nm.terms <- nm.terms + 1L
 

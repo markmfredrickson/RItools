@@ -34,7 +34,7 @@ test_that("Missingness gets passed through in Covariates, recorded in NotMissing
               datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
               simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
-              expect_equivalent(colnames(simple2@NotMissing), c("unit weight", "x1", "fac"))
+              expect_equivalent(colnames(simple2@NotMissing), c("Intercept", "x1", "fac"))
               
 })
 test_that("lookup tables OK, even w/ complex & multi-column terms",{
