@@ -83,7 +83,24 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
     assign <- assign[-iloc]
     covariates <- covariates[,-iloc, drop=FALSE]
   }
-  
+
+    logicalsT <- (paste0(term.labels, "TRUE") %in% colnames(covariates)) &
+        !(paste0(term.labels, "TRUE") %in% term.labels)
+    logicalsF <- (paste0(term.labels, "FALSE") %in% colnames(covariates)) &
+        !(paste0(term.labels, "FALSE") %in% term.labels)
+    if (any(logicalsF & logicalsT))
+    {
+        rlocs <- colnames(covariates) %in% paste0(term.labels[logicalsF & logicalsT], "FALSE")
+        assign <- assign[!rlocs]
+        covariates <- covariates[,!rlocs, drop=FALSE]
+    }
+    if (any(logicalsT))
+    {
+        slocs <- colnames(covariates) %in% paste0(term.labels[logicalsT], "TRUE")
+        colnames(covariates)[slocs] <-
+            substr(colnames(covariates)[slocs], 1L,
+                   nchar(colnames(covariates)[slocs]) - 4L)
+        }
 
   cols.by.term <- lapply(1L:length(term.labels),
                          function(whichterm) (1:ncol(covariates))[assign==whichterm])
