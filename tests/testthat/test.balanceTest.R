@@ -234,11 +234,6 @@ test_that("Observations not meeting subset condition are retained although downw
     expect_true(is.na(xb2$results[ "pt2" ,'std.diff',]) | # presently this is NA, but
                     xb2$results[ "pt2" ,'std.diff',]==0) # it might ideally be a 0
 
-## Currently the below doesn't work. How come?
-##  xb4 <- balanceTest(pr ~ . - pt, data=n2, subset=pt==0)
-##  xb5 <- balanceTest(pr ~ . - pt, data=subset(n2,pt==0))
-##  expect_equivalent(xb4, xb5)
-
 })
 
 

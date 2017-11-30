@@ -105,7 +105,7 @@
 ##'   list of such functions, or a data frame of stratum weighting
 ##'   schemes corresponding to the different stratifying factors of
 ##'   \code{strata}.  See details.
-##' @param subset Optional; condition or vector specifying a subset of observations to be given positive unit weights.
+##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
 ##' @param covariate.scaling A scale factor to apply to covariates in
 ##'   calculating \code{std.diffs} (currently ignored). 
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
