@@ -231,18 +231,27 @@ makeDesigns <- function(fmla, data) {
   # and a data component.
   vnames <- rownames(attr(ts, "factors"))
   treatment.name <- vnames[attr(ts, "response")]
-  str.idx <- c(attr(ts, "specials")$cluster, attr(ts, "specials")$strata)
+  str.vnames <- vnames[c(attr(ts, "specials")$cluster, attr(ts, "specials")$strata)]
+  # Following resolution to #86 in [master ad6ed6a], we have to indicate specifically
+  # that `cluster` and `strata` are to be found in the survival package.
+  str.vnames.safe <- gsub('(?<!:)cluster\\(', 'survival::cluster\\(', str.vnames, perl=TRUE)
+  str.vnames.safe <- gsub('(?<!:)strata\\(', 'survival::strata\\(', str.vnames.safe, perl=TRUE)     
+  # The purposes of the regexp lookbehinds (`(?<!:)`) above are to avoid overwriting
+  # "survival::cluster(" with "survival::survival::cluster(", and also to avoid
+  # overruling users who prefer to get their `cluster()` or `strata()` from elsewhere 
+  # than the survival package. 
 
-  str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, vnames[str.idx]))),
+  str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, str.vnames.safe))),
                       env=environment(fmla))
-  str.tms  <- terms(str.fmla, data = data, specials = c("cluster", "strata"))
+  str.tms  <- terms(str.fmla, data = data,
+                    specials = c("survival::cluster", "survival::strata"))
   str.data <- model.frame(str.tms, data = data, na.action = na.pass, drop.unused.levels=TRUE)
 
 
   ## check that strata and clusters have the proper relationships with treatment assignment
   treatmentCol <- colnames(str.data)[attr(str.tms, "response")]
-  clusterCol <- colnames(str.data)[attr(str.tms, "specials")$cluster]
-  strataCols <- colnames(str.data)[attr(str.tms, "specials")$strata]
+  clusterCol <- colnames(str.data)[attr(str.tms, "specials")$`survival::cluster`]
+  strataCols <- colnames(str.data)[attr(str.tms, "specials")$`survival::strata`]
 
   if (includeUnstratified) {
     str.data$Unstrat <- 1
@@ -301,7 +310,7 @@ makeDesigns <- function(fmla, data) {
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
-  data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", vnames[str.idx]))))
+  data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
 
   # knock out any levels that are not used
@@ -331,7 +340,7 @@ makeDesigns <- function(fmla, data) {
 
   Z <- str.data[, treatmentCol]
   tmp <- str.data[, strataCols, drop = FALSE]
-  colnames(tmp) <- gsub(colnames(tmp), pattern = "strata\\((.*)\\)", replacement = "\\1")
+  colnames(tmp) <- gsub(colnames(tmp), pattern = "survival::strata\\((.*)\\)", replacement = "\\1")
   strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
   strata.mats  <- lapply(strata.frame, function(s) { SparseMMFromFactor(s) })
   names(strata.mats) <- colnames(strata.frame)
