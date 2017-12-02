@@ -225,12 +225,12 @@ test_that("Issue 88: logical Covariates correctly generated",
   dat$'(weights)' <- 1
 
   simple1 <- RItools:::makeDesigns(z ~ x1 + x2, data = dat)
-  expect_true(any(grepl("TRUE", colnames(simple@Covariates))))
-  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple1@Covariates))))
+  expect_false(any(grepl("FALSE", colnames(simple1@Covariates))))
               
   simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat), data = dat)
-  expect_true(any(grepl("TRUE", colnames(simple@Covariates))))
-  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple2@Covariates))))
+  expect_false(any(grepl("FALSE", colnames(simple2@Covariates))))
 
   simple3 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat) - 1, data = dat)
   expect_false(any(grepl("TRUE", colnames(simple3@Covariates))))            
