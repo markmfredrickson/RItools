@@ -108,30 +108,27 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
     lapply(cols.by.term, function(whichcols) {
       complete.cases(covariates[,whichcols])
     })
+  names(ccs.by.term) <- term.labels
   terms.with.missings <- !sapply(ccs.by.term, all)
 
   nm.covs <- integer(ncol(covariates))
-  nm.terms <- integer(length(term.labels))
+  nm.terms <- integer(length(terms.with.missings))
 
   if (any(terms.with.missings)) {
-    nmdf <- as.data.frame(ccs.by.term[terms.with.missings])
-    colnames(nmdf) <-  term.labels[terms.with.missings]
-    nmdf.char <- sapply(nmdf, function(x) paste(as.integer(x), collapse="."))
-    nmdf.dupes <- duplicated.default(nmdf.char, fromLast=FALSE)
-    if (any(nmdf.dupes))
+    nmcols <- ccs.by.term[terms.with.missings]
+    nmcols.dupes <- duplicated(nmcols, fromLast=FALSE)
+    if (any(nmcols.dupes))
     {
-      nmdf <- nmdf[!nmdf.dupes]
-      nm.terms[terms.with.missings][!nmdf.dupes] <- 1L:ncol(nmdf)
-      nm.terms[terms.with.missings][nmdf.dupes] <-
-        match(nmdf.char[nmdf.dupes], nmdf.char[!nmdf.dupes])
-    } else nm.terms[terms.with.missings] <- 1L:ncol(nmdf)
+      nm.terms[terms.with.missings][!nmcols.dupes] <- 1L:sum(!nmcols.dupes)
+      nm.terms[terms.with.missings][nmcols.dupes] <-
+        match(nmcols[nmcols.dupes], nmcols[!nmcols.dupes])
+    } else nm.terms[terms.with.missings] <- 1L:length(nmcols)
     nm.covs[assign>0] <- nm.terms[assign[assign>0]]
-    notmissing <- as.matrix(nmdf)
+    notmissing <- as.matrix(as.data.frame(nmcols[!nmcols.dupes]))
   } else {
     notmissing <- matrix(FALSE, nrow(covariates), 0)
   }
 
-  ## add in a 1st column of 1s, to ease bookkeeping later on
   notmissing <- cbind(matrix(TRUE, nrow(covariates), 1), notmissing)
   colnames(notmissing)[1] <- "Intercept"
   nm.covs <- nm.covs + 1L
