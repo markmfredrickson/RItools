@@ -24,8 +24,8 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot term.labels labels of terms of the originating model formula
 ##' @slot contrasts Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as Covariates but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
-##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 1.)
-##' @slot NM.terms integer look-up table mapping term labels to  columns of NotMissing
+##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
+##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
 ##' @keywords internal
 ##' 
 setClass("DesignMatrix",
@@ -109,31 +109,45 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
       complete.cases(covariates[,whichcols])
     })
   names(ccs.by.term) <- term.labels
+  null.record <- rowSums(as.data.frame(ccs.by.term))==0
+  if (any(null.record)) #in this case make sure it's NA in each covariate column
+      null.record[null.record] <- apply(is.na(covariates[null.record,,drop=FALSE]), 1, all)
+
   terms.with.missings <- !sapply(ccs.by.term, all)
+    
+  ccs.by.term <- c(list('_non-null record_'=!null.record),
+                   ccs.by.term)
+  terms.with.missings <- c(TRUE, # in order always to have same leading entry 
+                           terms.with.missings)
 
   nm.covs <- integer(ncol(covariates))
   nm.terms <- integer(length(terms.with.missings))
 
-  if (any(terms.with.missings)) {
-    nmcols <- ccs.by.term[terms.with.missings]
-    nmcols.dupes <- duplicated(nmcols, fromLast=FALSE)
-    if (any(nmcols.dupes))
-    {
+  nmcols <- ccs.by.term[terms.with.missings]
+  nmcols.dupes <- duplicated(nmcols, fromLast=FALSE)
+  if (any(nmcols.dupes))
+  {
       nm.terms[terms.with.missings][!nmcols.dupes] <- 1L:sum(!nmcols.dupes)
       nm.terms[terms.with.missings][nmcols.dupes] <-
         match(nmcols[nmcols.dupes], nmcols[!nmcols.dupes])
-    } else nm.terms[terms.with.missings] <- 1L:length(nmcols)
+      ## At this point nm.terms is a look-up table with an entry for
+      ## _non-null record_ and for each provided term. Entries are
+      ## 0 if there are no null records, or no missings on the term in question;
+      ## otherwise if there are null records and/or term missings, the
+      ## entry gives the column of the matrix `notmissing`, formed a few lines
+      ## down, that describes the relevant missingness pattern.
+  } else nm.terms[terms.with.missings] <- 1L:length(nmcols)
+
+    notmissing <- as.data.frame(nmcols[!nmcols.dupes])
+    names(notmissing) <- names(ccs.by.term)[terms.with.missings][!nmcols.dupes]
+    ## Now form the look-up table associating columns of the covariates matrix
+    ## with columns of matrix `notmissing` describing relevant missingness patterns.
+    ## Columns associated with terms on which there was no missingness get a 0 here. 
+    nm.terms <- nm.terms[-1L]
     nm.covs[assign>0] <- nm.terms[assign[assign>0]]
-    notmissing <- as.matrix(as.data.frame(nmcols[!nmcols.dupes]))
-  } else {
-    notmissing <- matrix(FALSE, nrow(covariates), 0)
-  }
 
-  notmissing <- cbind(matrix(TRUE, nrow(covariates), 1), notmissing)
-  colnames(notmissing)[1] <- "Intercept"
-  nm.covs <- nm.covs + 1L
-  nm.terms <- nm.terms + 1L
-
+    notmissing <- as.matrix(notmissing)
+    
   new("DesignMatrix",
       Covariates=covariates,
       OriginalVariables=assign,
@@ -550,7 +564,7 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   covars <- cbind(covars, design@NotMissing[, NMcolperm])
   vars <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   colnames(covars)   <-  vars
-  covars.nmcols <- c(design@NM.Covariates, rep(1L, k.NM ) )
+  covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
   stratifications <- colnames(design@StrataFrame)
 
   Uweights <- design@UnitWeights * design@NotMissing
@@ -686,14 +700,14 @@ aggregateDesigns <- function(design) {
   dim(unit.weights) <- NULL
   
   Uweights.tall <- design@UnitWeights * design@NotMissing
-  Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,design@NM.Covariates, drop=FALSE],
+  Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           design@Covariates *
-                                              Uweights.tall[,design@NM.Covariates, drop=FALSE],
+                                              Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           0)
                           )
   Uweights <- as.matrix(t(C) %*% Uweights.tall)
-  Covariates <- ifelse(Uweights[,design@NM.Covariates, drop=FALSE] > 0,
-                       Covariates/Uweights[,design@NM.Covariates, drop=FALSE],
+  Covariates <- ifelse(Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE] > 0,
+                       Covariates/Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE],
                        0)
   NotMissing <- ifelse(matrix(unit.weights>0, nrow(Uweights), ncol(Uweights)),
                        Uweights/unit.weights, 0)
@@ -777,11 +791,11 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   strata <- names(design@StrataMatrices)
 
   Ewts  <- design@UnitWeights * design@NotMissing
-  Covs <- ifelse(design@NotMissing[, design@NM.Covariates, drop = FALSE],
+  Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
                  design@Covariates[, , drop = FALSE], 0)
   k.Covs <- ncol(Covs)
   NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
-  Covs <- cbind(Covs, design@NotMissing[,NMcolperm])
+  Covs <- cbind(Covs, 0+design@NotMissing[,NMcolperm])
   vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   covars.nmcols <- c(design@NM.Covariates, rep(1L, k.NM ) )
   origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
@@ -817,7 +831,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
             suppressWarnings( #throws singularity warning if covar is linear in S
                 slm.wfit.csr( # see note in ./utils.R on why we use our own 
                     S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
-                    weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
+                    weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
             )
         ## A value that was missing might have received an odd residual.
         ## Although such values don't themselves contribute anything, they'll affect a
@@ -842,7 +856,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     for (jj in 1L:k.Covs) {
         covars.Sctr[,jj] <- suppressWarnings(
             slm.wfit.csr(S, covars.Sctr.new[,jj],
-                         weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
+                         weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
             )
     }
   }
