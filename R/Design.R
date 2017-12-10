@@ -913,13 +913,16 @@ alignedToInferentials <- function(alignedcovs) {
 
     ZtH <- S %*% n.inv %*% n1
     ssn <- sparseToVec(t(matrix(zz, ncol = 1) - ZtH) %*% tmat, column = FALSE)
-    ssvar <- colSums(dv * tmat^2)
-  
+    scaled.tmat <- as.matrix(tmat * sqrt(dv))
+    tcov <- crossprod(scaled.tmat)
+    ssvar <- diag(tcov)    
+
+    ## The next few calcs put components of 
+    ## z-statistic onto an interpretable scale      
     ##  wtsum is the sum across strata of twice the harmonic mean of n1, n0 - we should rename it
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # (the ra slot is where SparseM keeps the non-zero values)
-
-    scaled.tmat <- as.matrix(tmat * sqrt(dv))
-    tcov <- crossprod(scaled.tmat * (1 / wtsum))
+    post.diffs <- ssn / wtsum
+    tcov <- tcov *(1 / wtsum^2)
     
     zstat <- ifelse(ssvar <= .Machine$double.eps, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
@@ -951,7 +954,8 @@ alignedToInferentials <- function(alignedcovs) {
   csq <- drop(crossprod(mvz))
   DF <- sum(Positive)
 
-  list(z = zstat, p = p, csq = csq , DF = DF, tcov = tcov)
+  list(z = zstat, p = p, csq = csq , DF = DF, 
+       adj.mean.diffs=post.diffs, tcov = tcov)
 }
 
 ##' Convert Matrix to vector
