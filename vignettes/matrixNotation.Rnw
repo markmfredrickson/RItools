@@ -303,17 +303,6 @@ for \texttt{X}.  Second, we consider our ratio estimator to be the
 ratio of HT estimates of the study population totals of 
 \texttt{X * pv\_u\_wt}, and \texttt{pv\_u\_wt}, respectively.  
 
-A computational issue, to be addressed: as of this writing we're not
-properly adjusting for weights in our calls to
-\texttt{slm.fit.csr.corrected()}: rather than upweighting Covs by
-weights, we should upweight them and the design matrix both by
-square-rooted weights, or in some other way sneak a diagonal matrix of
-weights in between the $Y'$ and the $X$ and in between the $X'$ and the
-$X$. See e.g. \texttt{slm.wfit.csr}.  But note that in that code there
-doesn't appear to be any allowance made for having used an upweighted
-Y and upweighted design matrix in fitting once it's time to extract
-fitted values or residuals; a correction appears to be needed. 
-
 \subsubsection{Means \& mean differences}
 We need to make \emph{per-variable} unit weights,
 ``\texttt{pv\_u\_wt},'' products of user-provided unit weights (implicit
@@ -443,7 +432,10 @@ Each row of \texttt{C} has one and only one finite entry. We can assume it has b
 
 Here we calculate the ``adjusted differences,'' ``combined
 differences'' and associated $p$-values  of \citet{hansen:bowers:2008}, but with a couple additional wrinkles
-to handle missingness.  Given strata $1, \ldots, B$, stratum weights
+to handle missingness.  
+
+First we recap definitions of these
+quantities given by \citet{hansen:bowers:2008}, using the notation of that paper. Given strata $1, \ldots, B$, stratum weights
 $\{w_{b}\}$; for each stratum $b$ a length-$n_{b}$ treatment
 assignment vector $\mathbf{Z}_{b}$, an $n_{b} \times p$ matrix
 $\mathbf{x}_{b} $ of cluster \textit{totals}, and an $n_{b}$-vector
@@ -463,23 +455,50 @@ n_{tb})^{-1}]^{-1}$ is half the harmonic mean of the sizes of the
 treatment and control groups --- in terms of clusters, not units
 --- in stratum $b$.  
 
-The additional wrinkles to handle missingness:
-\begin{enumerate}
-\item Cluster size $m_{bi}$ is replaced by the more general $w_{bi}$,
-  indicating the sum of the unit weights associating with non-NA
-  elements (dis-aggregated units of observation) within the cluster
-  $i$ of stratum $b$.
-\item In addition, $w_{bi}$ is allowed to differ for different
-  variables, following different missingness patterns.  So instead of
-  $n_{b}$-vectors $\mathbf{m}_{b}$ we have $m \times p$ matrices
-  $\mathbf{w}_{b}$; also $\bar{w}_{b}$ is a $p$-vector.
-\item To avoid a notation conflict, the stratum weights of
-  \eqref{eq:HB08eq4} will be denoted as $s_{b}$, not $w_{b}$.  (And
-  they'll soon be supplanted anyway.)
-\item In addition, we'll think of the $\mathbf{x}_{b} $'s
-  as matrices of weighted \textit{means}, not totals, with weight
-  matrices $\mathbf{w}_{b} $ standing in the background.  
-\end{enumerate}
+Now we restate these definitions using a notation consistent with
+notation to be used in this section. Here $\mathbf{x}$ will be a
+matrix of cluster means, calculated with weighting for cluster sizes
+$w$; the notation $s_{b}$ will be used for the weight associating with
+stratum $b$. Temporarily using $\mathbf{t}_{b}$ for the matrix of cluster
+totals, $[x_{rc} w_{r} : r\leq n_{b}, c\leq p]$, the definition of \citet{hansen:bowers:2008} becomes
+\begin{align*}
+   d(\mathbf{Z}, \mathbf{t}) =& \sum_{b=1}^B s_b h_b^{-1} \bar{w}_b^{-1} \mathbf{Z}_{b}' \mathbf{t}_{b} - \sum_{b=1}^B s_b
+  \bar{w}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \\
+  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \mathbf{Z}_{b}'
+ (\mathbf{t}_{b}  - \bar{t}_{b}\mathbf{1}_{b}), \, 
+  \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi}, \\
+  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {w}_{bi} \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
+     w_{bi} \vec{x}_{bi}
+     \right] \\
+  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {w}_{bi} \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
+     w_{bi}}{n_{b}}\right) \left(\frac{\sum_{i\leq n_{b}}
+     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
+     w_{bi}}\right)
+     \right] \\
+  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {w}_{bi} \vec{x}_{bi} - \bar{w}_{b}\left(\frac{\sum_{i\leq n_{b}}
+     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
+     w_{bi}}\right)
+     \right]  \\
+  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+      {w}_{bi} \vec{\tilde{x}}_{bi}, \, \text{where}\, \vec{\tilde{x}}_{bi} =  \vec{x}_{bi} - \frac{\bar{w}_{b}}{w_{bi}}\left(\frac{\sum_{i\leq n_{b}}
+     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
+     w_{bi}}\right).
+\end{align*}
+Note that quantity is a bit odd. \texttt{Review/update from here \& throughout section.}
+ 
+ 
+The additional wrinkle to handle missingness: $w_{bi}$ is allowed to
+differ for different variables, so instead of $n_{b}$-vectors
+$\mathbf{w}_{b}$ we have $m \times p$ matrices $\mathbf{w}_{b}$;
+entries in this matrix tally sums of weights for units that are not
+missing on that variable.  (If records have been aggregated to the
+cluster level, these are sums of the unit weights associating with non-NA
+elements [dis-aggregated units of observation] within the cluster.) Corresponding to variable $j \leq p$ denote
+the $j$th column of $\mathbf{w}_{b}$ as $\mathbf{w}_{b(j)}$; also
+$\bar{w}_{b}$ is a $p$-vector.
 
 With these modifications, with $\mathbf{x}_{(j)}$, $\mathbf{x}_{b(j)}$ used to indicate
 the $j$th column of $\mathbf{x} $ and $\mathbf{x}_{b} $ respectively,
@@ -509,16 +528,22 @@ weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$.  This simplifies \e
 second term to vanish.  
 Then we'll apply the $\bar{w}_{b}^{-1}$
 stratum-wise weight factors, by multiplying them through by weight
-matrices $\tilde{\mathbf{w}}_{b}$, where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
+matrices $\tilde{\mathbf{w}}_{b}$ 
+(\texttt{NB: I now think this weight construction is mistaken, causing \# 89.}),
+where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
 $\mathbf{w}_{b(j)}  = \mathbf{0} $, otherwise
 $\tilde{\mathbf{w}}_{b(j)} = 
 \bar{w}_{b(j)}^{-1} \mathbf{w}_{b(j)}$. 
 So \eqref{eq:1} becomes
-\begin{equation} \label{eq:2}
-  d(\mathbf{Z}, \mathbf{x}) = \sum_{b=1}^B \frac{s_b}{h_b}
+\begin{align} 
+  d(\mathbf{Z}, \mathbf{x})  &= 
+                               \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
+    [(\tilde{\mathbf{x}}_{b(j)} \cdot \tilde{\mathbf{w}}_{b(j)}) \bar{w}_{b(j)}]
+  \nonumber \\
+  &= \sum_{b=1}^B \frac{s_b}{h_b}
   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-  \tilde{\mathbf{w}}_{b}), 
-\end{equation}
+  \tilde{\mathbf{w}}_{b}), \label{eq:2}
+\end{align}
 where $\cdot $ indicates unit-wise product. 
 
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
