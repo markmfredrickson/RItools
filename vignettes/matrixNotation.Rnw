@@ -461,33 +461,36 @@ matrix of cluster means, calculated with weighting for cluster sizes
 $w$; the notation $s_{b}$ will be used for the weight associating with
 stratum $b$. Temporarily using $\mathbf{t}_{b}$ for the matrix of cluster
 totals, $[x_{rc} w_{r} : r\leq n_{b}, c\leq p]$, the definition of \citet{hansen:bowers:2008} becomes
-\begin{align*}
+\begin{align}
    d(\mathbf{Z}, \mathbf{t}) =& \sum_{b=1}^B s_b h_b^{-1} \bar{w}_b^{-1} \mathbf{Z}_{b}' \mathbf{t}_{b} - \sum_{b=1}^B s_b
-  \bar{w}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \\
+  \bar{w}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \nonumber \\
   =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \mathbf{Z}_{b}'
  (\mathbf{t}_{b}  - \bar{t}_{b}\mathbf{1}_{b}), \, 
-  \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi}, \\
+  \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi}, \nonumber \\
   =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
      \left[ {w}_{bi} \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
      w_{bi} \vec{x}_{bi}
-     \right] \\
+     \right] \label{eq:11}  \\
   =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
      \left[ {w}_{bi} \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
      w_{bi}}{n_{b}}\right) \left(\frac{\sum_{i\leq n_{b}}
      w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
      w_{bi}}\right)
-     \right] \\
+     \right] \nonumber \\
   =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
      \left[ {w}_{bi} \vec{x}_{bi} - \bar{w}_{b}\left(\frac{\sum_{i\leq n_{b}}
      w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
      w_{bi}}\right)
-     \right]  \\
+     \right]  \nonumber \\
   =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
       {w}_{bi} \vec{\tilde{x}}_{bi}, \, \text{where}\, \vec{\tilde{x}}_{bi} =  \vec{x}_{bi} - \frac{\bar{w}_{b}}{w_{bi}}\left(\frac{\sum_{i\leq n_{b}}
      w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
-     w_{bi}}\right).
-\end{align*}
-Note that quantity is a bit odd. \texttt{Review/update from here \& throughout section.}
+     w_{bi}}\right). \label{eq:12}
+\end{align}
+\texttt{Note that \eqref{eq:12} wound up rather strangely.  I suspect \texttt{balanceTest()} development prior to the issue89 branch was implicitly premised on this working out to $\sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+      {w}_{bi}\left[ \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
+     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
+     w_{bi}}\right)\right]$, which it isn't.}
  
  
 The additional wrinkle to handle missingness: $w_{bi}$ is allowed to
@@ -504,7 +507,7 @@ With these modifications, with $\mathbf{x}_{(j)}$, $\mathbf{x}_{b(j)}$ used to i
 the $j$th column of $\mathbf{x} $ and $\mathbf{x}_{b} $ respectively,
 and with $\mathbf{a} \cdot \mathbf{b} $ used to indicate the
 unit-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
-and $\textbf{b}$, adjusted mean differences are expressible as
+and $\textbf{b}$, the pre-issue89 extension of the adjusted mean difference to accommodate missingness was 
 \begin{align}
   d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_b \left\{  \mathbf{Z}_{b}'
                        (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
@@ -515,26 +518,48 @@ and $\textbf{b}$, adjusted mean differences are expressible as
   &= \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
     (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - \sum_{b=1}^B s_b
   \bar{w}_{b(j)}^{-1} (n_b - n_{tb})^{-1}
-    \mathbf{1}'(\mathbf{x}_{b(j)} \cdot\mathbf{w}_{b(j)})  .\label{eq:1} 
+    \mathbf{1}'(\mathbf{x}_{b(j)} \cdot\mathbf{w}_{b(j)}) , \label{eq:1}\\
 \end{align}
+which \texttt{was mistakenly taken to be equivalent to \eqref{eq:2} below but in fact} is equivalent to
+\begin{equation*}
+\sum_{b} \frac{s_b}{h_b\bar{w}_b} \frac{\bar{w}_b}{\bar{w}_{b(j)}} \mathbf{Z}_b'[(\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - n_b^{-1} \sum_{i\leq n_b}x_{bi(j)}{w}_{bi(j)}]. 
+\end{equation*}
+Alternatively, perhaps it was a mistake to use per-variable weights in the
+denominators of~\eqref{eq:0} and~\eqref{eq:1}.  We might simply have
+replaced those $\bar{w}_{b(j)}$s with $\bar{w}_{b}$s.  Observing
+the convention that the first column of $\mathbf{w}$ records sums of
+weights associating with each non-null element record in the cluster,
+write $\bar{w}_b = n_b^{-1} \sum_{i\leq n_b} w_{bi(1)}$.  (Thus
+$w_{bi(j)} \leq w_{bi(1)}$, all $i, j$.)  The alternate definitional
+extension would be
+\begin{align}
+d(\mathbf{Z}, \mathbf{x}_{(j)}) &=
+\sum_{b=1}^B s_b \left\{ \mathbf{Z}_{b}' (\mathbf{x}_{b(j)} \cdot
+\mathbf{w}_{b(j)})/(\bar{w}_{b} n_{tb}) - (\mathbf{1} -
+\mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
+\mathbf{w}_{b(j)})/[\bar{w}_{b}(n - n_{tb})] \right\} \nonumber \\
+ d(\mathbf{Z}, \mathbf{x})&=
+\sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+\left[ \vec{w}_{bi} \cdot \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
+\vec{w}_{bi} \cdot \vec{x}_{bi} \right] , \label{eq:13}
+\end{align}
+in parallel with \eqref{eq:11}.  Either definition calls for figuring matrices of
+weighted totals of observed $x$'s by cluster, $(\mathbf{w}_{b} \cdot
+\mathbf{x}_{b})$, and aligning them around their simple cluster means.
 
-Admittedly, this equation is rather an ugly duckling. But it gives us some better options for handling NAs,
-while also preserving the covariance structure we'll need for the
-multivariate inferentials. 
-
-Operationally, our first step will be to \textit{align} the
+In the pre-issue89 implementation, the first step was to \textit{align} the
 $\mathbf{x}_{b}$ submatrices, ie to shift them in such a way that their
-weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$.  This simplifies \eqref{eq:1}  by causing its
-second term to vanish.  
+weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$. This simplifies \eqref{eq:1}  by causing its
+second term to vanish. (\texttt{Not so!  Since $\mathbf{Z}_{b}'\mathbf{w}_{b(j)}$ in general has nonzero variance, you can't just impose an additive shift on $x$ and be left with the same adjusted diff.}) 
 Then we'll apply the $\bar{w}_{b}^{-1}$
 stratum-wise weight factors, by multiplying them through by weight
 matrices $\tilde{\mathbf{w}}_{b}$ 
-(\texttt{NB: I now think this weight construction is mistaken, causing \# 89.}),
+(\texttt{I don't think this weight construction fixes the issued noted above.}),
 where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
 $\mathbf{w}_{b(j)}  = \mathbf{0} $, otherwise
 $\tilde{\mathbf{w}}_{b(j)} = 
 \bar{w}_{b(j)}^{-1} \mathbf{w}_{b(j)}$. 
-So \eqref{eq:1} becomes
+\texttt{Previously I erroneously inferred} that  \eqref{eq:1} is then equivalent to 
 \begin{align} 
   d(\mathbf{Z}, \mathbf{x})  &= 
                                \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
@@ -544,7 +569,9 @@ So \eqref{eq:1} becomes
   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
   \tilde{\mathbf{w}}_{b}), \label{eq:2}
 \end{align}
-where $\cdot $ indicates unit-wise product. 
+where $\cdot$ indicates unit-wise product. In contrast,
+the alternate definition
+of $d()$ in \eqref{eq:13} calls for stratum-wise alignment of $\mathbf{x} \cdot \mathbf{w}$, with out further weighting.
 
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
 effect, they're imputed to weighted stratum means.  In terms of its
@@ -566,14 +593,10 @@ Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
 \begin{enumerate}
 \item Although $\{h_{b}\}$ is not normalized to sum to 1, it's assumed
   that $\{s_{b} \}$ is. \label{item:1}
-\item Expression \eqref{eq:2} somewhat obscures the important
-  expectation that the unit weights $w_{bi}$ should play a role in
-  determining the stratum weights.  For instance, for the default
-  weighting suggested by H\&B 2008, one should have $s_{b} \propto
+\item The default
+  weighting suggested by H\&B 2008 is $s_{b} \propto
   \bar{w}_{b}h_{b}$.\label{item:2}
 \item Stratum weights are presumed to be the same for all covariates.
-  So the $\bar{w}_{b}$ figuring in a stratum weighting might be based
-  on unit weights without attention to NAs, for example.  
 \item The inferential calcs assume that the weights don't vary by
   treatment assignment. This rules out effect of treatment weighting
   in the strict sense, at least as far as Inferentials are concerned
@@ -584,13 +607,12 @@ Suppose that we were to  adopt the
 semantic convention 
 that the user will have communicated sample inclusion probabilities via the
 unit weights.  There's no additional role for stratum weights per
-se; instead, in which case what remains to be factored in are the
+se; instead, inwhat remains to be factored in are the
 inverse probabilities of assignment,
-$\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  Relaxing \ref{item:1}--\ref{item:2} so
-that we can set stratum weights $s_{b}$ to be proportional to the sum of sample inclusion weights
+$\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  To do this set stratum weights $s_{b}$ to be proportional to the sum of sample inclusion weights
 for stratum $b$, $\left(\sum_{i} w_{bi} \right) =
 n_{b}\bar{w}_{b} $, in order to align with a target population for
-inference, one has
+inference.  Then one has \texttt{fix up from here}
 \begin{align*}
   d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_{b}\left\{  \mathbf{Z}_{b}'
                        (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
