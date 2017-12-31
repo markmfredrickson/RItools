@@ -4,6 +4,14 @@
 ##' Assumes a design that is completely randomized, either by cluster or by
 ##' the unit of observation, potentially within strata or blocks.
 ##'
+##' For inverse probability of assignment weights, the default, set argument
+##' \code{type} to \dQuote{inverse probability}.  Inverse odds of assignment
+##' calls for specification of a reference level, with observations in that
+##' condition receiving weights of 1. State this reference level within your
+##' \code{type} argument: for example, if your treatment condition corresponds
+##' to \code{z==1}, and you want inverse odds of treatment weighting, then pass
+##' a \code{type} argument of \dQuote{odds vs 1} or \dQuote{odds against 1}. 
+##'
 ##' The function assumes complete random assignment, within (optional)
 ##' blocks.  This can be complete random assignment of clusters; in this situation
 ##' the user avoids having to manage aggregation to the cluster level in order
@@ -15,8 +23,8 @@
 ##' non-NA block, probabilities or odds for that block are calculated as though the 
 ##' observations with NAs for \code{z} just weren't there. 
 ##'
-##' @title Inverse probability weighting suitable for completely randomized designs
-##' @param z categorical variable recording distinctions among assignments to treatment conditions
+##' @title Infer inverse probability/odds of assignment weights in randomized designs
+##' @param z variable recording distinctions among assignments to treatment conditions
 ##' @param strata categorical variable recording blocks
 ##' @param clus optional categorical variable indicating cluster membership
 ##' @param type character string naming desired type of weight. See Details for options other than inverse probability
