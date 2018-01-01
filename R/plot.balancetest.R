@@ -54,8 +54,12 @@ plot.balancetest <- function(x,
 
   stopifnot(is.null(var.order) | is.null(var.grouping))
 
-  x <- as.data.frame(prepareXbalForPlot(x, statistic, absolute,
-                                        strata.labels, variable.labels))
+  tmp <- prepareXbalForPlot(x, statistic, absolute,
+                            strata.labels, variable.labels)
+  autogroup <- attr(tmp, "term.labels")[attr(tmp, "groups")]
+  autogroup[is.na(autogroup)] <- ""
+  names(autogroup) <- rownames(tmp)
+  x <- as.data.frame(tmp)
 
   # Tidyverse doesn't like rownames
   x <- tibble::rownames_to_column(x)
@@ -90,7 +94,7 @@ plot.balancetest <- function(x,
     }
   }
 
-
+  x$group <- autogroup[as.character(x$rowname)]
 
   if (!is.null(strata.labels)) {
     x$strata <- factor(x$strata, levels = strata.labels)
@@ -102,22 +106,24 @@ plot.balancetest <- function(x,
                                        x = values,
                                        color = strata,
                                        shape = strata)) +
+    ggplot2::geom_point() +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::geom_line(ggplot2::aes(group = rowname), color = "black") +
     ggplot2::labs(color = legend.title,
                   shape = legend.title,
                   x = xlab,
-                  y = ggplot2::element_blank())
+                  y = ggplot2::element_blank()) +
+    ggplot2::facet_grid(group ~ ., scales = "free_y")
 
-  if (!is.null(colors)) {
-    stopifnot(length(colors) == length(unique(x$strata)))
-    plot <- plot + ggplot2::scale_color_manual(values = colors)
-  }
-  # Should probably also take colors/symbols arguments of length 1 and expand them.
-  if (!is.null(symbols)) {
-    stopifnot(length(symbols) == length(unique(x$strata)))
-    plot <- plot + ggplot2::scale_color_manual(values = symbols)
-  }
+  ## if (!is.null(colors)) {
+  ##   stopifnot(length(colors) == length(unique(x$strata)))
+  ##   plot <- plot + ggplot2::scale_color_manual(values = colors)
+  ## }
+  ## # Should probably also take colors/symbols arguments of length 1 and expand them.
+  ## if (!is.null(symbols)) {
+  ##   stopifnot(length(symbols) == length(unique(x$strata)))
+  ##   plot <- plot + ggplot2::scale_color_manual(values = symbols)
+  ## }
 
   return(plot)
 }

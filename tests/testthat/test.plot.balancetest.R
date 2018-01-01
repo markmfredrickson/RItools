@@ -10,9 +10,11 @@ test_that("Uses ggplot", {
                    X1 = rnorm(20, mean = Z*2),
                    X2 = rnorm(20, mean = Z*3),
                    X3 = rnorm(20, mean = Z * -1),
-                   X4 = rnorm(20, mean = Z * -0.5))
+                   X4 = rnorm(20, mean = Z * -0.5),
+                   s = rep(1:4, each = 5))
 
-  bt <- balanceTest(Z ~ ., data = df)
+  bt <- balanceTest(Z ~ X1 + X2 + X3 + X4 + strata(s), data = df)
   btp <- plot(bt)
   expect_is(btp, "gg")
+
 })
