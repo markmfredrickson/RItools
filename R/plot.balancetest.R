@@ -20,6 +20,16 @@
 #' choice as all variables are on the same scale. Other statistics can be
 #' selected using the \code{statistic} argument.
 #'
+#' The result of this function is a \code{\link{ggplot}} object. Most display of
+#' the plot can be manipulated using additional commands appended to the plot
+#' option. For example, the entire theme of the plot can be changed to black and
+#' white using \code{plot(b) + theme_bw()}, where \code{b} is the result of a
+#' call to \code{\link{balanceTest}}. The points on the plot are known as
+#' "values", so colors or symbols used for each strata can be updated using the
+#' \code{\link{scale_color_manual}} function. For example, \code{plot(b) +
+#' scale_color_manaual(values = c('red', 'green', 'blue'))} for a balance test
+#' of three stratification variables.
+#'
 #' @param x An object returned by \code{\link{xBalance}}
 #' @param xlab The label for the x-axis of the plot
 #' @param statistic The statistic to plot. The default choice of standardized
@@ -34,7 +44,8 @@
 #' \code{x$results}. By default, factor level variables will be
 #' grouped.
 #' @param ... additional arguments to pass to \code{\link{balanceplot}}
-#' @seealso \code{\link{balanceTest}}
+#' @return A \code{ggplot2} object that can be further manipulated (e.g., to set the colors or text).
+#' @seealso \code{\link{balanceTest}}, \code{\link{ggplot}}
 #' @export
 #' @importFrom tibble rownames_to_column
 #' @importFrom tidyr gather
@@ -59,6 +70,10 @@ plot.balancetest <- function(x,
   autogroup <- attr(tmp, "term.labels")[attr(tmp, "groups")]
   autogroup[is.na(autogroup)] <- ""
   names(autogroup) <- rownames(tmp)
+
+  if (is.null(groups)) {
+    groups <- autogroup
+  }
   x <- as.data.frame(tmp)
 
   # Tidyverse doesn't like rownames
@@ -94,13 +109,13 @@ plot.balancetest <- function(x,
     }
   }
 
-  x$group <- autogroup[as.character(x$rowname)]
+  x$group <- groups[as.character(x$rowname)]
 
   if (!is.null(strata.labels)) {
     x$strata <- factor(x$strata, levels = strata.labels)
   }
 
-  legend.title <- xlab # just giving us some text for now
+  legend.title <- "Stratification" # just giving us some text for now
   plot <- ggplot2::ggplot(x,
                           ggplot2::aes(y = rowname,
                                        x = values,
@@ -114,16 +129,6 @@ plot.balancetest <- function(x,
                   x = xlab,
                   y = ggplot2::element_blank()) +
     ggplot2::facet_grid(group ~ ., scales = "free_y")
-
-  ## if (!is.null(colors)) {
-  ##   stopifnot(length(colors) == length(unique(x$strata)))
-  ##   plot <- plot + ggplot2::scale_color_manual(values = colors)
-  ## }
-  ## # Should probably also take colors/symbols arguments of length 1 and expand them.
-  ## if (!is.null(symbols)) {
-  ##   stopifnot(length(symbols) == length(unique(x$strata)))
-  ##   plot <- plot + ggplot2::scale_color_manual(values = symbols)
-  ## }
 
   return(plot)
 }

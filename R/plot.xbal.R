@@ -373,8 +373,8 @@ balanceplot <- function(x,
   if (length(colnames(x)) > 0 && include.legend) {
     legend(x = "topright",
            legend = colnames(x),
-           pch = origshapes,
-           col = origcolors,
+           pch = shapes,
+           col = colors,
            title = legend.title,
            bty = "n")
   }
