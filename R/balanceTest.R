@@ -311,6 +311,6 @@ balanceTest <- function(fmla,
   })
   attr(ans, "fmla") <- formula(fmla)
   attr(ans, "report") <- report # hinting to our summary method later
-  class(ans) <- c("xbal", "list")
+  class(ans) <- c("balancetest", "xbal", "list")
   ans
 }
