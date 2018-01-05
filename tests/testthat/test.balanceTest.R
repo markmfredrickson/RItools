@@ -270,6 +270,19 @@ test_that("p.adjust.method argument", {
 
 })
 
+test_that("NAs properly handled", {
+  set.seed(2903934)
+  n <- 20
+  df <- data.frame(Z = rep(c(0,1), n/2),
+                   X1 = rnorm(n),
+                   X2 = rnorm(n))
+  df$X1[1:3] <- NA
+
+  bt1 <- balanceTest(Z ~ X1, data = df)
+
+  ## issue 92: the following fails
+  bt2 <- balanceTest(Z ~ X1 + X2, data = df)
+})
 
 ## To do: adapt the below to test print.xbal instead of lower level functions
 ##test_that("printing of NA comparisons is optional",

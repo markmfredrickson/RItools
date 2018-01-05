@@ -23,7 +23,7 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
 ##' @slot term.labels labels of terms of the originating model formula
 ##' @slot contrasts Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`
-##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as Covariates but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
+##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
 ##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
 ##' @keywords internal
@@ -892,7 +892,14 @@ alignedToInferentials <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
     wtr <- alignedcovs@StrataWeightRatio
-    Uweights <- alignedcovs@NotMissing[,alignedcovs@NM.Covariates]
+
+    ## we need to map the covariates to their columns in the NotMissing matrix.
+    ## if a column has no missing at all, we indicate that with a zero
+    ## but this would otherwise cause the column to get dropped.
+    ## Instead, we map it to the first column of NM.Covariates, which we know is all 1s.
+    mapping <- alignedcovs@NM.Covariates
+    mapping[mapping == 0] <- 1
+    Uweights <- alignedcovs@NotMissing[,mapping]
     Covs <- alignedcovs@Covariates
     
     n <- t(S) %*% S
