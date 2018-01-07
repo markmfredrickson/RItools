@@ -29,6 +29,7 @@
 ##' @param clus optional categorical variable indicating cluster membership
 ##' @param type character string naming desired type of weight. See Details for options other than inverse probability
 ##' @return vector of weights
+##' @example inst/examples/ipr.R
 ##' @export
 ##' @author Ben B. Hansen
 ipr <- function(z,strata,clus=NULL, type="inverse probability")
@@ -72,15 +73,17 @@ ipr <- function(z,strata,clus=NULL, type="inverse probability")
                         }
 
                         cluster.representatives <- !duplicated(clus)
-                        z <- z[cluster.representatives]
+                        z.c <- z[cluster.representatives]
                         strat.c <- strata[cluster.representatives,
                                          drop=FALSE] # Can there be levels that
                         ## don't get represented? Not sure but if so then this is safer
-                      } else
-            strat.c <- strata
+                      } else {
+                          z.c <- z
+                          strat.c <- strata
+                          }
 
 
-            strat.by.z <- table(strat.c, z)
+            strat.by.z <- table(strat.c, z.c)
             strat.keep <- apply(strat.by.z, 1, # are *all* levels of z represented in
                                all) # the stratum? If not we're going to exclude it
             wt.by.strat <- if (type=="odds")
