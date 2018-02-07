@@ -307,3 +307,39 @@ replicate(0,
   expect_equal(dim(design.flags@Covariates)[2], 5)
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
 })
+
+test_that("balanceTest agrees with other methods where appropriate", {
+
+  library(survival) # for conditional logistic regression
+
+  set.seed(20180207)
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  x3 <- 0.5 + 0.25 * x1 - 0.25 * x2 + rnorm(n)
+  idx <- 0.25 + 0.1 * x1 + 0.2 * x2 - 0.5 * x3 + rnorm(n)
+  y <- sample(rep(c(1,0), n/2), prob = exp(idx) / (1 + exp(idx)))
+
+  xy <- data.frame(x1, x2, x3, idx, y)
+  xy$m[y == 1] <- order(idx[y == 1])
+  xy$m[y == 0] <- order(idx[y == 0])
+
+  xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+  bt1 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, report = "all",)
+  cr1 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy)
+
+  expect_equivalent(xb1$overall$chisquare, bt1$overall[2:1, "chisquare"])
+  expect_equivalent(xb1$overall$p.value[2], summary(cr1)$sctest["pvalue"])
+  expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
+
+  wts <- rpois(n, 7)
+  xy.wts <- data.frame(x1 = xy$x1 * wts, x2 = xy$x2 * wts, x3 = xy$x3 * wts, idx = xy$idx, y = xy$y, m = xy$m)
+
+  xb2 <- xBalance(y ~ x1 + x2 + x3, data = xy.wts, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+  bt2 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts, report = "all",)
+  cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts)
+
+  expect_equivalent(xb2$overall$chisquare, bt2$overall[2:1, "chisquare"])
+  expect_equivalent(xb2$overall$p.value[2], summary(cr2)$sctest["pvalue"])
+  expect_equivalent(bt2$overall[1, "p.value"], summary(cr2)$sctest["pvalue"])
+})
