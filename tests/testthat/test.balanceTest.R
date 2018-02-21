@@ -333,6 +333,7 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
 
   wts <- rpois(n, 7)
+  xy$wts <- wts # NB: balanceTest doesn't seem to like just using wts directly during tests, but is fine with it for interactive sessions
   xy.wts <- data.frame(x1 = xy$x1 * wts, x2 = xy$x2 * wts, x3 = xy$x3 * wts, idx = xy$idx, y = xy$y, m = xy$m)
 
   xb2 <- xBalance(y ~ x1 + x2 + x3, data = xy.wts, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))

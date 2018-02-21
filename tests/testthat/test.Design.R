@@ -531,6 +531,36 @@ test_that("alignDesigns, designToDescriptives output alignment", {
 
 })
 
+test_that("Issue #89: Proper strata weights", {
+
+  set.seed(20180208)
+
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  x3 <- 0.5 + 0.25 * x1 - 0.25 * x2 + rnorm(n)
+  idx <- 0.25 + 0.1 * x1 + 0.2 * x2 - 0.5 * x3 + rnorm(n)
+  y <- sample(rep(c(1,0), n/2), prob = exp(idx) / (1 + exp(idx)))
+
+  xy <- data.frame(x1, x2, x3, idx, y)
+  xy$m[y == 1] <- order(idx[y == 1])
+  xy$m[y == 0] <- order(idx[y == 0])
+  xy$"(weights)" <- 1
+
+  xy.wts <- xy
+  xy.wts$"(weights)" <- (1 + exp(idx)) / exp(idx) # inverse propensity score weights
+
+  design.nowts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data  = xy)
+  design.wts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy.wts)
+
+  ## split up into strata, use the default harmonic strata weights
+  ## the unit weights shouldn't enter into this.
+  dw.nowts <- RItools:::DesignWeights(design.nowts)
+  dw.wts <- RItools:::DesignWeights(design.wts)
+
+  expect_equal(dw.wts, dw.nowts)
+
+})
 
 ### Tests to write...
 ##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})

@@ -421,121 +421,70 @@ setClass("StratumWeightedDesignOptions",
 ##' being assembled there for other reasons.  An improvement for another day...)
 ##' 
 ##' @param design DesignOptions
-##' @param stratum.weights Stratum weights
-##' @return list with entries corresponding to stratifying variables.  
+##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, and all other covariates for the units.
+##' @return list with entries corresponding to stratifying variables.
 ##'
 ##' @keywords internal
 
 DesignWeights <- function(design, stratum.weights = harmonic) {
   stopifnot(inherits(design, "DesignOptions"),
-	    !is.null(design@UnitWeights), all(design@UnitWeights >= 0 ) )
+            is.function(stratum.weights),
+            !is.null(design@UnitWeights),  # TODO: take these checks out if we do not use unit weights in this function
+            all(design@UnitWeights >= 0 ) )
 
   n.strata <- dim(design@StrataFrame)[2]
   strata.names <- colnames(design@StrataFrame)
 
-  if (is.function(stratum.weights)) {
-    swt.ls <- rep(list(stratum.weights), n.strata)
-    names(swt.ls) <- strata.names
-  }
-
-
-  if (!is.list(stratum.weights) & !is.function(stratum.weights) & n.strata > 1)
-    stop("stratum weights must be specified for each stratifying factor")
-
-  if (!is.list(stratum.weights) & !is.function(stratum.weights)) {
-    swt.ls <- list(stratum.weights)
-    names(swt.ls) <- strata.names
-  }
-
-  if (is.list(stratum.weights) & !all(strata.names %in% c("Unstrat", names(stratum.weights))))
-    stop("list stratum.weights must have entry names matching those of stratifying factors")
-
-  if (is.list(stratum.weights) & !is.function(stratum.weights)) {
-
-      if (("Unstrat" %in% strata.names) && !("Unstrat" %in% names(stratum.weights)) )
-          stratum.weights <- c(stratum.weights, list("Unstrat"=NULL))
-
-      swt.ls <- stratum.weights[strata.names]
-  }
-
-
   ### change names here!
-
   wtlist <- list()
-  for (nn in names(swt.ls)) {
+  lapply(design@StrataFrame, function(s) {
 
-      stratifier <- factor(design@StrataFrame[[nn]])
-      Uweight.stratum.means <- tapply(design@UnitWeights, stratifier, mean)
-      
-      if (nlevels(stratifier)==1)
-          {
-              wtlist[[nn]] <- data.frame(sweights=1, wtratio=1, row.names='1')
-              next
-          }
+    stratifier <- factor(s)
 
-    if (is.function(swt.ls[[nn]])) {
-      swts <-
-        do.call(swt.ls[[nn]],
-                args = list(data =
-                    data.frame(Tx.grp = design@Z,
-                               stratum.code = stratifier,
-                               design@Covariates,
+    if (nlevels(stratifier) == 1) {
+      return(data.frame(sweights=1, wtratio=1, row.names='1'))
+    }
+
+    swts <- do.call(stratum.weights,
+                    args = list(data =
+                                  data.frame(Tx.grp = design@Z,
+                                             stratum.code = stratifier,
+                                             design@Covariates,
                                check.names = FALSE)),
                 envir=parent.frame())
 
-      if (!all(names(swts)==names(Uweight.stratum.means))) # not sure this would
-          {                                                    # ever be invoked...
-              stopifnot(setequal(names(swts), names(Uweight.stratum.means)))
-              swts <- swts[names(Uweight.stratum.means)]
-          }
-    } else {
-      if (!is.numeric(swt.ls[[nn]]))
-        stop("stratum.weights must be an expression or numeric vector")
-
-      if (is.null(names(swt.ls[[nn]])))
-        stop ("if stratum.weights is a vector, must have names")
-
-      if (!(all(levels(stratifier) %in% names(swt.ls[[nn]])) ))
-        stop("if stratum.weights is a vector, must have a name for each stratum")
-
-      swts <- swt.ls[[nn]][levels(stratifier)]
-    }
-
+    ## checking that the returned swts meet their requirements
     if (all(is.na(swts)))
-      stop(paste("All stratum weights NA (strat.",nn,")."))
+      stop(paste("All stratum weights NA."))
+
     if (any(is.na(swts))) {
       swts[is.na(swts)] <- 0
-      warning(paste("NAs in stratum weights (",nn," strat.); to be interpreted as 0s.", sep=""))
+      warning(paste("NAs in stratum weights; to be interpreted as 0s.", sep=""))
     }
+
     if (any(swts<0))
       stop("stratum weights must be nonnegative")
 
-    if (identical(harmonic, swt.ls[[nn]])) {
+    if (identical(harmonic, stratum.weights)) {
       wtratio <- rep(1, length(swts))
     } else {
       hwts <- harmonic(data.frame(Tx.grp = design@Z,
                                   stratum.code=stratifier,
                                   check.names = FALSE))
-      
-      if (!all(names(hwts)==names(Uweight.stratum.means))) # not sure this would
-          {                                                    # ever be invoked...
-              stopifnot(setequal(names(hwts), names(Uweight.stratum.means)))
-              hwts <- hwts[names(Uweight.stratum.means)]
-          }
-      wtratio <- swts/hwts 
-  }
+      wtratio <- swts/hwts
+    }
 
-      sweights <- swts * Uweight.stratum.means
-      sum.sweights <- sum(sweights, na.rm=TRUE) 
-      sweights <- sweights / sum.sweights
-      
-      wtratio <- wtratio * Uweight.stratum.means
-      wtratio <- wtratio / sum.sweights
-      
-    wtlist[[nn]] <- data.frame(sweights=sweights,wtratio=wtratio)
-    NULL
-  }
-  wtlist
+    sweights <- swts
+    sum.sweights <- sum(sweights, na.rm=TRUE)
+    sweights <- sweights / sum.sweights
+
+    wtratio <- wtratio / sum.sweights
+    names(wtratio) <- levels(stratifier)
+
+    data.frame(sweights = sweights,
+               wtratio = wtratio,
+               row.names = levels(stratifier))
+  })
 }
 
 ##' Generate Descriptives
@@ -800,7 +749,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   covars.nmcols <- c(design@NM.Covariates, rep(1L, k.NM ) )
   origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
   origvars <- c(design@OriginalVariables, origvars)
-  
+
   # we can't return an array because different stratifications will have varying numbers
   # of strata levels. A list is more flexible here, but less structured.
   f <- function(s){
@@ -813,13 +762,16 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     NM <- design@NotMissing[keep,,drop=FALSE]
     NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
-    
+
+    wtratio <- design@Sweights[[s]]$wtratio
+    names(wtratio) <- rownames(design@Sweights[[s]])
+
     stopifnot(nlevels(ss)==1 ||
-                  all(levels(ss)  %in% names(design@Sweights[[s]]$wtratio) ) )
-    wtr.short <- design@Sweights[[s]]$wtratio[match(levels(ss),
-                                                    names(design@Sweights[[s]]$wtratio),
-                                                    nomatch=1L) # <-- this is to handle 
-                                              ]                 # the unstratified case
+                  all(levels(ss)  %in% names(wtratio) ) )
+    wtr.short <- wtratio[match(levels(ss),
+                               names(design@Sweights[[s]]$wtratio),
+                               nomatch=1L) # <-- this is to handle 
+                         ]                 # the unstratified case
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
