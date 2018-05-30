@@ -143,12 +143,12 @@ test_that("Residuals from weighted regressions w/ sparse designs",
 
           })
 
-#test_that("data.table options issue #69", {
-#
-#  if (suppressMessages(suppressWarnings(require(data.table)))) {
-#    data(nuclearplants)
-#    f <- function() 1
-#    expect_equal(withOptions(list(), f), 1)
-#  }
-#
-#})
+test_that("data.table options issue #69", {
+
+  if (suppressMessages(suppressWarnings(require(data.table)))) {
+    data(nuclearplants)
+    f <- function() 1
+    expect_equal(withOptions(list(), f), 1)
+  }
+
+})
