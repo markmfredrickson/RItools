@@ -389,9 +389,11 @@ setClass("StratumWeightedDesignOptions",
 ##'
 ##' The function expects its DesignOptions argument to represent aggregated data,
 ##' i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
-##' is ordinarily a function that is applied to a data frame representing clusters
-##' (with variables \code{Tx.grp}, \code{stratum.code} and covariates as named in the 
-##' \code{design} argument (a DesignOptions object)) that returns a 
+##' is a function that is applied to a data frame representing clusters,
+##' with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the 
+##' \code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
+##' culled or inferred from originating \link{\code{balanceTest}} call or as aggregated up
+##' from those unit weights).  Returns a 
 ##' weighting factor to be associated with each stratum, this factor determining the stratum 
 ##' weight by being multiplied by mean of unit weights over clusters in that stratum. It can
 ##' also be a named list of such functions, with an entry for each of one or more
@@ -421,8 +423,8 @@ setClass("StratumWeightedDesignOptions",
 ##' being assembled there for other reasons.  An improvement for another day...)
 ##' 
 ##' @param design DesignOptions
-##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, and all other covariates for the units.
-##' @return list with entries corresponding to stratifying variables.
+##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, all other covariates and unit.weights.
+##' @return data frame w/ rows for strata, cols \code{sweights} and \code{wtratio}. 
 ##'
 ##' @keywords internal
 
@@ -450,6 +452,7 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
                                   data.frame(Tx.grp = design@Z,
                                              stratum.code = stratifier,
                                              design@Covariates,
+                                             unit.weights=design@UnitWeights,
                                check.names = FALSE)),
                 envir=parent.frame())
 
