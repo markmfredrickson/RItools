@@ -4,5 +4,9 @@ lexicon.txt
 load.R
 inst/docs
 cran-comments.md
+tests/testthat/test.notforCRAN.R
+matrixNotation.Rnw
+.git
+.local
 ^\.travis\.yml$
 ^revdep$
