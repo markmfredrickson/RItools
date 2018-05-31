@@ -697,7 +697,8 @@ aggregateDesigns <- function(design) {
 #'
 #' Just as the covariates are presumed to have been aligned, the NotMissing weights carried
 #' in this class are presumed to have been normalized: in each stratum, either all
-#' weights are 0, or they've been rescaled to sum to 1. They are nonnegative but not
+#' weights are 0, or they've been rescaled by their stratum mean (so that these weights'
+#' arithmetic mean is 1). They are nonnegative but not
 #' limited from above. In order to handle different NA patterns for
 #' different covariates, this normalization is done separately for each variable.
 #'
@@ -869,7 +870,7 @@ alignedToInferentials <- function(alignedcovs) {
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     
     tmat <- Covs * Uweights * #the sum statistic we're about to compute corresponds 
-        wtr # to averaging within-stratum difference w/ stratum weights proportion to
+        wtr # to averaging within-stratum difference w/ stratum weights proportional to
     ## harmonic means of n_ts and n_cs.  To override w/user-designated weights, we
     ## factor in wtr, the "weight ratio" as previously reconstructed.
 
