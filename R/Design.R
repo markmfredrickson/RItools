@@ -395,24 +395,21 @@ setClass("StratumWeightedDesignOptions",
 ##' culled or inferred from originating \link{\code{balanceTest}} call or as aggregated up
 ##' from those unit weights).  Returns a 
 ##' weighting factor to be associated with each stratum, this factor determining the stratum 
-##' weight by being multiplied by mean of unit weights over clusters in that stratum. It can
-##' also be a named list of such functions, with an entry for each of one or more
-##' stratifying variables, or a similarly-named list of numeric vectors giving these weighting 
-##' factors explicitly.
+##' weight by being multiplied by mean of unit weights over clusters in that stratum.
 ##'
 ##' About the value of this function:
 ##' Each entry in this list is in turn a data frame of two variables,
 ##' \code{sweights}  and \code{wtratio}, with rows representing strata.
-##' The code \code{sweights} vector represents products of internally
-##' calculated or user-provided \code{stratum.weights} with stratum
-##' means of unit weights; it will have been normalized to sum to 1.
-##' It's similar to w_b of Hansen & Bowers (2008), with the difference
-##' that it incorporates a factor equal to the stratum mean of element
-##' weights. \code{wtratio} is the ratio of \code{sweights} to the harmonic
-##' mean of n_{tb} and n_{cb}, the numbers of treatment and control
-##' clusters in stratum b.  Not h_b times something having to do with
-##' cluster sizes or weights, such as the m-bar_b of Hansen & Bowers
-##' (2008); just h_b. The comparison to h_b is expected downstream in
+##' The \code{sweights} vector represents internally
+##' calculated or user-provided \code{stratum.weights}, scaled so that
+##' its sum over each of the strata is 1.  Other than this scaling
+##' it's w_b of Hansen & Bowers (2008). \code{wtratio} is the ratio of
+##' \code{sweights} to the product of the harmonic
+##' mean of n_{tb} and n_{cb}, the number of treatment and control
+##' clusters in stratum b, with the mean of the weights associated with
+##' each of these clusters,  i.e. the m-bar_b of Hansen & Bowers
+##' (2008). This comparison of \code{sweights} to the product of h_b
+##' and m-bar_b is expected downstream in
 ##' \code{AlignedToInferentials} (in its internal calculations
 ##' involving \sQuote{\code{wtr}}).
 ##' 
@@ -428,7 +425,7 @@ setClass("StratumWeightedDesignOptions",
 ##'
 ##' @keywords internal
 
-DesignWeights <- function(design, stratum.weights = harmonic) {
+DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) {
   stopifnot(inherits(design, "DesignOptions"),
             is.function(stratum.weights),
             !is.null(design@UnitWeights),  # TODO: take these checks out if we do not use unit weights in this function
@@ -468,12 +465,14 @@ DesignWeights <- function(design, stratum.weights = harmonic) {
     if (any(swts<0))
       stop("stratum weights must be nonnegative")
 
-    if (identical(harmonic, stratum.weights)) {
+    if (identical(harmonic_times_mean_weight, stratum.weights)) {
       wtratio <- rep(1, length(swts))
     } else {
-      hwts <- harmonic(data.frame(Tx.grp = design@Z,
-                                  stratum.code=stratifier,
-                                  check.names = FALSE))
+        hwts <- harmonic_times_mean_weight(
+            data.frame(Tx.grp = design@Z,
+                       stratum.code=stratifier,
+                       unit.weights=design@UnitWeights,
+                       check.names = FALSE))
       wtratio <- swts/hwts
     }
 
@@ -693,21 +692,15 @@ aggregateDesigns <- function(design) {
 #'
 #' A class for representing covariate matrices after alignment within stratum,
 #' for a (single) given stratifying factor.  There can also be a clustering variable,
-#' assumed to be nested within the stratifying variable. Extends DesignMatrix.
+#' assumed to be nested within the stratifying variable. Extends DesignMatrix class.
 #'
-#' Just as the covariates are presumed to have been aligned, the NotMissing weights carried
-#' in this class are presumed to have been normalized: in each stratum, either all
-#' weights are 0, or they've been rescaled by their stratum mean (so that these weights'
-#' arithmetic mean is 1). They are nonnegative but not
-#' limited from above. In order to handle different NA patterns for
-#' different covariates, this normalization is done separately for each variable.
-#'
-#' In addition, unlike DesignOptions this class has no UnitWeights slot.
-#' So the burden of representing differences in stratum
-#' sizes falls entirely on the StrataWeightRatio slot. This slot has an entry for each unit,
-#' representing ratio of user provided or specified stratum weight to h_b, the harmonic
-#' mean of n_{tb} and n_{cb}, the counts of treatment and control clusters in stratum b.
-#' (So h_b in no way reflects unit weights or cluster sizes.)
+#' Unlike DesignOptions this class has no UnitWeights slot.  Rather, the NotMissing
+#' slot now records products of unit weights and non-missingness (more specifically
+#' cluster means of non-missingness averaged with element weights, if provided). 
+#' The StrataWeightRatio slot has an entry for each unit, representing ratio of
+#' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
+#' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
+#' (the arithmetic mean of aggregated cluster weights within that stratum).
 #' 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
@@ -817,9 +810,6 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     }
   }
     colnames(covars.Sctr) <- vars
-    ewts.mns <- slm.fit.csr.fixed(S, ewts)$fitted
-    ewts.mns <-  ifelse(ewts.mns==0, 1, ewts.mns)
-    ewts.normed <- ewts/ewts.mns # i.e., the \tilde{w} of the accompanying vignette
       
       new("AlignedCovs",
           Z=as.logical(design@Z[keep]),
@@ -829,7 +819,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           Cluster           = factor(design@Cluster[keep]),
           OriginalVariables = origvars,
           Covariates        = covars.Sctr,
-          NotMissing          = ewts.normed,
+          NotMissing          = ewts,
           TermLabels=design@TermLabels,
           Contrasts=design@Contrasts,
           NM.Covariates=covars.nmcols,
