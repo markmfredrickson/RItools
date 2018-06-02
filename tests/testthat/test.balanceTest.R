@@ -70,37 +70,6 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
 }
           )
 
-test_that("Alternate formats for stratum.weights argument", {
-    set.seed(20160406)
-    n <- 7 # increase at your peril -- clogit gets slow quickly as stratum size increases
-    dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
-                      s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
-                      )
-    dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
-
-    xb1 <- balanceTest(z~x1+strata(s)-1, data=dat, report="all")
-
-    hwts <- with(dat, colSums(table(z, s)^-1)^-1 ) # 2*harmonic means of (n_{tb}, n_{cb}), not normalized
-    xb1a <- balanceTest(z~x1+strata(s)-1, data=dat, stratum.weights=hwts, report="all")
-    expect_equal(xb1, xb1a)
-
-    xb2 <- balanceTest(z~x1+strata(s), data=dat, report="all")
-    xb2a <- balanceTest(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=c("1"=1), s=hwts), report="all")
-    expect_equal(xb2, xb2a)
-    xb2b <- balanceTest(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=1, s=hwts), report="all")
-    expect_equal(xb2, xb2b)
-    xb2c <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(Unstrat="cheese!", #shouldn't matter in 1-stratum case
-                                                   s=hwts), report="all")
-    expect_equal(xb2, xb2c)
-    xb2d <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(Unstrat=NULL, s=hwts), report="all")
-    expect_equal(xb2, xb2d)
-    xb2e <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(s=hwts), report="all")
-    expect_equal(xb2, xb2e)
-
-} )
 test_that("balT returns covariance of tests", {
   set.seed(20130801)
   n <- 500
