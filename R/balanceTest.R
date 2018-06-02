@@ -40,12 +40,11 @@
 ##' statistics, targeting the hypothesis that assignment was random within strata. These
 ##' calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 ##' but the default weighting of strata differs from that of the descriptive calculations.
-##' With \code{stratum.weights=harmonic} (the default), each stratum is weighted
-##' in proportion to the product of the stratum mean of \code{unit.weights} and
-##' the harmonic mean \eqn{1/[(1/a +
-##' 1/b)/2]=2*a*b/(a+b)} of the number of treated units (a) and
-##' control units (b) in the stratum; this weighting is optimal under
-##' certain modeling assumptions (discussed in Kalton 1968 and Hansen and
+##' With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum 
+##' is weighted in proportion to the product of the stratum mean of \code{unit.weights} 
+##' and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of 
+##' treated units (a) and control units (b) in the stratum; this weighting is optimal 
+##' under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 ##' Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 ##' distance that combines each of the univariate mean differences while accounting
 ##' for correlations among them. It's similar to the Hotelling's T-squared statistic,
@@ -188,7 +187,7 @@ balanceTest <- function(fmla,
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
                      unit.weights,
-                     stratum.weights = harmonic,
+                     stratum.weights = harmonic_times_mean_weight,
                      subset,
                      include.NA.flags = TRUE,
                      covariate.scaling = NULL,
