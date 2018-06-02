@@ -7,7 +7,7 @@ library("testthat")
 
 context("balanceTest Function")
 
-test_that("xBal univariate descriptive means agree w/ reference calculations",{
+test_that("balT univariate descriptive means agree w/ reference calculations",{
     set.seed(20160406)
     n <- 7 
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
@@ -33,7 +33,7 @@ test_that("xBal univariate descriptive means agree w/ reference calculations",{
 
 })
 
-test_that("xBal inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
+test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
     n <- 51 # increase at your peril -- clogit can suddenly get slow as stratum size increases
@@ -101,7 +101,7 @@ test_that("Alternate formats for stratum.weights argument", {
     expect_equal(xb2, xb2e)
 
 } )
-test_that("balanceTreturns covariance of tests", {
+test_that("balT returns covariance of tests", {
   set.seed(20130801)
   n <- 500
 
@@ -224,7 +224,7 @@ test_that("Observations not meeting subset condition are retained although downw
     n2[nrow(nuclearplants)+1, "pt"] <- 2
     n2$pt <- factor(n2$pt)
 
-    ## this indirect test relies on xBal's dropping unused factor levels
+    ## this indirect test relies on balT's dropping unused factor levels
     xb1 <- balanceTest(pr ~ ., data = nuclearplants)
     xb2 <- balanceTest(pr ~ ., data = n2, subset=pt!='2')
     ## confirm that we still see the '2' level, even if it receives no weight
