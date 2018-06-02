@@ -53,18 +53,12 @@
 ##' In contrast to the earlier function \code{xBalance} that it is intended to replace,
 ##' \code{balanceTest} accepts only binary assignment variables (for now). 
 ##'
-##' \code{stratum.weights} can be either a function or a numeric
-##' vector of weights.  If it is a numeric vector, it should be
-##' non-negative and it should have stratum names as its names. (i.e.,
-##' its names should be equal to the levels of the factor specified by
-##' \code{strata}.) If it is a function, it should accept one
-##' argument, a data frame containing the variables in \code{data} and
-##' additionally \code{Tx.grp} and \code{stratum.code}, and return a
-##' vector of non-negative weighting factors with stratum codes as names.
-##' (To see the function that's applied by default, 
-##' do \code{getFromNamespace("harmonic", "RItools")}.)  These weighting factors
-##' will be multipled by the stratum mean of \code{unit.weights} to determine
-##' the stratum weights used for inferential calculations.
+##' \code{stratum.weights} must be a function of a single argument,
+##' a data frame containing the variables in \code{data} and
+##' additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights}, 
+##' returning a named numeric vector of non-negative weights identified by stratum.
+##' (For an example, enter \code{getFromNamespace("harmonic", "RItools")}.)
+##' the data  \code{stratum.weights} function.  
 ##'
 ##' If the stratifying factor has NAs, these cases are dropped.  On the other
 ##' hand, if NAs in a covariate are found then those observations are dropped for descriptive
@@ -94,16 +88,7 @@
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
-##' @param stratum.weights Weights to be applied when aggregating
-##'   across strata specified by \code{strata}, defaulting to weights
-##'   proportional to the harmonic mean of treatment and control group
-##'   sizes, in numbers of clusters if clusters are present, within strata.
-##'   This can be either a function used to
-##'   calculate the weights or the weights themselves; if
-##'   \code{strata} is a data frame, then it can be such a function, a
-##'   list of such functions, or a data frame of stratum weighting
-##'   schemes corresponding to the different stratifying factors of
-##'   \code{strata}.  See details.
+##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
 ##' @param covariate.scaling A scale factor to apply to covariates in
 ##'   calculating \code{std.diffs} (currently ignored). 
