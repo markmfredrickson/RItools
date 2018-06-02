@@ -541,10 +541,7 @@ d(\mathbf{Z}, \mathbf{x}_{(j)}) &=
  d(\mathbf{Z}, \mathbf{x})&=
 \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
 \left[ \vec{w}_{bi} \cdot \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
-\vec{w}_{bi} \cdot \vec{x}_{bi} \right] \label{eq:13a} \\
-  &= \sum_{b=1}^B \frac{s_b}{h_b} \sum_{i\leq n_{b}}{Z}_{bi}
-\left[ \frac{{w}_{bi}}{\bar{w}_b} \cdot \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
-\frac{{w}_{bi}}{\bar{w}_b} \cdot \vec{x}_{bi} \right] , \label{eq:13b}
+\vec{w}_{bi} \cdot \vec{x}_{bi} \right] , \label{eq:13}
 \end{align}
 in parallel with \eqref{eq:11}.  Either definition calls for figuring matrices of
 weighted totals of observed $x$'s by cluster, $(\mathbf{w}_{b} \cdot
@@ -574,7 +571,7 @@ $\tilde{\mathbf{w}}_{b(j)} =
 \end{align}
 where $\cdot$ indicates unit-wise product. In contrast,
 the alternate definition
-of $d()$ in \eqref{eq:13a}--\eqref{eq:13b} calls for stratum-wise alignment of $\mathbf{x} \cdot \mathbf{w}$, without further weighting.
+of $d()$ in \eqref{eq:13} calls for stratum-wise alignment of $\mathbf{x} \cdot \mathbf{w}$, with out further weighting.
 
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
 effect, they're imputed to weighted stratum means.  In terms of its
