@@ -549,12 +549,12 @@ weighted totals of observed $x$'s by cluster, $(\mathbf{w}_{b} \cdot
 
 In the pre-issue89 implementation, the first step was to \textit{align} the
 $\mathbf{x}_{b}$ submatrices, ie to shift them in such a way that their
-weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$. This simplifies \eqref{eq:1}  by causing its
+weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$. This was
+done in an attempt to simplify \eqref{eq:1}  by causing its
 second term to vanish. (\texttt{Not so!  Since $\mathbf{Z}_{b}'\mathbf{w}_{b(j)}$ in general has nonzero variance, you can't just impose an additive shift on $x$ and be left with the same adjusted diff.}) 
-Then we'll apply the $\bar{w}_{b}^{-1}$
+Then we applied the $\bar{w}_{b}^{-1}$
 stratum-wise weight factors, by multiplying them through by weight
-matrices $\tilde{\mathbf{w}}_{b}$ 
-(\texttt{I don't think this weight construction fixes the issued noted above.}),
+matrices $\tilde{\mathbf{w}}_{b}$,
 where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
 $\mathbf{w}_{b(j)}  = \mathbf{0} $, otherwise
 $\tilde{\mathbf{w}}_{b(j)} = 
@@ -571,7 +571,12 @@ $\tilde{\mathbf{w}}_{b(j)} =
 \end{align}
 where $\cdot$ indicates unit-wise product. In contrast,
 the alternate definition
-of $d()$ in \eqref{eq:13} calls for stratum-wise alignment of $\mathbf{x} \cdot \mathbf{w}$, with out further weighting.
+of $d()$ in \eqref{eq:13} calls for stratum-wise alignment of
+$\mathbf{x} \cdot \mathbf{w}$, with out further weighting. \texttt{In
+  issue89 branch I remove the multiplying through by
+  $\bar{w}_{b}^{-1}$, in the process reverting the meaning of
+  ``stratum weight ratio'' from  $\frac{s_b}{h_b}$ to $\frac{s_b}{h_b\bar{w}_b}$, which aligns
+  better w/ H\& B08 and is a more natural interpretation of that phrase. See c70cbe1.}
 
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
 effect, they're imputed to weighted stratum means.  In terms of its
