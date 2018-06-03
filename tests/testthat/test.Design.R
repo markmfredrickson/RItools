@@ -553,12 +553,24 @@ test_that("Issue #89: Proper strata weights", {
   design.nowts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data  = xy)
   design.wts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy.wts)
 
-  ## split up into strata, use the default harmonic strata weights
-  ## the unit weights shouldn't enter into this.
-  dw.nowts <- RItools:::DesignWeights(design.nowts)
-  dw.wts <- RItools:::DesignWeights(design.wts)
+  ## split up into strata, use harmonic strata weights
+  ## the unit weights shouldn't enter into this, although they
+  ## do affect other weightings schemes including the default
+  dw.nowts <- RItools:::DesignWeights(design.nowts, stratum.weights=harmonic)
+  dw.wts <- RItools:::DesignWeights(design.wts, stratum.weights=harmonic)
 
-  expect_equal(dw.wts, dw.nowts)
+  expect_equal(dw.wts$m$sweights, dw.nowts$m$sweights)
+  expect_equal(dw.wts$Unstrat, dw.nowts$Unstrat)
+
+  ## in this example by-stratum harmonic mean cluster counts are always 1 --
+  expect_equivalent(dw.wts$m$sweights,
+               rep(1, nlevels(strata(xy.wts$m)))/nlevels(strata(xy.wts$m))
+               )
+  ## -- so we can check the calculation of the mean cluster mass factor as
+  ## follows. 
+  dw.wts2 <- RItools:::DesignWeights(design.wts)
+  clus_mean_weights <- tapply(xy.wts$"(weights)", xy.wts$m, mean)
+  expect_equivalent(dw.wts2$m$sweights, clus_mean_weights/sum(clus_mean_weights))
 
 })
 
