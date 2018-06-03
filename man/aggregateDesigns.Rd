@@ -10,8 +10,10 @@ aggregateDesigns(design)
 \item{design}{DesignOptions}
 }
 \value{
-Aggregates
+another DesignOptions representing the clusters
 }
 \description{
-totals up all the covariates
+Totals up all the covariates, as well as user-provided unit weights.
+(What it does to NotMissing entries is described in docs for DesignOptions class.)
 }
+\keyword{internal}

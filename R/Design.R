@@ -167,11 +167,13 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 #'
 #' Extends the DesignMatrix class
 #'
-##' If the DesignOptions represents clusters of elements, its NotMissing slot is
-##' populated as follows. As otherwise, columns represent terms.  These
-##' columns consist of weighted averages of element-wise non-missingness indicators
+##' If the DesignOptions represents clusters of elements, as when it was created
+##' by aggregating another DesignOptions or DesignMatrix object, then its Covariates
+##' and NotMissing slots are populated with (weighted) averages, not totals.  E.g.,
+##' NotMissing columns consist of weighted averages of element-wise non-missingness indicators
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
-##' vector.
+##' vector.  As otherwise, columns of the NotMissing matrix represent terms
+##' from a model formula, rather than columns the terms may have expanded to.  
 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
@@ -397,8 +399,7 @@ setClass("StratumWeightedDesignOptions",
 ##' weighting factor to be associated with each stratum, this factor determining the stratum 
 ##' weight by being multiplied by mean of unit weights over clusters in that stratum.
 ##'
-##' About the value of this function:
-##' Each entry in this list is in turn a data frame of two variables,
+##' Specifically, the function's value is a data frame of two variables,
 ##' \code{sweights}  and \code{wtratio}, with rows representing strata.
 ##' The \code{sweights} vector represents internally
 ##' calculated or user-provided \code{stratum.weights}, scaled so that

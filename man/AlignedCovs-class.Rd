@@ -7,20 +7,16 @@
 \description{
 A class for representing covariate matrices after alignment within stratum,
 for a (single) given stratifying factor.  There can also be a clustering variable,
-assumed to be nested within the stratifying variable. Extends DesignMatrix.
+assumed to be nested within the stratifying variable. Extends DesignMatrix class.
 }
 \details{
-Just as the covariates are presumed to have been aligned, the NotMissing weights carried
-in this class are presumed to have been normalized: in each stratum, either all
-weights are 0, or they've been rescaled to sum to 1. In order to handle different
-NA patterns for different covariates, this normalization is done separately for each variable.
-
-In addition, unlike DesignOptions this class has no ElementWeights slot.
-So the burden of representing differences in stratum
-sizes falls entirely on the StrataWeightRatio slot. This slot has an entry for each unit,
-representing ratio of user provided or specified stratum weight to h_b, the harmonic
-mean of n_{tb} and n_{cb}, the counts of treatment and control clusters in stratum b.
-(So h_b in no way reflects element weights or cluster sizes.)
+Unlike DesignOptions this class has no UnitWeights slot.  Rather, the NotMissing
+slot now records products of unit weights and non-missingness (more specifically
+cluster means of non-missingness averaged with element weights, if provided). 
+The StrataWeightRatio slot has an entry for each unit, representing ratio of
+specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
+n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
+(the arithmetic mean of aggregated cluster weights within that stratum).
 }
 \section{Slots}{
 
@@ -39,6 +35,6 @@ mean of n_{tb} and n_{cb}, the counts of treatment and control clusters in strat
 
 \item{\code{Covariates}}{Numeric matrix, as in DesignMatrix, except here we presume columns to have been aligned (stratum-centered)}
 
-\item{\code{NotMissing}}{matrix of element weights, normalized within stratum to have mean 1. (As otherwise, NAs are 0s)}
+\item{\code{NotMissing}}{matrix of unit weights, normalized within stratum to have mean 1. (As otherwise, NAs are 0s)}
 }}
 
