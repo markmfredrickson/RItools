@@ -578,6 +578,7 @@ $\mathbf{x} \cdot \mathbf{w}$, with out further weighting. \texttt{In
   ``stratum weight ratio'' from  $\frac{s_b}{h_b}$ to $\frac{s_b}{h_b\bar{w}_b}$, which aligns
   better w/ H\& B08 and is a more natural interpretation of that phrase. See c70cbe1.}
 
+
 Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
 effect, they're imputed to weighted stratum means.  In terms of its
 effects on the values of $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
@@ -713,6 +714,28 @@ minimizes the variance of Z-effect along the imputed variable.
 
 I think we should hard code the use of ``harmonic'' weights\ldots
 
+
+\subsection{Potential simplification of basic calcs}
+
+Note that by \eqref{eq:13}, 
+\begin{equation*}
+ d(\mathbf{Z}, \mathbf{x})=
+\sum_{b=1}^B \left( \mathbf{Z}_{b} - \frac{n_{tb}}{n_{b}} \right)'
+\frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} .
+\end{equation*}
+Similarly, from \citet{hansen:bowers:2008}, 
+\begin{align*}
+  \mathrm{Cov}\left\{   d(\mathbf{Z}, \mathbf{x}) \right\}  &=
+\sum_{b=1}^{B} h_{b}\left( \frac{s_b}{h_b\bar{w}_b} \right)^{2}
+ \frac{1}{n_{b}-1} \mathbf{x}_{b}'\mathbf{x}_{b} \\
+  &= \sum_{b=1}^{B} \frac{h_{b}}{n_{b}-1} \left(
+    \frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} \right)' \left(
+    \frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} \right) .
+\end{align*}
+
+I think we could calculate this and the d's separately, then use
+`base::solve()` for the omnibus statistic, implicitly relying on QR
+rather than SVD.  
 
 \bibliographystyle{plainnat}
 %\bibliography{abbrev_long,causalinference,computing,misc}
