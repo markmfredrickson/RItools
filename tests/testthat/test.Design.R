@@ -535,6 +535,66 @@ test_that("alignDesigns, designToDescriptives output alignment", {
 
 })
 
+
+test_that("alignDesigns centers covars by stratum", {
+
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                      clus=factor(c(1,1,2:4)),
+                      z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                      x1=rep(c(NA, 1), c(3,2)),
+                      x2=c(1:5),
+                      fac=factor(c(rep(1:2,2), NA))
+                      )
+    dat$'(weights)' <- 1
+
+    ## first unweighted case
+    simple0 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    simple0 <-   as(simple0, "StratumWeightedDesignOptions")
+    simple0@Sweights <- RItools:::DesignWeights(simple0, # Placeholder strat weights, shouldn't affect 
+                                                RItools:::effectOfTreatmentOnTreated) # this test
+    asimple0 <- RItools:::alignDesignsByStrata(simple0)
+    expect_equivalent(colSums(asimple0[["Unstrat"]]@Covariates),
+                      rep(0,ncol(asimple0[["Unstrat"]]@Covariates)))
+    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
+                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
+                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+
+    ## now with weights
+    dat1 <- dat
+    dat1$'(weights)' <- rpois(nrow(dat1), lambda=10)
+    while (any(dat1$'(weights)'==0)) dat1$'(weights)' <- rpois(nrow(dat1), lambda=10)
+    
+    simple1 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat1)
+    simple1 <-   as(simple1, "StratumWeightedDesignOptions")
+    simple1@Sweights <- RItools:::DesignWeights(simple1, # Placeholder strat weights, shouldn't affect 
+                                                RItools:::effectOfTreatmentOnTreated) # this test
+    asimple1 <- RItools:::alignDesignsByStrata(simple1)
+    expect_equivalent(colSums(asimple1[["Unstrat"]]@Covariates *
+                              asimple1[["Unstrat"]]@NotMissing[,"_non-null record_"] ),
+                      rep(0,ncol(asimple1[["Unstrat"]]@Covariates)))
+    tmp1 <- asimple1[["strat"]]@Covariates *
+        asimple1[["strat"]]@NotMissing[,"_non-null record_"] 
+    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
+                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
+                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+
+    ## now with weights, post alignment transform
+    asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
+    expect_equivalent(colSums(asimple2[["Unstrat"]]@Covariates *
+                              asimple2[["Unstrat"]]@NotMissing[,"_non-null record_"] ),
+                      rep(0,ncol(asimple2[["Unstrat"]]@Covariates)))
+    tmp2 <- asimple2[["strat"]]@Covariates *
+        asimple2[["strat"]]@NotMissing[,"_non-null record_"] 
+    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
+                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),
+                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+
+} )
+
+
 test_that("Issue #89: Proper strata weights", {
 
   set.seed(20180208)

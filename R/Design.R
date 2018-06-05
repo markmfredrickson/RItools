@@ -798,13 +798,11 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         stop("Invalid post.alignment.transform given")
       }
       ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
-    for (jj in 1L:k.Covs) {
-        covars.Sctr[,jj] <- suppressWarnings(
-            slm.wfit.csr(S, covars.Sctr.new[,jj],
-                         weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
-            )
+        covars.Sctr[,1L:k.Covs] <- suppressWarnings(
+            slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
+                         weights=ewts[, 1L, drop = TRUE])$residuals
+        )
     }
-  }
     colnames(covars.Sctr) <- vars
       
       new("AlignedCovs",
