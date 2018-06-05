@@ -571,10 +571,10 @@ test_that("alignDesigns centers covars by stratum", {
                                                 RItools:::effectOfTreatmentOnTreated) # this test
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
     expect_equivalent(colSums(asimple1[["Unstrat"]]@Covariates *
-                              asimple1[["Unstrat"]]@NotMissing[,"_non-null record_"] ),
+                              asimple1[["Unstrat"]]@UnitWeights ),
                       rep(0,ncol(asimple1[["Unstrat"]]@Covariates)))
-    tmp1 <- asimple1[["strat"]]@Covariates *
-        asimple1[["strat"]]@NotMissing[,"_non-null record_"] 
+
+    tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
     expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
     expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
@@ -583,10 +583,10 @@ test_that("alignDesigns centers covars by stratum", {
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
     expect_equivalent(colSums(asimple2[["Unstrat"]]@Covariates *
-                              asimple2[["Unstrat"]]@NotMissing[,"_non-null record_"] ),
+                              asimple2[["Unstrat"]]@UnitWeights ),
                       rep(0,ncol(asimple2[["Unstrat"]]@Covariates)))
-    tmp2 <- asimple2[["strat"]]@Covariates *
-        asimple2[["strat"]]@NotMissing[,"_non-null record_"] 
+
+    tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
     expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
     expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),

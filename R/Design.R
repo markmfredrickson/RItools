@@ -684,37 +684,45 @@ aggregateDesigns <- function(design) {
       NM.terms=design@NM.terms)
 }
 
-#' AlignedCovs S4 class
+#' CovsAlignedToADesign S4 class
 #'
 #' A class for representing covariate matrices after alignment within stratum,
 #' for a (single) given stratifying factor.  There can also be a clustering variable,
-#' assumed to be nested within the stratifying variable. Extends DesignMatrix class.
+#' assumed to be nested within the stratifying variable. 
 #'
-#' Unlike DesignOptions this class has no UnitWeights slot.  Rather, the NotMissing
-#' slot now records products of unit weights and non-missingness (more specifically
-#' cluster means of non-missingness averaged with element weights, if provided). 
+#' In contrast to DesignOptions, this class represents the combination of a single Covariates
+#' table, realized treatment assignment and treatment assignment scheme, not multiple treatment
+#' assignment schemes (designs). These Covariates are assumed to reflect regularization, s.t.
+#' missings have been patched with a value and then all of the covariate values have been aligned
+#' within each stratum.  In lieu of a NotMissing slot there will be Covariates columns, also
+#' centered within a stratum, recording
+#' non-missingness of the original data. 
+#' 
 #' The StrataWeightRatio slot has an entry for each unit, representing ratio of
 #' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 #' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
 #' (the arithmetic mean of aggregated cluster weights within that stratum).
 #' 
+#' @slot Covariates Numeric matrix, as in DesignMatrix, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
+#' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
 #' @slot StrataFactor Factor indicating strata
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
-#' @slot Covariates Numeric matrix, as in DesignMatrix, except here we presume columns to have been aligned (stratum-centered)
-#' @slot NotMissing matrix of unit weights, normalized within stratum to have mean 1. (As otherwise, NAs are 0s)
-setClass("AlignedCovs",
-         slots = list(
+setClass("CovsAlignedToADesign",
+         slots =
+             c(Covariates="matrix",
+               UnitWeights="numeric",
              Z                 = "logical",
              StrataMatrix    = "matrix.csr", 
              StrataFactor       = "factor",
              StrataWeightRatio = "numeric",
+             OriginalVariables="integer",
              Cluster = "factor"
-         ),
-         contains="DesignMatrix")
+             )
+         )
 
 
 
@@ -722,7 +730,7 @@ setClass("AlignedCovs",
 ##'
 ##' @param design DesignOptions
 ##' @param post.align.transform A post-align transform
-##' @return list List of `AlignedCovs` objects
+##' @return list List of `CovsAlignedToADesign` objects
 ##' @keywords internal
 ##' 
 alignDesignsByStrata <- function(design, post.align.transform = NULL) {
@@ -752,6 +760,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     S <- SparseMMFromFactor(ss)
 
     ewts <- Ewts[keep,,drop=FALSE]
+    non_null_record_wts <- ewts[,1L,drop=TRUE]
     NM <- design@NotMissing[keep,,drop=FALSE]
     NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
@@ -800,24 +809,21 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
       ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
         covars.Sctr[,1L:k.Covs] <- suppressWarnings(
             slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
-                         weights=ewts[, 1L, drop = TRUE])$residuals
+                         weights=non_null_record_wts)$residuals
         )
     }
     colnames(covars.Sctr) <- vars
       
-      new("AlignedCovs",
+      new("CovsAlignedToADesign",
+          Covariates        = covars.Sctr,
+          UnitWeights       = non_null_record_wts,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataFactor=ss,
           StrataWeightRatio = wtr, #as extracted from the design
-          Cluster           = factor(design@Cluster[keep]),
           OriginalVariables = origvars,
-          Covariates        = covars.Sctr,
-          NotMissing          = ewts,
-          TermLabels=design@TermLabels,
-          Contrasts=design@Contrasts,
-          NM.Covariates=covars.nmcols,
-          NM.terms=design@NM.terms)
+          Cluster           = factor(design@Cluster[keep])
+          )
 }
   sapply(strata, f, simplify = FALSE, USE.NAMES = TRUE)
 }
@@ -826,20 +832,12 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 # e.g. something that is a list of strata with a given structure, rather than just a list.
 ##' Align to Inferentials
 ##'
-##' @param alignedcovs An AlignedCovs object
+##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list
 alignedToInferentials <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
-    wtr <- alignedcovs@StrataWeightRatio
 
-    ## we need to map the covariates to their columns in the NotMissing matrix.
-    ## if a column has no missing at all, we indicate that with a zero
-    ## but this would otherwise cause the column to get dropped.
-    ## Instead, we map it to the first column of NM.Covariates, which we know is all 1s.
-    mapping <- alignedcovs@NM.Covariates
-    mapping[mapping == 0] <- 1
-    Uweights <- alignedcovs@NotMissing[,mapping]
     Covs <- alignedcovs@Covariates
     
     n <- t(S) %*% S
@@ -847,16 +845,16 @@ alignedToInferentials <- function(alignedcovs) {
     n1 <- t(S) %*% zz
     n0 <- t(S) %*% (1 - zz)
 
-    # dv is sample variance of treatment by stratum
     # set up 1/(n-1)
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
+    # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     
-    tmat <- Covs * Uweights * #the sum statistic we're about to compute corresponds 
-        wtr # to averaging within-stratum difference w/ stratum weights proportional to
-    ## harmonic means of n_ts and n_cs.  To override w/user-designated weights, we
-    ## factor in wtr, the "weight ratio" as previously reconstructed.
+    tmat <- Covs * (alignedcovs@UnitWeights * #the sum statistic we're about to compute corresponds 
+        alignedcovs@StrataWeightRatio) # to averaging within-stratum difference w/ stratum weights 
+    ## proportional to harmonic means of n_ts and n_cs.  To override w/user-designated weights, 
+    ## we factor in alignedcovs@StrataWeightRatio, the "weight ratio" as previously reconstructed.
 
     ZtH <- S %*% n.inv %*% n1
     ssn <- sparseToVec(t(matrix(zz, ncol = 1) - ZtH) %*% tmat, column = FALSE)
@@ -866,7 +864,7 @@ alignedToInferentials <- function(alignedcovs) {
 
     ## The next few calcs put components of 
     ## z-statistic onto an interpretable scale      
-    ##  wtsum is the sum across strata of twice the harmonic mean of n1, n0 - we should rename it
+    ##  wtsum is the sum across strata of half the harmonic mean of n1, n0 - we should rename it
     wtsum <- sum((n.inv %*% (n1 * n0))@ra) # (the ra slot is where SparseM keeps the non-zero values)
     post.diffs <- ssn / wtsum
     tcov <- tcov *(1 / wtsum^2)
