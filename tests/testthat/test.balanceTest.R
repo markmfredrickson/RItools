@@ -248,9 +248,11 @@ test_that("NAs properly handled", {
   df$X1[1:3] <- NA
 
   bt1 <- balanceTest(Z ~ X1, data = df)
-
+  expect_s3_class(bt1, "xbal")
+  
   ## issue 92: the following fails
   bt2 <- balanceTest(Z ~ X1 + X2, data = df)
+  expect_s3_class(bt2, "xbal")
 })
 
 ## To do: adapt the below to test print.xbal instead of lower level functions

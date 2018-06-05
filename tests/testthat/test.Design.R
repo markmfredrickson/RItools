@@ -89,13 +89,15 @@ test_that("Issue #76: Using I() in formulas", {
   x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
+  expect_s4_class(d, "DesignOptions")
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
-data(nuclearplants)
-foo <- nuclearplants$pt
-nuclearplants$"(weights)" <- 1
-makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
+    data(nuclearplants)
+    foo <- nuclearplants$pt
+    nuclearplants$"(weights)" <- 1
+    d <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
+      expect_s4_class(d, "DesignOptions")
 })
 
 test_that("Duplicated missingness patterns handled appropriately",{
