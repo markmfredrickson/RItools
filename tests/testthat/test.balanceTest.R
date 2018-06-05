@@ -294,6 +294,9 @@ test_that("balanceTest agrees with other methods where appropriate", {
   xy <- data.frame(x1, x2, x3, idx, y)
   xy$m[y == 1] <- order(idx[y == 1])
   xy$m[y == 0] <- order(idx[y == 0])
+  ## this mimics matched pairs:
+  expect_true(all(table(xy$y, xy$m)==1))
+  
 
   xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
   bt1 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, report = "all",)
@@ -303,13 +306,16 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(xb1$overall$p.value[2], summary(cr1)$sctest["pvalue"])
   expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
 
-  wts <- rpois(n, 7)
-  xy$wts <- wts # NB: balanceTest doesn't seem to like just using wts directly during tests, but is fine with it for interactive sessions
-  xy.wts <- data.frame(x1 = xy$x1 * wts, x2 = xy$x2 * wts, x3 = xy$x3 * wts, idx = xy$idx, y = xy$y, m = xy$m)
+  xy$wts <- rpois(n, 7)
+  wtmeans <- tapply(xy$wts, xy$m, mean)
+  wtmeans <- ifelse(wtmeans==0, Inf, wtmeans) # avoid division by 0
+  wts.scaled <- xy$wts / unsplit(wtmeans, xy$m)
 
-  xb2 <- xBalance(y ~ x1 + x2 + x3, data = xy.wts, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
-  bt2 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts, report = "all",)
-  cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts)
+  xy.wts <- data.frame(Intercept=wts.scaled, x1 = xy$x1 * wts.scaled, x2 = xy$x2 * wts.scaled, x3 = xy$x3 * wts.scaled,
+                       idx = xy$idx, y = xy$y, m = xy$m)
+  xb2 <- xBalance(y ~ Intercept+ x1 + x2 + x3, data = xy.wts, strata = list(unmatched = NULL, matched = ~ m), report = "chisquare.test")
+  bt2 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts, report = "chisquare.test")
+  cr2 <- clogit(y ~ Intercept + x1 + x2 + x3 + strata(m), data = xy.wts)
 
   expect_equivalent(xb2$overall$chisquare, bt2$overall[2:1, "chisquare"])
   expect_equivalent(xb2$overall$p.value[2], summary(cr2)$sctest["pvalue"])
