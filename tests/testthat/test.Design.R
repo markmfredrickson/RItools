@@ -524,10 +524,12 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
-                                                RItools:::effectOfTreatmentOnTreated) 
+                                                RItools:::effectOfTreatmentOnTreated)
+    expect_true(setequal(names(simple2@Sweights), c("strat", "Unstrat")))
     dsimple2 <- RItools:::designToDescriptives(simple2)
     asimple2 <- RItools:::alignDesignsByStrata(simple2)
-    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[[1]]@Covariates))
+    expect_true(setequal(names(asimple2), c("strat", "Unstrat")))
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[["Unstrat"]]@Covariates))
 
 })
 

@@ -432,11 +432,6 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
             !is.null(design@UnitWeights),  # TODO: take these checks out if we do not use unit weights in this function
             all(design@UnitWeights >= 0 ) )
 
-  n.strata <- dim(design@StrataFrame)[2]
-  strata.names <- colnames(design@StrataFrame)
-
-  ### change names here!
-  wtlist <- list()
   lapply(design@StrataFrame, function(s) {
 
     stratifier <- factor(s)
@@ -826,7 +821,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           NM.Covariates=covars.nmcols,
           NM.terms=design@NM.terms)
 }
-  lapply(strata, f)
+  sapply(strata, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
 # I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up
