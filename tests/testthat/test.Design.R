@@ -638,6 +638,86 @@ test_that("Issue #89: Proper strata weights", {
 
 })
 
+context("alignedToInferentials")
+
+
+test_that("alignedToInferentials agreement w/ xBal()", {
+
+  set.seed(20180605)
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  x3 <- 0.5 + 0.25 * x1 - 0.25 * x2 + rnorm(n)
+  idx <- 0.25 + 0.1 * x1 + 0.2 * x2 - 0.5 * x3 + rnorm(n)
+  y <- sample(rep(c(1,0), n/2), prob = exp(idx) / (1 + exp(idx)))
+
+  xy <- data.frame(x1, x2, x3, idx, y)
+  xy$m[y == 1] <- order(idx[y == 1])
+  xy$m[y == 0] <- order(idx[y == 0])
+  ## this mimics matched pairs:
+  expect_true(all(table(xy$y, xy$m)==1))
+  xy$'(weights)' <- rep(1L, n) 
+
+    ## first unweighted case
+    simple0 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy)
+    simple0 <-   as(simple0, "StratumWeightedDesignOptions")
+    simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
+    asimple0 <- RItools:::alignDesignsByStrata(simple0)
+    btis0 <- lapply(asimple0, alignedToInferentials)
+    xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
+                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+
+    expect_equivalent(btis0[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                      xb0$results[,'adj.diff',"unmatched"])
+    expect_equivalent(btis0[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+                      attr(xb0$overall, 'tcov')$unmatched)
+    expect_equivalent(btis0[['Unstrat']][c('csq', 'DF')],
+                      xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                      xb0$results[,'adj.diff',"matched"])
+    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+                      attr(xb0$overall, 'tcov')$matched)
+    expect_equivalent(btis0[['m']][c('csq', 'DF')],
+                      xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+
+    ## now with weights
+    xy_wted <- xy
+    xy_wted$'(weights)' <- 0
+    while (any(xy_wted$'(weights)'==0)) xy_wted$'(weights)' <- rpois(n, lambda=10)
+
+    simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
+    simple1 <-   as(simple1, "StratumWeightedDesignOptions")
+    simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
+    asimple1 <- RItools:::alignDesignsByStrata(simple1)
+    btis1 <- lapply(asimple1, alignedToInferentials)
+
+    wtmeans <- tapply(xy_wted$'(weights)', xy_wted$m, mean)
+  wtmeans <- ifelse(wtmeans==0, Inf, wtmeans) # avoid division by 0
+  wts.scaled <- xy_wted$'(weights)' / unsplit(wtmeans, xy_wted$m)
+
+  xy_xbwts <- transform(xy_wted, Intercept=wts.scaled, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled)
+    xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+
+    expect_equivalent(btis1[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                      xb1$results[,'adj.diff',"unmatched"])
+    expect_equivalent(btis1[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+                      attr(xb1$overall, 'tcov')$unmatched)
+    expect_equivalent(btis1[['Unstrat']][c('csq', 'DF')],
+                      xb1[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+    expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                      xb1$results[,'adj.diff',"matched"])
+    expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+                      attr(xb1$overall, 'tcov')$matched)
+    expect_equivalent(btis1[['m']][c('csq', 'DF')],
+                      xb1[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+
+
+} )
+
 ### Tests to write...
 ##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})
 ##test_that("",{})
