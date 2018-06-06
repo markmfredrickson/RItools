@@ -617,14 +617,31 @@ test_that("Issue #89: Proper strata weights", {
   design.nowts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data  = xy)
   design.wts <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy.wts)
 
+  ## ETT weights are determined by assignment probabilities, not element counts 
+  ## or cluster masses. Accordingly presence/absence of unit weights shouldn't matter
+  ## for their sweights.  (But since they do affect h_b * m-bar_b, the corresponding
+  ## wtratio's will be affected.)
+  ett.nowts <- RItools:::DesignWeights(design.nowts, stratum.weights=effectOfTreatmentOnTreated)
+  ett.wts <- RItools:::DesignWeights(design.wts, stratum.weights=effectOfTreatmentOnTreated)
+
+  expect_equal(ett.wts$m$sweights, ett.nowts$m$sweights)
+
+  ## With a single stratum, sweights has to be 1, since it's normalized.
+  ## wtratio is its ratio with h_b * m-bar_b, thus will generally be much 
+  ## less than 1.  Check this:
+  h <- with(xy, 1/(1/sum(y) + 1/sum(!y)))
+  expect_equal(ett.nowts[['Unstrat']][,'wtratio'], 1/h)
+  h <- with(xy.wts, 1/(1/sum(y) + 1/sum(!y)))
+  expect_equal(ett.wts[['Unstrat']][,'wtratio'], 1/(h*mean(xy.wts$"(weights)")))
+  
+  
   ## split up into strata, use harmonic strata weights
-  ## the unit weights shouldn't enter into this, although they
-  ## do affect other weightings schemes including the default
+  ## again unit weights shouldn't enter into this, although they
+  ## would affect harmonic_times_mean_weight
   dw.nowts <- RItools:::DesignWeights(design.nowts, stratum.weights=harmonic)
   dw.wts <- RItools:::DesignWeights(design.wts, stratum.weights=harmonic)
 
   expect_equal(dw.wts$m$sweights, dw.nowts$m$sweights)
-  expect_equal(dw.wts$Unstrat, dw.nowts$Unstrat)
 
   ## in this example by-stratum harmonic mean cluster counts are always 1 --
   expect_equivalent(dw.wts$m$sweights,

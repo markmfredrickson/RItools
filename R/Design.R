@@ -405,13 +405,14 @@ setClass("StratumWeightedDesignOptions",
 ##' calculated or user-provided \code{stratum.weights}, scaled so that
 ##' its sum over each of the strata is 1.  Other than this scaling
 ##' it's w_b of Hansen & Bowers (2008). \code{wtratio} is the ratio of
-##' \code{sweights} to the product of the harmonic
+##' \code{sweights} to the product of half the harmonic
 ##' mean of n_{tb} and n_{cb}, the number of treatment and control
 ##' clusters in stratum b, with the mean of the weights associated with
-##' each of these clusters,  i.e. the m-bar_b of Hansen & Bowers
-##' (2008). This comparison of \code{sweights} to the product of h_b
-##' and m-bar_b is expected downstream in
-##' \code{AlignedToInferentials} (in its internal calculations
+##' each of these clusters.  In the notation of Hansen & Bowers
+##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name 
+##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight 
+##' in the sense of summing to 1 across strata.  The ratio is expected 
+##' downstream in \code{alignedToInferentials} (in internal calculations
 ##' involving \sQuote{\code{wtr}}).
 ##' 
 ##' (Developer note: One might simplify by only returning the sweights,
@@ -436,10 +437,6 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 
     stratifier <- factor(s)
 
-    if (nlevels(stratifier) == 1) {
-      return(data.frame(sweights=1, wtratio=1, row.names='1'))
-    }
-
     swts <- do.call(stratum.weights,
                     args = list(data =
                                   data.frame(Tx.grp = design@Z,
@@ -462,14 +459,24 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
       stop("stratum weights must be nonnegative")
 
     if (identical(harmonic_times_mean_weight, stratum.weights)) {
-      wtratio <- rep(1, length(swts))
+        ## Subtlety re correspondence of codebase with H&B08:
+        ## H&B's h_b equals *half* the harmonic mean of n_t, n_c;
+        ## RItools's harmonic() calculates harmonic means of
+        ## (n_t, n_c) pairs, w/o the (1/2) factor. (Likewise for
+        ## harmonic_times_mean_weight().)
+        ## If we're here, then the current sweights
+        ## will have been calculated as (2 * h_b * m-bar_b), by
+        ## harmonic_times_mean_weight(). Since wtratio needs to
+        ## compare these weights to (h_b * m-bar_b) as in H&B, we have:
+        wtratio <- rep(2, length(swts))
+        ## (normalization of sweights to be addressed below). 
     } else {
         hwts <- harmonic_times_mean_weight(
             data.frame(Tx.grp = design@Z,
                        stratum.code=stratifier,
                        unit.weights=design@UnitWeights,
                        check.names = FALSE))
-      wtratio <- swts/hwts
+      wtratio <- swts/(hwts/2) # Re 1/2 factor, see note immediately above
     }
 
     sweights <- swts
