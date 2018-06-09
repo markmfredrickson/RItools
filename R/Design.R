@@ -859,12 +859,14 @@ alignedToInferentials <- function(alignedcovs) {
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     
     tmat <- Covs * (alignedcovs@UnitWeights * #the sum statistic we're about to compute corresponds 
-        alignedcovs@StrataWeightRatio) # to averaging within-stratum difference w/ stratum weights 
-    ## proportional to harmonic means of n_ts and n_cs.  To override w/user-designated weights, 
-    ## we factor in alignedcovs@StrataWeightRatio, the "weight ratio" as previously reconstructed.
+        alignedcovs@StrataWeightRatio) # to averaging within-stratum differences using stratum 
+    ## weights proportional to harmonic means of n_t's and n_c's.  To override w/ weights we want, 
+    ## factor in a wtratio as constructed by DesignWeights().
 
     ZtH <- S %*% n.inv %*% n1
     ssn <- sparseToVec(t(matrix(zz, ncol = 1) - ZtH) %*% tmat, column = FALSE)
+    names(ssn) <- colnames(Covs)
+
     scaled.tmat <- as.matrix(tmat * sqrt(dv))
     tcov <- crossprod(scaled.tmat)
     ssvar <- diag(tcov)    

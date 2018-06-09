@@ -644,8 +644,10 @@ test_that("Issue #89: Proper strata weights", {
   expect_equal(dw.wts$m$sweights, dw.nowts$m$sweights)
 
   ## in this example by-stratum harmonic mean cluster counts are always 1 --
-  expect_equivalent(dw.wts$m$sweights,
-               rep(1, nlevels(strata(xy.wts$m)))/nlevels(strata(xy.wts$m))
+  
+  expect_equivalent(as.vector(dw.wts$m$sweights),
+               rep(1, nlevels(survival::strata(xy.wts$m)))/
+                 nlevels(survival::strata(xy.wts$m))
                )
   ## -- so we can check the calculation of the mean cluster mass factor as
   ## follows. 
@@ -686,22 +688,24 @@ test_that("alignedToInferentials agreement w/ xBal()", {
 
     expect_equivalent(btis0[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
-    expect_equivalent(btis0[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+    expect_equivalent(btis0[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
     expect_equivalent(btis0[['Unstrat']][c('csq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
     expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"matched"])
-    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
+    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$matched)
     expect_equivalent(btis0[['m']][c('csq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
-    ## now with weights
+    ## now with weights.  Comparison adjusted diffs based on totals will only work
+    ## if the weights don't vary with by stratum, at least in stratified case.
+    mwts <- 0
+    while (any(mwts==0)) mwts <- rpois(n/2, lambda=10)
     xy_wted <- xy
-    xy_wted$'(weights)' <- 0
-    while (any(xy_wted$'(weights)'==0)) xy_wted$'(weights)' <- rpois(n, lambda=10)
+    xy_wted$'(weights)' <- unsplit(mwts, xy$m)
 
     simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
@@ -709,28 +713,32 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
     btis1 <- lapply(asimple1, alignedToInferentials)
 
-    wtmeans <- tapply(xy_wted$'(weights)', xy_wted$m, mean)
-  wtmeans <- ifelse(wtmeans==0, Inf, wtmeans) # avoid division by 0
-  wts.scaled <- xy_wted$'(weights)' / unsplit(wtmeans, xy_wted$m)
+  wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
-  xy_xbwts <- transform(xy_wted, Intercept=wts.scaled, x1=x1*wts.scaled,
+  xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
                         x2=x2*wts.scaled, x3=x3*wts.scaled)
-    xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
-                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+  xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                   strata = list(unmatched = NULL), report = c("all"))
+  expect_equivalent(btis1[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                    xb1u$results[,'adj.diff',"unmatched"])
+  expect_equivalent(btis1[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                    attr(xb1u$overall, 'tcov')$unmatched)
+  expect_equivalent(btis1[['Unstrat']][c('csq', 'DF')],
+                    xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis1[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
-                      xb1$results[,'adj.diff',"unmatched"])
-    expect_equivalent(btis1[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
-                      attr(xb1$overall, 'tcov')$unmatched)
-    expect_equivalent(btis1[['Unstrat']][c('csq', 'DF')],
-                      xb1[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
-                      xb1$results[,'adj.diff',"matched"])
-    expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' col
-                      attr(xb1$overall, 'tcov')$matched)
-    expect_equivalent(btis1[['m']][c('csq', 'DF')],
-                      xb1[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+  wts.scaled <- xy_wted$'(weights)' / mean( mwts )
+  xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled)
+  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                   strata = list(matched = ~ m), report = c("all"))
+
+  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+                    xb1m$results[,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                    attr(xb1m$overall, 'tcov')$matched)
+  expect_equivalent(btis1[['m']][c('csq', 'DF')],
+                    xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
 
 } )

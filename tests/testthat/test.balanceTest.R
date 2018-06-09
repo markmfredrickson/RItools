@@ -307,17 +307,27 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
 
   xy$wts <- rpois(n, 7)
+
+  wts.scaled <- xy$wts / mean(xy$wts)
+  xy.wts.u <- data.frame(x1 = xy$x1 * wts.scaled, x2 = xy$x2 * wts.scaled, x3 = xy$x3 * wts.scaled,
+                     idx = xy$idx, y = xy$y, m = xy$m)
+  xb2u <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
+  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy, unit.weights = wts, report = "chisquare.test")
+  expect_equivalent(xb2u$overall$chisquare, bt2u$overall['Unstrat', "chisquare"])
+
+  ## in stratified case, weighted/totals correspondence requires that weights don't vary within strata.
   wtmeans <- tapply(xy$wts, xy$m, mean)
-  wtmeans <- ifelse(wtmeans==0, Inf, wtmeans) # avoid division by 0
-  wts.scaled <- xy$wts / unsplit(wtmeans, xy$m)
+  xy$wts2 <- unsplit(wtmeans, xy$m)
+  wts2.scaled <- xy$wts2/mean(wtmeans)
+  xy.wts.m <- data.frame(x1 = xy$x1 * wts2.scaled, x2 = xy$x2 * wts2.scaled, x3 = xy$x3 * wts2.scaled,
+                     idx = xy$idx, y = xy$y, m = xy$m)
+  xb2m <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.m, strata = list(matched = ~ m), report = "chisquare.test")
 
-  xy.wts <- data.frame(Intercept=wts.scaled, x1 = xy$x1 * wts.scaled, x2 = xy$x2 * wts.scaled, x3 = xy$x3 * wts.scaled,
-                       idx = xy$idx, y = xy$y, m = xy$m)
-  xb2 <- xBalance(y ~ Intercept+ x1 + x2 + x3, data = xy.wts, strata = list(unmatched = NULL, matched = ~ m), report = "chisquare.test")
-  bt2 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts, report = "chisquare.test")
-  cr2 <- clogit(y ~ Intercept + x1 + x2 + x3 + strata(m), data = xy.wts)
+  
+  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts2, report = "chisquare.test")
+  cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts.m)
 
-  expect_equivalent(xb2$overall$chisquare, bt2$overall[2:1, "chisquare"])
-  expect_equivalent(xb2$overall$p.value[2], summary(cr2)$sctest["pvalue"])
-  expect_equivalent(bt2$overall[1, "p.value"], summary(cr2)$sctest["pvalue"])
+  expect_equivalent(xb2m$overall$chisquare, bt2m$overall['m', "chisquare"])
+  expect_equivalent(xb2m$overall$p.value, summary(cr2)$sctest["pvalue"])
+  expect_equivalent(bt2m$overall[1, "p.value"], summary(cr2)$sctest[["pvalue"]])
 })
