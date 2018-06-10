@@ -700,13 +700,16 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     expect_equivalent(btis0[['m']][c('csq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
-    ## now with weights.  Comparison adjusted diffs based on totals will only work
+    ## now with weights.  Comparing adjusted diffs based on totals will only work
     ## if the weights don't vary with by stratum, at least in stratified case.
-    mwts <- 0
+    xy_wted <- xy; mwts <- 0
     while (any(mwts==0)) mwts <- rpois(n/2, lambda=10)
-    xy_wted <- xy
+    ## centering of variables is needed for unstratified mean diffs comparison.
+    xy_wted <- transform(xy_wted, x1=x1-weighted.mean(x1,unsplit(mwts, xy$m)), 
+                         x2=x2-weighted.mean(x2,unsplit(mwts, xy$m)), 
+                         x3=x3-weighted.mean(x3,unsplit(mwts, xy$m)))
     xy_wted$'(weights)' <- unsplit(mwts, xy$m)
-
+    
     simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test

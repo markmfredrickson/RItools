@@ -402,9 +402,9 @@ setClass("StratumWeightedDesignOptions",
 ##' Specifically, the function's value is a data frame of two variables,
 ##' \code{sweights}  and \code{wtratio}, with rows representing strata.
 ##' The \code{sweights} vector represents internally
-##' calculated or user-provided \code{stratum.weights}, scaled so that
-##' its sum over each of the strata is 1.  Other than this scaling
-##' it's w_b of Hansen & Bowers (2008). \code{wtratio} is the ratio of
+##' calculated or user-provided \code{stratum.weights}, one for each 
+##' stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
+##' weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
 ##' \code{sweights} to the product of half the harmonic
 ##' mean of n_{tb} and n_{cb}, the number of treatment and control
 ##' clusters in stratum b, with the mean of the weights associated with

@@ -306,25 +306,28 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(xb1$overall$p.value[2], summary(cr1)$sctest["pvalue"])
   expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
 
-  xy$wts <- rpois(n, 7)
+  xy.wts <- xy 
+  xy.wts$wts <- rpois(n, 7)
+  ## in unstratified case we need covars to have weighted mean 0 in order to compare to xBal()
+  xy.wts <- transform(xy.wts, x1=x1-weighted.mean(x1, wts), x2=x2-weighted.mean(x2, wts), x3=x3-weighted.mean(x3, wts))
 
-  wts.scaled <- xy$wts / mean(xy$wts)
-  xy.wts.u <- data.frame(x1 = xy$x1 * wts.scaled, x2 = xy$x2 * wts.scaled, x3 = xy$x3 * wts.scaled,
-                     idx = xy$idx, y = xy$y, m = xy$m)
+  wts.scaled <- xy.wts$wts / mean(xy.wts$wts)
+  xy.wts.u <- data.frame(x1 = xy.wts$x1 * wts.scaled, x2 = xy.wts$x2 * wts.scaled, x3 = xy.wts$x3 * wts.scaled,
+                     idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
   xb2u <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
-  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy, unit.weights = wts, report = "chisquare.test")
+  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts, report = "chisquare.test")
   expect_equivalent(xb2u$overall$chisquare, bt2u$overall['Unstrat', "chisquare"])
 
   ## in stratified case, weighted/totals correspondence requires that weights don't vary within strata.
-  wtmeans <- tapply(xy$wts, xy$m, mean)
-  xy$wts2 <- unsplit(wtmeans, xy$m)
-  wts2.scaled <- xy$wts2/mean(wtmeans)
-  xy.wts.m <- data.frame(x1 = xy$x1 * wts2.scaled, x2 = xy$x2 * wts2.scaled, x3 = xy$x3 * wts2.scaled,
-                     idx = xy$idx, y = xy$y, m = xy$m)
+  wtmeans <- tapply(xy.wts$wts, xy.wts$m, mean)
+  xy.wts$wts2 <- unsplit(wtmeans, xy.wts$m)
+  wts2.scaled <- xy.wts$wts2/mean(wtmeans)
+  xy.wts.m <- data.frame(x1 = xy.wts$x1 * wts2.scaled, x2 = xy.wts$x2 * wts2.scaled, x3 = xy.wts$x3 * wts2.scaled,
+                     idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
   xb2m <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.m, strata = list(matched = ~ m), report = "chisquare.test")
 
   
-  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy, unit.weights = wts2, report = "chisquare.test")
+  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy.wts, unit.weights = wts2, report = "chisquare.test")
   cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts.m)
 
   expect_equivalent(xb2m$overall$chisquare, bt2m$overall['m', "chisquare"])
