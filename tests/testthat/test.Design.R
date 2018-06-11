@@ -134,9 +134,9 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
                     z=c(TRUE, rep(c(TRUE, FALSE), 2)),
-                    x1=c(rep(NA, 3), 1:2),
-                    x2=c(1:5),
-                    fac=factor(c(NA, rep(1:2,2)))
+                    x1=c(rep(NA, 4), 2),
+                    x2=c(1:3, NA, 5),
+                    fac=factor(c(NA, 1:2, NA, 2))
                     )
     dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
@@ -146,6 +146,22 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
     expect_equal(colnames(simple6@NotMissing)[1], "_non-null record_")
     expect_equal(simple6@NM.Covariates, c(2,2,1))
     expect_equal(simple6@NM.terms, c(2,2,1))
+
+    simple7 <- makeDesigns(z ~ x1 + I(x1^2) + fac + 0 + strata(strat) + cluster(clus),
+                           dat)
+    simple7 <- as(simple7, "StratumWeightedDesignOptions")
+    simple7@Sweights <-
+        RItools:::DesignWeights(simple7, 
+                                RItools:::effectOfTreatmentOnTreated)
+    ## As writing of this test, DesignWeights() expects only pre-aggregated designs,
+    ## and infers treatment:control ratios from the numbers of elements in in each
+    ## of condition (by strata), not the number of clusters. Thus in this example
+    ## it should believe that the ETT weights are proportional to 2 for stratum a,
+    ## 1 for stratum b:
+    expect_equivalent(simple7@Sweights$strat$sweights, (2:1)/3)
+    ## key point: had missingness of each of unit 4's covariates tricked it into ignoring
+    ## that observation, then the ETT weight for stratum b would have been proportional to 0,
+    ## not 1.
 
 } )
 
