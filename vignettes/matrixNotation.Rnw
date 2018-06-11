@@ -455,132 +455,80 @@ n_{tb})^{-1}]^{-1}$ is half the harmonic mean of the sizes of the
 treatment and control groups --- in terms of clusters, not units
 --- in stratum $b$.  
 
-Now we restate these definitions using a notation consistent with
-notation to be used in this section. Here $\mathbf{x}$ will be a
+Given records that already are aggregated to the cluster level, but
+with variation in weights at the element or sub-cluster level, a
+distinction can be drawn between cluster size, the number of elements
+in the cluster, and cluster \textit{mass}, the clusterwise total of
+element weights.  We interpret the ``${m}_{bc}$'' of
+\citet{hansen:bowers:2008} to mean the latter.  For consistency with
+these concepts, when disaggregated element weights are provided, the
+weight (mass) associated with element $i$, cluster $c$, block $b$ is
+${m}_{bci}$.
+
+Here we depart from \citet{hansen:bowers:2008} notation by using
+$\mathbf{x}$ to denote a
 matrix of cluster means, calculated with weighting for cluster sizes
-$w$; the notation $s_{b}$ will be used for the weight associating with
-stratum $b$. Temporarily using $\mathbf{t}_{b}$ for the matrix of cluster
-totals, $[x_{rc} w_{r} : r\leq n_{b}, c\leq p]$, the definition of \citet{hansen:bowers:2008} becomes
+$w$;  when a notation for the matrix of cluster
+totals is needed, we use $\mathbf{t}_{b} = [x_{cr} m_{r} : c\leq n_{b}, r\leq p]$.
+The adjusted mean differences of \citet{hansen:bowers:2008} become
 \begin{align}
-   d(\mathbf{Z}, \mathbf{t}) =& \sum_{b=1}^B s_b h_b^{-1} \bar{w}_b^{-1} \mathbf{Z}_{b}' \mathbf{t}_{b} - \sum_{b=1}^B s_b
-  \bar{w}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \nonumber \\
-  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \mathbf{Z}_{b}'
+   d(\mathbf{Z}, \mathbf{t}) =& \sum_{b=1}^B w_b h_b^{-1} \bar{m}_b^{-1} \mathbf{Z}_{b}' \mathbf{t}_{b} - \sum_{b=1}^B w_b
+  \bar{m}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \nonumber \\
+  =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \mathbf{Z}_{b}'
  (\mathbf{t}_{b}  - \bar{t}_{b}\mathbf{1}_{b}), \, 
   \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi}, \nonumber \\
-  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-     \left[ {w}_{bi} \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
-     w_{bi} \vec{x}_{bi}
+  =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {m}_{bi} \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
+     m_{bi} \vec{x}_{bi}
      \right] \label{eq:11}  \\
-  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-     \left[ {w}_{bi} \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
-     w_{bi}}{n_{b}}\right) \left(\frac{\sum_{i\leq n_{b}}
-     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
-     w_{bi}}\right)
+  =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {m}_{bi} \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
+     m_{bi}}{n_{b}}\right) \left(\frac{\sum_{i\leq n_{b}}
+     m_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
+     m_{bi}}\right)
      \right] \nonumber \\
-  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-     \left[ {w}_{bi} \vec{x}_{bi} - \bar{w}_{b}\left(\frac{\sum_{i\leq n_{b}}
-     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
-     w_{bi}}\right)
-     \right]  \nonumber \\
-  =& \sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-      {w}_{bi} \vec{\tilde{x}}_{bi}, \, \text{where}\, \vec{\tilde{x}}_{bi} =  \vec{x}_{bi} - \frac{\bar{w}_{b}}{w_{bi}}\left(\frac{\sum_{i\leq n_{b}}
-     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
-     w_{bi}}\right). \label{eq:12}
+  =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \sum_{i\leq n_{b}}{Z}_{bi}
+     \left[ {m}_{bi} \vec{x}_{bi} - \bar{m}_{b} \text{wavg}_{b}(\mathbf{x})
+     \right] , \label{eq:12}  
 \end{align}
-\texttt{Note that \eqref{eq:12} wound up rather strangely.  I suspect \texttt{balanceTest()} development prior to the issue89 branch was implicitly premised on this working out to $\sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-      {w}_{bi}\left[ \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
-     w_{bi} \vec{x}_{bi}}{\sum_{i\leq n_{b}}
-     w_{bi}}\right)\right]$, which it isn't.}
- 
- 
-The additional wrinkle to handle missingness: $w_{bi}$ is allowed to
-differ for different variables, so instead of $n_{b}$-vectors
-$\mathbf{w}_{b}$ we have $m \times p$ matrices $\mathbf{w}_{b}$;
-entries in this matrix tally sums of weights for units that are not
-missing on that variable.  (If records have been aggregated to the
-cluster level, these are sums of the unit weights associating with non-NA
-elements [dis-aggregated units of observation] within the cluster.) Corresponding to variable $j \leq p$ denote
-the $j$th column of $\mathbf{w}_{b}$ as $\mathbf{w}_{b(j)}$; also
-$\bar{w}_{b}$ is a $p$-vector.
-
-With these modifications, with $\mathbf{x}_{(j)}$, $\mathbf{x}_{b(j)}$ used to indicate
-the $j$th column of $\mathbf{x} $ and $\mathbf{x}_{b} $ respectively,
-and with $\mathbf{a} \cdot \mathbf{b} $ used to indicate the
-unit-wise product of similarly dimensioned vectors or matrices $\mathbf{a}$
-and $\textbf{b}$, the pre-issue89 extension of the adjusted mean difference to accommodate missingness was 
-\begin{align}
-  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_b \left\{  \mathbf{Z}_{b}'
-                       (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
-(\mathbf{1} -
-                                    \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-                                    \mathbf{w}_{b(j)})/[\bar{w}_{b(j)}(n
-                                    - n_{tb})] \right\} \label{eq:0}  \\
-  &= \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
-    (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - \sum_{b=1}^B s_b
-  \bar{w}_{b(j)}^{-1} (n_b - n_{tb})^{-1}
-    \mathbf{1}'(\mathbf{x}_{b(j)} \cdot\mathbf{w}_{b(j)}) , \label{eq:1}\\
-\end{align}
-which \texttt{was mistakenly taken to be equivalent to \eqref{eq:2} below but in fact} is equivalent to
-\begin{equation*}
-\sum_{b} \frac{s_b}{h_b\bar{w}_b} \frac{\bar{w}_b}{\bar{w}_{b(j)}} \mathbf{Z}_b'[(\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)}) - n_b^{-1} \sum_{i\leq n_b}x_{bi(j)}{w}_{bi(j)}]. 
+where $\bar{m}_{b}$ is the simple average of cluster masses $\{m_{bc}:
+  c\leq n_{b}\}$ but $\text{wavg}_{b}(\mathbf{x})$ is the vector of
+  weighted, by $\mathbf{m}_{bci}$, averages of $\vec{x}$-measurements,
+  $(\sum_{c\leq n_{b}} m_{bc})^{-1} (\sum_{c\leq n_{b}}  m_{bc}
+  \vec{x}_{bc})$.  Note that the bracketed vectors at right of
+  \eqref{eq:12} are almost but not quite weighted and centered
+  $\vec{x}$'s, i.e. $\{m_{bc} (\vec{x}_{bc} -
+  \text{wavg}_{b}(\mathbf{x})) : c\}$; instead they are $\{m_{bc}
+  \vec{x}_{bc} - \bar{m}_{b}
+  \text{wavg}_{b}(\mathbf{x})) : c\}$.  (Centered totals are not the same
+  as upweightings of weighted observations centered around weighted
+  means. Losing track of this led to \#  89.)   
+  
+  On the other hand,
+  if $\mathbf{x}$ has the property that within each $b$,
+  $\text{wavg}_{b}(\mathbf{x}) = 0$, then $\bar{t}_{b} = 0$ and \eqref{eq:12} reduces to 
+  \begin{equation*}
+    \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \mathbf{Z}_{b}'
+ \mathbf{t}_{b} = \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b}
+ \mathbf{Z}_{b}'(m_{b} \cdot \mathbf{x}_{b}),
+  \end{equation*}
+ $v_{b} \cdot \mathbf{y}_{b} = [v_{bc} y_{bci} : c,i]$.  Thus we
+ approach adjusted difference calculations by first \textit{aligning} the
+$\mathbf{x}_{b}$ submatrices, shifting them in such a way that their
+weighted means will be 0.  For the calculation of these means around
+which to center, NAs in $\mathbf{x}$ are omitted, separately for each
+$x$-column. Following this centering, NAs are replaced with 0s to form $\tilde{\mathbf{x}}_{b}$. 
+Then $\text{wavg}_{b}(\tilde{\mathbf{x}}) = 0$ and 
+\begin{equation*} 
+  d(\mathbf{Z}, \mathbf{x})  
+  = \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_{b}}
+  \mathbf{Z}_{b}' ({m}_{b} \cdot \tilde{\mathbf{x}}_{b} 
+ ), %\label{eq:2}
 \end{equation*}
-Alternatively, perhaps it was a mistake to use per-variable weights in the
-denominators of~\eqref{eq:0} and~\eqref{eq:1}.  We might simply have
-replaced those $\bar{w}_{b(j)}$s with $\bar{w}_{b}$s.  Observing
-the convention that the first column of $\mathbf{w}$ records sums of
-weights associating with each non-null element record in the cluster,
-write $\bar{w}_b = n_b^{-1} \sum_{i\leq n_b} w_{bi(1)}$.  (Thus
-$w_{bi(j)} \leq w_{bi(1)}$, all $i, j$.)  The alternate definitional
-extension would be
-\begin{align}
-d(\mathbf{Z}, \mathbf{x}_{(j)}) &=
-\sum_{b=1}^B s_b \left\{ \mathbf{Z}_{b}' (\mathbf{x}_{b(j)} \cdot
-\mathbf{w}_{b(j)})/(\bar{w}_{b} n_{tb}) - (\mathbf{1} -
-\mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-\mathbf{w}_{b(j)})/[\bar{w}_{b}(n - n_{tb})] \right\} \nonumber \\
- d(\mathbf{Z}, \mathbf{x})&=
-\sum_{b=1}^B \frac{s_b}{h_b\bar{w}_b} \sum_{i\leq n_{b}}{Z}_{bi}
-\left[ \vec{w}_{bi} \cdot \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
-\vec{w}_{bi} \cdot \vec{x}_{bi} \right] , \label{eq:13}
-\end{align}
-in parallel with \eqref{eq:11}.  Either definition calls for figuring matrices of
-weighted totals of observed $x$'s by cluster, $(\mathbf{w}_{b} \cdot
-\mathbf{x}_{b})$, and aligning them around their simple cluster means.
+where $\cdot$ indicates unit-wise product. 
 
-In the pre-issue89 implementation, the first step was to \textit{align} the
-$\mathbf{x}_{b}$ submatrices, ie to shift them in such a way that their
-weighted means will be 0, yielding $\tilde{\mathbf{x}}_{b}$. This was
-done in an attempt to simplify \eqref{eq:1}  by causing its
-second term to vanish. (\texttt{Not so!  Since $\mathbf{Z}_{b}'\mathbf{w}_{b(j)}$ in general has nonzero variance, you can't just impose an additive shift on $x$ and be left with the same adjusted diff.}) 
-Then we applied the $\bar{w}_{b}^{-1}$
-stratum-wise weight factors, by multiplying them through by weight
-matrices $\tilde{\mathbf{w}}_{b}$,
-where $\tilde{\mathbf{w}}_{b(j)} = \mathbf{0} $ if
-$\mathbf{w}_{b(j)}  = \mathbf{0} $, otherwise
-$\tilde{\mathbf{w}}_{b(j)} = 
-\bar{w}_{b(j)}^{-1} \mathbf{w}_{b(j)}$. 
-\texttt{Previously I erroneously inferred} that  \eqref{eq:1} is then equivalent to 
-\begin{align} 
-  d(\mathbf{Z}, \mathbf{x})  &= 
-                               \sum_{b=1}^B s_b h_b^{-1} \bar{w}_{b(j)}^{-1} \mathbf{Z}_{b}'
-    [(\tilde{\mathbf{x}}_{b(j)} \cdot \tilde{\mathbf{w}}_{b(j)}) \bar{w}_{b(j)}]
-  \nonumber \\
-  &= \sum_{b=1}^B \frac{s_b}{h_b}
-  \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-  \tilde{\mathbf{w}}_{b}), \label{eq:2}
-\end{align}
-where $\cdot$ indicates unit-wise product. In contrast,
-the alternate definition
-of $d()$ in \eqref{eq:13} calls for stratum-wise alignment of
-$\mathbf{x} \cdot \mathbf{w}$, with out further weighting. \texttt{In
-  issue89 branch I remove the multiplying through by
-  $\bar{w}_{b}^{-1}$, in the process reverting the meaning of
-  ``stratum weight ratio'' from  $\frac{s_b}{h_b}$ to $\frac{s_b}{h_b\bar{w}_b}$, which aligns
-  better w/ H\& B08 and is a more natural interpretation of that phrase. See c70cbe1.}
-
-
-Any NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$: in
-effect, they're imputed to weighted stratum means.  In terms of its
+NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$, in
+effect being imputed to weighted stratum means.  In terms of its
 effects on the values of $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
 $\mathbf{E}_{0}[d(\mathbf{Z}, \mathbf{x}_{(j)}) ]$, this imputation is
 the same as omitting records that have NAs on the $j$-th $x$
@@ -598,10 +546,10 @@ check is more sensitive than it otherwise would be.  (Hansen \& Bowers
 Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
 \begin{enumerate}
 \item Although $\{h_{b}\}$ is not normalized to sum to 1, it's assumed
-  that $\{s_{b} \}$ is. \label{item:1}
+  that $\{w_{b} \}$ is. \label{item:1}
 \item The default
-  weighting suggested by H\&B 2008 is $s_{b} \propto
-  \bar{w}_{b}h_{b}$.\label{item:2}
+  weighting suggested by H\&B 2008 is $w_{b} \propto
+  \bar{m}_{b}h_{b}$.\label{item:2}
 \item Stratum weights are presumed to be the same for all covariates.
 \item The inferential calcs assume that the weights don't vary by
   treatment assignment. This rules out effect of treatment weighting
@@ -609,133 +557,102 @@ Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
   and in the case that the unit weights vary within strata.
 \end{enumerate}
 
-Suppose that we were to  adopt the
+\subsection{Application to inclusion weighted study samples}
+
+Suppose the comparative study to be have been performed on a sample
+from a population, with associated sample inclusion weights, and
+suppose the use wishes to estimate the population average treatment
+effect.  Adopt the
 semantic convention 
 that the user will have communicated sample inclusion probabilities via the
 unit weights.  There's no additional role for stratum weights per
 se; instead, inwhat remains to be factored in are the
 inverse probabilities of assignment,
-$\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  To do this set stratum weights $s_{b}$ to be proportional to the sum of sample inclusion weights
-for stratum $b$, $\left(\sum_{i} w_{bi} \right) =
-n_{b}\bar{w}_{b} $, in order to align with a target population for
-inference.  Then one has \texttt{fix up from here}
+$\pi_{bi}=\mathbf{P}(Z_{bi} = 1)$.  To do this set stratum weights $w_{b}$ to be proportional to the sum of sample inclusion weights
+for stratum $b$, $\left(\sum_{i} m_{bi} \right) =
+n_{b}\bar{m}_{b} $, in order to align with a target population for
+inference.  Then one has 
 \begin{align*}
-  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B s_{b}\left\{  \mathbf{Z}_{b}'
-                       (\mathbf{x}_{b(j)} \cdot \mathbf{w}_{b(j)})/(\bar{w}_{b(j)} n_{tb}) -
+  d(\mathbf{Z}, \mathbf{x}_{(j)}) &= \sum_{b=1}^B w_{b}\left\{  \mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot m_{b})/(\bar{m}_{b} n_{tb}) -
 (\mathbf{1} -
                                     \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-                                    \mathbf{w}_{b(j)})/[\bar{w}_{b(j)}(n
+                                    m_{b})/[\bar{m}_{b}(n
                                     - n_{tb})] \right\}   \\
-%% &= \sum_{b} \frac{s_{b}}{\bar{w}_{b}}  \left\{  \mathbf{Z}_{b}'
-%%                        (\mathbf{x}_{b(j)} \cdot
-%%   \tilde{\mathbf{w}}_{b(j)}) \frac{\bar{w}_{b}}{n_{tb}} -
-%% (\mathbf{1} - \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-%%                                     \tilde{\mathbf{w}}_{b(j)})\frac{\bar{w}_{b}}{n_{b}
-%%                                     - n_{tb}} \right\}   \\
-&=      \sum_{b}  \frac{s_{b}}{n_{b}}\left\{  \frac{\mathbf{Z}_{b}'
+&=      \sum_{b}  \frac{w_{b}}{n_{b}\bar{m}_{b}}\left\{  \frac{\mathbf{Z}_{b}'
                        (\mathbf{x}_{b(j)} \cdot
-  \tilde{\mathbf{w}}_{b(j)}) }{\pi_{tb}} -
+  {m}_{b}) }{\pi_{tb}} -
 \frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-                                    \tilde{\mathbf{w}}_{b(j)}) }{ 1 -
+                                    {m}_{b}) }{ 1 -
   \pi_{tb}} \right\} \\
-&= \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1}     \sum_{b}  \bar{w}_{b}\left\{  \frac{\mathbf{Z}_{b}'
-                       (\mathbf{x}_{b(j)} \cdot
-  \tilde{\mathbf{w}}_{b(j)}) }{\pi_{tb}} -
+                                  &=     \left( \sum_{b} n_{b} \bar{m}_{b}\right)^{-1}  \sum_{b}  \left\{  \frac{\mathbf{Z}_{b}'
+                       (\mathbf{x}_{b(j)} \cdot {m}_{b})}{\pi_{tb}} -
 \frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-                                    \tilde{\mathbf{w}}_{b(j)}) }{ 1 -
-  \pi_{tb}} \right\},\, \mathrm{or} \\
-                                  &=     \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1}  \sum_{b}  \frac{\bar{w}_{b}}{\bar{w}_{b(j)}}\left\{  \frac{\mathbf{Z}_{b}'
-                       (\mathbf{x}_{b(j)} \cdot {\mathbf{w}}_{b(j)})}{\pi_{tb}} -
-\frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b(j)}\cdot
-                                    {\mathbf{w}}_{b(j)})}{ 1 -
-  \pi_{tb}} \right\}, 
+                                    {m}_{b})}{ 1 -
+  \pi_{tb}} \right\}. 
 \end{align*}
-where the factor ${\bar{w}_{b}}/{\bar{w}_{b(j)}}$ is as would be suggested by an assumption of
-missingness at random within the stratum ($b$). As seen earlier, this is the same as to say 
+As seen earlier, this is the same as to say 
 \begin{equation*}
-  d(\mathbf{Z}, \mathbf{x}) = \frac{s_{b}}{h_{b}} \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-    \tilde{\mathbf{w}}_{b}) = \left( \sum_{b} n_{b} \bar{w}_{b}\right)^{-1} \frac{n_{b}\bar{w}_{b}}{h_{b}} \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-    \tilde{\mathbf{w}}_{b}) . 
+  d(\mathbf{Z}, \mathbf{x}) = \sum_{b} \frac{w_{b}}{h_{b}\bar{m}_{b}}
+  \mathbf{Z}_{b}' (m_{b} \cdot \tilde{\mathbf{x}}_{b} ) = 
+  \left( \sum_{b} n_{b} \bar{m}_{b}\right)^{-1}
+  \sum_{b}  \frac{n_{b}}{h_{b}} \mathbf{Z}_{b}' (m_{b} \cdot \tilde{\mathbf{x}}_{b}) . 
 \end{equation*}
 Perhaps these should be the default stratum weights for univariate
 inferentials.  They might even be enforced, ie removed from user
 control, eventually. But only for univariate inferentials; for multivariate
 inferentials we might be better advised to stick with the \citet{hansen:bowers:2008}
-recommendation that $s_{b} \propto h_{b} \bar{w}_{b}$. 
+recommendation that $w_{b} \propto h_{b} \bar{m}_{b}$. 
 %% \begin{align*}
-%%   d(\mathbf{Z}, \mathbf{x}) &= \sum_{b} \bar{w}_{b}\left\{  \frac{\mathbf{Z}_{b}'
-%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{w}}_{b})}{\pi_{tb}} -
+%%   d(\mathbf{Z}, \mathbf{x}) &= \sum_{b} \bar{m}_{b}\left\{  \frac{\mathbf{Z}_{b}'
+%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{m}}_{b})}{\pi_{tb}} -
 %% \frac{(\mathbf{1} -  \mathbf{Z}_{b})'(\mathbf{x}_{b}\cdot
-%%                                     \tilde{\mathbf{w}}_{b})}{ 1 -  \pi_{tb}} \right\} \\
-%%   &=  \sum_{b} \bar{w}_{b}\left\{ \mathbf{Z}_{b}'
-%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{w}}_{b})
+%%                                     \tilde{\mathbf{m}}_{b})}{ 1 -  \pi_{tb}} \right\} \\
+%%   &=  \sum_{b} \bar{m}_{b}\left\{ \mathbf{Z}_{b}'
+%%                        (\mathbf{x}_{b} \cdot \tilde{\mathbf{m}}_{b})
 %%     (\pi_{tb}^{-1} + (1-\pi_{tb})^{-1}) - \frac{\mathbf{1}'(\mathbf{x}_{b}\cdot
-%%                                     \tilde{\mathbf{w}}_{b})}{ 1 -
+%%                                     \tilde{\mathbf{m}}_{b})}{ 1 -
 %%     \pi_{tb}} \right\} \\
-%%   & = \sum_{b} \bar{w}_{b} (\pi_{tb}^{-1} + (1-\pi_{tb})^{-1})
+%%   & = \sum_{b} \bar{m}_{b} (\pi_{tb}^{-1} + (1-\pi_{tb})^{-1})
 %%     \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-%%     \tilde{\mathbf{w}}_{b}) \\
-%%   &= \sum_{b} n_{b}\bar{w}_{b} (n_{tb}^{-1} + (n_{b} - n_{tb})^{-1})   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-%%     \tilde{\mathbf{w}}_{b}) \\
-%%   &= \sum_{b} \frac{n_{b}\bar{w}_{b}}{h_{b}}   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
-%%     \tilde{\mathbf{w}}_{b}).
+%%     \tilde{\mathbf{m}}_{b}) \\
+%%   &= \sum_{b} n_{b}\bar{m}_{b} (n_{tb}^{-1} + (n_{b} - n_{tb})^{-1})   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+%%     \tilde{\mathbf{m}}_{b}) \\
+%%   &= \sum_{b} \frac{n_{b}\bar{m}_{b}}{h_{b}}   \mathbf{Z}_{b}' (\tilde{\mathbf{x}}_{b} \cdot
+%%     \tilde{\mathbf{m}}_{b}).
 %% \end{align*}
 
 Additional notes:
 \begin{itemize}
-\item The reason to keep $\tilde{\mathbf{x}}$ and $\tilde{\mathbf{w}} $
-  separate, instead of rolling them into one, is to be able to apply a
-  post-alignment transformation to the $x$es.  (E.g., take ranks, as
-  in the Hodges-Lehmann aligned rank statistic.) 
-\item Speaking of aligned ranks, when \citet{small:etal:2007} used
-  them in a cluster randomized study, they aligned and transformed to
+\item When \citet{small:etal:2007} used
+  the Hodges-Lehmann aligned rank test in a cluster randomized study, they aligned and transformed to
   ranks \textit{prior to} aggregating within the cluster.  Something I hope
   we'll enable soon (\#64).
-\item That said, the weight normalization
-  $w \mapsto \tilde{w} $ and covariate alignment $x \mapsto \tilde{x}$  
-  have the property that you can apply them either before or after aggregating to the cluster
+\item That said, the covariate alignment $x \mapsto \tilde{x}$  
+  has the property that you can apply it either before or after aggregating to the cluster
   level, with the same result. 
+\item In tandem with the planned relocation of $x \mapsto \tilde{x}$ we can off the user some more options
+  for handling missingness in the x's (see  comment on \#64 thread). 
 \item The advantage of imputation as opposed to simple omission is to
 preserve the common structure across $x$ variables, which will in
 general have different missingness patterns. This in turn is needed
 for multivariate inferentials.
+\item From \citet{hansen:bowers:2008}, 
+\begin{align*}
+  \mathrm{Cov}\left\{   d(\mathbf{Z}, \mathbf{x}) \right\}  &=
+\sum_{b=1}^{B} h_{b}\left( \frac{w_b}{h_b\bar{m}_b} \right)^{2}
+ \frac{1}{n_{b}-1} \mathbf{x}_{b}'\mathbf{x}_{b} \\
+  &= \sum_{b=1}^{B} \frac{h_{b}}{n_{b}-1} \left(
+    \frac{w_b}{h_b\bar{m}_b} \mathbf{x}_{b} \right)' \left(
+    \frac{w_b}{h_b\bar{m}_b} \mathbf{x}_{b} \right) .
+\end{align*}
+I think we could calculate this and the $d(Z,x)$'s separately, then
+use a variant of `base::solve.qr()` for the omnibus statistic, implicitly relying on QR
+rather than SVD.  
+
 \end{itemize}
 
 
-
-
-\subsection{Multivariate inferentials}
-
-Need to impute missings here rather than omit them, in order to have
-consistent data dimensions across vars. Although differences among
-treatment and control HT estimates are blind to the value chosen for
-imputations, covariances are not.  Imputing to the stratum mean
-minimizes the variance of Z-effect along the imputed variable. 
-
-I think we should hard code the use of ``harmonic'' weights\ldots
-
-
-\subsection{Potential simplification of basic calcs}
-
-Note that by \eqref{eq:13}, 
-\begin{equation*}
- d(\mathbf{Z}, \mathbf{x})=
-\sum_{b=1}^B \left( \mathbf{Z}_{b} - \frac{n_{tb}}{n_{b}} \right)'
-\frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} .
-\end{equation*}
-Similarly, from \citet{hansen:bowers:2008}, 
-\begin{align*}
-  \mathrm{Cov}\left\{   d(\mathbf{Z}, \mathbf{x}) \right\}  &=
-\sum_{b=1}^{B} h_{b}\left( \frac{s_b}{h_b\bar{w}_b} \right)^{2}
- \frac{1}{n_{b}-1} \mathbf{x}_{b}'\mathbf{x}_{b} \\
-  &= \sum_{b=1}^{B} \frac{h_{b}}{n_{b}-1} \left(
-    \frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} \right)' \left(
-    \frac{s_b}{h_b\bar{w}_b} \mathbf{x}_{b} \right) .
-\end{align*}
-
-I think we could calculate this and the d's separately, then use
-`base::solve()` for the omnibus statistic, implicitly relying on QR
-rather than SVD.  
 
 \bibliographystyle{plainnat}
 %\bibliography{abbrev_long,causalinference,computing,misc}

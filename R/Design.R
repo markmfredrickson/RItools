@@ -415,11 +415,6 @@ setClass("StratumWeightedDesignOptions",
 ##' downstream in \code{alignedToInferentials} (in internal calculations
 ##' involving \sQuote{\code{wtr}}).
 ##' 
-##' (Developer note: One might simplify by only returning the sweights,
-##' not also the wtratio's.  [Or perhaps conversely.]  sweights are used in descriptives
-##' calculations.  wtratio's are used downstream in 
-##' alignedToInferentials, but the material in the harmonic means calcs is already 
-##' being assembled there for other reasons.  An improvement for another day...)
 ##' 
 ##' @param design DesignOptions
 ##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, all other covariates and unit.weights.
