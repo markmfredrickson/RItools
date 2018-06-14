@@ -891,7 +891,7 @@ alignedToInferentials <- function(alignedcovs) {
       matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = dim(tmat)[2], byrow = TRUE)
   }
 
-  mvz <- drop(crossprod(zz, tmat) %*% ytl)
+  mvz <- drop(crossprod(ssn[ssvar > .Machine$double.eps], ytl))
 
   csq <- drop(crossprod(mvz))
   DF <- sum(Positive)
