@@ -872,31 +872,14 @@ alignedToInferentials <- function(alignedcovs) {
     ## moving forward, we'll do without those sum statistics that have 0 null variation.
     tmat <- tmat[,ssvar > .Machine$double.eps, drop=FALSE]
     scaled.tmat <- scaled.tmat[,ssvar > .Machine$double.eps, drop=FALSE]
-    pst.svd <- try(svd(scaled.tmat, nu=0))
+    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.tmat)
+    
+    mvz <- drop(crossprod(ssn[ssvar > .Machine$double.eps], cov_minus_.5))
 
-  if (inherits(pst.svd, 'try-error')) {
-    pst.svd <- propack.svd(scaled.tmat)
-  }
+    csq <- drop(crossprod(mvz))
+    DF <- ncol(cov_minus_.5)
 
-  Positive <- pst.svd$d > max(sqrt(.Machine$double.eps) * pst.svd$d[1], 0)
-  Positive[is.na(Positive)] <- FALSE 
-
-  if (all(Positive)) { ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
-    ytl <- pst.svd$v *
-      matrix(1/pst.svd$d, nrow = dim(tmat)[2], ncol = length(pst.svd$d), byrow = T)
-  } else if (!any(Positive)) {
-    ytl <- array(0, dim(tmat)[2:1] )
-  } else  {
-    ytl <- pst.svd$v[, Positive, drop = FALSE] *
-      matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = dim(tmat)[2], byrow = TRUE)
-  }
-
-  mvz <- drop(crossprod(ssn[ssvar > .Machine$double.eps], ytl))
-
-  csq <- drop(crossprod(mvz))
-  DF <- sum(Positive)
-
-  list(z = zstat, p = p, csq = csq , DF = DF, 
+    list(z = zstat, p = p, csq = csq , DF = DF, 
        adj.mean.diffs=ssn, tcov = tcov)
 }
 

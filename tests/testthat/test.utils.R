@@ -143,6 +143,14 @@ test_that("Residuals from weighted regressions w/ sparse designs",
 
           })
 
+test_that("pseudinversion w/ XtX_pseudoinv_sqrt()",{
+    basis <- cbind(1/sqrt(3), poly(rnorm(3), degree=2))
+    expect_gt(abs(det(basis)),.Machine$double.eps) # full rank
+    mat <- t(basis) %*% diag((2:0)) %*% basis
+    m2 <- XtX_pseudoinv_sqrt(mat)
+    expect_equivalent(basis %*% tcrossprod(m2) %*% t(basis), diag(c(1/2^2, 1, 0)) )
+})
+
 test_that("data.table options issue #69", {
 
   if (suppressMessages(suppressWarnings(require(data.table)))) {
