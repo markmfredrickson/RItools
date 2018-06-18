@@ -1,3 +1,12 @@
+
+CHANGES IN RITOOLS VERSION 0.1-16
+
+This is a maintenance release.
+
+* Fixed a problem where the test suite was calling an external package that was
+  not a formal dependency of the core functionality of the package.
+
+
 CHANGES IN RITOOLS VERSION 0.1-15
 
 This is a maintenance release.
