@@ -178,8 +178,12 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                           dimnames=list(vars=dimnames(theresults)[["vars"]],
                               stat=c(dimnames(theresults)[["stat"]],"sig."),
                               strata=dimnames(theresults)[["strata"]]))
-
-      newresults[,-grep("sig.", dimnames(newresults)[[2]]),] <- format(theresults,DIGITS)
+        for (rcol in dimnames(theresults)[["stat"]])
+        {
+            res <- theresults[,rcol,]
+            dim(res) <- NULL
+            newresults[,rcol,] <- format(res,digits=DIGITS)
+        }
       newresults[dimnames(Signif)[["vars"]], "sig.",dimnames(Signif)[["strata"]]]<-format(Signif)
 
 
