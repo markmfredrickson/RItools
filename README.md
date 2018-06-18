@@ -1,4 +1,4 @@
-Stable version: [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](http://cran.r-project.org/package=RItools)
+Stable version: [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/RItools)](https://cran.r-project.org/package=RItools)
 
 # RItools: Randomization Inference Tools
 
