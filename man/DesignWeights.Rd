@@ -32,22 +32,17 @@ weight by being multiplied by mean of unit weights over clusters in that stratum
 Specifically, the function's value is a data frame of two variables,
 \code{sweights}  and \code{wtratio}, with rows representing strata.
 The \code{sweights} vector represents internally
-calculated or user-provided \code{stratum.weights}, scaled so that
-its sum over each of the strata is 1.  Other than this scaling
-it's w_b of Hansen & Bowers (2008). \code{wtratio} is the ratio of
-\code{sweights} to the product of the harmonic
+calculated or user-provided \code{stratum.weights}, one for each 
+stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
+weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
+\code{sweights} to the product of half the harmonic
 mean of n_{tb} and n_{cb}, the number of treatment and control
 clusters in stratum b, with the mean of the weights associated with
-each of these clusters,  i.e. the m-bar_b of Hansen & Bowers
-(2008). This comparison of \code{sweights} to the product of h_b
-and m-bar_b is expected downstream in
-\code{AlignedToInferentials} (in its internal calculations
+each of these clusters.  In the notation of Hansen & Bowers
+(2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name 
+\sQuote{\code{wtratio}}, this ratio's denominator is not a weight 
+in the sense of summing to 1 across strata.  The ratio is expected 
+downstream in \code{alignedToInferentials} (in internal calculations
 involving \sQuote{\code{wtr}}).
-
-(Developer note: One might simplify by only returning the sweights,
-not also the wtratio's.  [Or perhaps conversely.]  sweights are used in descriptives
-calculations.  wtratio's are used downstream in 
-alignedToInferentials, but the material in the harmonic means calcs is already 
-being assembled there for other reasons.  An improvement for another day...)
 }
 \keyword{internal}

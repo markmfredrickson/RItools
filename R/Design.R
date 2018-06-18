@@ -713,6 +713,7 @@ aggregateDesigns <- function(design) {
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
+#' @keywords internal
 setClass("CovsAlignedToADesign",
          slots =
              c(Covariates="matrix",
@@ -836,6 +837,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##'
 ##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list
+##' @keywords internal 
 alignedToInferentials <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
@@ -888,6 +890,7 @@ alignedToInferentials <- function(alignedcovs) {
 ##' @param s Matrix
 ##' @param column Column (TRUE) or row (FALSE)?
 ##' @return vector
+##' @keywords internal
 sparseToVec <- function(s, column = TRUE) {
   if (column) {
     as.matrix(s)[,1]

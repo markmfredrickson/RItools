@@ -5,6 +5,7 @@
 ##' @param zz Treatment
 ##' @param mm mm
 ##' @return Data.frame
+##' @keywords internal
 xBalance.find.goodstrats <- function(ss.df,zz,mm) {
   ### EXCLUDE "NA" STRATA, EMPTY STRATA & STRATA W/O VARIATION IN zz ("treatment")
   ccs <- complete.cases(mm)
