@@ -22,7 +22,7 @@
 ##' @param horizontal Display the results for different candidate
 ##'   stratifications side-by-side (Default, \code{TRUE}), or as a
 ##'   list for each stratification (\code{FALSE}).
-##' @param ... Other arguements. Not currently used.
+##' @param ... Other arguments. Not currently used.
 ##' @return \describe{
 ##' \item{vartable}{The formatted table of variable-by-variable
 ##'   statistics for each stratification.}

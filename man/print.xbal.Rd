@@ -44,7 +44,7 @@ information in the z-statistics. Default is \code{FALSE}.}
 stratifications side-by-side (Default, \code{TRUE}), or as a
 list for each stratification (\code{FALSE}).}
 
-\item{...}{Other arguements. Not currently used.}
+\item{...}{Other arguments. Not currently used.}
 }
 \value{
 \describe{
