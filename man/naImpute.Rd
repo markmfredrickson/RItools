@@ -21,4 +21,3 @@ Structure
 \description{
 Does this by doing something...
 }
-

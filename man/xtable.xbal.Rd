@@ -85,4 +85,3 @@ print(xb1.xtab,
       floating = TRUE,
       floating.environment = "sidewaystable")
 }
-

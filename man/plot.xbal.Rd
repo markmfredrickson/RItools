@@ -90,4 +90,3 @@ plot(xb, variable.labels = c(date = "Date",
 \seealso{
 \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 }
-
