@@ -18,7 +18,7 @@ trials (or matched observational studies) based on user defined models and
 test statistics. See the online documentation of
 `parameterizedRandomizationDistribution` for more details.
 
-`RItools` is available on [CRAN](http://cran.r-project.org):
+`RItools` is available on [CRAN](https://cran.r-project.org):
 
     > install.packages("RItools")
     > library("RItools")
