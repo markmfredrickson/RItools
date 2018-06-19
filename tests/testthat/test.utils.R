@@ -82,7 +82,6 @@ test_that("Residuals from weighted regressions w/ sparse designs",
               expect_equal(lmw$residuals, as.vector(slmw$residuals)) # also
 
           })
-
 test_that("pseudinversion w/ XtX_pseudoinv_sqrt()",{
     basis <- cbind(1/sqrt(3), poly(rnorm(3), degree=2))
     expect_gt(abs(det(basis)),.Machine$double.eps) # full rank
