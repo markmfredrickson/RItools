@@ -898,4 +898,28 @@ sparseToVec <- function(s, column = TRUE) {
     as.matrix(s)[1,]
   }
 }
-
+##' Identify vars recording not-missing (NM) info
+##'
+##' ID variables recording NM information, from
+##' names and positions in the variable list.
+##' Presumption is that the NM cols appear at the
+##' end of the list of vars and are encased in
+##' \sQuote{()}.  If something in the code changes
+##' to make this assumption untrue, then this
+##' helper is designed to err on the side of not
+##' identifying other columns as NM cols.
+##' 
+##' @param vnames character, variable names
+##' @return character vector of names of NM vars, possibly of length 0
+##' @author Hansen
+##' @keywords internal
+identify_NM_vars <- function(vnames) {
+    k <- length(vnames)
+    e <- nchar(vnames)
+    inparens <- (substr(vnames,1L,1L)=="(" & substr(vnames,e,e)==")" )
+    if (inparens[k] & any(!inparens) )
+        {
+            howmany <- which( cumsum( !inparens[k:1L] )==1 )[1] - 1
+            vnames[(k+1-howmany):k]
+            } else character(0)
+    }

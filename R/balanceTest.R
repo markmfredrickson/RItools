@@ -269,8 +269,21 @@ balanceTest <- function(fmla,
   nstats.previous <- dim(descriptives)[2]
   descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p, use.first.dimnames = TRUE)
   names(dimnames(descriptives)) <- c("vars", "stat", "strata")
-
+    
   dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
+
+  # strip out summaries of not-missing indicators that only ever take the value T
+  nmvars <- identify_NM_vars(dimnames(descriptives)[["vars"]])
+  # next line assumes every "stat" not in the given list is a mean
+  # over a group assigned to some treatment condition. 
+  group_mean_labs <- setdiff(dimnames(descriptives)[["stat"]],
+                             c("std.diff", "adj.diff", "pooled.sd", "z", "p"))
+    if (length(nmvars) & length(group_mean_labs))
+    {
+        bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
+        toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+        descriptives <- descriptives[-toremove,,,drop=FALSE]
+        }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
     c(s$csq, s$DF, pchisq(s$csq, df = s$DF, lower.tail = FALSE))
