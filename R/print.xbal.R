@@ -275,7 +275,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       if (!is.null(theresults)){ print(thevartab) }
       if (!is.null(theoverall) && print.overall) {
         cat("---Overall Test---\n")
-        print(theoveralltab)
+        print(theoveralltab, quote=FALSE)
         if (show.signif.stars && !show.pvals && hasP) {
           if (!is.null(theresults)) {
             thelegend<-attr(Signif, "legend") ##if we are showing thevartab use the legend from that object
