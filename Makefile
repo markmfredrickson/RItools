@@ -10,7 +10,7 @@ interactive-emacs:
 	@$(LOAD) emacs -nw -f R
 
 .devtools:
-	@$(RCMD) "devtools:::$(FUNC)($(DEVTOOLSARG))"
+	@$(RCMD) "library(devtools); devtools:::$(FUNC)()"
 
 DEVTOOLSARG=
 dependencies: FUNC=install_deps
