@@ -173,14 +173,18 @@ test_that("Formatting w/ appropriate sigfigs values",{
                    Y = rnorm(n),
                    W = cut(rnorm(n), breaks = 3),
                    K = as.factor(letters[sample.int(3, n, replace = T)]),
-                   U = rnorm(n),
-                   S = as.factor(rep(c("A", "B"), each = n/2)))
-  xb <- balanceTest(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
+                   U = rnorm(n) )
+  xb.noneU <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
                  data = df,
                  report = 'all')
-  xb.noneU <- subset(xb, strata = c("Unstrat", "cut(U, 3)"))
   pt <- print(xb.noneU, digits=2, printme=FALSE)
 
-  expect_true(is.character(pt[[1]][,2])) # should at least flag if 
-  expect_lte(max(nchar(pt[[1]][,2])),6) # way too many sigfigs
+  ## Brittle test: we settings as above, I'm pretty sure 2 sigfigs
+  ## should translate to the thousandths place for the z-stats.
+  expect_equivalent(round(as.numeric(pt[[1]][,4]), 4), as.numeric(pt[[1]][,4]))
+  ## This similarly brittle pair of tests confirms that rounding is being done
+  ## separately for different variables, at least as it affects columns
+  ## Treatment and Control
+  expect_equivalent(round(as.numeric(pt[[1]][3,1:2]), 2), as.numeric(pt[[1]][3,1:2]))
+  expect_gt(abs( round(as.numeric(pt[[1]][1,1]), 2) - as.numeric(pt[[1]][1,1]) ),0)
 })
