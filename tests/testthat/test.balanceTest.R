@@ -7,7 +7,7 @@ library("testthat")
 
 context("balanceTest Function")
 
-test_that("xBal univariate descriptive means agree w/ reference calculations",{
+test_that("balT univariate descriptive means agree w/ reference calculations",{
     set.seed(20160406)
     n <- 7 
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
@@ -33,7 +33,7 @@ test_that("xBal univariate descriptive means agree w/ reference calculations",{
 
 })
 
-test_that("xBal inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
+test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
     n <- 51 # increase at your peril -- clogit can suddenly get slow as stratum size increases
@@ -70,38 +70,7 @@ test_that("xBal inferentials, incl. agreement w/ Rao score test for cond'l logis
 }
           )
 
-test_that("Alternate formats for stratum.weights argument", {
-    set.seed(20160406)
-    n <- 7 # increase at your peril -- clogit gets slow quickly as stratum size increases
-    dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
-                      s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
-                      )
-    dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
-
-    xb1 <- balanceTest(z~x1+strata(s)-1, data=dat, report="all")
-
-    hwts <- with(dat, colSums(table(z, s)^-1)^-1 ) # 2*harmonic means of (n_{tb}, n_{cb}), not normalized
-    xb1a <- balanceTest(z~x1+strata(s)-1, data=dat, stratum.weights=hwts, report="all")
-    expect_equal(xb1, xb1a)
-
-    xb2 <- balanceTest(z~x1+strata(s), data=dat, report="all")
-    xb2a <- balanceTest(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=c("1"=1), s=hwts), report="all")
-    expect_equal(xb2, xb2a)
-    xb2b <- balanceTest(z~x1+strata(s), data=dat, stratum.weights=list(Unstrat=1, s=hwts), report="all")
-    expect_equal(xb2, xb2b)
-    xb2c <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(Unstrat="cheese!", #shouldn't matter in 1-stratum case
-                                                   s=hwts), report="all")
-    expect_equal(xb2, xb2c)
-    xb2d <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(Unstrat=NULL, s=hwts), report="all")
-    expect_equal(xb2, xb2d)
-    xb2e <- balanceTest(z~x1+strata(s), data=dat,
-                     stratum.weights=list(s=hwts), report="all")
-    expect_equal(xb2, xb2e)
-
-} )
-test_that("balanceTreturns covariance of tests", {
+test_that("balT returns covariance of tests", {
   set.seed(20130801)
   n <- 500
 
@@ -224,7 +193,7 @@ test_that("Observations not meeting subset condition are retained although downw
     n2[nrow(nuclearplants)+1, "pt"] <- 2
     n2$pt <- factor(n2$pt)
 
-    ## this indirect test relies on xBal's dropping unused factor levels
+    ## this indirect test relies on balT's dropping unused factor levels
     xb1 <- balanceTest(pr ~ ., data = nuclearplants)
     xb2 <- balanceTest(pr ~ ., data = n2, subset=pt!='2')
     ## confirm that we still see the '2' level, even if it receives no weight
@@ -279,9 +248,11 @@ test_that("NAs properly handled", {
   df$X1[1:3] <- NA
 
   bt1 <- balanceTest(Z ~ X1, data = df)
-
+  expect_s3_class(bt1, "xbal")
+  
   ## issue 92: the following fails
   bt2 <- balanceTest(Z ~ X1 + X2, data = df)
+  expect_s3_class(bt2, "xbal")
 })
 
 ## To do: adapt the below to test print.xbal instead of lower level functions
@@ -306,4 +277,60 @@ replicate(0,
 
   expect_equal(dim(design.flags@Covariates)[2], 5)
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
+})
+
+test_that("balanceTest agrees with other methods where appropriate", {
+
+  library(survival) # for conditional logistic regression
+
+  set.seed(20180207)
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  x3 <- 0.5 + 0.25 * x1 - 0.25 * x2 + rnorm(n)
+  idx <- 0.25 + 0.1 * x1 + 0.2 * x2 - 0.5 * x3 + rnorm(n)
+  y <- sample(rep(c(1,0), n/2), prob = exp(idx) / (1 + exp(idx)))
+
+  xy <- data.frame(x1, x2, x3, idx, y)
+  xy$m[y == 1] <- order(idx[y == 1])
+  xy$m[y == 0] <- order(idx[y == 0])
+  ## this mimics matched pairs:
+  expect_true(all(table(xy$y, xy$m)==1))
+  
+
+  xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+  bt1 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, report = "all",)
+  cr1 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy)
+
+  expect_equivalent(xb1$overall$chisquare, bt1$overall[2:1, "chisquare"])
+  expect_equivalent(xb1$overall$p.value[2], summary(cr1)$sctest["pvalue"])
+  expect_equivalent(bt1$overall[1, "p.value"], summary(cr1)$sctest["pvalue"])
+
+  xy.wts <- xy 
+  xy.wts$wts <- rpois(n, 7)
+  ## in unstratified case we need covars to have weighted mean 0 in order to compare to xBal()
+  xy.wts <- transform(xy.wts, x1=x1-weighted.mean(x1, wts), x2=x2-weighted.mean(x2, wts), x3=x3-weighted.mean(x3, wts))
+
+  wts.scaled <- xy.wts$wts / mean(xy.wts$wts)
+  xy.wts.u <- data.frame(x1 = xy.wts$x1 * wts.scaled, x2 = xy.wts$x2 * wts.scaled, x3 = xy.wts$x3 * wts.scaled,
+                     idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
+  xb2u <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
+  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts, report = "chisquare.test")
+  expect_equivalent(xb2u$overall$chisquare, bt2u$overall['Unstrat', "chisquare"])
+
+  ## in stratified case, weighted/totals correspondence requires that weights don't vary within strata.
+  wtmeans <- tapply(xy.wts$wts, xy.wts$m, mean)
+  xy.wts$wts2 <- unsplit(wtmeans, xy.wts$m)
+  wts2.scaled <- xy.wts$wts2/mean(wtmeans)
+  xy.wts.m <- data.frame(x1 = xy.wts$x1 * wts2.scaled, x2 = xy.wts$x2 * wts2.scaled, x3 = xy.wts$x3 * wts2.scaled,
+                     idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
+  xb2m <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.m, strata = list(matched = ~ m), report = "chisquare.test")
+
+  
+  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy.wts, unit.weights = wts2, report = "chisquare.test")
+  cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts.m)
+
+  expect_equivalent(xb2m$overall$chisquare, bt2m$overall['m', "chisquare"])
+  expect_equivalent(xb2m$overall$p.value, summary(cr2)$sctest["pvalue"])
+  expect_equivalent(bt2m$overall[1, "p.value"], summary(cr2)$sctest[["pvalue"]])
 })

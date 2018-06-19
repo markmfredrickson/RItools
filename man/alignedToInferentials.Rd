@@ -7,7 +7,7 @@
 alignedToInferentials(alignedcovs)
 }
 \arguments{
-\item{alignedcovs}{An AlignedCovs object}
+\item{alignedcovs}{A CovsAlignedToADesign object}
 }
 \value{
 list
@@ -15,3 +15,4 @@ list
 \description{
 Align to Inferentials
 }
+\keyword{internal}

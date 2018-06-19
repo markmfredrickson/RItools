@@ -19,3 +19,4 @@ Data.frame
 \description{
 Finds good strata
 }
+\keyword{internal}

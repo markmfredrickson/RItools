@@ -122,7 +122,9 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       lookup <- c(Treatment = "Treatment", Control = "Control", lookup)
     }
 
-
+      ## Mark the columns that will require by-row sigfig handling
+      orig_units_columns <- intersect(c("Treatment", "Control", "adj.diff"),dimnames(theresults)[["stat"]])
+      
     if (!("all" %in% report)) {
       # on this next line, we use anything in report tha tis also in the names of the lookup table
       # it's a little strange looking, but it does the right thing
@@ -178,8 +180,34 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                           dimnames=list(vars=dimnames(theresults)[["vars"]],
                               stat=c(dimnames(theresults)[["stat"]],"sig."),
                               strata=dimnames(theresults)[["strata"]]))
+        ## next apply rounding to DIGITS sigfigs, by statistic. If there are
+        ## multiple stratifications, then the significant figure position should be set
+        ## consistently across them.
+        for (rcol in setdiff(dimnames(theresults)[["stat"]], orig_units_columns))
+        {
+            res <- theresults[,rcol,]
+            dim(res) <- NULL
+            newresults[,rcol,] <- format(res,digits=DIGITS)
+        }
+        if (!is.null(orig_units_columns))
+            for (vv in dimnames(theresults)[["vars"]])
+            {
+                res <- theresults[vv, orig_units_columns,]
+                dim(res) <- NULL
+                newresults[vv, orig_units_columns,] <- format(res, digits=DIGITS)
+            }
+        ## if there's an adj.diff column in addition to a Treatment and a Control column,
+        ## permit a little more rounding for the latter than the former.
+        if (any(orig_units_columns=="adj.diff") & length(orig_units_columns)>1)
+                        for (vv in dimnames(theresults)[["vars"]])
+                        {
+                            ouc1 <- setdiff(orig_units_columns, "adj.diff")
+                            res <- theresults[vv, ouc1,]
+                            dim(res) <- NULL
+                            newresults[vv, ouc1,] <- format(res, digits=DIGITS)
+                        }
 
-      newresults[,-grep("sig.", dimnames(newresults)[[2]]),] <- format(theresults,DIGITS)
+            
       newresults[dimnames(Signif)[["vars"]], "sig.",dimnames(Signif)[["strata"]]]<-format(Signif)
 
 
@@ -247,7 +275,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       if (!is.null(theresults)){ print(thevartab) }
       if (!is.null(theoverall) && print.overall) {
         cat("---Overall Test---\n")
-        print(theoveralltab)
+        print(theoveralltab, quote=FALSE)
         if (show.signif.stars && !show.pvals && hasP) {
           if (!is.null(theresults)) {
             thelegend<-attr(Signif, "legend") ##if we are showing thevartab use the legend from that object

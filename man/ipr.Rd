@@ -2,12 +2,12 @@
 % Please edit documentation in R/ipr.R
 \name{ipr}
 \alias{ipr}
-\title{Inverse probability weighting suitable for completely randomized designs}
+\title{Infer inverse probability/odds of assignment weights in randomized designs}
 \usage{
 ipr(z, strata, clus = NULL, type = "inverse probability")
 }
 \arguments{
-\item{z}{categorical variable recording distinctions among assignments to treatment conditions}
+\item{z}{variable recording distinctions among assignments to treatment conditions}
 
 \item{strata}{categorical variable recording blocks}
 
@@ -26,6 +26,14 @@ Assumes a design that is completely randomized, either by cluster or by
 the unit of observation, potentially within strata or blocks.
 }
 \details{
+For inverse probability of assignment weights, the default, set argument
+\code{type} to \dQuote{inverse probability}.  Inverse odds of assignment
+calls for specification of a reference level, with observations in that
+condition receiving weights of 1. State this reference level within your
+\code{type} argument: for example, if your treatment condition corresponds
+to \code{z==1}, and you want inverse odds of treatment weighting, then pass
+a \code{type} argument of \dQuote{odds vs 1} or \dQuote{odds against 1}.
+
 The function assumes complete random assignment, within (optional)
 blocks.  This can be complete random assignment of clusters; in this situation
 the user avoids having to manage aggregation to the cluster level in order
@@ -36,6 +44,26 @@ weights of 0, as are observations that are NA on the blocking variable.
 NAs in the assignment variable also translate to zero.  If they occur within a
 non-NA block, probabilities or odds for that block are calculated as though the 
 observations with NAs for \code{z} just weren't there.
+}
+\examples{
+set.seed(201801)
+n <- 7L 
+dat <- data.frame(y=rnorm(n), x=rnorm(n),
+                  s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                  )
+dat <- transform(dat, z=as.numeric( (x+rnorm(n))>0 ) )
+## On-the-fly inverse probability of assignment weights
+lm(y~z+x, weights=ipr(z,s), data=dat)
+
+dat <- transform(dat, inv_pr_wt=ipr(z, s), inv_odds_wt=ipr(z, s, type = "odds vs 1"))
+head(dat[3:6])
+
+## Number of observations within a cluster
+## doesn't affect inferred assignment probabilities  
+dt <- transform(dat[3:6], clus=letters[1L:n])[rep(1L:n, rpois(n, 3)),]
+with(dt, all.equal(inv_pr_wt, ipr(z, s, clus)))
+dt <- data.frame(y=rnorm(nrow(dt)), x=rnorm(nrow(dt)),dt)
+lm(y~z+x, weights=ipr(z,s,clus), data=dt) 
 }
 \author{
 Ben B. Hansen

@@ -40,12 +40,11 @@
 ##' statistics, targeting the hypothesis that assignment was random within strata. These
 ##' calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 ##' but the default weighting of strata differs from that of the descriptive calculations.
-##' With \code{stratum.weights=harmonic} (the default), each stratum is weighted
-##' in proportion to the product of the stratum mean of \code{unit.weights} and
-##' the harmonic mean \eqn{1/[(1/a +
-##' 1/b)/2]=2*a*b/(a+b)} of the number of treated units (a) and
-##' control units (b) in the stratum; this weighting is optimal under
-##' certain modeling assumptions (discussed in Kalton 1968 and Hansen and
+##' With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum 
+##' is weighted in proportion to the product of the stratum mean of \code{unit.weights} 
+##' and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of 
+##' treated units (a) and control units (b) in the stratum; this weighting is optimal 
+##' under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 ##' Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 ##' distance that combines each of the univariate mean differences while accounting
 ##' for correlations among them. It's similar to the Hotelling's T-squared statistic,
@@ -54,18 +53,12 @@
 ##' In contrast to the earlier function \code{xBalance} that it is intended to replace,
 ##' \code{balanceTest} accepts only binary assignment variables (for now). 
 ##'
-##' \code{stratum.weights} can be either a function or a numeric
-##' vector of weights.  If it is a numeric vector, it should be
-##' non-negative and it should have stratum names as its names. (i.e.,
-##' its names should be equal to the levels of the factor specified by
-##' \code{strata}.) If it is a function, it should accept one
-##' argument, a data frame containing the variables in \code{data} and
-##' additionally \code{Tx.grp} and \code{stratum.code}, and return a
-##' vector of non-negative weighting factors with stratum codes as names.
-##' (To see the function that's applied by default, 
-##' do \code{getFromNamespace("harmonic", "RItools")}.)  These weighting factors
-##' will be multipled by the stratum mean of \code{unit.weights} to determine
-##' the stratum weights used for inferential calculations.
+##' \code{stratum.weights} must be a function of a single argument,
+##' a data frame containing the variables in \code{data} and
+##' additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights}, 
+##' returning a named numeric vector of non-negative weights identified by stratum.
+##' (For an example, enter \code{getFromNamespace("harmonic", "RItools")}.)
+##' the data  \code{stratum.weights} function.  
 ##'
 ##' If the stratifying factor has NAs, these cases are dropped.  On the other
 ##' hand, if NAs in a covariate are found then those observations are dropped for descriptive
@@ -95,16 +88,7 @@
 ##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
-##' @param stratum.weights Weights to be applied when aggregating
-##'   across strata specified by \code{strata}, defaulting to weights
-##'   proportional to the harmonic mean of treatment and control group
-##'   sizes, in numbers of clusters if clusters are present, within strata.
-##'   This can be either a function used to
-##'   calculate the weights or the weights themselves; if
-##'   \code{strata} is a data frame, then it can be such a function, a
-##'   list of such functions, or a data frame of stratum weighting
-##'   schemes corresponding to the different stratifying factors of
-##'   \code{strata}.  See details.
+##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
 ##' @param covariate.scaling A scale factor to apply to covariates in
 ##'   calculating \code{std.diffs} (currently ignored). 
@@ -188,7 +172,7 @@ balanceTest <- function(fmla,
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
                      unit.weights,
-                     stratum.weights = harmonic,
+                     stratum.weights = harmonic_times_mean_weight,
                      subset,
                      include.NA.flags = TRUE,
                      covariate.scaling = NULL,

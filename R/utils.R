@@ -255,3 +255,35 @@ slm.wfit.csr <- function (x, y, weights, ...)
     fit$contrasts <- attr(x, "contrasts")
     fit
 }
+
+### Other linear algebra
+##' Modeled on MASS's \code{ginv}
+##'
+##' 
+##' @title Matrix square root of XtX's pseudoinverse
+##' @param mat double-precision matrix
+##' @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
+##' @author Ben Hansen
+##' @keywords internal
+XtX_pseudoinv_sqrt <- function(mat, tol = sqrt(.Machine$double.eps))
+{
+    pst.svd <- try(svd(mat, nu=0))
+
+  if (inherits(pst.svd, 'try-error')) {
+    pst.svd <- propack.svd(mat)
+  }
+
+  Positive <- pst.svd$d > max(tol * pst.svd$d[1], 0)
+  Positive[is.na(Positive)] <- FALSE 
+
+  if (all(Positive)) { 
+    ytl <- pst.svd$v *
+      matrix(1/pst.svd$d, nrow = ncol(mat), ncol = length(pst.svd$d), byrow = T)
+  } else if (!any(Positive)) {
+    ytl <- array(0, c(ncol(mat), 0) )
+  } else  {
+    ytl <- pst.svd$v[, Positive, drop = FALSE] *
+      matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = ncol(mat), byrow = TRUE)
+  }
+ytl
+}
