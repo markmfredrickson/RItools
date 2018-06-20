@@ -188,6 +188,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
         {
             res <- theresults[,rcol,]
             dim(res) <- NULL
+            if (rcol!="p") { #std.diffs and z stats
+                res <- round(res,digits=(DIGITS-1)) }
             newresults[,rcol,] <- format(res,digits=DIGITS)
         }
         if (!is.null(orig_units_columns))
