@@ -283,6 +283,7 @@ balanceTest <- function(fmla,
         bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
         toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
         descriptives <- descriptives[-toremove,,,drop=FALSE]
+        origvars <- origvars[-toremove]
         }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {

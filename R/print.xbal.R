@@ -121,10 +121,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       report <- c("Treatment", "Control", report[!idx])
       lookup <- c(Treatment = "Treatment", Control = "Control", lookup)
     }
-
-      ## Mark the columns that will require by-row sigfig handling
-      orig_units_columns <- intersect(c("Treatment", "Control", "adj.diff"),dimnames(theresults)[["stat"]])
-      
+       
     if (!("all" %in% report)) {
       # on this next line, we use anything in report tha tis also in the names of the lookup table
       # it's a little strange looking, but it does the right thing
@@ -133,6 +130,10 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       # likewise, don't grab any columns that aren't there
       theresults <- theresults[, tmp[tmp %in% dimnames(theresults)[["stat"]]], , drop = FALSE]
     }
+
+    ## Mark the columns that will require by-row sigfig handling
+    orig_units_columns <- intersect(c("Treatment", "Control", "adj.diff", "pooled.sd"),
+                                    dimnames(theresults)[["stat"]])
 
     hasP <- "p" %in% dimnames(theresults)[["stat"]]
 

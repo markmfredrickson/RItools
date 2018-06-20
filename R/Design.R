@@ -21,7 +21,7 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' 
 ##' @slot Covariates The numeric matrix that `model.matrix` would have returned.
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
-##' @slot term.labels labels of terms of the originating model formula
+##' @slot TermLabels labels of terms of the originating model formula
 ##' @slot contrasts Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
