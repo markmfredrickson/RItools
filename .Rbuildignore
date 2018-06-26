@@ -5,6 +5,7 @@ load.R
 inst/docs
 cran-comments.md
 tests/testthat/test.notforCRAN.R
+tests/testthat/test.tidiers.R
 matrixNotation.Rnw
 .git
 .local

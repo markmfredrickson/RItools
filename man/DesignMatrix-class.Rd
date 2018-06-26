@@ -27,7 +27,7 @@ DesignOptions class exension of this class, so it's documented there.
 
 \item{\code{OriginalVariables}}{look-up table associating Covariates columns with terms of the originating model formula}
 
-\item{\code{term.labels}}{labels of terms of the originating model formula}
+\item{\code{TermLabels}}{labels of terms of the originating model formula}
 
 \item{\code{contrasts}}{Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`}
 

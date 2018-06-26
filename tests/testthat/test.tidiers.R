@@ -16,6 +16,8 @@ test_that("tidy.xbal assumptions haven't changed",{
                       c("Control", "Treatment","std.diff", "adj.diff", "pooled.sd", "z", "p")
                       ) #if any of these fail just have to adjust `tidy.xbal()`
       expect_equal(intersect(1:5, 4:2), 2:4) # order from 1st arg not 2nd
+      expect_equal(dimnames(xb[['results']])[['strata']][1],'s') # "s" comes before 
+      expect_equal(dimnames(xb[['overall']])[[1]][1],'s') # not after "Unstrat"
 })
 
 test_that("Basic function of xbal tidy() and glance() methods", {
