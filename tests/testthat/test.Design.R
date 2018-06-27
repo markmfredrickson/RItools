@@ -304,8 +304,8 @@ test_that("DesignOptions to descriptive statistics", {
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
   
   # ok, now checking that values are correct.
-  expect_equal(mean(d$x[d$z == 1]), descriptives["x", "Treatment", "Unstrat"])
-  expect_equal(mean(d$x[d$z == 0]), descriptives["x", "Control", "Unstrat"])
+  expect_equal(mean(d$x[d$z == 1]), descriptives["x", "Treatment", "--"])
+  expect_equal(mean(d$x[d$z == 0]), descriptives["x", "Control", "--"])
 
   # with equal sized strata, the the control/treatment means are the means of the the strata means
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
@@ -362,7 +362,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   simple.all <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d)
   
   descriptives.all <- RItools:::designToDescriptives(simple.all)
-  expect_equal(descriptives.all["x", "Treatment", "Unstrat"], mean(d$x[d$z == 1]))
+  expect_equal(descriptives.all["x", "Treatment", "--"], mean(d$x[d$z == 1]))
   expect_equal(descriptives.all["x", "Treatment", "s"], mean(d$x[d$z == 1 & !is.na(d$s)]))
 
   simple.missing <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d.missing)
@@ -370,7 +370,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   descriptives.missing <- RItools:::designToDescriptives(simple.missing)
 
   with(d.missing,
-       expect_equal(descriptives.missing["x", "Treatment", "Unstrat"],
+       expect_equal(descriptives.missing["x", "Treatment", "--"],
                     mean(x[z == 1], na.rm = TRUE)))
 
   with(d.missing,
@@ -384,7 +384,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   descriptives.paired <- RItools:::designToDescriptives(design.paired)
 
   with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
-  with(d, expect_equal(descriptives.paired["x", "Control", "Unstrat"], mean(x[z == 0])))
+  with(d, expect_equal(descriptives.paired["x", "Control", "--"], mean(x[z == 0])))
   with(d, expect_false(identical(descriptives.paired["x", "Control", "s"], mean(x[z == 0]))))
 
 })
@@ -543,11 +543,11 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
                                                 RItools:::effectOfTreatmentOnTreated)
-    expect_true(setequal(names(simple2@Sweights), c("strat", "Unstrat")))
+    expect_true(setequal(names(simple2@Sweights), c("strat", "--")))
     dsimple2 <- RItools:::designToDescriptives(simple2)
     asimple2 <- RItools:::alignDesignsByStrata(simple2)
-    expect_true(setequal(names(asimple2), c("strat", "Unstrat")))
-    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[["Unstrat"]]@Covariates))
+    expect_true(setequal(names(asimple2), c("strat", "--")))
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[["--"]]@Covariates))
 
 })
 
@@ -569,8 +569,8 @@ test_that("alignDesigns centers covars by stratum", {
     simple0@Sweights <- RItools:::DesignWeights(simple0, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    expect_equivalent(colSums(asimple0[["Unstrat"]]@Covariates),
-                      rep(0,ncol(asimple0[["Unstrat"]]@Covariates)))
+    expect_equivalent(colSums(asimple0[["--"]]@Covariates),
+                      rep(0,ncol(asimple0[["--"]]@Covariates)))
     expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
                       rep(0,ncol(asimple0[["strat"]]@Covariates)))
     expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
@@ -586,9 +586,9 @@ test_that("alignDesigns centers covars by stratum", {
     simple1@Sweights <- RItools:::DesignWeights(simple1, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    expect_equivalent(colSums(asimple1[["Unstrat"]]@Covariates *
-                              asimple1[["Unstrat"]]@UnitWeights ),
-                      rep(0,ncol(asimple1[["Unstrat"]]@Covariates)))
+    expect_equivalent(colSums(asimple1[["--"]]@Covariates *
+                              asimple1[["--"]]@UnitWeights ),
+                      rep(0,ncol(asimple1[["--"]]@Covariates)))
 
     tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
     expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
@@ -598,9 +598,9 @@ test_that("alignDesigns centers covars by stratum", {
 
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
-    expect_equivalent(colSums(asimple2[["Unstrat"]]@Covariates *
-                              asimple2[["Unstrat"]]@UnitWeights ),
-                      rep(0,ncol(asimple2[["Unstrat"]]@Covariates)))
+    expect_equivalent(colSums(asimple2[["--"]]@Covariates *
+                              asimple2[["--"]]@UnitWeights ),
+                      rep(0,ncol(asimple2[["--"]]@Covariates)))
 
     tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
     expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
@@ -646,9 +646,9 @@ test_that("Issue #89: Proper strata weights", {
   ## wtratio is its ratio with h_b * m-bar_b, thus will generally be much 
   ## less than 1.  Check this:
   h <- with(xy, 1/(1/sum(y) + 1/sum(!y)))
-  expect_equal(ett.nowts[['Unstrat']][,'wtratio'], 1/h)
+  expect_equal(ett.nowts[['--']][,'wtratio'], 1/h)
   h <- with(xy.wts, 1/(1/sum(y) + 1/sum(!y)))
-  expect_equal(ett.wts[['Unstrat']][,'wtratio'], 1/(h*mean(xy.wts$"(weights)")))
+  expect_equal(ett.wts[['--']][,'wtratio'], 1/(h*mean(xy.wts$"(weights)")))
   
   
   ## split up into strata, use harmonic strata weights
@@ -702,11 +702,11 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
-    expect_equivalent(btis0[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
-    expect_equivalent(btis0[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+    expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
-    expect_equivalent(btis0[['Unstrat']][c('csq', 'DF')],
+    expect_equivalent(btis0[['--']][c('csq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
     expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
@@ -738,11 +738,11 @@ test_that("alignedToInferentials agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['Unstrat']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                     xb1u$results[,'adj.diff',"unmatched"])
-  expect_equivalent(btis1[['Unstrat']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                     attr(xb1u$overall, 'tcov')$unmatched)
-  expect_equivalent(btis1[['Unstrat']][c('csq', 'DF')],
+  expect_equivalent(btis1[['--']][c('csq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
 

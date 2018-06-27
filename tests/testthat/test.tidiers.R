@@ -17,7 +17,7 @@ test_that("tidy.xbal assumptions haven't changed",{
                       ) #if any of these fail just have to adjust `tidy.xbal()`
       expect_equal(intersect(1:5, 4:2), 2:4) # order from 1st arg not 2nd
       expect_equal(dimnames(xb[['results']])[['strata']][1],'s') # "s" comes before 
-      expect_equal(dimnames(xb[['overall']])[[1]][1],'s') # not after "Unstrat"
+      expect_equal(dimnames(xb[['overall']])[[1]][1],'s') # not after "--"
 })
 
 test_that("Basic function of xbal tidy() and glance() methods", {
@@ -45,5 +45,5 @@ test_that("Basic function of xbal tidy() and glance() methods", {
 
       expect_s3_class(glance.xbal(xb), 'data.frame')
       expect_equal(rownames(glance.xbal(xb, strata="s")), "s")
-            expect_equal(rownames(glance.xbal(xb, strata="Unstrat")), "Unstrat")
+            expect_equal(rownames(glance.xbal(xb, strata="--")), "--")
 })

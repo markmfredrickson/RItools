@@ -164,7 +164,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     }
 
     ftabler <- function(data) {   ##Summarize the variable-by-variable output array as a flat contingency table
-      ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
+        names(dimnames(data))[names(dimnames(data))=="strata"] <- "strata():"
+        ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
     }
 
     if (!is.null(theresults)) {
@@ -225,15 +226,18 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
 
         thevartab<-theftab
       } else {
-
         tmp <- dimnames(newresults)[[2]]
         thevartab <- sapply(dimnames(newresults)[[3]],
-                            simplify=FALSE,
                             function(s) {
-                              cbind(
-                                  as.data.frame(newresults[, c(tmp[!(tmp == "p")]), s, drop = FALSE]),
-                                  " " = format(Signif[,,s]))
-                            })
+                                tmpdata <- newresults[, c(tmp[!(tmp == "p")]), s, drop = FALSE]
+                                tmpdn <- dimnames(tmpdata)[1:2]
+                                dim(tmpdata) <- dim(tmpdata)[1:2]
+                                dimnames(tmpdata) <- tmpdn
+                                tmpdata <- as.data.frame(tmpdata)
+                              cbind(tmpdata," " = format(Signif[,,s]))
+                            },
+                            simplify=FALSE, USE.NAMES=TRUE
+                            )
       }
     }
 
@@ -244,10 +248,11 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       } else {
         thevartab <- sapply(
             dimnames(theresults)[[3]],
-            simplify=FALSE,
             function(x) {
               as.data.frame(theresults[,,x])
-            })
+            },
+            simplify=FALSE, USE.NAMES=TRUE
+            )
       }
     }
 

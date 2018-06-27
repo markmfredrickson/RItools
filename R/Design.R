@@ -267,8 +267,8 @@ makeDesigns <- function(fmla, data) {
   strataCols <- colnames(str.data)[attr(str.tms, "specials")$`survival::strata`]
 
   if (includeUnstratified) {
-    str.data$Unstrat <- 1
-    strataCols <- c(strataCols, "Unstrat")
+    str.data$`--` <- 1
+    strataCols <- c(strataCols, "--")
   }
 
   ## first we check cluster info

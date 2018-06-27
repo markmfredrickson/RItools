@@ -18,7 +18,7 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
 
     lm1 <- lm(x1~z, data=dat)
      xb1 <- balanceTest(z~x1+strata(s), data=dat, report=c("adj.mean.diffs"))
-     expect_equal(xb1$results["x1", "adj.diff", "Unstrat"], coef(lm1)["z"], check.attributes=F)
+     expect_equal(xb1$results["x1", "adj.diff", "--"], coef(lm1)["z"], check.attributes=F)
 
      ## try to match default ETT weighting    
     pihat <- fitted(lm(z~s, data=dat))     
@@ -47,7 +47,7 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
         clogit(z~x1, data=dat, iter.max=1) )
      cl1b <- suppressWarnings( clogit(z~x1+strata(s), data=dat, iter.max=1) )
 
-    expect_equivalent(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "Unstrat"])^2 )
+    expect_equivalent(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "--"])^2 )
     expect_equivalent(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 )
 
     xb2 <- balanceTest(z~x1+x2+strata(s), data=dat, report=c("chisq"))
@@ -55,13 +55,13 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
         clogit(z~x1+x2, data=dat, iter.max=1) )
      cl2b <- suppressWarnings( clogit(z~x1+x2+strata(s), data=dat, iter.max=1) )
 
-    expect_equivalent(summary(cl2a)$sctest['test'],(xb2$overall["Unstrat", "chisquare"]) )
+    expect_equivalent(summary(cl2a)$sctest['test'],(xb2$overall["--", "chisquare"]) )
     expect_equivalent(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) )
 
     xb3 <- balanceTest(z~w1+w2+strata(s),
                     data=transform(dat, w1=x2+.1*x1, w2=x2-.1*x1),
                     report=c("z.scores", "chisq"))
-    expect_equivalent(xb2$overall["Unstrat", "chisquare"], xb3$overall["Unstrat", "chisquare"])
+    expect_equivalent(xb2$overall["--", "chisquare"], xb3$overall["--", "chisquare"])
     expect_equivalent(xb2$overall["s", "chisquare"], xb3$overall["s", "chisquare"])
 
     ## the below documents how the chi-square statistic can be larger than the sum of squared z
@@ -134,12 +134,12 @@ test_that("Passing post.alignment.transform, #26", {
   res6 <- balanceTest(pr ~ cost, data=nuclearplants, post.alignment.transform = rank,
                    report="all", p.adjust.method='none')
 
-  expect_equal(res6$results["cost", "p", "Unstrat"],
+  expect_equal(res6$results["cost", "p", "--"],
                wilcox.test(cost~pr, data=nuclearplants, exact=FALSE, correct=FALSE)$p.value)
 
   # w/ one variable, chisquare p value should be same as p value on that variable
-  expect_equal(res6$results["cost", "p", "Unstrat"],
-               res6$overall["Unstrat","p.value"])
+  expect_equal(res6$results["cost", "p", "--"],
+               res6$overall["--","p.value"])
 
   # to dos: test combo of a transform with non-default stratum weights.
 
@@ -320,7 +320,7 @@ test_that("balanceTest agrees with other methods where appropriate", {
                      idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
   xb2u <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
   bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts, report = "chisquare.test")
-  expect_equivalent(xb2u$overall$chisquare, bt2u$overall['Unstrat', "chisquare"])
+  expect_equivalent(xb2u$overall$chisquare, bt2u$overall['--', "chisquare"])
 
   ## in stratified case, weighted/totals correspondence requires that weights don't vary within strata.
   wtmeans <- tapply(xy.wts$wts, xy.wts$m, mean)

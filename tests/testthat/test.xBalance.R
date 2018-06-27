@@ -16,7 +16,7 @@ test_that("xBal univariate desriptive means agree w/ lm",{
      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
 
      lm1 <- lm(x1~z, data=dat)
-     xb1 <- xBalance(z~x1, strata = list(Unstrat = NULL, s = ~s), data=dat, report=c("adj.mean.diffs"))
+     xb1 <- xBalance(z~x1, strata = list(`Unstrat` = NULL, s = ~s), data=dat, report=c("adj.mean.diffs"))
      expect_equal(xb1$results["x1", "adj.diff", "Unstrat"], coef(lm1)["z"], check.attributes=F)
 
      lm2a <- lm(x1~z+s, data=dat) 
@@ -31,7 +31,7 @@ test_that("xBal univariate inferentials agree w/ conditional logistic Rao score 
                         s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
                         )
      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
-    xb1b <- xBalance(z~x1, strata = list(Unstrat = NULL, s = ~s), data=dat, report=c("z.scores"))
+    xb1b <- xBalance(z~x1, strata = list(`Unstrat` = NULL, s = ~s), data=dat, report=c("z.scores"))
      cl1 <- clogit(z~x1, data=dat)
      cl2 <- clogit(z~x1+strata(s), data=dat)
 

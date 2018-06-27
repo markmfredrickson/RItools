@@ -124,7 +124,7 @@ test_that("Select a subset of xbal results (for printing, etc)", {
 
   # strata based subsetion is the easiest as it common across groups and
   # variables
-  xb.noneU <- subset(xb, strata = c("Unstrat", "cut(U, 3)"))
+  xb.noneU <- subset(xb, strata = c("--", "cut(U, 3)"))
 
   expect_equivalent(dim(xb$results)[1:2], dim(xb.noneU$results)[1:2])
   expect_equivalent(dim(xb$results)[3]-1, dim(xb.noneU$results)[3])
@@ -186,4 +186,26 @@ test_that("Formatting w/ appropriate sigfigs values",{
   ## Treatment and Control
   expect_equivalent(round(as.numeric(pt[[1]][3,1:2]), 2), as.numeric(pt[[1]][3,1:2]))
   expect_gt(abs( round(as.numeric(pt[[1]][1,1]), 2) - as.numeric(pt[[1]][1,1]) ),0)
+})
+
+test_that("Var names in print.xbal(,horiz=F)",{
+  set.seed(20121129)
+  n <- 100
+  df <- data.frame(Z = rep(c(1,0), n/2),
+                   X = rnorm(n),
+                   Y = rnorm(n),
+                   W = cut(rnorm(n), breaks = 3),
+                   K = as.factor(letters[sample.int(3, n, replace = T)]),
+                   U = rnorm(n),
+                   S = as.factor(rep(c("A", "B"), each = n/2)))
+
+
+  # the data are will be grouped as (X, XY) and (all levels W by all levels
+  # K), Y is not in an explicit group
+  xb <- balanceTest(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
+                 data = df,
+                 report = 'all')
+
+  pt2 <- print(xb, horiz=F, printme=F)
+  expect_true('std.diff' %in% colnames(pt2$vartable[['S']])) # not 'std.diff.S'
 })
