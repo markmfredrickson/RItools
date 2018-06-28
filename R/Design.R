@@ -115,7 +115,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 
   terms.with.missings <- !sapply(ccs.by.term, all)
     
-  ccs.by.term <- c(list('_non-null record_'=!null.record),
+  ccs.by.term <- c(list('_any Xs recorded_'=!null.record),
                    ccs.by.term)
   terms.with.missings <- c(TRUE, # in order always to have same leading entry 
                            terms.with.missings)
@@ -131,7 +131,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
       nm.terms[terms.with.missings][nmcols.dupes] <-
         match(nmcols[nmcols.dupes], nmcols[!nmcols.dupes])
       ## At this point nm.terms is a look-up table with an entry for
-      ## _non-null record_ and for each provided term. Entries are
+      ## _any Xs recorded_ and for each provided term. Entries are
       ## 0 if there are no null records, or no missings on the term in question;
       ## otherwise if there are null records and/or term missings, the
       ## entry gives the column of the matrix `notmissing`, formed a few lines

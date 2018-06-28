@@ -243,7 +243,7 @@ balanceTest <- function(fmla,
 
   design          <- makeDesigns(fmla, data)
   ## Which of the NM cols to look at for a given variable's NM info
-  NMpatterns <-   c("_non-null record_", colnames(design@NotMissing))[1L+design@NM.Covariates]
+  NMpatterns <-   c("_any Xs recorded_", colnames(design@NotMissing))[1L+design@NM.Covariates]
   NMpatterns <- paste0("(",NMpatterns,")")
     
   aggDesign       <- aggregateDesigns(design)

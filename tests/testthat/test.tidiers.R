@@ -25,7 +25,7 @@ test_that("tidy.xbal assumptions haven't changed",{
                   )     #w/ exception of "", which indicates nothing is missing...
       ##...that is unless there are rows with all Xs being NA.
       xb2 <- balanceTest(z~x2,data=dat)
-      expect_equal(attr(xb2[['results']], "NMpatterns"), c("(_non-null record_)", ""))
+      expect_equal(attr(xb2[['results']], "NMpatterns"), c("(_any Xs recorded_)", ""))
 })
 
 test_that("Basic function of xbal tidy() and glance() methods", {

@@ -34,7 +34,7 @@ test_that("Missingness gets passed through in Covariates, recorded in NotMissing
               datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
               simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
-              expect_equivalent(colnames(simple2@NotMissing), c("_non-null record_", "x1", "fac"))
+              expect_equivalent(colnames(simple2@NotMissing), c("_any Xs recorded_", "x1", "fac"))
               
 })
 test_that("lookup tables OK, even w/ complex & multi-column terms",{
@@ -129,7 +129,7 @@ test_that("Duplicated missingness patterns handled appropriately",{
 
 })
 
-test_that("All-Xes missingness |-> NotMissing col '_non-null record_'",{
+test_that("All-Xes missingness |-> NotMissing col '_any Xs recorded_'",{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
@@ -143,7 +143,7 @@ test_that("All-Xes missingness |-> NotMissing col '_non-null record_'",{
     simple6 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple6@OriginalVariables, 1:3)
     expect_equal(simple6@TermLabels, c("x1", "I(x1^2)", "fac"))
-    expect_equal(colnames(simple6@NotMissing)[1], "_non-null record_")
+    expect_equal(colnames(simple6@NotMissing)[1], "_any Xs recorded_")
     expect_equal(simple6@NM.Covariates, c(2,2,1))
     expect_equal(simple6@NM.terms, c(2,2,1))    
 
@@ -177,7 +177,7 @@ test_that("All-Xes missingness noted in descriptives", {
 
     simple5 <- makeDesigns(z ~ x1 + I(x1^2) + fac + cluster(clus), dat)
     descr <- RItools::designToDescriptives(simple5)
-    expect_equivalent(descr['(_non-null record_)' ,1:2,1], c(1, 1/3)) # not just 1s all around
+    expect_equivalent(descr['(_any Xs recorded_)' ,1:2,1], c(1, 1/3)) # not just 1s all around
 })
 
 context("DesignOptions objects")
@@ -717,16 +717,16 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
-    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_any Xs recorded_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
-    expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+    expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_any Xs recorded_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
     expect_equivalent(btis0[['--']][c('csq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_any Xs recorded_)' entry
                       xb0$results[,'adj.diff',"matched"])
-    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_any Xs recorded_)' entries
                       attr(xb0$overall, 'tcov')$matched)
     expect_equivalent(btis0[['m']][c('csq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
@@ -753,9 +753,9 @@ test_that("alignedToInferentials agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_any Xs recorded_)' entry
                     xb1u$results[,'adj.diff',"unmatched"])
-  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_any Xs recorded_)' entries
                     attr(xb1u$overall, 'tcov')$unmatched)
   expect_equivalent(btis1[['--']][c('csq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
@@ -767,9 +767,9 @@ test_that("alignedToInferentials agreement w/ xBal()", {
   xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_any Xs recorded_)' entry
                     xb1m$results[,'adj.diff',"matched"])
-  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_any Xs recorded_)' entries
                     attr(xb1m$overall, 'tcov')$matched)
   expect_equivalent(btis1[['m']][c('csq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
