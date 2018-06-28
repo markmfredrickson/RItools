@@ -513,10 +513,10 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   covars <- cbind(covars, design@NotMissing[, NMcolperm])
   vars <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   colnames(covars)   <-  vars
-  covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
+  covars.nmcols <- c(1L + design@NM.Covariates, rep(1L, k.NM ) )
   stratifications <- colnames(design@StrataFrame)
 
-  Uweights <- design@UnitWeights * design@NotMissing
+  Uweights <- design@UnitWeights * cbind(1, design@NotMissing)
 
   ans <- array(NA,
                dim = c(length(vars), 5, length(stratifications)),

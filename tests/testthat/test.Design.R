@@ -129,7 +129,7 @@ test_that("Duplicated missingness patterns handled appropriately",{
 
 })
 
-test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
+test_that("All-Xes missingness |-> NotMissing col '_non-null record_'",{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
@@ -145,7 +145,7 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
     expect_equal(simple6@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(colnames(simple6@NotMissing)[1], "_non-null record_")
     expect_equal(simple6@NM.Covariates, c(2,2,1))
-    expect_equal(simple6@NM.terms, c(2,2,1))
+    expect_equal(simple6@NM.terms, c(2,2,1))    
 
     simple7 <- makeDesigns(z ~ x1 + I(x1^2) + fac + 0 + strata(strat) + cluster(clus),
                            dat)
@@ -164,6 +164,21 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
     ## not 1.
 
 } )
+
+test_that("All-Xes missingness noted in descriptives", {
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    x1=c(rep(NA, 4), 2),
+                    x2=c(1:3, NA, 5),
+                    fac=factor(c(NA, 1:2, NA, 2))
+                    )
+    dat$'(weights)' <- 1
+
+    simple5 <- makeDesigns(z ~ x1 + I(x1^2) + fac + cluster(clus), dat)
+    descr <- RItools::designToDescriptives(simple5)
+    expect_equivalent(descr['(_non-null record_)' ,1:2,1], c(1, 1/3)) # not just 1s all around
+})
 
 context("DesignOptions objects")
 
