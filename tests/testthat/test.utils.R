@@ -180,11 +180,17 @@ test_that("Formatting w/ appropriate sigfigs values",{
   xb2 <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
                  data = df,
                  report = c("std.diffs",  # descriptives only: invokes different
-                            "adj.means", "adj.mean.diffs")) #print.xbal() logic
+                            "adj.means", "adj.mean.diffs") #print.xbal() logic
+                 )
+  ## Confirm that the by-row rounder rounds to requested sigfigs, potentially
+  ## w/ more rounding for Control and Treatment columns:
+  ca1 <- original_units_var_formatter(xb2$results[,c("Control", "Treatment", "adj.diff"),, drop=F], 2)
+  expect_equal(ca1[1,,1], c("Control"="-0.048",  "Treatment"="-0.042",  "adj.diff"=" 0.0054"))
+  
   pt2 <- print(xb2, digits=2, printme=FALSE)
 
   
-  ## Brittle test: we settings as above, I'm pretty sure 2 sigfigs
+  ## Brittle test: with settings as above, I'm pretty sure 2 sigfigs
   ## should translate to the thousandths place for the z-stats.
   expect_equivalent(round(as.numeric(pt1[[1]][,4]), 4), as.numeric(pt1[[1]][,4]))
   ## This similarly brittle pair of tests confirms that rounding is being done

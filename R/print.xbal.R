@@ -185,32 +185,22 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
         ## next apply rounding to DIGITS sigfigs, by statistic. If there are
         ## multiple stratifications, then the significant figure position should be set
         ## consistently across them.
-        for (rcol in setdiff(dimnames(theresults)[["stat"]], orig_units_columns))
-        {
+        for (rcol in setdiff(dimnames(theresults)[["stat"]], c("p", orig_units_columns)))
+        {    #i.e. std.diffs and z stats
             res <- theresults[,rcol,]
             dim(res) <- NULL
-            if (rcol!="p") { #std.diffs and z stats
-                res <- round(res,digits=(DIGITS-1)) }
+            res <- round(res,digits=(DIGITS-1)) 
             newresults[,rcol,] <- format(res,digits=DIGITS)
         }
+        if ("p" %in% dimnames(theresults)[["stat"]])
+        {
+            res <- theresults[,"p",]
+            dim(res) <- NULL
+            newresults[,"p",] <- format(res, digits=DIGITS)
+        }
         if (!is.null(orig_units_columns))
-            for (vv in dimnames(theresults)[["vars"]])
-            {
-                res <- theresults[vv, orig_units_columns,]
-                dim(res) <- NULL
-                newresults[vv, orig_units_columns,] <- format(res, digits=DIGITS)
-            }
-        ## if there's an adj.diff column in addition to a Treatment and a Control column,
-        ## permit a little more rounding for the latter than the former.
-        if (any(orig_units_columns=="adj.diff") & length(orig_units_columns)>1)
-                        for (vv in dimnames(theresults)[["vars"]])
-                        {
-                            ouc1 <- setdiff(orig_units_columns, "adj.diff")
-                            res <- theresults[vv, ouc1,]
-                            dim(res) <- NULL
-                            newresults[vv, ouc1,] <- format(res, digits=DIGITS)
-                        }
-
+            newresults[,orig_units_columns,] <-
+                original_units_var_formatter(theresults[,orig_units_columns,,drop=FALSE], digits=DIGITS)
             
       newresults[dimnames(Signif)[["vars"]], "sig.",dimnames(Signif)[["strata"]]]<-format(Signif)
 
@@ -301,4 +291,39 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       list(vartable=thevartab,overalltable=theoveralltab)}
   }
   withOptions(list(digits = DIGITS), f)
+}
+
+
+##' formats a var-stat-strata array by var, with rounding
+##' potentially rounding a bit less for an "adj.diff" column
+##'
+##' 
+##' @title Formatting suitable for stat expressed in units specific to var
+##' @param arr numeric array
+##' @param digits number of digits for rounding
+##' @return array of same dimension as arr but of type character
+##' @author Hansen
+##' @keywords internal
+original_units_var_formatter <- function(arr, digits)
+{
+    stopifnot(length(dim(arr))==3, names(dimnames(arr))[1]=="vars" )
+    newarr <- array(dim=dim(arr), dimnames=dimnames(arr))
+    for (vv in dimnames(arr)[["vars"]])
+    {
+        res <- arr[vv, ,]
+        dim(res) <- NULL
+        newarr[vv, ,] <- format(res, digits=digits)
+    }
+
+    ## if there's an adj.diff column in addition to a Treatment and a Control column,
+    ## permit a little more rounding for the latter than the former.
+        if (any(dimnames(arr)[[2]]=="adj.diff") & dim(arr)[2]>1)
+            for (vv in dimnames(arr)[["vars"]])
+                        {
+                            ouc1 <- setdiff(dimnames(arr)[[2]], "adj.diff")
+                            res <- arr[vv, ouc1,]
+                            dim(res) <- NULL
+                            newarr[vv, ouc1,] <- format(res, digits=digits)
+                        }
+    newarr
 }

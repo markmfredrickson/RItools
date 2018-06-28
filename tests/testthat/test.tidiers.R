@@ -59,3 +59,19 @@ test_that("Basic function of xbal tidy() and glance() methods", {
       expect_equal(rownames(glance.xbal(xb2, strata="s")), "s")
 
 })
+
+test_that("tidy.xbal w/ special formatting for original units vars",{
+      set.seed(20160406)
+      n <- 7 
+      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+      dat[2,'x2'] <- NA
+
+      xb1 <- balanceTest(z~x1, data=dat)
+      t1 <- tidy.xbal(xb1, format=TRUE, digits=2)
+      expect_s3_class(t1, 'data.frame')
+      expect_is(t1$"adj.diff", "character")
+    })
+          
