@@ -43,15 +43,16 @@ tidy.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1],
     ans <- as.data.frame(ans)
     colnames(ans) <- dimnames(x[['results']])[['stat']]
     ans <- data.frame(vars=dimnames(x[['results']])[['vars']], ans)
+    ans$NA.info <- attr(x[['results']], "NMpatterns")
     row.names(ans) <- 1L:nrow(ans)
     xbalvars <- c("vars", "Control", "Treatment",
                   "adj.diff", "std.diff", "pooled.sd",
-                  "z", "p")
+                  "z", "p", "NA.info")
     names(xbalvars) <- xbalvars
     vars <- c(xbalvars[setdiff(names(xbalvars), names(varnames_crosswalk))],
               varnames_crosswalk)
     reportme <- intersect(names(vars),
-                      c('vars', dimnames(x[['results']])[['stat']])
+                      c('vars', dimnames(x[['results']])[['stat']], 'NA.info')
                       )#to adjust order of columns
     ans <- ans[reportme]
     colnames(ans) <- vars[colnames(ans)]

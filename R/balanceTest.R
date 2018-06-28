@@ -242,12 +242,17 @@ balanceTest <- function(fmla,
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesigns(fmla, data)
+  ## Which of the NM cols to look at for a given variable's NM info
+  NMpatterns <-   c("_non-null record_", colnames(design@NotMissing))[1L+design@NM.Covariates]
+  NMpatterns <- paste0("(",NMpatterns,")")
+    
   aggDesign       <- aggregateDesigns(design)
   ## (Creation of stratum weightings for use in 
   ##  descriptives calculations would go here, if 
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
   descriptives    <- designToDescriptives(design, covariate.scaling)
+  NMpatterns <- c(NMpatterns, rep("", dim(descriptives)[1]-length(NMpatterns)))
 
   # these weights govern inferential but not descriptive calculations
 
@@ -256,8 +261,10 @@ balanceTest <- function(fmla,
       DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
+
+  ## more bookkeeping
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
-  
+
   tmp <- lapply(strataAligned, alignedToInferentials)
   names(tmp) <- names(aggDesign@StrataMatrices)
 
@@ -282,8 +289,14 @@ balanceTest <- function(fmla,
     {
         bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
         toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-        descriptives <- descriptives[-toremove,,,drop=FALSE]
-        origvars <- origvars[-toremove]
+        if (any(toremove))
+            {
+             strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
+             descriptives <- descriptives[-toremove,,,drop=FALSE]
+             NMpatterns <- NMpatterns[-toremove]  # names of vars that 
+             NMpatterns[ NMpatterns%in% strings_to_remove] <- "" 
+             origvars <- origvars[-toremove]
+            }
         }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
@@ -300,6 +313,7 @@ balanceTest <- function(fmla,
   ans$results[, "p", s] <- p.adjust(ans$results[, "p", s], method = p.adjust.method)
 ##  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
 
+  attr(ans$results, "NMpatterns") <- NMpatterns
   attr(ans$results, "originals") <- origvars
   attr(ans$results, "term.labels") <- design@TermLabels
   attr(ans$results, "include.NA.flags") <- include.NA.flags # hinting for print and plot methods

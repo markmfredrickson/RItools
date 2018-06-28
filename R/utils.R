@@ -128,8 +128,10 @@ subset.xbal <- function(x,
 
   if (!is.null(ovr))
       attr(ovr, "tcov") <- attr(x$overall, "tcov")[strata]
-  
-  attr(res, "originals") <- attr(x$results, "originals")[res.dmns$vars %in% vars]
+
+  keep_this_var <- res.dmns$vars %in% vars
+  attr(res, "NMpatterns") <- attr(x$res, "NMpatterns")[keep_this_var]
+  attr(res, "originals") <- attr(x$results, "originals")[keep_this_var]
   attr(res, "term.labels") <- attr(x$results, "term.labels")
   attr(res, "include.NA.flags") <-  attr(x$results, "include.NA.flags")
 

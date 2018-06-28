@@ -249,7 +249,7 @@ test_that("NAs properly handled", {
 
   bt1 <- balanceTest(Z ~ X1, data = df)
   expect_s3_class(bt1, "xbal")
-  expect_false("(_non-null record_)" %in% dimnames(bt1[["results"]])[["vars"]])
+  expect_true("(_non-null record_)" %in% dimnames(bt1[["results"]])[["vars"]])
   
   ## issue 92: the following fails
   bt2 <- balanceTest(Z ~ X1 + X2, data = df)
