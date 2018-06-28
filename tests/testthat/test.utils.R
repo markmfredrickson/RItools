@@ -173,19 +173,28 @@ test_that("Formatting w/ appropriate sigfigs values",{
                    W = cut(rnorm(n), breaks = 3),
                    K = as.factor(letters[sample.int(3, n, replace = T)]),
                    U = rnorm(n) )
-  xb.noneU <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
+  xb1 <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
                  data = df,
                  report = 'all')
-  pt <- print(xb.noneU, digits=2, printme=FALSE)
+  pt1 <- print(xb1, digits=2, printme=FALSE)
+  xb2 <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
+                 data = df,
+                 report = c("std.diffs",  # descriptives only: invokes different
+                            "adj.means", "adj.mean.diffs")) #print.xbal() logic
+  pt2 <- print(xb2, digits=2, printme=FALSE)
 
+  
   ## Brittle test: we settings as above, I'm pretty sure 2 sigfigs
   ## should translate to the thousandths place for the z-stats.
-  expect_equivalent(round(as.numeric(pt[[1]][,4]), 4), as.numeric(pt[[1]][,4]))
+  expect_equivalent(round(as.numeric(pt1[[1]][,4]), 4), as.numeric(pt1[[1]][,4]))
   ## This similarly brittle pair of tests confirms that rounding is being done
   ## separately for different variables, at least as it affects columns
   ## Treatment and Control
-  expect_equivalent(round(as.numeric(pt[[1]][3,1:2]), 2), as.numeric(pt[[1]][3,1:2]))
-  expect_gt(abs( round(as.numeric(pt[[1]][1,1]), 2) - as.numeric(pt[[1]][1,1]) ),0)
+  expect_equivalent(round(as.numeric(pt1[[1]][3,1:2]), 2), as.numeric(pt1[[1]][3,1:2]))
+  expect_gt(abs( round(as.numeric(pt1[[1]][1,1]), 2) - as.numeric(pt1[[1]][1,1]) ),0)
+  expect_equivalent(round(as.numeric(pt2[[1]][3,1:2]), 2), as.numeric(pt2[[1]][3,1:2]))
+  expect_gt(abs( round(as.numeric(pt2[[1]][1,1]), 2) - as.numeric(pt2[[1]][1,1]) ),0)
+
 })
 
 test_that("Var names in print.xbal(,horiz=F)",{
