@@ -417,6 +417,16 @@ test_that("Aggegating designs by clusters", {
   # now spot check some cluster totals of totals
   expect_equal(aggDesign@Covariates[1, ], colMeans(design@Covariates[design@Cluster == 1,]))
 
+  # ElementWeights aggregation
+  wtsums <- tapply(design@ElementWeights, design@Cluster, sum)
+  dim(wtsums) <- NULL
+  expect_equivalent(aggDesign@ElementWeights,wtsums)
+  
+  # Z's
+  Zs <- tapply(design@Z, design@Cluster, mean)
+  dim(Zs) <- NULL
+  Zs <- as.logical(Zs)
+  expect_equivalent(aggDesign@Z, Zs)
 })
 
 test_that("aggregateDesigns treats NA covariates as 0's" ,{
