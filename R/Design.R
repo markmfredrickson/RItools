@@ -642,11 +642,14 @@ aggregateDesigns <- function(design) {
   Z <- design@Z[!dupes]
   StrataFrame <- design@StrataFrame[!dupes,, drop = FALSE]
   Cluster <- design@Cluster[!dupes]
+  names(Z) <- as.character(Cluster)
+  Z <- Z[levels(Cluster)]
 
   C <- SparseMMFromFactor(design@Cluster)
 
   unit.weights <- as.matrix(t(C) %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL
+  names(unit.weights) <- levels(Cluster)
   
   Uweights.tall <- design@UnitWeights * design@NotMissing
   Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
@@ -668,9 +671,10 @@ aggregateDesigns <- function(design) {
     return(tmp)
   })
 
-  # colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
-  colnames(Covariates)   <- colnames(design@Covariates)
-
+    Covariates <- as.matrix(Covariates)
+    colnames(Covariates)   <- colnames(design@Covariates)
+    row.names(Covariates) <- levels(Cluster)
+    
   new("DesignOptions",
       Z = Z,
       StrataMatrices = StrataMatrices,
@@ -678,7 +682,7 @@ aggregateDesigns <- function(design) {
       Cluster = Cluster,
       UnitWeights = unit.weights,
       NotMissing = NotMissing,
-      Covariates = as.matrix(Covariates),
+      Covariates = Covariates,
       OriginalVariables = design@OriginalVariables,
       TermLabels=design@TermLabels,
       Contrasts=design@Contrasts,
