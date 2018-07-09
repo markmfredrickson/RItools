@@ -627,25 +627,28 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
 ##' Totals up all the covariates, as well as user-provided unit weights.
 ##' (What it does to NotMissing entries is described in docs for DesignOptions class.)
 ##' 
+##' If \code{design@Cluster} has extraneous (non-represented) levels, they will be dropped.
+##' 
 ##' @param design DesignOptions
 ##' @return another DesignOptions representing the clusters
 ##' @keywords internal
 ##' 
 aggregateDesigns <- function(design) {
-  n.clusters <- nlevels(design@Cluster)
+  clusters <- factor(design@Cluster)
+  n.clusters <- nlevels(clusters)
 
-  if (n.clusters == length(design@Cluster)) {
+  if (n.clusters == length(clusters)) {
     return(design)
   }
 
-  dupes <- duplicated(design@Cluster)
+  dupes <- duplicated(clusters)
   Z <- design@Z[!dupes]
   StrataFrame <- design@StrataFrame[!dupes,, drop = FALSE]
-  Cluster <- design@Cluster[!dupes]
+  Cluster <- clusters[!dupes]
   names(Z) <- as.character(Cluster)
   Z <- Z[levels(Cluster)]
 
-  C <- SparseMMFromFactor(design@Cluster)
+  C <- SparseMMFromFactor(clusters)
 
   unit.weights <- as.matrix(t(C) %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL

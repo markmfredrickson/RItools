@@ -422,6 +422,13 @@ test_that("Aggegating designs by clusters", {
   dim(Zs) <- NULL
   Zs <- as.logical(Zs)
   expect_equivalent(aggDesign@Z, Zs)
+
+  # extraneous levels in the Cluster slot are ignored
+  design2 <- design
+  levels(design2@Cluster) <- c(levels(design2@Cluster), letters)
+  aggDesign2 <- RItools:::aggregateDesigns(design2) 
+  expect_equal(dim(aggDesign2@Covariates), c(100, 4))
+
 })
 
 test_that("aggregateDesigns treats NA covariates as 0's" ,{
