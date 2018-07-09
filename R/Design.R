@@ -627,26 +627,32 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
 ##' Totals up all the covariates, as well as user-provided unit weights.
 ##' (What it does to NotMissing entries is described in docs for DesignOptions class.)
 ##' 
+##' If \code{design@Cluster} has extraneous (non-represented) levels, they will be dropped.
+##' 
 ##' @param design DesignOptions
 ##' @return another DesignOptions representing the clusters
 ##' @keywords internal
 ##' 
 aggregateDesigns <- function(design) {
-  n.clusters <- nlevels(design@Cluster)
+  clusters <- factor(design@Cluster)
+  n.clusters <- nlevels(clusters)
 
-  if (n.clusters == length(design@Cluster)) {
+  if (n.clusters == length(clusters)) {
     return(design)
   }
 
-  dupes <- duplicated(design@Cluster)
+  dupes <- duplicated(clusters)
   Z <- design@Z[!dupes]
   StrataFrame <- design@StrataFrame[!dupes,, drop = FALSE]
-  Cluster <- design@Cluster[!dupes]
+  Cluster <- clusters[!dupes]
+  names(Z) <- as.character(Cluster)
+  Z <- Z[levels(Cluster)]
 
-  C <- SparseMMFromFactor(design@Cluster)
+  C <- SparseMMFromFactor(clusters)
 
   unit.weights <- as.matrix(t(C) %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL
+  names(unit.weights) <- levels(Cluster)
   
   Uweights.tall <- design@UnitWeights * design@NotMissing
   Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
@@ -668,9 +674,10 @@ aggregateDesigns <- function(design) {
     return(tmp)
   })
 
-  # colnames(Covariates) <- c("cluster.size", colnames(design@Covariates))
-  colnames(Covariates)   <- colnames(design@Covariates)
-
+    Covariates <- as.matrix(Covariates)
+    colnames(Covariates)   <- colnames(design@Covariates)
+    row.names(Covariates) <- levels(Cluster)
+    
   new("DesignOptions",
       Z = Z,
       StrataMatrices = StrataMatrices,
@@ -678,7 +685,7 @@ aggregateDesigns <- function(design) {
       Cluster = Cluster,
       UnitWeights = unit.weights,
       NotMissing = NotMissing,
-      Covariates = as.matrix(Covariates),
+      Covariates = Covariates,
       OriginalVariables = design@OriginalVariables,
       TermLabels=design@TermLabels,
       Contrasts=design@Contrasts,
