@@ -26,6 +26,7 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
 ##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
+##' @slot UnitWeights vector of weights associated w/ rows of the DesignMatrix
 ##' @keywords internal
 ##' 
 setClass("DesignMatrix",
@@ -35,7 +36,8 @@ setClass("DesignMatrix",
                   Contrasts="Contrasts",
                   NotMissing="matrix",
                   NM.Covariates="integer",
-                  NM.terms="integer" )
+                  NM.terms="integer",
+                  UnitWeights = "numeric" )
          )
 
 #' @export
@@ -55,10 +57,10 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##' 
 ##' @title Model matrices along with compact encodings of data availability/missingness
 ##' @param object Model formula or terms object (as in `model.matrix`)
-##' @param data Data frame (as in `model.matrix`)
+##' @param data data.frame, as in `model.matrix()` but has to have \sQuote{\code{(weights)}} column
 ##' @param remove.intercept logical
 ##' @param ... passed to `model.matrix.default` (and further)
-##' @return DesignMatrix instance of an S4 class that enriches model matrices with missing data info
+##' @return DesignMatrix, i.e. model matrix enriched with missing data info
 ##' @author Ben B Hansen
 ##' @keywords internal
 ##' 
@@ -67,6 +69,11 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
   tms <- terms(object)
   term.labels <- attr(tms, "term.labels")
 
+  uweights <- as.vector(model.weights(data))
+  if (is.null(uweights))
+    stop("design_matrix() expects its data arg to be a model frame containing weights")
+  stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
+  
   covariates <- model.matrix(object = object, data = data, ...) 
 
 
@@ -155,7 +162,8 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
       Contrasts=contrasts,
       NotMissing=notmissing,
       NM.Covariates=nm.covs,
-      NM.terms=nm.terms )
+      NM.terms=nm.terms,
+      UnitWeights = uweights )
 }
 
 
@@ -178,15 +186,13 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataFrame Factors indicating strata
 #' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot UnitWeights vector of weights associated w/ rows of the DesignMatrix
 #' @keywords internal
 #' 
 setClass("DesignOptions",
          representation = list(
            Z                 = "logical",
            StrataFrame       = "data.frame",  
-             Cluster           = "factor",
-             UnitWeights = "numeric"),
+             Cluster           = "factor"),
          contains = "DesignMatrix"
          )
 
@@ -212,11 +218,6 @@ setClass("DesignOptions",
 ##' @keywords internal
 ##' 
 makeDesigns <- function(fmla, data) {
-
-    uweights <- as.vector(model.weights(data))
-    if (is.null(uweights))
-        stop("makeDesigns() expects its data arg to be a model frame containing weights")
-    stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
 
     ts <- terms(fmla, data = data[setdiff(colnames(data), '(weights)')],
                 specials = c("cluster", "strata"))
@@ -323,7 +324,8 @@ makeDesigns <- function(fmla, data) {
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
-
+  data.data$'(weights)' <- data$'(weights)'
+  
   # knock out any levels that are not used
   fcts <- colnames(data.data)[sapply(data.data, is.factor)]
   for (f in fcts) {
@@ -358,7 +360,7 @@ makeDesigns <- function(fmla, data) {
              Z                 = as.logical(as.numeric(Z) - 1), #b/c it was built as factor
              StrataFrame       = strata.frame,
              Cluster           = factor(Cluster),
-             UnitWeights = uweights,
+             UnitWeights = desm@UnitWeights,
              Covariates = desm@Covariates,
                   OriginalVariables=desm@OriginalVariables,
                   TermLabels=desm@TermLabels,
