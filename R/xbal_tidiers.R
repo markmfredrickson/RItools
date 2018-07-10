@@ -1,7 +1,9 @@
 #' [broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results
 #'
 #' Portion out the value of a [RItools::balanceTest()] call in a manner consistent
-#' with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
+#' with assumptions of the broom package.  
+#' 
+#' [RItools::tidy.xbal()] gives per-variable
 #' statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 #' calculations. In both cases one has to specify which stratification one wants
 #' statistics about, as xbal objects can store info about several stratifications.
@@ -20,7 +22,7 @@
 #'     \item{std.diff}{adj.diff/pooled.sd}
 #'     \item{pooled.sd}{pooled SD}
 #'     \item{statistic}{`z` column from the xbal object}
-#'     \item{p.value}{`p` column from the xbal object
+#'     \item{p.value}{`p` column from the xbal object}
 #' }
 #' Additional parameters beyond those listed here are ignored (at this time).
 #' 
