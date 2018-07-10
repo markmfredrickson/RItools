@@ -86,7 +86,10 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
 })
 
 test_that("Issue #76: Using I() in formulas", {
-  x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+  x <- data.frame(z=c(1,1))  # have to exclude 
+  while (all(x$z==x[1L,'z'])) # degenerate case
+    x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
@@ -552,6 +555,7 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     dat$'(weights)' <- 1
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    expect_equal(colnames(simple2@StrataFrame), c("strat", "--"))
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
                                                 RItools:::effectOfTreatmentOnTreated)

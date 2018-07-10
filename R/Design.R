@@ -176,8 +176,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 ##' from a model formula, rather than columns the terms may have expanded to.  
 
 #' @slot Z Logical indicating treatment assignment
-#' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataFrame Factors indicating strata (not the sparse matrices, as we use them in the weighting function)
+#' @slot StrataFrame Factors indicating strata
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot UnitWeights vector of weights associated w/ rows of the DesignMatrix
 #' @keywords internal
@@ -185,7 +184,6 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 setClass("DesignOptions",
          representation = list(
            Z                 = "logical",
-           StrataMatrices    = "list", 
            StrataFrame       = "data.frame",  
              Cluster           = "factor",
              UnitWeights = "numeric"),
@@ -355,13 +353,9 @@ makeDesigns <- function(fmla, data) {
   tmp <- str.data[, strataCols, drop = FALSE]
   colnames(tmp) <- gsub(colnames(tmp), pattern = "survival::strata\\((.*)\\)", replacement = "\\1")
   strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
-  strata.mats  <- lapply(strata.frame, function(s) { SparseMMFromFactor(s) })
-  names(strata.mats) <- colnames(strata.frame)
-
 
   return(new("DesignOptions",
              Z                 = as.logical(as.numeric(Z) - 1), #b/c it was built as factor
-             StrataMatrices    = strata.mats,
              StrataFrame       = strata.frame,
              Cluster           = factor(Cluster),
              UnitWeights = uweights,
@@ -526,9 +520,7 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
                    "strata" = stratifications))
   for (s in stratifications) {
 
-    S <- design@StrataMatrices[[s]]
-    if (ncol(S)!=nlevels(design@StrataFrame[[s]]))
-        stop(paste("Levels of StrataFrame don't match StratMatrices colnames, stratification", s))
+    S <- SparseMMFromFactor(design@StrataFrame[[s]])
     stratlevs <- levels(design@StrataFrame[[s]])
     if (inherits(design, "StratumWeightedDesignOptions") & length(stratlevs)>1)
         {
@@ -668,19 +660,12 @@ aggregateDesigns <- function(design) {
                        Uweights/unit.weights, 0)
   colnames(NotMissing) <- colnames(design@NotMissing)
   
-  StrataMatrices <- lapply(design@StrataMatrices, function(S) {
-    tmp <- C_transp %*% S
-    tmp@ra <- rep(1, length(tmp@ra))
-    return(tmp)
-  })
-
     Covariates <- as.matrix(Covariates)
     colnames(Covariates)   <- colnames(design@Covariates)
     row.names(Covariates) <- levels(Cluster)
     
   new("DesignOptions",
       Z = Z,
-      StrataMatrices = StrataMatrices,
       StrataFrame = StrataFrame,
       Cluster = Cluster,
       UnitWeights = unit.weights,
@@ -746,7 +731,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
   vars   <- colnames(design@Covariates)
-  strata <- names(design@StrataMatrices)
+  stratifications <- colnames(design@StrataFrame)
 
   Ewts  <- design@UnitWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
@@ -832,7 +817,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           Cluster           = factor(design@Cluster[keep])
           )
 }
-  sapply(strata, f, simplify = FALSE, USE.NAMES = TRUE)
+  sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
 # I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up
