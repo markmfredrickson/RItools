@@ -86,7 +86,10 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
 })
 
 test_that("Issue #76: Using I() in formulas", {
-  x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+  x <- data.frame(z=c(1,1))  # have to exclude 
+  while (all(x$z==x[1L,'z'])) # degenerate case
+    x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
@@ -567,6 +570,7 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     dat$'(weights)' <- 1
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    expect_equal(colnames(simple2@StrataFrame), c("strat", "--"))
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
                                                 RItools:::effectOfTreatmentOnTreated)
@@ -598,10 +602,10 @@ test_that("alignDesigns centers covars by stratum", {
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
     expect_equivalent(colSums(asimple0[["--"]]@Covariates),
                       rep(0,ncol(asimple0[["--"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple0[["strat"]]@StrataMatrix) %*% asimple0[["strat"]]@Covariates),
+                      matrix(0,2,ncol(asimple0[["strat"]]@Covariates)))
 
     ## now with weights
     dat1 <- dat
@@ -618,10 +622,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple1[["--"]]@Covariates)))
 
     tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
+                      matrix(0,2, ncol(asimple1[["strat"]]@Covariates)))
 
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
@@ -630,10 +634,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple2[["--"]]@Covariates)))
 
     tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),
+                      matrix(0,2, ncol(asimple2[["strat"]]@Covariates)))
 
 } )
 
