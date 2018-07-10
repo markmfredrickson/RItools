@@ -583,10 +583,10 @@ test_that("alignDesigns centers covars by stratum", {
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
     expect_equivalent(colSums(asimple0[["--"]]@Covariates),
                       rep(0,ncol(asimple0[["--"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple0[["strat"]]@StrataMatrix) %*% asimple0[["strat"]]@Covariates),
+                      matrix(0,2,ncol(asimple0[["strat"]]@Covariates)))
 
     ## now with weights
     dat1 <- dat
@@ -603,10 +603,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple1[["--"]]@Covariates)))
 
     tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
+                      matrix(0,2, ncol(asimple1[["strat"]]@Covariates)))
 
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
@@ -615,10 +615,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple2[["--"]]@Covariates)))
 
     tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),
+                      matrix(0,2, ncol(asimple2[["strat"]]@Covariates)))
 
 } )
 

@@ -716,7 +716,6 @@ aggregateDesigns <- function(design) {
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataFactor Factor indicating strata
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
@@ -727,7 +726,6 @@ setClass("CovsAlignedToADesign",
                UnitWeights="numeric",
              Z                 = "logical",
              StrataMatrix    = "matrix.csr", 
-             StrataFactor       = "factor",
              StrataWeightRatio = "numeric",
              OriginalVariables="integer",
              Cluster = "factor"
@@ -829,7 +827,6 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           UnitWeights       = non_null_record_wts,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
-          StrataFactor=ss,
           StrataWeightRatio = wtr, #as extracted from the design
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
