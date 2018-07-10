@@ -1,9 +1,9 @@
 ###############################################################################
-# DesignMatrix Objects: covariates with term-specific missingness info & indexing
+# ModelMatrixPlus Objects: covariates with term-specific missingness info & indexing
 ################################################################################
 
 setClassUnion("Contrasts", c("list", "NULL"))
-##' DesignMatrix S4 class
+##' ModelMatrixPlus S4 class
 ##'
 ##' If the Covariates matrix has an intercept, it will only be in the first column.
 ##'
@@ -13,9 +13,9 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' present only if there are missing covariate values, in which case these cols are
 ##' named for terms (of the original calling formula or data frame) that possess 
 ##' missing values.  Terms with the same missing data pattern are mapped to a single
-##' column of this matrix.  If the DesignMatrix is representing elements, each column should
+##' column of this matrix.  If the ModelMatrixPlus is representing elements, each column should
 ##' be all 1s and 0s, indicating which elements have non-missing values for the term
-##' represented by that column.  If the DesignMatrix as a whole represents clusters,
+##' represented by that column.  If the ModelMatrixPlus as a whole represents clusters,
 ##' then there can be fractional values, but that situation should only arise in the
 ##' DesignOptions class exension of this class, so it's documented there. 
 ##' 
@@ -26,10 +26,10 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
 ##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
-##' @slot UnitWeights vector of weights associated w/ rows of the DesignMatrix
+##' @slot UnitWeights vector of weights associated w/ rows of the ModelMatrixPlus
 ##' @keywords internal
 ##' 
-setClass("DesignMatrix",
+setClass("ModelMatrixPlus",
          slots=c(Covariates="matrix",
                   OriginalVariables="integer",
                   TermLabels="character",
@@ -41,7 +41,7 @@ setClass("DesignMatrix",
          )
 
 #' @export
-as.matrix.DesignMatrix <- function(x, ...)
+as.matrix.ModelMatrixPlus <- function(x, ...)
     {
         ans <- x@Covariates
         attr(ans, "assign") <- x@OriginalVariables
@@ -60,18 +60,18 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##' @param data data.frame, as in `model.matrix()` but has to have \sQuote{\code{(weights)}} column
 ##' @param remove.intercept logical
 ##' @param ... passed to `model.matrix.default` (and further)
-##' @return DesignMatrix, i.e. model matrix enriched with missing data info
+##' @return ModelMatrixPlus, i.e. model matrix enriched with missing data info
 ##' @author Ben B Hansen
 ##' @keywords internal
 ##' 
-design_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
+model_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
   # mf <- model.frame(object, data, na.action = na.pass)
   tms <- terms(object)
   term.labels <- attr(tms, "term.labels")
 
   uweights <- as.vector(model.weights(data))
   if (is.null(uweights))
-    stop("design_matrix() expects its data arg to be a model frame containing weights")
+    stop("model_matrix() expects its data arg to be a model frame containing weights")
   stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
   
   covariates <- model.matrix(object = object, data = data, ...) 
@@ -155,7 +155,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 
     notmissing <- as.matrix(notmissing)
     
-  new("DesignMatrix",
+  new("ModelMatrixPlus",
       Covariates=covariates,
       OriginalVariables=assign,
       TermLabels=term.labels,
@@ -173,10 +173,10 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 
 #' DesignOptions S4 class
 #'
-#' Extends the DesignMatrix class
+#' Extends the ModelMatrixPlus class
 #'
 ##' If the DesignOptions represents clusters of elements, as when it was created
-##' by aggregating another DesignOptions or DesignMatrix object, then its Covariates
+##' by aggregating another DesignOptions or ModelMatrixPlus object, then its Covariates
 ##' and NotMissing slots are populated with (weighted) averages, not totals.  E.g.,
 ##' NotMissing columns consist of weighted averages of element-wise non-missingness indicators
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
@@ -193,7 +193,7 @@ setClass("DesignOptions",
            Z                 = "logical",
            StrataFrame       = "data.frame",  
              Cluster           = "factor"),
-         contains = "DesignMatrix"
+         contains = "ModelMatrixPlus"
          )
 
 #
@@ -343,7 +343,7 @@ makeDesigns <- function(fmla, data) {
     names(clist) <- colnames(data.data)
     clist <- clist[!sapply(clist, is.null)]
 
-    desm <- design_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
+    desm <- model_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
 
   if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]
@@ -699,13 +699,13 @@ aggregateDesigns <- function(design) {
 #' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
 #' (the arithmetic mean of aggregated cluster weights within that stratum).
 #' 
-#' @slot Covariates Numeric matrix, as in DesignMatrix, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
+#' @slot Covariates Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
+#' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
 setClass("CovsAlignedToADesign",
          slots =
