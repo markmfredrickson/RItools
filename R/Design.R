@@ -648,19 +648,19 @@ aggregateDesigns <- function(design) {
   names(Z) <- as.character(Cluster)
   Z <- Z[levels(Cluster)]
 
-  C <- SparseMMFromFactor(clusters)
+  C_transp <- t(SparseMMFromFactor(clusters))
 
-  unit.weights <- as.matrix(t(C) %*% as.matrix(design@UnitWeights))
+  unit.weights <- as.matrix(C_transp %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL
   names(unit.weights) <- levels(Cluster)
   
   Uweights.tall <- design@UnitWeights * design@NotMissing
-  Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
+  Covariates <- as.matrix(C_transp %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           design@Covariates *
                                               Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           0)
                           )
-  Uweights <- as.matrix(t(C) %*% Uweights.tall)
+  Uweights <- as.matrix(C_transp %*% Uweights.tall)
   Covariates <- ifelse(Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE] > 0,
                        Covariates/Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE],
                        0)
@@ -669,7 +669,7 @@ aggregateDesigns <- function(design) {
   colnames(NotMissing) <- colnames(design@NotMissing)
   
   StrataMatrices <- lapply(design@StrataMatrices, function(S) {
-    tmp <- t(C) %*% S
+    tmp <- C_transp %*% S
     tmp@ra <- rep(1, length(tmp@ra))
     return(tmp)
   })
