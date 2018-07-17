@@ -16,4 +16,3 @@ print call
 \description{
 Show for SharpNullTest class
 }
-

@@ -2,17 +2,24 @@
 % Please edit documentation in R/teststatistics.R
 \name{quantileDifference}
 \alias{quantileDifference}
-\title{Quantile difference}
+\title{Quantile Difference}
 \usage{
 quantileDifference(q = 0.5)
 }
 \arguments{
-\item{q}{quantiles}
+\item{q}{Quantile at which to calculate difference}
 }
 \value{
-diff
+Function to calculate quantile difference
 }
 \description{
-Quantile difference
+Evalutes difference between specific quantile between treatment and control
+group. Uses median by default
 }
-
+\examples{
+default <- quantileDifference() # median
+custom <- quantileDifference(q = .65) # 65th percentile
+}
+\seealso{
+\code{\link{RItest}}
+}

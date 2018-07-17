@@ -17,9 +17,10 @@
 ##' Mean functions
 ##'
 ##' Various functions to compute means
-##' @param ys ys
-##' @param z Vector that can be made logical.
-##' @return mean
+##' @param ys Outcome variable
+##' @param z Treatment indicator vector that can be made logical
+##' @return Function to calculate mean
+##' @seealso \code{\link{RItest}}
 ##' @name test.stat.means
 fastmean <- function(ys){
   ## Skip checks and dispatch etc.
@@ -68,9 +69,11 @@ fastvar <- function(ys){
 
 ##' Rank based functions
 ##'
-##' @param ys ys
-##' @param z Vector that can be made logical
-##' @return sum
+##' Various functions to compute rank based test statistics
+##' @param ys Outcome variable
+##' @param z Treatment indicator vector that can be made logical
+##' @return Function to calculate rank-based sum
+##' @seealso \code{\link{RItest}}
 ##' @name rank.sum.functions
 ##' @export
 rank.sum  <-  function(ys, z) {
@@ -112,9 +115,11 @@ paired.sgnrank.sum  <-  function(ys, z){
 
 ##' Odds ratio
 ##'
-##' @param y y
-##' @param z z
-##' @return odds ratio
+##' Calculates odds ratio
+##' @param y Outcome variable, must be binary or logical
+##' @param z Treatment indicator vector, must be binary or logical
+##' @return Function to calculate odds ratio
+##' @seealso \code{\link{RItest}}
 ##' @export
 odds.ratio  <-  function(y, z) {
   c11  <-  sum(y == 1 & z == 1)
@@ -272,12 +277,15 @@ mann.whitney.u  <-   new("AsymptoticTestStatistic",
 ### Similar to the KS test -- but evaluates differences at discrete points of
 ### the eCDF
 
-##' Quantile Differences
+##' Quantile Absolute Difference
 ##'
-##' Similar to the KS test -- but evaluates differences at discrete
-##' points of the eCDF
-##' @param quantiles quantiles
-##' @return value
+##' Evaluates the difference at discrete points of the eCDF between treatment
+##' and control group. Must specify quantile
+##' @param quantiles Quantile at which to calculate difference
+##' @return Function to calculate absolute value of difference between quantiles
+##' @seealso \code{\link{RItest}}
+##' @examples 
+##' median.abs.diff <- quantileAbsoluteDifference(.50)
 ##' @export
 quantileAbsoluteDifference  <-  function(quantiles) {
   function(y, z) {
@@ -290,10 +298,15 @@ quantileAbsoluteDifference  <-  function(quantiles) {
 
 ##' IQR Difference
 ##'
-##' @param q1 Lower quartile
-##' @param q2 Upper quartile
-##' @param type type
-##' @return IQR
+##' Evaluates inter-quartile/quantile difference. Uses inter-quartile range by default
+##' @param q1 Lower quantile
+##' @param q2 Upper quantile
+##' @param type Quantile algorithm. See \code{\link[stats]{quantile}}
+##' @return Function to calculate inter-quartile/quantile range difference
+##' @seealso \code{\link{RItest}}
+##' @examples 
+##' default <- iqrDiff() #IQR
+##' custom <- iqrDiff(q1 = .05, q2 = .95) #90% range
 ##' @export
 iqrDiff  <-  function(q1=.25,q2=.75,type=7){
   function(ys,z){
@@ -307,11 +320,13 @@ iqrDiff  <-  function(q1=.25,q2=.75,type=7){
   }
 }
 
-##' MAD
+##' Median Absolute Deviation
 ##'
-##' @param ys ys
-##' @param z z
-##' @return diff
+##' Evaluates median of the absolutes deviations from the median.
+##' @param ys Outcome variable
+##' @param z Treament indicator vector
+##' @return Median absolute deviation
+##' @seealso \code{\link{RItest}} \code{\link[stats]{mad}}
 ##' @export
 madDiff  <-  function(ys,z){
   ## Median absolute deviation (which is scaled to be asymp. same as sd of a Normal)
@@ -319,10 +334,16 @@ madDiff  <-  function(ys,z){
   mad(ys[!!z]) - mad(ys[!z])
 }
 
-##' Quantile difference
+##' Quantile Difference
 ##'
-##' @param q quantiles
-##' @return diff
+##' Evalutes difference between specific quantile between treatment and control
+##' group. Uses median by default
+##' @param q Quantile at which to calculate difference
+##' @return Function to calculate quantile difference
+##' @seealso \code{\link{RItest}}
+##' @examples 
+##' default <- quantileDifference() # median
+##' custom <- quantileDifference(q = .65) # 65th percentile
 ##' @export
 quantileDifference  <-  function(q=.5){
   function(ys,z){
@@ -357,6 +378,12 @@ quantileDifference  <-  function(q=.5){
 }
 
 ##' KS Test Statistic
+##' 
+##' Calculates Kolmogorov-Smirnov test statistic
+##' @param y Outcome variable
+##' @param z Treatment indicator vector, must be binary or logical
+##' @return Function to calculate KS test statistic
+##' @seealso \code{\link{RItest}}
 ##' @export
 ksTestStatistic  <-  new("AsymptoticTestStatistic",
                        function(y, z) {
@@ -404,7 +431,13 @@ ksTestStatistic  <-  new("AsymptoticTestStatistic",
              test.statistic = ad.test))
 }
 
-##' Anderson Darling Test Statistic
+##' Anderson-Darling Test Statistic
+##' 
+##' Calculates Anderson-Darling (AD) test statistic
+##' @param y Outcome variable
+##' @param z Treatment indicator vector, must be binary or logical
+##' @return Function to calculate AD test statistic
+##' @seealso \code{\link{RItest}}
 ##' @export
 adTestStatistic  <-  new("AsymptoticTestStatistic",
                        function(y, z) {
@@ -418,12 +451,14 @@ adTestStatistic  <-  new("AsymptoticTestStatistic",
                          return(ad.test(x,y)$ad[1,1])
                        }, asymptotic = .adBackEnd)
 
-##' ssrTestStatistic
+##' Sum of Squared Residuals
 ##'
-##' The ssrTestStatistic with the F-test as a potential asymp backend
-##' (and using F as the test statistic)
-##' @param S S
-##' @return AsymptoticTestStatistic
+##' The sum of squared residuals (SSR) test statistic with F-test as a 
+##' potential asymptotic version. F is used as the test statistic
+##' @param S Adjacency matrix of size NxN. Each entry takes the value of 1 if 
+##' two units are adjacent and 0 otherwise
+##' @return Function to calculate SSR test statistic
+##' @seealso \code{\link{RItest}}
 ##' @export
 ssrTSmaker <- function(S){
   force(S)
@@ -516,6 +551,12 @@ ssrTestStatistic  <-  new("AsymptoticTestStatistic",
              test.statistic = cvm.test))
 }
 
+##' CVM Test Statistic
+##' 
+##' Calculates Cramer-Von Mises Test Statistic
+##' @param y Outcome Variable
+##' @param z Treatment indicator vector, must be binary or logical
+##' @return Function to calculate CVM test statistic
 ##' @export
 cvmTestStatistic  <-  new("AsymptoticTestStatistic",
                         function(y, z) {
@@ -566,12 +607,13 @@ cvmTestStatistic  <-  new("AsymptoticTestStatistic",
 ## Neymans Smooth Test
 
 ##' Quasi Relative Distance
-##'
+##' 
+##' Calculates quasi relative distance test statistic
 ##' @param y y
 ##' @param yo y0
 ##' @param binn binn
 ##' @param location location
-##' @return vector
+##' @return Function to calculate quasi-relative distance
 ##' @export
 quasireldist <- function(y,yo,binn=100,location="median"){
   ### This version follows the methods in 9.1.2.3 and 9.2 of Handcock and Morris, Relative Dist.

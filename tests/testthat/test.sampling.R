@@ -6,7 +6,7 @@ library(testthat)
 
 context("Sampling")
 
-test_that("simpleRandomSample for fixed number of treated within blocks", {
+test_that("simpleRandomSampler for fixed number of treated within blocks", {
   set.seed(20131010)
   sampler <- simpleRandomSampler(total = 8, treated = 4) # 70 possible
   
@@ -74,4 +74,29 @@ test_that("multinomialSampler for independent bernoulli draws", {
   unequal.sampler <- independentProbabilitySampler(2, c(0.25, 0.5))
   expect_true(all(unequal.sampler(10)$weight %in% c(0.75 * 0.5, 0.25 * 0.5))) 
 
+})
+
+test_that("clusterRandomSampler for fixed number of treated clusters", {
+  # fake data
+  set.seed(20180702)
+  clusters <-  sample(letters[1:3], 10, replace = TRUE)
+  treatment <- ifelse(clusters == sample(letters[1:3], 1), 1, 0)
+  logical <- ifelse(clusters == sample(letters[1:3], 1), TRUE, FALSE)
+  
+  # create objects
+  clustered <- clusterRandomSampler(clusters = clusters, z = treatment)
+  clustered.logical <- clusterRandomSampler(clusters = clusters, z = logical)
+  
+  # tests
+  expect_equal(dim(clustered(10)$samples)[2], 10) # correct dimensions
+  expect_equal(dim(clustered.logical(10)$samples)[2], 10) # works with logical z
+  expect_false(all(clustered(4)$samples == clustered(4)$samples)) # randomize
+  
+  # error handling
+  expect_error(clusterRandomSampler(clusters = c(1, 2, NA), z = c(0, 1, 0))) # no NAs
+  expect_error(clusterRandomSampler(clusters = c(1, 0), z = c(1, 0, 0))) # same lengths
+  expect_error(clusterRandomSampler(clusters = c(1, 0, 1), z = c(1, 2, 3))) # z binary
+  expect_error(clusterRandomSampler(clusters = c(1, 2, 2), z = c(0, 0, 0))) # at least one treated cluster
+  expect_error(clusterRandomSampler(clusters = c(1, 1, 1), z = c(0,0, 1))) # at least two unique clusters
+  
 })

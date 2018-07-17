@@ -17,4 +17,3 @@ An array of the cartesian product of the parameters, with f applied to each comb
 \description{
 Fill in an array from a function that takes the indices as arguments.
 }
-

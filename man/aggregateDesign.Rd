@@ -15,4 +15,3 @@ Aggregates
 \description{
 totals up all the covariates
 }
-

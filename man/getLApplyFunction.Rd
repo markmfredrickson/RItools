@@ -19,4 +19,3 @@ function
 \description{
 Get proper lapply function
 }
-

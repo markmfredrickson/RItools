@@ -2,18 +2,21 @@
 % Please edit documentation in R/teststatistics.R
 \name{ssrTSmaker}
 \alias{ssrTSmaker}
-\title{ssrTestStatistic}
+\title{Sum of Squared Residuals}
 \usage{
 ssrTSmaker(S)
 }
 \arguments{
-\item{S}{S}
+\item{S}{Adjacency matrix of size NxN. Each entry takes the value of 1 if 
+two units are adjacent and 0 otherwise}
 }
 \value{
-AsymptoticTestStatistic
+Function to calculate SSR test statistic
 }
 \description{
-The ssrTestStatistic with the F-test as a potential asymp backend
-(and using F as the test statistic)
+The sum of squared residuals (SSR) test statistic with F-test as a 
+potential asymptotic version. F is used as the test statistic
 }
-
+\seealso{
+\code{\link{RItest}}
+}

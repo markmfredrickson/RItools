@@ -17,4 +17,3 @@ function
 \description{
 using a logical vector, limit the test statistic to a smaller group
 }
-

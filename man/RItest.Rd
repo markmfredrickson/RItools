@@ -9,28 +9,42 @@ RItest(y, z, test.stat, moe = NULL, parameters = NULL,
   samples = 5000, type = "exact", ...)
 }
 \arguments{
-\item{y}{y}
+\item{y}{Outcome variable of interest}
 
-\item{z}{z}
+\item{z}{Treatment indicator vector, must be binary or logical}
 
-\item{test.stat}{test.stat}
+\item{test.stat}{Test statistic to be reported}
 
-\item{moe}{single function with signature f(y, z, param1, param2, etc.)odel of effect}
+\item{moe}{Model of effect, single function with signature 
+f(y, z, param1, param2, etc.)}
 
-\item{parameters}{list of name = values, name = values, ...}
+\item{parameters}{Parameters values in model of effect 
+List of name = values, name = values, ...}
 
-\item{sampler}{sampler}
+\item{sampler}{Function specifying sampling procedure, uses simple 
+randomization by default}
 
-\item{samples}{num samples}
+\item{samples}{Number of samples to use in direct permutation, uses 5000 
+by default}
 
-\item{type}{type}
+\item{type}{Either \code{"exact"} (direct permutation) or 
+\code{"asymptotic"} (distributional approximation). Currently, 
+\code{type = "asymptotic"} is not supported}
 
-\item{...}{Add'l arguments}
+\item{...}{Additional arguments}
 }
 \value{
-SharpNullTest
+Observed test statistic and associated p-value
 }
 \description{
-Test a sharp hypothesis
+Test a sharp null hypothesis based on a experimental design.
+Computes a test statistic of choice and reports p-values using direct
+permutation
 }
-
+\examples{
+data(nuclearplants)
+RItest(nuclearplants$cost, nuclearplants$pr, test.stat = t.mean.difference)
+}
+\seealso{
+Update with vignettes here
+}

@@ -7,16 +7,22 @@
 iqrDiff(q1 = 0.25, q2 = 0.75, type = 7)
 }
 \arguments{
-\item{q1}{Lower quartile}
+\item{q1}{Lower quantile}
 
-\item{q2}{Upper quartile}
+\item{q2}{Upper quantile}
 
-\item{type}{type}
+\item{type}{Quantile algorithm. See \code{\link[stats]{quantile}}}
 }
 \value{
-IQR
+Function to calculate inter-quartile/quantile range difference
 }
 \description{
-IQR Difference
+Evaluates inter-quartile/quantile difference. Uses inter-quartile range by default
 }
-
+\examples{
+default <- iqrDiff() #IQR
+custom <- iqrDiff(q1 = .05, q2 = .95) #90\% range
+}
+\seealso{
+\code{\link{RItest}}
+}

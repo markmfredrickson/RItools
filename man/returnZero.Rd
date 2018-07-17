@@ -15,4 +15,3 @@ returnZero(...)
 \description{
 Returns 0
 }
-

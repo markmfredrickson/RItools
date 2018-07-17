@@ -20,4 +20,3 @@ function
 \description{
 entropy relative distance
 }
-

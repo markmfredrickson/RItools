@@ -15,4 +15,3 @@ weightedDesign(design, stratum.weights = harmonic)
 \description{
 Adds weights to existing Design.
 }
-

@@ -3,3 +3,7 @@
 .local
 RItools_*
 RITOOLS_TIMESTAMP
+.Rproj.user
+inst/doc
+.Rhistory
+RItools.Rproj

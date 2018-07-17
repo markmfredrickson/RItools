@@ -27,4 +27,3 @@ A matrix of two columns: the parameter space distance and
 Models that are insensitive to changes in the parameters will have
 little distance between predictions.
 }
-

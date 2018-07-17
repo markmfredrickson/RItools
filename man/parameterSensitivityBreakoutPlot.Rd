@@ -20,4 +20,3 @@ evaluated in the context of \code{x}. You can use \code{parameter} and
 \description{
 Works best for 2D models, may not work for other dimenions.
 }
-

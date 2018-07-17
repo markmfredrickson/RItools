@@ -9,4 +9,3 @@ mann.whitney.u(ys, z)
 \description{
 Man Whitney U
 }
-

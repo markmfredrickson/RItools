@@ -10,9 +10,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Me?" />
+<meta name="author" content="Gustavo Diaz, University of Illinois at Urbana-Champaign" />
 
-<meta name="date" content="2018-06-15" />
+<meta name="date" content="2018-07-16" />
 
 <title>Randomization Inference with RItools</title>
 
@@ -69,8 +69,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 <h1 class="title toc-ignore">Randomization Inference with RItools</h1>
-<h4 class="author"><em>Me?</em></h4>
-<h4 class="date"><em>2018-06-15</em></h4>
+<h4 class="author"><em>Gustavo Diaz, University of Illinois at Urbana-Champaign</em></h4>
+<h4 class="date"><em>2018-07-16</em></h4>
 
 
 
@@ -79,7 +79,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2>Basics</h2>
 <p>After installing, we load the package using:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(RItools)</code></pre></div>
-<p>The <code>nuclearplants</code> data set relates the construction of ligh water reactor (LWR) plants in the U.S.A. in the late 1960’s and early 1970’s. We want to know if the previous existence of LWR plants at the same site (<code>pr</code>) affects the construction cost of a new plant. See the <code>RItools</code> documentation [include link here] for further information.</p>
+<p>The <code>nuclearplants</code> data set relates to the construction of ligh water reactor (LWR) plants in the U.S.A. in the late 1960’s and early 1970’s. We want to know if the previous existence of LWR plants at the same site (<code>pr</code>) affects the construction cost of a new plant. See the <code>RItools</code> documentation for further information.</p>
 <p>First, we attach and visualize the data:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">data</span>(<span class="st">&quot;nuclearplants&quot;</span>)
 
@@ -98,37 +98,104 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="co">#&gt;       </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                           Value Pr(&gt;x)</span>
-<span class="co">#&gt; Observed Test Statistic -0.5625 0.7122</span></code></pre></div>
+<span class="co">#&gt; Observed Test Statistic -0.5625 0.7144</span></code></pre></div>
 <p><code>RItest</code> outputs the observed test statistic and a p-value. In this case, we have strong evidence in favor of the sharp null of no effect (we would observe this value in such world about 70% of the time).</p>
-<p><code>RItools</code> contains several useful test statistics that researchers may prefer to use. For example, instead of the difference in means test, we may prefer to compute the quantile difference. We can do this with the <code>quantileDifference()</code> test statistic.</p>
+<div id="test-statistics" class="section level3">
+<h3>Test Statistics</h3>
+<p><code>RItools</code> contains several useful test statistics that researchers may prefer to use. For example, instead of the difference in means test, we may prefer to compute the difference in a given quantile. We can do this with the <code>quantileDifference()</code> test statistic.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$pr, 
        <span class="dt">test.stat =</span> <span class="kw">quantileDifference</span>(.<span class="dv">25</span>))
 <span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$pr, test.stat = quantileDifference(0.25)) </span>
 <span class="co">#&gt;       </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                           Value Pr(&gt;x)</span>
-<span class="co">#&gt; Observed Test Statistic -64.015 0.8124</span></code></pre></div>
-<p>Note that in this case <code>RItest</code> expects you to include additional details in the test statistic argument. In this case, the function expect us to specify which quantile we are interested in. In the previous case we were interested in the 25th percentile, we can also explore the median absolute difference.</p>
+<span class="co">#&gt; Observed Test Statistic -64.015 0.8096</span></code></pre></div>
+<p>Note that here <code>RItest</code> expects you to include additional details in the test statistic argument. In this case, the function expect us to specify which quantile we are interested in. In the previous case we were interested in the 25th percentile, we can also explore the median difference.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$pr, 
        <span class="dt">test.stat =</span> <span class="kw">quantileDifference</span>(.<span class="dv">50</span>))
 <span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$pr, test.stat = quantileDifference(0.5)) </span>
 <span class="co">#&gt;       </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                          Value Pr(&gt;x)</span>
-<span class="co">#&gt; Observed Test Statistic 12.015 0.4446</span></code></pre></div>
+<span class="co">#&gt; Observed Test Statistic 12.015 0.4356</span></code></pre></div>
 <p>More generally, we may be interested in comparing the distributions of treatment and control group using the Kolmogorov-Smirnov test statistic. In this case, the null hypothesis is that both distributions have a similar ECDF.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$pr, <span class="dt">test.stat =</span> ksTestStatistic)
 <span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$pr, test.stat = ksTestStatistic) </span>
 <span class="co">#&gt;       </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                          Value Pr(&gt;x)</span>
-<span class="co">#&gt; Observed Test Statistic 0.2182 0.8134</span></code></pre></div>
-<p>These are just a few examples of the basic implementation of <code>RItools</code>. The package supports many common test statistics used to analyze experimental data, see the documentation [link] for more details.</p>
-<p>A separate vignette [link] also shows how to incorporate custom test statistics.</p>
+<span class="co">#&gt; Observed Test Statistic 0.2182 0.8084</span></code></pre></div>
+<p>These are just a few examples of the basic implementation of <code>RItools</code>. The package supports many common test statistics used to analyze experimental data, see the documentation for more details.</p>
+<p>A separate vignette also shows how to incorporate custom test statistics.</p>
 </div>
-<div id="complex-designs" class="section level2">
-<h2>Complex Designs</h2>
-<p>block, clustered designs</p>
+<div id="number-of-permutations" class="section level3">
+<h3>Number of Permutations</h3>
+<p><code>RItest</code> computes test statistics using direct permutation. By default, it performs 5000 replications. This can be changed in the <code>samples</code> argument.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$pr, <span class="dt">test.stat =</span> t.mean.difference,
+       <span class="dt">samples =</span> <span class="dv">100</span>)
+<span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$pr, test.stat = t.mean.difference,  </span>
+<span class="co">#&gt;           samples = 100)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt;                           Value Pr(&gt;x)</span>
+<span class="co">#&gt; Observed Test Statistic -0.5625   0.71</span></code></pre></div>
+<p>More replications produce more accurate results, but take more time to compute. As a rule of thumb, the default number in <code>samples</code> is good enough and performs reasonably fast in most applications.</p>
+</div>
+</div>
+<div id="complex-design-features" class="section level2">
+<h2>Complex Design Features</h2>
+<p>The <code>RItest</code> function can also accommodate designs more complex than simple randomization.</p>
+<div id="blocked-design" class="section level3">
+<h3>Blocked Design</h3>
+<p>The <code>sampler</code> argument in <code>RItest</code> allows us to incorporate complex designs by specifying treatment assignment probabilities for observations in the study. By default, <code>sampler</code> uses the <code>simpleRandomSampler</code> function to reproduce a complete randomized design. We can use the same function to accomodate for a blocked design.</p>
+<p>First, we specify the design. The <code>simpleRandomSampler</code> function requires us to specify the following arguments:</p>
+<ol style="list-style-type: decimal">
+<li>The <code>total</code> size of the experimental pool</li>
+<li>The total number of <code>treated</code> units</li>
+<li>Treatment indicator <code>z</code></li>
+<li>Block membership indicator <code>b</code></li>
+</ol>
+<p>One of <code>treated</code> or <code>z</code> is required. In our current working example, we can imagine that previous LWR were blocked randomized by region. The <code>ne</code> variable captures whether the plant is located in the north-east or somewhere else. We reproduce such a design with the following code:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">region.blocks &lt;-<span class="st"> </span><span class="kw">simpleRandomSampler</span>(<span class="dt">total =</span> <span class="dv">32</span>, <span class="dt">z =</span> nuclearplants$pr,
+                                     <span class="dt">b =</span> nuclearplants$ne)</code></pre></div>
+<p>Then we can just use <code>RItest</code> as usual, now including our blocked design:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$pr, <span class="dt">test.stat =</span> t.mean.difference,
+       <span class="dt">sampler =</span> region.blocks)
+<span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$pr, test.stat = t.mean.difference,  </span>
+<span class="co">#&gt;           sampler = region.blocks)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt;                           Value Pr(&gt;x)</span>
+<span class="co">#&gt; Observed Test Statistic -0.5625  0.771</span></code></pre></div>
+</div>
+<div id="clustered-design" class="section level3">
+<h3>Clustered Design</h3>
+<p>Similarly, the <code>clusterRandomSampler</code> function reproduces a design in which treatments are assigned to clusters or groups of observations, but administered to individual units within. This function requires us to specify a vector indicating the cluster membership of each observation, <code>clusters</code>, and a treatment assignment vector <code>z</code>.</p>
+<p>For the sake of illustration, we simulate a clustered treatment assignment in the <code>nuclearplants</code> data set:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">set.seed</span>(<span class="dv">20180620</span>)
+
+nuclearplants$cl &lt;-<span class="st"> </span><span class="kw">sample</span>(letters[<span class="dv">1</span>:<span class="dv">3</span>], <span class="dv">32</span>, <span class="dt">replace =</span> <span class="ot">TRUE</span>)
+
+nuclearplants$trt &lt;-<span class="st"> </span><span class="kw">with</span>(nuclearplants,
+                          <span class="kw">ifelse</span>(cl ==<span class="st"> </span><span class="kw">sample</span>(letters[<span class="dv">1</span>:<span class="dv">3</span>], <span class="dv">1</span>), <span class="dv">1</span>, <span class="dv">0</span>))</code></pre></div>
+<p>This produces three clusters and randomly assigns the observations in one of them to treatment:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">with</span>(nuclearplants, <span class="kw">table</span>(trt, cl))
+<span class="co">#&gt;    cl</span>
+<span class="co">#&gt; trt  a  b  c</span>
+<span class="co">#&gt;   0  9 12  0</span>
+<span class="co">#&gt;   1  0  0 11</span></code></pre></div>
+<p>As with blocked designs, the first step is to create an object specifying our clustered design:</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sim.clusters &lt;-<span class="st"> </span><span class="kw">clusterRandomSampler</span>(<span class="dt">clusters =</span> nuclearplants$cl,
+                                     <span class="dt">z =</span> nuclearplants$trt)</code></pre></div>
+<p>Then we pass this object to the <code>sampler</code> argument in <code>RItest</code></p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">RItest</span>(nuclearplants$cost, nuclearplants$trt, <span class="dt">test.stat =</span> t.mean.difference,
+       <span class="dt">sampler =</span> sim.clusters)
+<span class="co">#&gt; Call:  RItest(y = nuclearplants$cost, z = nuclearplants$trt, test.stat = t.mean.difference,  </span>
+<span class="co">#&gt;           sampler = sim.clusters)</span>
+<span class="co">#&gt; </span>
+<span class="co">#&gt;                         Value    Pr(&gt;x)    </span>
+<span class="co">#&gt; Observed Test Statistic 0.702 &lt; 2.2e-16 ***</span>
+<span class="co">#&gt; ---</span>
+<span class="co">#&gt; Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</span></code></pre></div>
+</div>
 </div>
 
 

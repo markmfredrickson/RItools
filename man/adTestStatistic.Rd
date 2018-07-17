@@ -2,11 +2,21 @@
 % Please edit documentation in R/teststatistics.R
 \name{adTestStatistic}
 \alias{adTestStatistic}
-\title{Anderson Darling Test Statistic}
+\title{Anderson-Darling Test Statistic}
 \usage{
 adTestStatistic(y, z)
 }
-\description{
-Anderson Darling Test Statistic
-}
+\arguments{
+\item{y}{Outcome variable}
 
+\item{z}{Treatment indicator vector, must be binary or logical}
+}
+\value{
+Function to calculate AD test statistic
+}
+\description{
+Calculates Anderson-Darling (AD) test statistic
+}
+\seealso{
+\code{\link{RItest}}
+}

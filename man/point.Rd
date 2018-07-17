@@ -15,4 +15,3 @@ something
 \description{
 Generic point method
 }
-

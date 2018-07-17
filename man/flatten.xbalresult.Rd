@@ -22,4 +22,3 @@ Structure
 \description{
 Details...
 }
-

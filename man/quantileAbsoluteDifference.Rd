@@ -2,18 +2,23 @@
 % Please edit documentation in R/teststatistics.R
 \name{quantileAbsoluteDifference}
 \alias{quantileAbsoluteDifference}
-\title{Quantile Differences}
+\title{Quantile Absolute Difference}
 \usage{
 quantileAbsoluteDifference(quantiles)
 }
 \arguments{
-\item{quantiles}{quantiles}
+\item{quantiles}{Quantile at which to calculate difference}
 }
 \value{
-value
+Function to calculate absolute value of difference between quantiles
 }
 \description{
-Similar to the KS test -- but evaluates differences at discrete
-points of the eCDF
+Evaluates the difference at discrete points of the eCDF between treatment
+and control group. Must specify quantile
 }
-
+\examples{
+median.abs.diff <- quantileAbsoluteDifference(.50)
+}
+\seealso{
+\code{\link{RItest}}
+}

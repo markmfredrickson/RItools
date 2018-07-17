@@ -15,4 +15,3 @@ tau
 \description{
 helper function for all the models that have a "tau" direct effect
 }
-

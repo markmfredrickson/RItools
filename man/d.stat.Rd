@@ -17,4 +17,3 @@ d
 \description{
 d stat
 }
-

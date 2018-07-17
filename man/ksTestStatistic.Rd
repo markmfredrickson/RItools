@@ -6,7 +6,17 @@
 \usage{
 ksTestStatistic(y, z)
 }
-\description{
-KS Test Statistic
-}
+\arguments{
+\item{y}{Outcome variable}
 
+\item{z}{Treatment indicator vector, must be binary or logical}
+}
+\value{
+Function to calculate KS test statistic
+}
+\description{
+Calculates Kolmogorov-Smirnov test statistic
+}
+\seealso{
+\code{\link{RItest}}
+}

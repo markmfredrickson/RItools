@@ -3,8 +3,8 @@
 \name{Randomizationdistributionconfint}
 \alias{Randomizationdistributionconfint}
 \alias{confint.RandomizationDistribution}
-\alias{plot.RandomizationDistributionConfInt}
 \alias{summary.RandomizationDistributionConfInt}
+\alias{plot.RandomizationDistributionConfInt}
 \title{functions for RandomizationDistribution}
 \usage{
 \method{confint}{RandomizationDistribution}(object, parm, level = 0.95, ...)
@@ -25,4 +25,3 @@ plot.RandomizationDistributionConfInt(object, ...)
 \description{
 functions for RandomizationDistribution
 }
-
