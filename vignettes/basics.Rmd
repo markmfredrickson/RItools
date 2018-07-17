@@ -1,0 +1,122 @@
+---
+title: "Randomization Inference with RItools"
+author: "Me?"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Randomization Inference with RItools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+The `RItools` package contains helpful functions to conduct randomization inference. Randomization inference is a procedure to tests hypothesis in randomized experiments. Because we know how the experiment was conducted, we can simulate multiple replications and compute the probability of observing values more extreme than an observed test statistic of choice in a world where the null hypothesis is true.
+
+## Basics
+
+After installing, we load the package using:
+
+```{r load}
+library(RItools)
+```
+
+The `nuclearplants` data set relates the construction of ligh water reactor (LWR) plants in the U.S.A. in the late 1960's and early 1970's. We want to know if the previous existence of LWR plants at the same site (`pr`) affects the construction cost of a new plant. See the `RItools` documentation [include link here] for further information.
+
+First, we attach and visualize the data:
+
+```{r data}
+data("nuclearplants")
+
+head(nuclearplants)
+```
+
+We use the `RItest` function to conduct a t-test for difference in means. In its simplest form, we must specify the outcome variable `y`, treatment indicator `z`, and the test statistic of choice `test.stat`.
+
+```{r ttest}
+RItest(nuclearplants$cost, nuclearplants$pr,
+                     test.stat = t.mean.difference)
+```
+
+`RItest` outputs the observed test statistic and a p-value. In this case, we have strong evidence in favor of the sharp null of no effect (we would observe this value in such  world about 70% of the time). 
+
+### Test Statistics
+
+`RItools` contains several useful test statistics that researchers may prefer to use. For example, instead of the difference in means test, we may prefer to compute the quantile difference. We can do this with the `quantileDifference()` test statistic.
+
+```{r qtest}
+RItest(nuclearplants$cost, nuclearplants$pr, 
+       test.stat = quantileDifference(.25))
+```
+
+Note that here `RItest` expects you to include additional details in the test statistic argument. In this case, the function expect us to specify which quantile we are interested in. In the previous case we were interested in the 25th percentile, we can also explore the median difference.
+
+```{r qtest2}
+RItest(nuclearplants$cost, nuclearplants$pr, 
+       test.stat = quantileDifference(.50))
+```
+
+More generally, we may be interested in comparing the distributions of treatment and control group using the Kolmogorov-Smirnov test statistic. In this case, the null hypothesis is that both distributions have a similar ECDF.
+
+```{r ks}
+RItest(nuclearplants$cost, nuclearplants$pr, test.stat = ksTestStatistic)
+```
+
+These are just a few examples of the basic implementation of `RItools`. The package supports many common test statistics used to analyze experimental data, see the documentation [link] for more details. 
+
+A separate vignette [link] also shows how to incorporate custom test statistics.
+
+### Number of Permutations
+
+`RItest` computes test statistics using direct permutation. By default, it performs 5000 replications. This can be changed in the `samples` argument.
+
+```{r samples}
+RItest(nuclearplants$cost, nuclearplants$pr, test.stat = t.mean.difference,
+       samples = 100)
+```
+
+More replications produce more accurate results, but take more time to compute. As a rule of thumb, the default number in `samples` is good enough and performs reasonably fast in most applications.
+
+## Complex Design Features
+
+The `RItest` function can also accommodate designs more complex than simple full randomization.
+
+### Blocked and Clustered Designs
+
+The `sampler` argument in `RItest` allows us to incorporate comple designs by specifying treatment assignment probabilities for observations in the study. By default, `sampler` uses the `simpleRandomSampler` function to reproduce a complete randomized design. We can use the same function to accomodate for a blocked design.
+
+First, we specify the design. The `simpleRandomSampler` function requires us to specify the following arguments:
+
+  1. The `total` size of the experimental pool
+  2. The total number of `treated` units
+  3. Treatment indicator `z`
+  4. Block membership indicator `b`
+  
+One of `trated` or `z` is required. In our current working example, we can imagine that previous LWR were blocked randomized by region. The `ne` variable captures whether the plant was constructed in the north-east or somewhere else. We reproduce such a design with the following code.
+
+```{r setblock}
+region.blocks <- simpleRandomSampler(total = 32, z = nuclearplants$pr,
+                                     b = nuclearplants$ne)
+```
+
+
+Then we can just use `RItest` as usual, now including our blocked design:
+
+```{r testblock}
+RItest(nuclearplants$cost, nuclearplants$pr, test.stat = t.mean.difference,
+       sampler = region.blocks)
+```
+
+
+
+### Models of Effect
+
+moe and parameters argument, right?
+
+
