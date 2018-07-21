@@ -207,6 +207,8 @@ balanceTest <- function(fmla,
   data <- eval(mf, parent.frame())
   if (!cwpos)
       data$'(weights)' <- 1
+  if (cwpos && !is.numeric(data$'(weights)'))
+      data$'(weights)' <- as.numeric(data$'(weights)')
   if (sspos)
       {
           ss <- data$'(offset)'
@@ -220,7 +222,11 @@ balanceTest <- function(fmla,
           data$'(offset)' <- NULL
       }
 
-  if (any(is.na(data$'(weights)'))) stop("NAs detected in weights")
+    if (any(NAwts <- is.na(data$'(weights)')))
+    {
+        data[NAwts, '(weights)'] <- 0
+        warning("NA unit.weights detected; treating as 0s")
+        }
   
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.

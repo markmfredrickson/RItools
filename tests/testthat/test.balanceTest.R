@@ -179,6 +179,18 @@ test_that("Use of subset argument", {
   expect_equal(xb1, xb3)
 })
 
+test_that("unit.weights: NAs treated as 0, logicals coerced to numeric",{
+    data(nuclearplants)
+    nuclearplants$pt <- factor(nuclearplants$pt)
+    expect_warning(xb1 <- balanceTest(pr ~ ., data = nuclearplants, unit.weights=ifelse(pt=='0',1,NA)),
+                   "NA unit.weights detected")
+    ## confirm that we still see the '1' level, even if it receives no weight
+    expect_match(dimnames(xb1$results)[[1]], "pt1", all=FALSE)
+    xb2 <- balanceTest(pr ~ ., data = nuclearplants, unit.weights=(pt=='0'))
+    expect_equivalent(xb1$results[,,],
+                      xb2$results[,,])
+    })
+
 test_that("Observations not meeting subset condition are retained although downweighted to 0",{
 
     data(nuclearplants)
