@@ -37,17 +37,33 @@ test_that("Basic function of xbal tidy() and glance() methods", {
       dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
       dat[2,'x2'] <- NA
 
-      xb <- balanceTest(z~x1+strata(s), data=dat)
-      expect_s3_class(tidy.xbal(xb), 'data.frame')
-      expect_true(setequal(colnames(tidy.xbal(xb)),
+      bt <- balanceTest(z~x1 + strata(s), data=dat)
+      expect_s3_class(tidy.xbal(bt), 'data.frame')
+      expect_true(setequal(colnames(tidy.xbal(bt)),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd", "NA.info", "statistic", "p.value")))
-            expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=NULL)),
+      expect_true(setequal(colnames(tidy.xbal(bt, varnames_crosswalk=NULL)),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","z", "p", "NA.info")))
-                  expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=c('z'='Z', 'p'='P'))),
+      expect_true(setequal(colnames(tidy.xbal(bt, varnames_crosswalk=c('z'='Z', 'p'='P'))),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","Z", "P", "NA.info")))
+      expect_equivalent(colnames(tidy.xbal(bt, varnames_crosswalk=c('Control'='notZ', 'p'='P'))),
+                      c("vars","notZ", "Treatment","std.diff",
+                        "adj.diff", "pooled.sd","z", "P", "NA.info"))
+
+      xb <- xBalance(z~x1, report="all", data=dat)
+            expect_s3_class(tidy.xbal(xb), 'data.frame')
+      expect_true(setequal(colnames(tidy.xbal(xb)),
+                      c("vars","Control", "Treatment","std.diff",
+                        "adj.diff", "pooled.sd", "statistic", "p.value")))
+            expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=NULL)),
+                      c("vars","Control", "Treatment","std.diff",
+                        "adj.diff", "pooled.sd","z", "p")))
+                  expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=c('z'='Z', 'p'='P'))),
+                      c("vars","Control", "Treatment","std.diff",
+                        "adj.diff", "pooled.sd","Z", "P")))
+
 
 })
 
