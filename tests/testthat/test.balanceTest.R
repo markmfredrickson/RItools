@@ -33,6 +33,34 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
 
 })
 
+test_that("balT does not drop all units in a stratum if all of treated or control are missing", {
+    set.seed(20180821)
+
+    ## working with aggregated cluster totals already
+    n <- 100
+    z <- rep(c(1,1,0,0), n/4)
+    blk <- rep(1:(n/4), each = 4)
+    size <- rpois(n = n, lambda = 200)
+
+    x1 <- rnorm(n)
+    ## we lose the treated in the first block and one control in the second block
+    x1[c(1, 2, 7)] <- NA
+    attrit <- is.na(x1)
+j
+    dta <- data.frame(z, x1, attrit, blk, size)
+
+    bt <- balanceTest(z ~ x1 + attrit + strata(blk) - 1,
+                      data = dta,
+                      unit.weights = size, # weighted by cluster size
+                      report = c("std.diffs", "z.scores",
+                                 "adj.means", "adj.mean.diffs"))
+
+    ## everyone has prob 1/2 of assignment, so inv. prob. is 2
+    lmatt <- lm(attrit ~ z, weights = 2 * size)
+
+    expect_equivalent(coef(lmatt)["z"], bt$results["attrit", "adj.diff",])
+})
+
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
