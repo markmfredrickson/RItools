@@ -43,22 +43,20 @@ test_that("balT does not drop all units in a stratum if all of treated or contro
     size <- rpois(n = n, lambda = 200)
 
     x1 <- rnorm(n)
-    ## we lose the treated in the first block and one control in the second block
-    x1[c(1, 2, 7)] <- NA
-    attrit <- is.na(x1)
-j
-    dta <- data.frame(z, x1, attrit, blk, size)
 
-    bt <- balanceTest(z ~ x1 + attrit + strata(blk) - 1,
+    ## we lose the treated in the first block
+    dta <- data.frame(z, x1, blk, size)[3:n, ]
+
+    bt <- balanceTest(z ~ x1 + strata(blk) - 1,
                       data = dta,
                       unit.weights = size, # weighted by cluster size
                       report = c("std.diffs", "z.scores",
                                  "adj.means", "adj.mean.diffs"))
 
     ## everyone has prob 1/2 of assignment, so inv. prob. is 2
-    lmatt <- lm(attrit ~ z, weights = 2 * size)
+    lmatt <- lm(x1 ~ z, weights = 2 * size)
 
-    expect_equivalent(coef(lmatt)["z"], bt$results["attrit", "adj.diff",])
+    expect_equivalent(coef(lmatt)["z"], bt$results["x1", "adj.diff",])
 })
 
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
@@ -201,9 +199,8 @@ test_that("Use of subset argument", {
   n2 <- rbind(n2, n2[1,])
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
-  expect_warning(xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1),
-                 "ropped") #if we get rid of warning re dropping levels which did not include
-                                        #both treated and control, get rid of expect_warning here too
+  xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1)
+
   expect_equal(xb1, xb3)
 })
 
