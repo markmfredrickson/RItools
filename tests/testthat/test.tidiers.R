@@ -51,13 +51,26 @@ test_that("Basic function of xbal tidy() and glance() methods", {
       expect_equivalent(colnames(tidy.xbal(bt, varnames_crosswalk=c('Control'='notZ', 'p'='P'))),
                       c("vars","notZ", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","z", "P", "NA.info"))
+})
+
+test_that("basic functionality of tidy.xbal as applied to value of a call to xBal()",{
+      set.seed(20160406)
+      n <- 7 
+      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+      dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+      dat[2,'x2'] <- NA
 
       xb <- xBalance(z~x1, report="all", data=dat)
-            expect_s3_class(tidy.xbal(xb), 'data.frame')
+      expect_false(inherits(try(tidy.xbal(xb)), "try-error"))
+
+      expect_s3_class(tidy.xbal(xb), 'data.frame')
       expect_true(setequal(colnames(tidy.xbal(xb)),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd", "statistic", "p.value")))
-            expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=NULL)),
+
+      expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=NULL)),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","z", "p")))
                   expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=c('z'='Z', 'p'='P'))),
