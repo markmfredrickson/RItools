@@ -3,37 +3,55 @@
 \name{tidy.xbal}
 \alias{tidy.xbal}
 \alias{glance.xbal}
-\title{[broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results}
+\title{\code{broom::tidy()}/\code{glance()} methods for \code{\link[=balanceTest]{balanceTest()}} results}
 \usage{
 tidy.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1],
-  varnames_crosswalk = c(z = "statistic", p = "p.value"), ...)
+  varnames_crosswalk = c(z = "statistic", p = "p.value"), format = FALSE,
+  digits = max(2, getOption("digits") - 4), ...)
 
 glance.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1], ...)
 }
 \arguments{
-\item{x}{object of class `"xbal"`, result of [RItools::balancetest()]
-or [RItools::xBalance()]}
+\item{x}{object of class \code{"xbal"}, result of \code{\link[RItools:balancetest]{RItools::balancetest()}}
+or \code{\link[RItools:xBalance]{RItools::xBalance()}}}
 
 \item{strata}{which stratification to return info about? Defaults
 to last one specified in originating function call (which appears first in the xbal array).}
 
 \item{varnames_crosswalk}{character vector of new names for xbal columns, named by the xbal column}
+
+\item{format}{if true, apply \code{[RItools:::original_units_var_formatter()]} to suitable sub-array en route}
+
+\item{digits}{passed to \code{[RItools:::original_units_var_formatter()]}}
 }
 \value{
-data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
-        additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
-        a combined differences test, if found, and otherwise `NULL`.
+data frame composed of: for \code{[RItools::tidy()]}, a column of variable labels (\code{vars}) and
+additional columns of balance-related stats; for \code{[RItools::glance()]}, scalars describing
+a combined differences test, if found, and otherwise \code{NULL}.
 }
 \description{
-Portion out the value of a [RItools::balanceTest()] call in a manner consistent
-with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
-statistics whereas [RItools::glance.xbal()] extracts combined-difference related
+Portion out the value of a \code{\link[RItools:balanceTest]{RItools::balanceTest()}} call in a manner consistent
+with assumptions of the broom package.  \code{\link[RItools:tidy.xbal]{RItools::tidy.xbal()}} gives per-variable
+statistics whereas \code{\link[RItools:glance.xbal]{RItools::glance.xbal()}} extracts combined-difference related
 calculations. In both cases one has to specify which stratification one wants
 statistics about, as xbal objects can store info about several stratifications.
-[RItools::tidy.xbal()] has a parameter `varnames_crosswalk` not shared with 
-[RItools::glance.xbal()]. It should be a named character vector, the elements
+\code{\link[RItools:tidy.xbal]{RItools::tidy.xbal()}} has a parameter \code{varnames_crosswalk} not shared with
+\code{\link[RItools:glance.xbal]{RItools::glance.xbal()}}. It should be a named character vector, the elements
 of which give names of columns to be returned and the names of which correspond
 to columns of xbal objects' \sQuote{results} entry.  Its ordering dictates the order
 of the result. The default value translates between conventional xbal
 column names and broom package conventional names.
+}
+\details{
+\describe{
+\item{vars}{variable name}
+\item{Control}{mean of LHS variable = 0 group}
+\item{Treatment}{ mean of LHS variable = 1 group}
+\item{adj.diff}{T - C diff w/ direct standardization for strata if applicable}
+\item{std.diff}{adj.diff/pooled.sd}
+\item{pooled.sd}{pooled SD}
+\item{statistic}{\code{z} column from the xbal object}
+\item{p.value}{\code{p} column from the xbal object}
+}
+Additional parameters beyond those listed here are ignored (at this time).
 }

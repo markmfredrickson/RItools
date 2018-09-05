@@ -1,4 +1,4 @@
-#' [broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results
+#' `broom::tidy()`/`glance()` methods for [balanceTest()] results
 #'
 #' Portion out the value of a [RItools::balanceTest()] call in a manner consistent
 #' with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
@@ -20,7 +20,7 @@
 #'     \item{std.diff}{adj.diff/pooled.sd}
 #'     \item{pooled.sd}{pooled SD}
 #'     \item{statistic}{`z` column from the xbal object}
-#'     \item{p.value}{`p` column from the xbal object
+#'     \item{p.value}{`p` column from the xbal object}
 #' }
 #' Additional parameters beyond those listed here are ignored (at this time).
 #' 
@@ -34,7 +34,8 @@
 #' @return data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
 #'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
 #'         a combined differences test, if found, and otherwise `NULL`.
-#' @export 
+#' @export
+#' @md
 tidy.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1],
                       varnames_crosswalk=c("z"="statistic", "p"="p.value"),
                       format=FALSE, digits=max(2, getOption("digits")-4),...
