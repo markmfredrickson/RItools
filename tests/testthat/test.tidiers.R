@@ -64,7 +64,6 @@ test_that("Basic function of xbal tidy() and glance() methods", {
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","Z", "P")))
 
-
 })
 
 test_that("tidy.xbal w/ special formatting for original units vars",{
