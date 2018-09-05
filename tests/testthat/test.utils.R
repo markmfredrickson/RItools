@@ -90,15 +90,6 @@ test_that("pseudinversion w/ XtX_pseudoinv_sqrt()",{
     expect_equivalent(basis %*% tcrossprod(m2) %*% t(basis), diag(c(1/2^2, 1, 0)) )
 })
 
-test_that("data.table options issue #69", {
-
-  if (suppressMessages(suppressWarnings(require(data.table)))) {
-    data(nuclearplants)
-    f <- function() 1
-    expect_equal(withOptions(list(), f), 1)
-  }
-
-})
 
 context("Printing of results")
 
