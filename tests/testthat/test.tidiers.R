@@ -48,9 +48,10 @@ test_that("Basic function of xbal tidy() and glance() methods", {
       expect_true(setequal(colnames(tidy.xbal(bt, varnames_crosswalk=c('z'='Z', 'p'='P'))),
                       c("vars","Control", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","Z", "P", "NA.info")))
-      expect_equivalent(colnames(tidy.xbal(bt, varnames_crosswalk=c('Control'='notZ', 'p'='P'))),
+      expect_true(setequal(colnames(tidy.xbal(bt, varnames_crosswalk=c('Control'='notZ', 'p'='P'))),
                       c("vars","notZ", "Treatment","std.diff",
                         "adj.diff", "pooled.sd","z", "P", "NA.info"))
+                  )
 })
 
 test_that("basic functionality of tidy.xbal as applied to value of a call to xBal()",{
