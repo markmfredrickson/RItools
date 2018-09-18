@@ -40,8 +40,6 @@ test_that("Clusters must be aligned to treatment assignment and nested within st
   # more subtly, without the clustering, the "z.bad" is ok as it doesn't need to be aligned to clusters
   balanceTest(z.bad ~ x + strata(strata.good), data = d)
 
-  # Drop levels w/o variation in the treatment variable, with warning
-  expect_warning(balanceTest(z.good ~ x + strata(strata.bad), data = d), "dropped", ignore.case=TRUE)
   # now for our errors
   expect_error(balanceTest(z.bad ~ x + strata(strata.good) + cluster(cluster), data = d), "cluster")
   expect_error(balanceTest(z.good ~ x + strata(strata.bad) + cluster(cluster), data = d), "cluster")

@@ -299,28 +299,6 @@ makeDesigns <- function(fmla, data) {
     stop("Treatment assignment must have exactly two levels.")
   }
 
-  ## for each strata, we want there to be at least one treated and control unit
-
-  for (s in strataCols) {
-
-    if (all(is.na(str.data[, s]))) {
-      stop("All levels in ", s, " are NA")
-    }
-
-    tbl <- table(str.data[, c(treatmentCol, s)])
-    isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 2 })
-    if (!any(isGood))
-        stop("In ", s, " there were no strata with both treatment and control units")
-    ## otherwise, just ignore the bad strata
-    str.data[ str.data[, s]%in%colnames(tbl)[!isGood], s] <- NA
-
-    if (!(all(isGood))) {
-        warning("Dropped ", sum(!isGood), " levels of ", s, " which did not include both treated and control units")
-###      warning("In ", s, ", dropping the following stratum levels (which do not include both treated and control units):\n",
-###           paste(collapse = ", ", colnames(tbl)[!isGood]))
-  }
-  }
-
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))
@@ -859,6 +837,8 @@ alignedToInferentials <- function(alignedcovs) {
     # set up 1/(n-1)
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
+    tmp@ra <- ifelse(!is.finite(tmp@ra), 0, tmp@ra) # we can have strata of 1 unit, which causes a divide by zero error
+
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     

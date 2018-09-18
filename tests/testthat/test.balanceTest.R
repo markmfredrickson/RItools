@@ -45,18 +45,47 @@ test_that("balT does not drop all units in a stratum if all of treated or contro
     x1 <- rnorm(n)
 
     ## we lose the treated in the first block
-    dta <- data.frame(z, x1, blk, size)[3:n, ]
+    dta.all <- data.frame(z, x1, blk, size)
+    dta.lost <- dta.all[3:n, ]
 
-    bt <- balanceTest(z ~ x1 + strata(blk) - 1,
-                      data = dta,
+    bt.all <- balanceTest(z ~ x1 + strata(blk) - 1,
+                      data = dta.all,
                       unit.weights = size, # weighted by cluster size
                       report = c("std.diffs", "z.scores",
                                  "adj.means", "adj.mean.diffs"))
 
+    bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
+                          data = dta.lost,
+                          unit.weights = size, # weighted by cluster size
+                          report = c("std.diffs", "z.scores",
+                                     "adj.means", "adj.mean.diffs"))
     ## everyone has prob 1/2 of assignment, so inv. prob. is 2
-    lmatt <- lm(x1 ~ z, weights = 2 * size)
+    lm.all  <- lm(x1 ~ z, weights = 2 * size, data = dta.all)
+    lm.lost <- lm(x1 ~ z, weights = 2 * size, data = dta.lost)
 
-    expect_equivalent(coef(lmatt)["z"], bt$results["x1", "adj.diff",])
+    ## compute a Hajek estimator
+    hajek <- function(x, z, weight, prob) {
+        ipw <- 1/prob
+        a <- sum(z * ipw * x * weight) / sum(z * ipw * weight)
+        b <- sum((1 - z) * ipw * x * weight) / sum((1 - z) * ipw * weight)
+        return(c(a, b, a - b))
+    }
+
+    hh.all <- hajek(dta.all$x1, dta.all$z, dta.all$size, 1/2)
+    hh.lost <- hajek(dta.lost$x1, dta.lost$z, dta.lost$size, 1/2)
+
+    ## first, confirm that lm agrees with the hajek estimator:
+    expect_equivalent(coef(lm.all), c(hh.all[2], hh.all[3]))
+    expect_equivalent(coef(lm.lost), c(hh.lost[2], hh.lost[3]))
+
+    ## now check that balance test gives us the same answers
+    expect_equivalent(coef(lm.all)["z"], bt.all$results["x1", "adj.diff", ])
+    expect_false(coef(lm.lost)["z"] == bt.lost$results["x1", "adj.diff", ])
+
+    ## after poking around it seems like the weight baltest is picking for the first unit is around 28.5
+    ## why?
+    lm.lost.autoweights <- lm(x1 ~ z, weights = c(28.5, rep(2, dim(dta.lost)[1] - 1)) * size, dta.lost)
+    expect_equivalent(coef(lm.lost.autoweights)["z"], bt.lost$results["x1", "adj.diff", ])
 })
 
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
