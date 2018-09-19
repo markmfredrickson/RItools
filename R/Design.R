@@ -299,6 +299,25 @@ makeDesigns <- function(fmla, data) {
     stop("Treatment assignment must have exactly two levels.")
   }
 
+  ## for each strata, we want there to be at least one treated and control unit
+
+  for (s in strataCols) {
+
+    if (all(is.na(str.data[, s]))) {
+      stop("All levels in ", s, " are NA")
+    }
+
+    tbl <- table(str.data[, c(treatmentCol, s)])
+    isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 2 })
+    if (!any(isGood))
+        stop("In ", s, " there were no strata with both treatment and control units")
+    ## otherwise, just ignore the bad strata
+
+    if (!(all(isGood))) {
+        warning(sum(!isGood), " levels of ", s, "  did not include both treated and control units")
+    }
+  }
+
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))

@@ -33,7 +33,7 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
 
 })
 
-test_that("balT does not drop all units in a stratum if all of treated or control are missing", {
+test_that("Consistency between lm() and balTest()", {
     set.seed(20180821)
 
     ## working with aggregated cluster totals already
@@ -50,18 +50,27 @@ test_that("balT does not drop all units in a stratum if all of treated or contro
 
     bt.all <- balanceTest(z ~ x1 + strata(blk) - 1,
                       data = dta.all,
-                      unit.weights = size, # weighted by cluster size
+                      unit.weights = dta.all$size, # weighted by cluster size
                       report = c("std.diffs", "z.scores",
                                  "adj.means", "adj.mean.diffs"))
 
-    bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
+    ## we don't further test these values, but we should handle this situation
+    expect_warning(bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
                           data = dta.lost,
-                          unit.weights = size, # weighted by cluster size
+                          unit.weights = dta.lost$size, # weighted by cluster size
                           report = c("std.diffs", "z.scores",
-                                     "adj.means", "adj.mean.diffs"))
+                                     "adj.means", "adj.mean.diffs")))
+
+    bt.zeroed <- balanceTest(z ~ x1 + strata(blk) - 1,
+                             data = dta.all,
+                             unit.weights = c(0, 0, dta.all$size[3:n]), # weighted by cluster size
+                             report = c("std.diffs", "z.scores",
+                                        "adj.means", "adj.mean.diffs"))
+
+
     ## everyone has prob 1/2 of assignment, so inv. prob. is 2
-    lm.all  <- lm(x1 ~ z, weights = 2 * size, data = dta.all)
-    lm.lost <- lm(x1 ~ z, weights = 2 * size, data = dta.lost)
+    lm.all  <- lm(x1 ~ z, weights = 2 * dta.all$size, data = dta.all)
+    lm.lost <- lm(x1 ~ z, weights = 2 * dta.lost$size, data = dta.lost)
 
     ## compute a Hajek estimator
     hajek <- function(x, z, weight, prob) {
@@ -80,12 +89,9 @@ test_that("balT does not drop all units in a stratum if all of treated or contro
 
     ## now check that balance test gives us the same answers
     expect_equivalent(coef(lm.all)["z"], bt.all$results["x1", "adj.diff", ])
-    expect_false(coef(lm.lost)["z"] == bt.lost$results["x1", "adj.diff", ])
+    expect_equivalent(coef(lm.lost)["z"], bt.zeroed$results["x1", "adj.diff", ])
 
-    ## after poking around it seems like the weight baltest is picking for the first unit is around 28.5
-    ## why?
-    lm.lost.autoweights <- lm(x1 ~ z, weights = c(28.5, rep(2, dim(dta.lost)[1] - 1)) * size, dta.lost)
-    expect_equivalent(coef(lm.lost.autoweights)["z"], bt.lost$results["x1", "adj.diff", ])
+    
 })
 
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
@@ -228,8 +234,9 @@ test_that("Use of subset argument", {
   n2 <- rbind(n2, n2[1,])
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
-  xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1)
-
+  expect_warning(xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1),
+                 "did not include both treated and control units") #if we get rid of warning re dropping levels which did not include
+                                        #both treated and control, get rid of expect_warning here too
   expect_equal(xb1, xb3)
 })
 
