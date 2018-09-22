@@ -638,10 +638,16 @@ aggregateDesigns <- function(design) {
   StrataFrame <- design@StrataFrame[!dupes,, drop = FALSE]
   Cluster <- clusters[!dupes]
   names(Z) <- as.character(Cluster)
-  Z <- Z[levels(Cluster)]
 
   C_transp <- t(SparseMMFromFactor(clusters))
-
+  # To align w/ this `C_transp`, everything to be returned 
+  # needs to align w/ `levels(Cluster)`, not with 
+  # `Cluster` itself. So,
+  Z <- Z[levels(Cluster)]
+  StrataFrame  <-
+      StrataFrame[match(levels(Cluster), as.character(Cluster)),
+                  , drop=FALSE]
+  
   unit.weights <- as.matrix(C_transp %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL
   names(unit.weights) <- levels(Cluster)

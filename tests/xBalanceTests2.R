@@ -38,6 +38,6 @@ testxb1a<-t(sapply(nuclearplants[,dimnames(xb1a$results)$vars],function(thevar){
 
 ##print(testxb1a,digits=4)
 
-all.equal(xb1a$results[,c("adj.diff","z"),"Unstrat"],testxb1a,check.attributes = FALSE)
+all.equal(xb1a$results[,c("adj.diff","z"),"unstrat"],testxb1a,check.attributes = FALSE)
 
 
