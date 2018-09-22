@@ -94,29 +94,16 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
 		       2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
   }
 
-  if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
-    # nu=0 stops calculation of the U matrix, which is not used.
-    pst.svd <- try ( svd(tmat*sqrt(dv), nu=0) )
-    if (inherits(pst.svd,'try-error')) {
-      pst.svd<-propack.svd(tmat*sqrt(dv))
-    }
-    ##	pst.svd <- svd(tmat*sqrt(dv))
-    Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
-    Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this?
-    if (all(Positive)) { ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
-      ytl <- pst.svd$v *
-      matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
-    } else if (!any(Positive)) {
-      ytl <- array(0, dim(mm)[2:1] )
-    } else  {
-      ytl <- pst.svd$v[, Positive, drop = FALSE] *
-      matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)
-    }
-
-    mvz <- drop(crossprod(zz, tmat)%*%ytl)
+    if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
+    ## Cholesky factor of covariance matrix's pseudo-inverse
+    cov_minus_.5 <-
+        XtX_pseudoinv_sqrt(tmat*sqrt(dv),
+                           tol = .Machine$double.eps^0.5 # not correct
+                           ) # for recovering pseudoinv, but back-compatible
+    mvz <- drop(crossprod(zz, tmat)%*% cov_minus_.5)
 
     csq <- drop(crossprod(mvz))
-    DF <- sum(Positive)
+    DF <- ncol(cov_minus_.5)
     tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
   } else {
