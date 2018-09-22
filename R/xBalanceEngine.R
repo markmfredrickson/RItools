@@ -1,4 +1,4 @@
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans, pseudoinversion_tol) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
   cnms <-
@@ -98,7 +98,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     ## Cholesky factor of covariance matrix's pseudo-inverse
     cov_minus_.5 <-
         XtX_pseudoinv_sqrt(tmat*sqrt(dv),
-                           tol = .Machine$double.eps^0.5 # not correct
+                           tol = sqrt(pseudoinversion_tol) # not correct
                            ) # for recovering pseudoinv, but back-compatible
     mvz <- drop(crossprod(zz, tmat)%*% cov_minus_.5)
 

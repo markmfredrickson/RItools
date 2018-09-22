@@ -21,7 +21,8 @@ xBalance(fmla,
          stratum.weights=harmonic, na.rm=FALSE,
          covariate.scaling=NULL,
          normalize.weights=TRUE,impfn=median,
-         post.alignment.transform=NULL)
+         post.alignment.transform=NULL,
+	 pseudoinversion_tol=.Machine$double.eps)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -60,6 +61,7 @@ xBalance(fmla,
     \code{na.rm=FALSE}. Currently \code{\link{median}}. To impute means
     use \code{\link{mean.default}}.}
   \item{post.alignment.transform}{Optional transformation applied to covariates just after their stratum means are subtracted off.}
+  \item{pseudoinversion_tol}{Pseudo-inversion related tolerance value. Defaults to \code{.Machine$double.eps} for back-compatibility, but \code{sqrt{.Machine$double.eps}} is recommended.}
 }
 \details{
 In the unstratified case, the standardized difference of
