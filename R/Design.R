@@ -652,6 +652,7 @@ aggregateDesigns <- function(design) {
   # needs to align w/ `levels(Cluster)`, not with 
   # `Cluster` itself. So,
   Z <- Z[levels(Cluster)]
+  Cluster  <- as.factor(levels(Cluster))
   StrataFrame  <-
       StrataFrame[match(levels(Cluster), as.character(Cluster)),
                   , drop=FALSE]
