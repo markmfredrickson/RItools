@@ -16,4 +16,7 @@ another DesignOptions representing the clusters
 Totals up all the covariates, as well as user-provided unit weights.
 (What it does to NotMissing entries is described in docs for DesignOptions class.)
 }
+\details{
+If \code{design@Cluster} has extraneous (non-represented) levels, they will be dropped.
+}
 \keyword{internal}
