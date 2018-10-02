@@ -38,32 +38,32 @@ test_that("Consistency between lm() and balTest()", {
 
     ## working with aggregated cluster totals already
     n <- 100
-    z <- rep(c(1,1,0,0), n/4)
-    blk <- rep(1:(n/4), each = 4)
-    size <- rpois(n = n, lambda = 200)
-
-    x1 <- rnorm(n)
 
     ## we lose the treated in the first block
-    dta.all <- data.frame(z, x1, blk, size)
+    dta.all <- data.frame(z = rep(c(1,1,0,0), n/4),
+                          x1 = rnorm(n),
+                          blk = rep(1:(n/4), each = 4),
+                          size = rpois(n = n, lambda = 200))
+
     dta.lost <- dta.all[3:n, ]
 
     bt.all <- balanceTest(z ~ x1 + strata(blk) - 1,
                       data = dta.all,
-                      unit.weights = dta.all$size, # weighted by cluster size
+                      unit.weights = size, # weighted by cluster size
                       report = c("std.diffs", "z.scores",
                                  "adj.means", "adj.mean.diffs"))
 
     ## we don't further test these values, but we should handle this situation
     expect_warning(bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
                           data = dta.lost,
-                          unit.weights = dta.lost$size, # weighted by cluster size
+                          unit.weights = size, # weighted by cluster size
                           report = c("std.diffs", "z.scores",
                                      "adj.means", "adj.mean.diffs")))
 
+    dta.all$zerosize <- c(0,0, dta.all$size[3:n])
     bt.zeroed <- balanceTest(z ~ x1 + strata(blk) - 1,
                              data = dta.all,
-                             unit.weights = c(0, 0, dta.all$size[3:n]), # weighted by cluster size
+                             unit.weights = zerosize, # weighted by cluster size
                              report = c("std.diffs", "z.scores",
                                         "adj.means", "adj.mean.diffs"))
 
@@ -204,23 +204,6 @@ test_that("Passing post.alignment.transform, #26", {
 
   # to dos: test combo of a transform with non-default stratum weights.
 
-})
-
-test_that("NA in stratify factor are dropped", {
-  data(nuclearplants)
-
-  n2 <- nuclearplants
-  n2 <- rbind(n2, n2[1,])
-  n2$pt[1] <- NA
-
-  f <- function(d) {
-    balanceTest(pr ~ . - pt + strata(pt) - 1, data = d)
-  }
-
-  xb1 <- f(nuclearplants)
-  xb2 <- f(n2)
-
-  expect_equal(xb1, xb2)
 })
 
 test_that("Use of subset argument", {

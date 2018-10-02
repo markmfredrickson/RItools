@@ -549,18 +549,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ZZ <- S * Z
     WW <- S * (1 - Z)
 
-    S.missing.0 <- as.matrix((t(ZZ) %*% Uweights)) == 0
-    S.missing.1 <- as.matrix((t(WW) %*% Uweights)) == 0
-    S.has.both  <- !(S.missing.0 | S.missing.1)
-    use.units   <- S %*% S.has.both * Uweights
-    use.units <- as.matrix(use.units)
 
-    X.use  <- covars * use.units[, covars.nmcols]
-    X2.use <- covars^2 * use.units[, covars.nmcols]
+    X.use  <- covars * Uweights[, covars.nmcols]
+    X2.use <- covars^2 * Uweights[, covars.nmcols]
 
-    n1 <- t(use.units) %*% Z
+    n1 <- t(Uweights) %*% Z
     n1 <- n1[covars.nmcols, ]
-    n0 <- t(use.units) %*% (1 - Z)
+    n0 <- t(Uweights) %*% (1 - Z)
     n0 <- n0[covars.nmcols, ]
     
     ## Now calculate assignment/stratum weights
@@ -594,12 +589,12 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     ## ratio estimates of means for a "domain" equal to intersection of
     ## treatment group with units for which which the covariate is non-missing
-    wtsum.tx <-  t(use.units * tx.wts) %*% Z
+    wtsum.tx <-  t(Uweights * tx.wts) %*% Z
     wtsum.tx <- wtsum.tx[covars.nmcols, ]
     treated.avg <- t(X.use *tx.wts) %*% Z / wtsum.tx
 
     ## ratio estimates of means over similarly defined domains within the control group
-    wtsum.ctl <- t(use.units * ctl.wts) %*% (1 - Z)
+    wtsum.ctl <- t(Uweights * ctl.wts) %*% (1 - Z)
     wtsum.ctl <- wtsum.ctl[covars.nmcols, ]
     control.avg <- t(X.use * ctl.wts) %*% (1 - Z) / wtsum.ctl
 
