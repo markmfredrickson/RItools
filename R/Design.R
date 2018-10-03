@@ -310,13 +310,10 @@ makeDesigns <- function(fmla, data) {
     if (!any(isGood))
         stop("In ", s, " there were no strata with both treatment and control units")
     ## otherwise, just ignore the bad strata
-    str.data[ str.data[, s]%in%colnames(tbl)[!isGood], s] <- NA
 
     if (!(all(isGood))) {
-        warning("Dropped ", sum(!isGood), " levels of ", s, " which did not include both treated and control units")
-###      warning("In ", s, ", dropping the following stratum levels (which do not include both treated and control units):\n",
-###           paste(collapse = ", ", colnames(tbl)[!isGood]))
-  }
+        warning(sum(!isGood), " levels of ", s, "  did not include both treated and control units")
+    }
   }
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
@@ -544,18 +541,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ZZ <- S * Z
     WW <- S * (1 - Z)
 
-    S.missing.0 <- as.matrix((t(ZZ) %*% Uweights)) == 0
-    S.missing.1 <- as.matrix((t(WW) %*% Uweights)) == 0
-    S.has.both  <- !(S.missing.0 | S.missing.1)
-    use.units   <- S %*% S.has.both * Uweights
-    use.units <- as.matrix(use.units)
 
-    X.use  <- covars * use.units[, covars.nmcols]
-    X2.use <- covars^2 * use.units[, covars.nmcols]
+    X.use  <- covars * Uweights[, covars.nmcols]
+    X2.use <- covars^2 * Uweights[, covars.nmcols]
 
-    n1 <- t(use.units) %*% Z
+    n1 <- t(Uweights) %*% Z
     n1 <- n1[covars.nmcols, ]
-    n0 <- t(use.units) %*% (1 - Z)
+    n0 <- t(Uweights) %*% (1 - Z)
     n0 <- n0[covars.nmcols, ]
     
     ## Now calculate assignment/stratum weights
@@ -589,12 +581,12 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     ## ratio estimates of means for a "domain" equal to intersection of
     ## treatment group with units for which which the covariate is non-missing
-    wtsum.tx <-  t(use.units * tx.wts) %*% Z
+    wtsum.tx <-  t(Uweights * tx.wts) %*% Z
     wtsum.tx <- wtsum.tx[covars.nmcols, ]
     treated.avg <- t(X.use *tx.wts) %*% Z / wtsum.tx
 
     ## ratio estimates of means over similarly defined domains within the control group
-    wtsum.ctl <- t(use.units * ctl.wts) %*% (1 - Z)
+    wtsum.ctl <- t(Uweights * ctl.wts) %*% (1 - Z)
     wtsum.ctl <- wtsum.ctl[covars.nmcols, ]
     control.avg <- t(X.use * ctl.wts) %*% (1 - Z) / wtsum.ctl
 
@@ -848,6 +840,8 @@ alignedToInferentials <- function(alignedcovs) {
     # set up 1/(n-1)
     tmp <- n
     tmp@ra <- 1 / (tmp@ra - 1)
+    tmp@ra <- ifelse(!is.finite(tmp@ra), 0, tmp@ra) # we can have strata of 1 unit, which causes a divide by zero error
+
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
     
