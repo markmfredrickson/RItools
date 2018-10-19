@@ -4,20 +4,10 @@
 \alias{alignedToInferentials}
 \title{Align to Inferentials}
 \usage{
-alignedToInferentials(zz, tmat, ssn, ssvar, dv, wtsum)
+alignedToInferentials(alignedcovs)
 }
 \arguments{
-\item{zz}{zz}
-
-\item{tmat}{tmat}
-
-\item{ssn}{ssn}
-
-\item{ssvar}{ssvar}
-
-\item{dv}{dv}
-
-\item{wtsum}{wtsum}
+\item{alignedcovs}{A CovsAlignedToADesign object}
 }
 \value{
 list
@@ -25,3 +15,4 @@ list
 \description{
 Align to Inferentials
 }
+\keyword{internal}

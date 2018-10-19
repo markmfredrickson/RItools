@@ -62,12 +62,12 @@ A \code{print} method for \code{xBalance} objects.
 \examples{
 data(nuclearplants)
 
-xb0<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+xb0 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
               data=nuclearplants)
 
 print(xb0)
 
-xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb1 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data = nuclearplants,
          report = c("all"))
 
@@ -93,7 +93,7 @@ print(xb1, horizontal = FALSE)
       which.stats = c("pr=0", "pr=1", "z", "p"))}
 
 ## Now, not asking for the omnibus test
-xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb2 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          data = nuclearplants,
          report = c("all"))
 

@@ -10,7 +10,7 @@
 }
 \arguments{
 \item{x}{An object resulting from a call to
-\code{\link{xBalance}}.}
+\code{\link{balanceTest}}.}
 
 \item{caption}{See \code{\link[xtable]{xtable}}.}
 
@@ -38,12 +38,12 @@ This function produces an \code{xtable} object which can
 \description{
 This function uses the \code{\link[xtable]{xtable}} package
 framework to display the results of a call to
-\code{\link{xBalance}} in LaTeX format. At the moment, it ignores
+\code{\link{balanceTest}} in LaTeX format. At the moment, it ignores
 the omnibus chi-squared test information.
 }
 \details{
 The resulting LaTeX will present one row for each variable in the
-formula originally passed to \code{\link{xBalance}}, using the
+formula originally passed to \code{\link{balanceTest}}, using the
 variable name used in the original formula. If you wish to have
 reader friendly labels instead of the original variables names,
 see the code examples below.
@@ -63,7 +63,7 @@ require(xtable)
 # Test balance on a variety of variables, with the 'pr' factor
 # indicating which sites are control and treatment units, with
 # stratification by the 'pt' factor to group similar sites
-xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb1 <- balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
                 data = nuclearplants,
                 report = c('adj.means', 'adj.mean.diffs',
                            'std.diffs', 'z.scores',
@@ -74,7 +74,7 @@ xb1.xtab <- xtable(xb1) # This table has right aligned columns
 # Add user friendly names in the final table
 rownames(xb1.xtab) <- c("Date", "Application to Contruction Time",
 "License to Construction Time", "Net Capacity", "Northeast Region", "Cooling Tower",
-"Babcock-Wilcox Steam", "Cumlative Plants")
+"Babcock-Wilcox Steam", "Cumlative Plants", "(Element Weight)")
 
 print(xb1.xtab,
       add.to.row = attr(xb1.xtab, "latex.add.to.row"),

@@ -56,7 +56,7 @@ selected using the \code{statistic} argument.
 \examples{
 data(nuclearplants)
 
-xb <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb <- balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
                data = nuclearplants)
 
 # Using the default grouping:

@@ -22,5 +22,5 @@ naImpute(FMLA, DATA, impfn = median, na.rm = TRUE,
 Structure
 }
 \description{
-Does this by doing something...
+Function used to fill NAs with imputation values, while adding NA flags to the data.
 }

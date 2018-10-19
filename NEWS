@@ -1,3 +1,24 @@
+CHANGES IN next RITOOLS VERSION
+
+* Addressed error relating to setting of pseudo-inversion tolerances (#103).
+  xBalance() stops short of correcting the error, to maintain back-compatibility;
+  but it gains a new argument, pseudoinversion_tol, with which it can readily
+  be fixed.
+
+CHANGES IN RITOOLS VERSION 0.1-15
+
+This is a maintenance release.
+
+* Fixed an obscure bug in which we indirectly fiddled with `data.table` related
+  global options (#69)
+* Disabled tests of RSVGTipsDevice-dependent functionality on Windows platforms,
+  where (as of this writing) RSVGTipsDevice does not build and check reliably and
+  is not distributed in binary through CRAN (#71)
+
+CHANGES IN RITOOLS VERSION 0.1-14
+
+(This version was not released on CRAN.)
+
 CHANGES IN RITOOLS VERSION 0.1-13
 
 * With `xBalance`, you can now specify strata "foo" and "bar" by including

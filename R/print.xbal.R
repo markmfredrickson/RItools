@@ -37,12 +37,12 @@
 ##' @examples
 ##' data(nuclearplants)
 ##'
-##' xb0<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##' xb0 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ##'               data=nuclearplants)
 ##'
 ##' print(xb0)
 ##'
-##' xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' xb1 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'          data = nuclearplants,
 ##'          report = c("all"))
 ##'
@@ -68,7 +68,7 @@
 ##'       which.stats = c("pr=0", "pr=1", "z", "p"))}
 ##'
 ##' ## Now, not asking for the omnibus test
-##' xb2 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' xb2 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
 ##'          data = nuclearplants,
 ##'          report = c("all"))
 ##'
@@ -84,6 +84,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                         report = NULL, ...) {
   ##Notes: right now we've decided that you can't print both signif stars and p-values. make a choice.
 
+    ## ToDo: check x's include.NA.flags attribute to see if user doesn't want to see them.
+    ## If not, apply subset.xbal to get rid of the NotMissing variables.
 
   # withOptions will allow us to safely reset the digits
   # even if an error is thrown the option should be the same after this function
@@ -108,7 +110,8 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     lookup <- c("std.diffs" = "std.diff", "z.scores" = "z",
                 "adj.mean.diffs" = "adj.diff",
                 "p.values" = "p",
-                "pooled.sd" = "pooled.sd")
+                "pooled.sd" = "pooled.sd",
+                "adj.mean.diffs.null.sd" = "pooled.sd")
 
     stopifnot(all(report %in% c("all", "chisquare.test", "adj.means", names(lookup))))
 
@@ -118,8 +121,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       report <- c("Treatment", "Control", report[!idx])
       lookup <- c(Treatment = "Treatment", Control = "Control", lookup)
     }
-
-
+       
     if (!("all" %in% report)) {
       # on this next line, we use anything in report tha tis also in the names of the lookup table
       # it's a little strange looking, but it does the right thing
@@ -128,6 +130,10 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       # likewise, don't grab any columns that aren't there
       theresults <- theresults[, tmp[tmp %in% dimnames(theresults)[["stat"]]], , drop = FALSE]
     }
+
+    ## Mark the columns that will require by-row sigfig handling
+    orig_units_columns <- intersect(c("Treatment", "Control", "adj.diff", "pooled.sd"),
+                                    dimnames(theresults)[["stat"]])
 
     hasP <- "p" %in% dimnames(theresults)[["stat"]]
 
@@ -158,10 +164,13 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
     }
 
     ftabler <- function(data) {   ##Summarize the variable-by-variable output array as a flat contingency table
-      ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
+        names(dimnames(data))[names(dimnames(data))=="strata"] <- "strata():"
+        ftable(data, col.vars=c("strata","stat"),row.vars=c("vars"))
     }
 
+    if (!is.null(theresults)) {
     thevartab <- ftabler(theresults) # we'll update this variable later if we include p-values or significance stars
+    }
 
     if (show.signif.stars && !show.pvals && !is.null(theresults) && hasP ) {
 
@@ -173,8 +182,36 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                           dimnames=list(vars=dimnames(theresults)[["vars"]],
                               stat=c(dimnames(theresults)[["stat"]],"sig."),
                               strata=dimnames(theresults)[["strata"]]))
+        ## next apply rounding to DIGITS sigfigs, by statistic. If there are
+        ## multiple stratifications, then the significant figure position should be set
+        ## consistently across them.
+        for (rcol in setdiff(dimnames(theresults)[["stat"]], orig_units_columns))
+        {
+            res <- theresults[,rcol,]
+            dim(res) <- NULL
+            if (rcol!="p") { #std.diffs and z stats
+                res <- round(res,digits=(DIGITS-1)) }
+            newresults[,rcol,] <- format(res,digits=DIGITS)
+        }
+        if (!is.null(orig_units_columns))
+            for (vv in dimnames(theresults)[["vars"]])
+            {
+                res <- theresults[vv, orig_units_columns,]
+                dim(res) <- NULL
+                newresults[vv, orig_units_columns,] <- format(res, digits=DIGITS)
+            }
+        ## if there's an adj.diff column in addition to a Treatment and a Control column,
+        ## permit a little more rounding for the latter than the former.
+        if (any(orig_units_columns=="adj.diff") & length(orig_units_columns)>1)
+                        for (vv in dimnames(theresults)[["vars"]])
+                        {
+                            ouc1 <- setdiff(orig_units_columns, "adj.diff")
+                            res <- theresults[vv, ouc1,]
+                            dim(res) <- NULL
+                            newresults[vv, ouc1,] <- format(res, digits=DIGITS)
+                        }
 
-      newresults[,-grep("sig.", dimnames(newresults)[[2]]),] <- format(theresults,DIGITS)
+            
       newresults[dimnames(Signif)[["vars"]], "sig.",dimnames(Signif)[["strata"]]]<-format(Signif)
 
 
@@ -189,15 +226,18 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
 
         thevartab<-theftab
       } else {
-
         tmp <- dimnames(newresults)[[2]]
         thevartab <- sapply(dimnames(newresults)[[3]],
-                            simplify=FALSE,
                             function(s) {
-                              cbind(
-                                  as.data.frame(newresults[, c(tmp[!(tmp == "p")]), s, drop = FALSE]),
-                                  " " = format(Signif[,,s]))
-                            })
+                                tmpdata <- newresults[, c(tmp[!(tmp == "p")]), s, drop = FALSE]
+                                tmpdn <- dimnames(tmpdata)[1:2]
+                                dim(tmpdata) <- dim(tmpdata)[1:2]
+                                dimnames(tmpdata) <- tmpdn
+                                tmpdata <- as.data.frame(tmpdata)
+                              cbind(tmpdata," " = format(Signif[,,s]))
+                            },
+                            simplify=FALSE, USE.NAMES=TRUE
+                            )
       }
     }
 
@@ -208,10 +248,11 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       } else {
         thevartab <- sapply(
             dimnames(theresults)[[3]],
-            simplify=FALSE,
             function(x) {
               as.data.frame(theresults[,,x])
-            })
+            },
+            simplify=FALSE, USE.NAMES=TRUE
+            )
       }
     }
 
@@ -242,7 +283,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       if (!is.null(theresults)){ print(thevartab) }
       if (!is.null(theoverall) && print.overall) {
         cat("---Overall Test---\n")
-        print(theoveralltab)
+        print(theoveralltab, quote=FALSE)
         if (show.signif.stars && !show.pvals && hasP) {
           if (!is.null(theresults)) {
             thelegend<-attr(Signif, "legend") ##if we are showing thevartab use the legend from that object

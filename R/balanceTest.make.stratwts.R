@@ -1,4 +1,4 @@
-##' xBalance helper function
+##' balanceTest helper function
 ##'
 ##' Makes strata weights
 ##' @param stratum.weights Weights
@@ -7,7 +7,7 @@
 ##' @param data data
 ##' @param normalize.weights weights
 ##' @return list
-xBalance.make.stratwts <- function(stratum.weights,ss.df,zz,data,normalize.weights) {
+balanceTest.make.stratwts <- function(stratum.weights,ss.df,zz,data,normalize.weights) {
   if (is.function(stratum.weights)) {
     swt.ls <- rep(list(stratum.weights), length(ss.df))
     names(swt.ls) <- names(ss.df)

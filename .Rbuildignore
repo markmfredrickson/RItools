@@ -1,5 +1,4 @@
 Makefile
-Rprofile
 checkspelling.R
 lexicon.txt
 load.R
@@ -9,3 +8,12 @@ matrixNotation.Rnw
 man/AVOID-EDITING-Rd-FILES.md
 ^.*\.Rproj$
 ^\.Rproj\.user$
+.git
+.local
+^\.travis\.yml$
+^revdep$
+# unit tests & related material that we don't care to share w/ CRAN
+tests/testthat/test.notforCRAN.R
+tests/testthat/test.tidiers.R
+tests/testthat/tricky_rectangular_matrix.rda
+

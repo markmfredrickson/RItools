@@ -7,3 +7,4 @@ RITOOLS_TIMESTAMP
 inst/doc
 .Rhistory
 RItools.Rproj
+revdep/checks.rds

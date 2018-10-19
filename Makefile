@@ -1,16 +1,16 @@
 # load.R fixes a bug with devtool's `help` to enable `help` on
 # functions in this package, as well as loading the package
 LOAD=R_PROFILE=load.R
-RCMD=R --vanilla -q -e
+RCMD=R_LIBS=.local R -q 
 
 interactive:
-	@$(LOAD) R -q --no-save
+	@$(LOAD) $(RCMD) --no-save
 
 interactive-emacs:
-	@$(LOAD) emacs -nw -f R
+	@$(LOAD) R_LIBS=.local emacs -nw -f R
 
 .devtools:
-	@$(RCMD) "devtools:::$(FUNC)($(DEVTOOLSARG))"
+	@$(RCMD) -e "devtools:::$(FUNC)($(DEVTOOLSARG))"
 
 DEVTOOLSARG=
 dependencies: FUNC=install_deps

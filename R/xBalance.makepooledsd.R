@@ -5,6 +5,7 @@
 ##' @param mm mm
 ##' @param pre.n pre.n
 ##' @return pooled SD
+##' @keywords internal
 xBalance.makepooledsd <- function(zz,mm,pre.n) {
   if (any(zz>0)) {
     s2.t <- apply(mm[(zz>0),,drop=FALSE],2,var,na.rm=TRUE)

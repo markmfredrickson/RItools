@@ -1,6 +1,6 @@
 ##' Impute NA's
 ##'
-##' Does this by doing something...
+##' Function used to fill NAs with imputation values, while adding NA flags to the data.
 ##' @param FMLA Formula
 ##' @param DATA Data
 ##' @param impfn Function for imputing.
@@ -13,7 +13,7 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE)
                             data = DATA, keep.order=TRUE)
   dat <- get_all_vars(fmla.rhs,DATA)
   badfactor <- sapply(dat,function(x) nlevels(x)==1)
-  dat[badfactor] <- lapply(dat[badfactor], as.integer) ##Is this right? shouldn't it be dat[,badfactor] ?
+  dat[badfactor] <- lapply(dat[badfactor], as.integer) 
   factor.dat <- sapply(dat,is.factor)
   ordered.dat <- sapply(dat,is.ordered)
   dat.NA <- as.data.frame(lapply(dat, is.na))
@@ -63,3 +63,6 @@ naImpute <- function(FMLA,DATA,impfn=median,na.rm=TRUE, include.NA.flags = TRUE)
     return(structure(dat, terms=TFMLA))
   } else return(structure(DATA,terms=terms.formula(FMLA,data = DATA, keep.order=TRUE)))
 }
+
+
+

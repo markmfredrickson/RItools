@@ -17,3 +17,4 @@ vector
 \description{
 Convert Matrix to vector
 }
+\keyword{internal}
