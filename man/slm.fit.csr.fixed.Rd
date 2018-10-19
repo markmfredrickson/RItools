@@ -22,4 +22,3 @@ SparseM's slm.fit.csr has a bug for intercept only models
 sparse matrix), but in order to avoid duplicate code, if
 everything is in a single strata, we use the intercept only model.
 }
-

@@ -22,4 +22,3 @@ Model inverse
 apply the inverse of the model to the uniformity trial data to see
 what we would observe given z and parameters
 }
-

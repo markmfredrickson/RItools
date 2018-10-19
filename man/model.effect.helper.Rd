@@ -23,4 +23,3 @@ Result
 \description{
 Helper function for model.effect
 }
-

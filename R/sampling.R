@@ -5,13 +5,18 @@
 
 ##' Simple Random Sampler
 ##'
-##' The simple random sampler creates a function that draws from the set of all randomizations with a fixed
-##' number of treated units within blocks
-##' @param total size of the experimental pool
-##' @param treated Total number to be assigned treatment. One of \code{treated} or \code{z} is required.
-##' @param z Right now, z is binary or logical.
-##' @param b records the membership in blocks within which treatment is assigned
-##' @return List
+##' The simple random sampler creates a function that draws from the set of all 
+##' randomizations with a fixed number of treated units within blocks
+##' @param total Size of the experimental pool
+##' @param treated Total number to be assigned treatment. One of \code{treated}
+##' or \code{z} is required
+##' @param z Treatment indicator vector, must be binary or logical
+##' @param b Records the membership in blocks within which treatment is assigned
+##' @return Function to use in \code{sampler} argument of \code{RItest}
+##' @seealso \code{\link{RItest}}
+##' @examples  
+##' data("nuclearplants")
+##' region.blocks <- simpleRandomSampler(total = 32, z = nuclearplants$pr, b = nuclearplants$ne)
 ##' @export
 simpleRandomSampler <- function(total, treated, z, b) {
   naError <- function() { stop("NAs not allowed in arguments to simpleRandomSampler")}
@@ -150,9 +155,14 @@ simpleRandomSampler <- function(total, treated, z, b) {
 ##' Draw from the 2^n possible randomizations for n units with
 ##' probability vector p (e.g. where each unit gets its own, possibly
 ##' biased, coin flip)
-##' @param n n
-##' @param p p
-##' @return List
+##' @param n Size of the experimental pool
+##' @param p Vector of probabilities of treatment assignment for each unit. 
+##' By default, every observation has the same probability of being assigned to
+##' treatment and control
+##' @return Function to use in \code{sampler} argument of \code{RItest}
+##' @seealso \code{\link{RItest}}
+##' @examples 
+##' sameprob <- independentProbabilitySampler(n = 32)
 ##' @export
 independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
 
@@ -188,4 +198,95 @@ independentProbabilitySampler <- function(n, p = rep(0.5, n)) {
 
     return(list(weight = weight, samples = zs))
   }
+}
+
+
+##' Cluster Random Sampler
+##' 
+##' Creates a function that draws from the set of all randomizations, assuming
+##' treatment assignment to all observations within a cluster
+##' @param clusters Cluster membership vector
+##' @param z Treatment assignment vector, must be binary or logical
+##' @return Function to use in \code{sampler} argument of \code{RItest}
+##' @seealso \code{\link{RItest}}
+##' @examples 
+##' clusters <-  sample(letters[1:3], 10, replace = TRUE)
+##' treatment <- ifelse(clusters == sample(letters[1:3], 1), 1, 0)
+##' clustered <- clusterRandomSampler(clusters = clusters, z = treatment)
+##' @export
+clusterRandomSampler <- function(clusters, z) {
+  naError <- function() {stop("NAs not allowed in arguments to clusterRandomSampler")}
+  
+  # Check for NAs
+  if (any(is.na(clusters)) || any(is.na(z))) {
+    naError()
+  }
+  
+  # Check length
+  if (length(clusters) != length(z)){
+    stop("'clusters' and 'z' arguments must match lengths")
+  }
+  
+  # Treatment must be binary for now
+  if(length(unique(z)) > 2){
+    stop("treatment 'z' must be binary or logical")
+  }
+  
+  # Number of observations by cluster
+  total.cl <- table(clusters)
+
+  # Reorder observations by cluster  
+  reordering <- as.vector(unlist(lapply(sort(unique(clusters)), function(nm) {which(nm == clusters)})))
+  
+  # Determine which clusters get treatment
+  treated.cl <- aggregate(z, list(clusters), sum)$x
+  
+  treated.cl <- ifelse(treated.cl > 0, 1, 0)
+  
+  # Useful quantities
+  total.treated.cl <- sum(treated.cl)
+  
+  n.clusters <- length(unique(clusters))
+  
+  total <- length(z)
+  
+  # Check that treatment assignment and number of clusters are consistent
+  if (total.treated.cl < 1) {
+    stop("At least one cluster must be assigned to treatment")
+  }
+  
+  if (n.clusters < 2) {
+    stop("At least two unique 'clusters' must exist")
+  }
+  
+  function(samples){# begin inner function
+    # empty matrix of clusters x samples
+    randomizations <- matrix(nrow = n.clusters, ncol = samples)
+    
+    # for each sample, randomly assign treatment to cluster
+    for(i in 1:samples) {
+      randomizations[,i] <- sample(treated.cl)
+    }
+    
+    # each row is a cluster, turn into list
+    list.cl <- rep(list(NULL), n.clusters)
+    
+    for(i in 1:n.clusters){
+      list.cl[[i]] <- matrix(rep(randomizations[i,], total.cl[i], 
+                                 ncol = samples, byrow = TRUE))
+    }
+    
+    # Put them all together
+    randomizations <- do.call(rbind, list.cl)
+    
+    # empty matrix total x samples
+    tmp <- matrix(nrow = total, ncol = samples)
+    
+    # fill based on reordering
+      for(i in 1:total){
+      tmp[reordering[i],] <- randomizations[i,]
+    }
+    
+    return(list(weight = 1, samples = tmp))
+  } #end inner function
 }

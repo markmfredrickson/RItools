@@ -30,4 +30,3 @@ all.equal(as.matrix(sparse_mod_matrix),
 \author{
 Ben Hansen
 }
-

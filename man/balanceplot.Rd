@@ -104,4 +104,3 @@ abline(v = colMeans(balance_data), lty = 3, col = "grey")
 \code{\link{plot.xbal}}, \code{\link{xBalance}},
 \code{\link{segments}}, \code{\link{points}}
 }
-

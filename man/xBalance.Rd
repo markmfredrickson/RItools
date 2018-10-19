@@ -203,9 +203,6 @@ xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
          report=c("adj.means", "chisquare.test"),
 	 post.alignment.transform=rank)
 }
-\author{
-Ben Hansen and Jake Bowers and Mark Fredrickson
-}
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Balance in Simple, Stratified and Clustered Comparative
@@ -215,6 +212,8 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
 }
+\author{
+Ben Hansen and Jake Bowers and Mark Fredrickson
+}
 \keyword{design}
 \keyword{nonparametric}
-

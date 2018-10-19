@@ -16,9 +16,8 @@ quasireldist(y, yo, binn = 100, location = "median")
 \item{location}{location}
 }
 \value{
-vector
+Function to calculate quasi-relative distance
 }
 \description{
-Quasi Relative Distance
+Calculates quasi relative distance test statistic
 }
-

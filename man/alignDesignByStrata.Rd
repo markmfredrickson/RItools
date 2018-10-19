@@ -20,4 +20,3 @@ Eg. when creating the weighted design, we mulitply all covariates by the weighti
 right away, so we don't need to track it explicitly later.
 observe all the multiplication of tmat by swt$wtradio throughout. This seems redundant
 }
-

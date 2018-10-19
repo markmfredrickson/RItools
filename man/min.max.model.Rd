@@ -20,4 +20,3 @@ New model
 Given lower and lower bounds a and b, create a new model that
 limits within those bounds
 }
-

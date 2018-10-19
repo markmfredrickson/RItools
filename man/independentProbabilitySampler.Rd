@@ -7,16 +7,23 @@
 independentProbabilitySampler(n, p = rep(0.5, n))
 }
 \arguments{
-\item{n}{n}
+\item{n}{Size of the experimental pool}
 
-\item{p}{p}
+\item{p}{Vector of probabilities of treatment assignment for each unit. 
+By default, every observation has the same probability of being assigned to
+treatment and control}
 }
 \value{
-List
+Function to use in \code{sampler} argument of \code{RItest}
 }
 \description{
 Draw from the 2^n possible randomizations for n units with
 probability vector p (e.g. where each unit gets its own, possibly
 biased, coin flip)
 }
-
+\examples{
+sameprob <- independentProbabilitySampler(n = 32)
+}
+\seealso{
+\code{\link{RItest}}
+}

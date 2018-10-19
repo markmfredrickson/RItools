@@ -7,3 +7,5 @@ inst/docs
 cran-comments.md
 matrixNotation.Rnw
 man/AVOID-EDITING-Rd-FILES.md
+^.*\.Rproj$
+^\.Rproj\.user$

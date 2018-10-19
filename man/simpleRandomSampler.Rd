@@ -7,19 +7,27 @@
 simpleRandomSampler(total, treated, z, b)
 }
 \arguments{
-\item{total}{size of the experimental pool}
+\item{total}{Size of the experimental pool}
 
-\item{treated}{Total number to be assigned treatment. One of \code{treated} or \code{z} is required.}
+\item{treated}{Total number to be assigned treatment. One of \code{treated}
+or \code{z} is required}
 
-\item{z}{Right now, z is binary or logical.}
+\item{z}{Treatment indicator vector, must be binary or logical}
 
-\item{b}{records the membership in blocks within which treatment is assigned}
+\item{b}{Records the membership in blocks within which treatment is assigned}
 }
 \value{
-List
+Function to use in \code{sampler} argument of \code{RItest}
 }
 \description{
-The simple random sampler creates a function that draws from the set of all randomizations with a fixed
-number of treated units within blocks
+The simple random sampler creates a function that draws from the set of all 
+randomizations with a fixed number of treated units within blocks
 }
-
+\examples{
+ 
+data("nuclearplants")
+region.blocks <- simpleRandomSampler(total = 32, z = nuclearplants$pr, b = nuclearplants$ne)
+}
+\seealso{
+\code{\link{RItest}}
+}

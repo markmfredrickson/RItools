@@ -12,4 +12,3 @@ Logical
 \description{
 Helper function to check if snow package is loaded
 }
-

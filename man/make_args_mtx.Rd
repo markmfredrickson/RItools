@@ -15,4 +15,3 @@ Reduced list
 \description{
 Helper function
 }
-

@@ -30,8 +30,11 @@ Suggests:
     roxygen2,
     MASS,
     RSVGTipsDevice,
-    parallel
+    parallel,
+    knitr,
+    rmarkdown
 Enhances: optmatch
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
     RItools.html
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1
+VignetteBuilder: knitr

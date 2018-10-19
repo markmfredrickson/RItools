@@ -2,19 +2,21 @@
 % Please edit documentation in R/teststatistics.R
 \name{madDiff}
 \alias{madDiff}
-\title{MAD}
+\title{Median Absolute Deviation}
 \usage{
 madDiff(ys, z)
 }
 \arguments{
-\item{ys}{ys}
+\item{ys}{Outcome variable}
 
-\item{z}{z}
+\item{z}{Treament indicator vector}
 }
 \value{
-diff
+Median absolute deviation
 }
 \description{
-MAD
+Evaluates median of the absolutes deviations from the median.
 }
-
+\seealso{
+\code{\link{RItest}} \code{\link[stats]{mad}}
+}

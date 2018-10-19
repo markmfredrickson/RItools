@@ -12,4 +12,3 @@ Logical
 \description{
 Helper function to check if parallel package is loaded
 }
-

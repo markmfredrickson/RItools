@@ -32,4 +32,3 @@ On the RHS:
 
 NAs in a cluster() or strata() variable will be dropped.  NAs in covariates will be imputed.
 }
-

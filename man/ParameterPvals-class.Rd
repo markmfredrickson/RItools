@@ -7,4 +7,3 @@
 \description{
 Parameter P-value class
 }
-

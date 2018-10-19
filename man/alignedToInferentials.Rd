@@ -25,4 +25,3 @@ list
 \description{
 Align to Inferentials
 }
-

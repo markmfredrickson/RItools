@@ -7,14 +7,16 @@
 odds.ratio(y, z)
 }
 \arguments{
-\item{y}{y}
+\item{y}{Outcome variable, must be binary or logical}
 
-\item{z}{z}
+\item{z}{Treatment indicator vector, must be binary or logical}
 }
 \value{
-odds ratio
+Function to calculate odds ratio
 }
 \description{
-Odds ratio
+Calculates odds ratio
 }
-
+\seealso{
+\code{\link{RItest}}
+}

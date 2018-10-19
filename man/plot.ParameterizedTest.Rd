@@ -23,4 +23,3 @@ A lattice object. Use print to plot.
 \description{
 Plot the results of RItest.
 }
-

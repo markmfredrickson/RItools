@@ -18,4 +18,3 @@ Output
 \description{
 givenParams for UniformityModel
 }
-

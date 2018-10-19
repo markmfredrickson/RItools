@@ -14,4 +14,3 @@
 \description{
 Plots the results of \code{\link{parameterSensitivity}} as a 2D histogram.
 }
-

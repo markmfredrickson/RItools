@@ -17,4 +17,3 @@ UniformityModel
 \description{
 Create new UniformityModel
 }
-
