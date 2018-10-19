@@ -11,7 +11,7 @@
 
 summary.RandomizationDistributionConfInt(object, ...)
 
-plot.RandomizationDistributionConfInt(object, ...)
+\method{plot}{RandomizationDistributionConfInt}(object, ...)
 }
 \arguments{
 \item{object}{RandomizationDistribution}
