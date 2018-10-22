@@ -24,7 +24,7 @@ i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
 is a function that is applied to a data frame representing clusters,
 with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the 
 \code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
-culled or inferred from originating \link{\code{balanceTest}} call or as aggregated up
+culled or inferred from originating \code{\link{balanceTest}} call or as aggregated up
 from those unit weights).  Returns a 
 weighting factor to be associated with each stratum, this factor determining the stratum 
 weight by being multiplied by mean of unit weights over clusters in that stratum.

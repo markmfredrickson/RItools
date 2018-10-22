@@ -4,9 +4,10 @@
 \alias{balanceTest}
 \title{Standardized Differences for Stratified Comparisons}
 \usage{
-balanceTest(fmla, data, strata = NULL, report = c("std.diffs", "z.scores",
-  "adj.means", "adj.mean.diffs", "chisquare.test", "p.values", "all")[1:2],
-  unit.weights, stratum.weights = harmonic_times_mean_weight, subset,
+balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
+  "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test", "p.values",
+  "all")[1:2], unit.weights,
+  stratum.weights = harmonic_times_mean_weight, subset,
   include.NA.flags = TRUE, covariate.scaling = NULL,
   post.alignment.transform = NULL, p.adjust.method = "holm")
 }
