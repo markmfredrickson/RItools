@@ -31,14 +31,17 @@
 #' @param varnames_crosswalk character vector of new names for xbal columns, named by the xbal column
 #' @param format if true, apply `[RItools:::original_units_var_formatter()]` to suitable sub-array en route
 #' @param digits passed to `[RItools:::original_units_var_formatter()]`
+#' @param ... Additional arguments passed to `[RItools:::original_units_var_formatter()]`
 #' @return data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
 #'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
 #'         a combined differences test, if found, and otherwise `NULL`.
 #' @export
 #' @md
-tidy.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1],
-                      varnames_crosswalk=c("z"="statistic", "p"="p.value"),
-                      format=FALSE, digits=max(2, getOption("digits")-4),...
+tidy.xbal <- function(x,
+                      strata = dimnames(x[['results']])[['strata']][1],
+                      varnames_crosswalk = c("z"="statistic", "p"="p.value"),
+                      format = FALSE,
+                      digits=max(2, getOption("digits")-4),...
                       )
 {
     ans <- x[['results']][,,strata, drop=FALSE]
@@ -50,7 +53,7 @@ tidy.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1],
                                     dimnames(x[['results']])[['stat']])
     if (format && length(orig_units_columns))
     {
-        fres <- original_units_var_formatter(x[['results']][,orig_units_columns,,drop=FALSE], digits=digits)
+        fres <- original_units_var_formatter(x[['results']][,orig_units_columns,,drop=FALSE], digits=digits, ...)
         fres <- fres[,,strata, drop=FALSE]
         dim(fres) <- dim(fres)[1:2]
         ans[,orig_units_columns] <- fres

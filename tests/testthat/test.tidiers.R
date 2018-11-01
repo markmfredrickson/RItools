@@ -95,3 +95,30 @@ test_that("tidy.xbal w/ special formatting for original units vars",{
       expect_is(t1$"adj.diff", "character")
     })
           
+
+test_that("Date presentation", {
+    set.seed(39483293)
+
+    n <- 100
+    z = rbinom(n, size = 1, p = 0.3)
+    mydata <- data.frame(
+        z = z,
+        x1 = rnorm(n),
+        x2 = as.Date(
+            ifelse(z == 1, as.Date("2018-01-01"), as.Date("2017-01-01"))
+            + rpois(n = n, lambda = 100), origin = "1970-01-01")
+    )
+
+    bt <- balanceTest(z ~ x1 + x2, data = mydata)
+
+    library(broom)
+
+    btt <- tidy(bt, format = TRUE,
+                var_format = list("x2" = list(mean = function(x) { as.Date(x, origin = "1970-01-01") },
+                                              diff = function(x) { as.difftime(x, units = "days")}))
+                                       )
+
+    expect_equal(as.character(btt[2, "Treatment"]), "2018-04-08")
+    expect_equal(as.character(btt[2, "adj.diff"]), "366 days")
+
+})

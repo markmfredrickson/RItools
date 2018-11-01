@@ -298,10 +298,11 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
 ##' @title Formatting suitable for stat expressed in units specific to var
 ##' @param arr numeric array
 ##' @param digits number of digits for rounding
+##' @param var_format A list of lists. Each named item of the outer list will be matched to a variable. The inner lists should have two items, `mean` and `diff`. The first formats statistics based on averages. The `diff` item should format statistics that are differences.
 ##' @return array of same dimension as arr but of type character
 ##' @author Hansen
 ##' @keywords internal
-original_units_var_formatter <- function(arr, digits)
+original_units_var_formatter <- function(arr, digits, var_format = list())
 {
     stopifnot(length(dim(arr))==3, names(dimnames(arr))[1]=="vars" )
     newarr <- array(dim=dim(arr), dimnames=dimnames(arr))
@@ -314,13 +315,34 @@ original_units_var_formatter <- function(arr, digits)
 
     ## if there's an adj.diff column in addition to a Treatment and a Control column,
     ## permit a little more rounding for the latter than the former.
-        if (any(dimnames(arr)[[2]]=="adj.diff") & dim(arr)[2]>1)
-            for (vv in dimnames(arr)[["vars"]])
-                        {
-                            ouc1 <- setdiff(dimnames(arr)[[2]], "adj.diff")
-                            res <- arr[vv, ouc1,]
-                            dim(res) <- NULL
-                            newarr[vv, ouc1,] <- format(res, digits=digits)
-                        }
-    newarr
+    if (any(dimnames(arr)[[2]]=="adj.diff") & dim(arr)[2]>1) {
+        for (vv in dimnames(arr)[["vars"]]) {
+            ouc1 <- setdiff(dimnames(arr)[[2]], "adj.diff")
+            res <- arr[vv, ouc1,]
+            dim(res) <- NULL
+            newarr[vv, ouc1,] <- format(res, digits=digits)
+        }
+    }
+
+
+    if (length(var_format) > 0) {
+        for (i in seq_along(var_format)) {
+            whichvar <- names(var_format)[i]
+            if (any(whichvar %in% dimnames(newarr)[["vars"]])) {
+                fns <- var_format[[i]]
+
+                available <- intersect(c("Treatment", "Control"), dimnames(newarr)[["stat"]])
+                for (j in available) {
+                    newarr[whichvar, j, ] <- format(fns$mean(arr[whichvar, j, ]), digits = digits)
+                }
+
+                available <- intersect(c("adj.diff", "sd.diff", "pooled.sd"), dimnames(newarr)[["stat"]])
+                for (j in available) {
+                    newarr[whichvar, j, ] <- format(fns$diff(arr[whichvar, j, ]), digits = digits)
+                }
+            }
+        }
+    }
+
+    return(newarr)
 }
