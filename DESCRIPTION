@@ -10,7 +10,7 @@ Description: Tools for randomization inference.
 License: GPL (>=2)
 LazyData: true
 Depends:
-    R (>= 2.2.0),
+    R (>= 3.6.0),
     SparseM
 Imports:
     grDevices,
@@ -29,4 +29,4 @@ Suggests:
 Enhances: optmatch
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
     RItools.html
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
