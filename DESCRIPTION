@@ -25,6 +25,7 @@ Imports:
     tidyr,
     dplyr
 Suggests:
+    knitr, rmarkdown,
     testthat,
     roxygen2,
     MASS,
@@ -33,3 +34,4 @@ Enhances: optmatch
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
     RItools.html
 RoxygenNote: 6.1.1
+VignetteBuilder: knitr

@@ -1,8 +1,12 @@
 ---
 title: "Issue 84 Vignette"
 author: "Abe Rycus"
-date: "May 29, 2019"
-output: html_document
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Balance Plotting}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}

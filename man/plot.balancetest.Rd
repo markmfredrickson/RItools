@@ -31,6 +31,9 @@ grouped.}
 
 \item{...}{additional arguments to pass to \code{\link{balanceplot}}}
 }
+\value{
+A \code{ggplot2} object that can be further manipulated (e.g., to set the colors or text).
+}
 \description{
 The plot allows a quick visual comparison of the effect of different
 stratification designs on the comparability of different
@@ -52,7 +55,17 @@ each variable, any of which can serve as the data for this plot. By default,
 the standardized differences between treated and control units makes a good
 choice as all variables are on the same scale. Other statistics can be
 selected using the \code{statistic} argument.
+
+The result of this function is a \code{\link{ggplot}} object. Most display of
+the plot can be manipulated using additional commands appended to the plot
+option. For example, the entire theme of the plot can be changed to black and
+white using \code{plot(b) + theme_bw()}, where \code{b} is the result of a
+call to \code{\link{balanceTest}}. The points on the plot are known as
+"values", so colors or symbols used for each strata can be updated using the
+\code{\link{scale_color_manual}} function. For example, \code{plot(b) +
+scale_color_manaual(values = c('red', 'green', 'blue'))} for a balance test
+of three stratification variables.
 }
 \seealso{
-\code{\link{balanceTest}}
+\code{\link{balanceTest}}, \code{\link{ggplot}}
 }
