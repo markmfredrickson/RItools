@@ -7,6 +7,15 @@
 \description{
 Extends the DesignMatrix class
 }
+\details{
+If the DesignOptions represents clusters of elements, as when it was created
+by aggregating another DesignOptions or DesignMatrix object, then its Covariates
+and NotMissing slots are populated with (weighted) averages, not totals.  E.g.,
+NotMissing columns consist of weighted averages of element-wise non-missingness indicators
+over clusters, with weights given by (the element-level precursor to) the UnitWeights
+vector.  As otherwise, columns of the NotMissing matrix represent terms
+from a model formula, rather than columns the terms may have expanded to.
+}
 \section{Slots}{
 
 \describe{
@@ -18,10 +27,7 @@ Extends the DesignMatrix class
 
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
 
-\item{\code{NotMissing}}{Matrix of numbers in [0,1], cluster means of element weights with missing values
-contributing 0s.  First col is entirely T or 1, like an intercept, unless corresponding
-ElementWeight is 0, in which case it may also be 0. Subsequent cols present only if
-there are missing covariate values, in which case these cols are named for terms that
-possess missing values.  Terms with the same missing data pattern are mapped to a single}
+\item{\code{UnitWeights}}{vector of weights associated w/ rows of the DesignMatrix}
 }}
 
+\keyword{internal}

@@ -2,10 +2,23 @@
 ##'
 ##' Calculate harmonic mean
 ##' @param data Data.
-##' @return Harmonic mean.
+##' @return numeric vector of length \code{nlevels(data$stratum.code)}
 ##' @keywords internal
 harmonic <- function(data) {
   tapply(data$Tx.grp,data$stratum.code,function(x){2*sum( (x-mean(x))^2 )})
+}
+##' Harmonic mean times mean of weights
+##'
+##' 
+##' @param data 
+##' @return numeric vector of length \code{nlevels(data$stratum.code)}
+##' @keywords internal
+harmonic_times_mean_weight <- function(data) {
+    weightmeans <- tapply(data$unit.weights,data$stratum.code, mean)
+    hmeans <- harmonic(data)
+    stopifnot(all(names(hmeans)==names(weightmeans))) 
+
+    weightmeans * hmeans
 }
 
 ##' Number of treatment clusters by stratum

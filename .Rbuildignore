@@ -9,3 +9,7 @@ matrixNotation.Rnw
 .local
 ^\.travis\.yml$
 ^revdep$
+# unit tests & related material that we don't care to share w/ CRAN
+tests/testthat/test.notforCRAN.R
+tests/testthat/test.tidiers.R
+tests/testthat/tricky_rectangular_matrix.rda

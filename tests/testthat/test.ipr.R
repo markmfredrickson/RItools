@@ -54,7 +54,18 @@ test_that("Utility function for specification of reference levels",
           }
           )
 
+test_that("W/ clus arg, wts det'd by cluster- not record-level z * strata table", {
+set.seed(201801)
+n <- 7L 
+dat <- data.frame(y=rnorm(n), x=rnorm(n),
+                  s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                  )
+dat <- transform(dat, z=as.numeric( (x+rnorm(n))>0 ) )
+dat <- transform(dat, inv_pr_wt=ipr(z, s), inv_odds_wt=ipr(z, s, type = "odds vs 1"))
+dt <- transform(dat, clus=letters[1L:n])[rep(1L:n, rpois(n, 3)),]
+expect_equivalent(dt$inv_pr_wt, with(dt, ipr(z, s, clus)))
+expect_equivalent(dt$inv_odds_wt, with(dt, ipr(z, s, clus, type = "odds vs 1")))
+})
 
 ## To-dos:
-## - test cluster arg
 ## - test dropping of blocks in which not all conditions are represented

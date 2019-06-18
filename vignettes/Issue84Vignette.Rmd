@@ -1,0 +1,111 @@
+---
+title: "Issue 84 Vignette"
+author: "Abe Rycus"
+date: "May 29, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(roxygen2)
+library(haven)
+library(tidyverse)
+library(optmatch)
+library(RItools)
+```
+
+This vignette is in regards to issue 84 of the RItools package, which focuses on the plotting of balance tests, a stistical test that tests whether there is appropriate randomization between treatment and control groups. In other words, it checks to see if the covariate distributions between the treatment and control groups are as expected. 
+
+As an example of a balance plot, which are simply plots of balance tests, the NHANES data on Aspirin useage will be used. The response variable is a binary variable which is 1 if the patient has taken a doseage of Aspirin and 0 otherwise. The data also has a number of explanatory variables. 
+
+```{r}
+# Reading in aspirin data
+aspirin <- read_xpt("./RXQASA_H.XPT")
+
+eq1 <- function(x) {
+  tmp <- x == 1 
+  tmp[is.na(tmp)] <- FALSE
+  return(tmp)
+}
+
+aspirin$taking_aspirin <- eq1(aspirin$RXQ515) | eq1(aspirin$RXQ520)
+
+## Blood pressure exam
+# https://wwwn.cdc.gov/Nchs/Nhanes/2013-2014/BPX_H.htm 
+
+bp <- read_xpt("./BPX_H.XPT")
+
+bp$sys_mean <- rowMeans(bp[, c("BPXSY1", "BPXSY2", "BPXSY3", "BPXSY4")], na.rm = TRUE)
+bp$dia_mean <- rowMeans(bp[, c("BPXDI1", "BPXDI2", "BPXDI3", "BPXDI4")], na.rm = TRUE)
+
+## now we need to match up the aspirin and bp tables
+
+
+temp <- aspirin[aspirin$SEQN %in% bp$SEQN, ]
+
+rownames(bp) <- bp$SEQN
+
+combined <- cbind(temp, bp[as.character(temp$SEQN), ])
+
+### TODO: load DEMO_H.XPT and merge it in
+### https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Demographics&CycleBeginYear=2013
+
+
+save.image(file = "analyzing_aspirin_data.rda")
+
+demo <- read_xpt("./DEMO_H.XPT")
+
+data <- aspirin %>% left_join(demo)
+
+```
+Now the dataframe named simply as data is ready to be used to produced balance plots. 
+
+```{r}
+fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
+
+bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data)
+
+plot(bt)
+
+
+```
+
+This plot was used in base R plotting. However, a number of issued have arose using base R to produce these plots such as nonsensical bounds on the x-axis and problems with the plot margins. To fix this, plots are now going to be produced using ggplot.
+
+```{r}
+fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
+
+bal <- xBalance(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data, strata = list(~ fm, unstratified = NULL))
+
+x <- as.data.frame(RItools:::prepareXbalForPlot(bal))
+
+x <- rownames_to_column(x)
+
+x <- gather(x, strata, values, -rowname)
+#x <- mutate(values = abs(values)) # enable for `abs = TRUE`.
+
+ggplot(x, aes(y = rowname, x = values, color = strata, shape = strata)) + 
+  geom_vline(xintercept = 0) +
+  geom_point() +
+  theme(legend.position = "bottom")
+plot.xbal(bal)
+plot(bal)
+
+
+```
+This plot is using the xBalance() function as opposed to the balanceTest() function and includes stratification as well. 
+
+To allow for easy plotting of balance tests, the plot.xbal function will be given an additonal argument ggplot where the default is false, which plots the balance plot with base R formatting and in ggplot formatting if true. 
+
+
+
+
+
+
+
+```{r}
+roxygenise(package.dir = "C:/Users/17349/Documents/Undergraduate Research/RItools")
+
+```
+
+
+

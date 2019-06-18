@@ -12,8 +12,9 @@ alignDesignsByStrata(design, post.align.transform = NULL)
 \item{post.align.transform}{A post-align transform}
 }
 \value{
-list List of `AlignedCovs` objects
+list List of `CovsAlignedToADesign` objects
 }
 \description{
 Align DesignOptions by Strata
 }
+\keyword{internal}

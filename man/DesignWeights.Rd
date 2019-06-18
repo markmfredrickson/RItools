@@ -4,30 +4,45 @@
 \alias{DesignWeights}
 \title{Create stratum weights to be associated with a DesignOptions}
 \usage{
-DesignWeights(design, stratum.weights = harmonic)
+DesignWeights(design, stratum.weights = harmonic_times_mean_weight)
 }
 \arguments{
 \item{design}{DesignOptions}
 
-\item{stratum.weights}{Stratum weights}
+\item{stratum.weights}{Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, all other covariates and unit.weights.}
 }
 \value{
-list with two entries, \code{sweights}  and \code{wtratio}.
-Each is in turn a list with an entry for each stratum.
-The \code{sweights} will sum to 1.  \code{wtratio} is a constant multiple
-of the ratio of the stratum weight s_b to h_b, the harmonic mean of n_{tb} and n_{cb},
-the numbers of treatment and control clusters in stratum b. Not h_b times something
-having to do with cluster sizes or weights, just h_b. the arbitrary constant multiple
-out front is harmless b/c this is only used in inferential calcs; that constant will be
-washed out en route to calculating z statistics and the d^2 stat.
+data frame w/ rows for strata, cols \code{sweights} and \code{wtratio}.
 }
 \description{
 Apply weighting function to a DesignOptions by stratum, returning results in a format
 suitable to be associated with an existing design and used in further calcs.
 }
 \details{
-(Developer note: There's no real reason not to simplify by only returning the sweights,
-not also the wtratio's.  Weight ratios are used downstream in alignedToInferentials, but
-the material in the harmonic means calcs is already being assembled there for other
-reasons.  An improvement for another day...)
+The function expects its DesignOptions argument to represent aggregated data,
+i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
+is a function that is applied to a data frame representing clusters,
+with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the 
+\code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
+culled or inferred from originating \code{\link{balanceTest}} call or as aggregated up
+from those unit weights).  Returns a 
+weighting factor to be associated with each stratum, this factor determining the stratum 
+weight by being multiplied by mean of unit weights over clusters in that stratum.
+
+Specifically, the function's value is a data frame of two variables,
+\code{sweights}  and \code{wtratio}, with rows representing strata.
+The \code{sweights} vector represents internally
+calculated or user-provided \code{stratum.weights}, one for each 
+stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
+weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
+\code{sweights} to the product of half the harmonic
+mean of n_{tb} and n_{cb}, the number of treatment and control
+clusters in stratum b, with the mean of the weights associated with
+each of these clusters.  In the notation of Hansen & Bowers
+(2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name 
+\sQuote{\code{wtratio}}, this ratio's denominator is not a weight 
+in the sense of summing to 1 across strata.  The ratio is expected 
+downstream in \code{alignedToInferentials} (in internal calculations
+involving \sQuote{\code{wtr}}).
 }
+\keyword{internal}

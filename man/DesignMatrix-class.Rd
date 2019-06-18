@@ -7,6 +7,19 @@
 \description{
 If the Covariates matrix has an intercept, it will only be in the first column.
 }
+\details{
+More on NotMissing slot: It's matrix of numbers in [0,1].
+First col is entirely \code{TRUE} or 1, like an intercept, unless corresponding
+UnitWeight is 0, in which case it may also be 0 (see below). Subsequent cols
+present only if there are missing covariate values, in which case these cols are
+named for terms (of the original calling formula or data frame) that possess 
+missing values.  Terms with the same missing data pattern are mapped to a single
+column of this matrix.  If the DesignMatrix is representing elements, each column should
+be all 1s and 0s, indicating which elements have non-missing values for the term
+represented by that column.  If the DesignMatrix as a whole represents clusters,
+then there can be fractional values, but that situation should only arise in the
+DesignOptions class exension of this class, so it's documented there.
+}
 \section{Slots}{
 
 \describe{
@@ -14,14 +27,15 @@ If the Covariates matrix has an intercept, it will only be in the first column.
 
 \item{\code{OriginalVariables}}{look-up table associating Covariates columns with terms of the originating model formula}
 
-\item{\code{term.labels}}{labels of terms of the originating model formula}
+\item{\code{TermLabels}}{labels of terms of the originating model formula}
 
 \item{\code{contrasts}}{Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`}
 
-\item{\code{NotMissing}}{Matrix of numbers in [0,1] with as many rows as Covariates but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.}
+\item{\code{NotMissing}}{Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.}
 
-\item{\code{NM.Covariates}}{integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 1.)}
+\item{\code{NM.Covariates}}{integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)}
 
-\item{\code{NM.terms}}{integer look-up table mapping term labels to  columns of NotMissing}
+\item{\code{NM.terms}}{integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)}
 }}
 
+\keyword{internal}
