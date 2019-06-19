@@ -27,6 +27,6 @@ Suggests:
     MASS,
     RSVGTipsDevice
 Enhances: optmatch
-URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
+URL: http://CRAN.R-project.org/package=RItools
     RItools.html
 RoxygenNote: 6.1.1
