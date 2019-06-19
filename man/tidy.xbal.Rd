@@ -18,6 +18,8 @@ or [RItools::xBalance()]}
 to last one specified in originating function call (which appears first in the xbal array).}
 
 \item{varnames_crosswalk}{character vector of new names for xbal columns, named by the xbal column}
+
+\item{...}{Not used.}
 }
 \value{
 data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
