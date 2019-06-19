@@ -7,7 +7,7 @@ Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut
 	   person("Ben", "Hansen", email="ben.hansen@umich.edu", role=c("aut")) )
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
-License: GPL (>=2)
+License: MIT
 LazyData: true
 Depends:
     R (>= 3.6.0),
