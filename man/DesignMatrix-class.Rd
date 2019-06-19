@@ -12,7 +12,7 @@ More on NotMissing slot: It's matrix of numbers in [0,1].
 First col is entirely \code{TRUE} or 1, like an intercept, unless corresponding
 UnitWeight is 0, in which case it may also be 0 (see below). Subsequent cols
 present only if there are missing covariate values, in which case these cols are
-named for terms (of the original calling formula or data frame) that possess 
+named for terms (of the original calling formula or data frame) that possess
 missing values.  Terms with the same missing data pattern are mapped to a single
 column of this matrix.  If the DesignMatrix is representing elements, each column should
 be all 1s and 0s, indicating which elements have non-missing values for the term

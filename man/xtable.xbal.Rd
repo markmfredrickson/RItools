@@ -74,7 +74,7 @@ xb1.xtab <- xtable(xb1) # This table has right aligned columns
 # Add user friendly names in the final table
 rownames(xb1.xtab) <- c("Date", "Application to Contruction Time",
 "License to Construction Time", "Net Capacity", "Northeast Region", "Cooling Tower",
-"Babcock-Wilcox Steam", "Cumlative Plants", "(Element Weight)")
+"Babcock-Wilcox Steam", "Cumlative Plants")
 
 print(xb1.xtab,
       add.to.row = attr(xb1.xtab, "latex.add.to.row"),
