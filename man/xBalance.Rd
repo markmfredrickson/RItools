@@ -4,11 +4,12 @@
 \alias{xBalance}
 \title{Standardized Differences for Stratified Comparisons}
 \usage{
-xBalance(fmla, strata = list(unstrat = NULL), data, report = c("std.diffs",
-  "z.scores", "adj.means", "adj.mean.diffs", "adj.mean.diffs.null.sd",
-  "chisquare.test", "p.values", "all")[1:2], stratum.weights = harmonic,
-  na.rm = FALSE, covariate.scaling = NULL, normalize.weights = TRUE,
-  impfn = median, post.alignment.transform = NULL)
+xBalance(fmla, strata = list(unstrat = NULL), data,
+  report = c("std.diffs", "z.scores", "adj.means", "adj.mean.diffs",
+  "adj.mean.diffs.null.sd", "chisquare.test", "p.values", "all")[1:2],
+  stratum.weights = harmonic, na.rm = FALSE,
+  covariate.scaling = NULL, normalize.weights = TRUE, impfn = median,
+  post.alignment.transform = NULL)
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment

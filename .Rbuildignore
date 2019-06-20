@@ -4,9 +4,16 @@ lexicon.txt
 load.R
 inst/docs
 cran-comments.md
-tests/testthat/test.notforCRAN.R
 matrixNotation.Rnw
 .git
 .local
 ^\.travis\.yml$
 ^revdep$
+# unit tests & related material that we don't care to share w/ CRAN
+tests/testthat/test.notforCRAN.R
+tests/testthat/test.tidiers.R
+tests/testthat/tricky_rectangular_matrix.rda
+tests/*.R
+tests/*.Rout.save
+^.*\.Rproj$
+^\.Rproj\.user$
