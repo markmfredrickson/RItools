@@ -5,9 +5,6 @@ load.R
 inst/docs
 cran-comments.md
 matrixNotation.Rnw
-man/AVOID-EDITING-Rd-FILES.md
-^.*\.Rproj$
-^\.Rproj\.user$
 .git
 .local
 ^\.travis\.yml$
@@ -16,4 +13,8 @@ man/AVOID-EDITING-Rd-FILES.md
 tests/testthat/test.notforCRAN.R
 tests/testthat/test.tidiers.R
 tests/testthat/tricky_rectangular_matrix.rda
-
+tests/*.R
+tests/*.Rout.save
+^.*\.Rproj$
+^\.Rproj\.user$
+^CRAN-RELEASE$
