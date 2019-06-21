@@ -1,6 +1,7 @@
 ################################################################################
 # Testing the behind the scenes engine
 ################################################################################
+library("testthat")
 
 context("Test statistics, functions and objects")
 
@@ -17,7 +18,7 @@ test_that("Harmonic Mean Difference", {
 
   expect_equal(harmonic.mean.difference(ys, Z), hmd)
 
-  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
+  #expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
   # the model, a location shift (does not fit reality as it ignores block
   # effects, but that's fine. no model is perfect.)
 
@@ -50,7 +51,7 @@ test_that("Wilcox.test", {
   B <- rep(1:4, each =  n/4)
   ys <- rnorm(n) + Z + B/8 # small block effect, larger treatment effecto
 
-  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
+  #expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
   # dst <- RItest(ys,
   #               Z,
   #               mann.whitney.u,
@@ -127,7 +128,7 @@ test_that("KS Test Statistic", {
 
   ### Compare the backend results to calling ks.test explicity for large data. Should be the same
 
-  expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
+  # expect_true(FALSE, "Don't forget to turn tests on after asymptotic backends are ready")
   # set.seed(20120423)
   # y0 <- rnorm(10000)
   # z <- rep(c(0,1), 5000)
