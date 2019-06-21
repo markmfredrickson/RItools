@@ -284,7 +284,7 @@ mann.whitney.u  <-   new("AsymptoticTestStatistic",
 ##' @param quantiles Quantile at which to calculate difference
 ##' @return Function to calculate absolute value of difference between quantiles
 ##' @seealso \code{\link{RItest}}
-##' @examples 
+##' @examples
 ##' median.abs.diff <- quantileAbsoluteDifference(.50)
 ##' @export
 quantileAbsoluteDifference  <-  function(quantiles) {
@@ -304,7 +304,7 @@ quantileAbsoluteDifference  <-  function(quantiles) {
 ##' @param type Quantile algorithm. See \code{\link[stats]{quantile}}
 ##' @return Function to calculate inter-quartile/quantile range difference
 ##' @seealso \code{\link{RItest}}
-##' @examples 
+##' @examples
 ##' default <- iqrDiff() #IQR
 ##' custom <- iqrDiff(q1 = .05, q2 = .95) #90% range
 ##' @export
@@ -341,7 +341,7 @@ madDiff  <-  function(ys,z){
 ##' @param q Quantile at which to calculate difference
 ##' @return Function to calculate quantile difference
 ##' @seealso \code{\link{RItest}}
-##' @examples 
+##' @examples
 ##' default <- quantileDifference() # median
 ##' custom <- quantileDifference(q = .65) # 65th percentile
 ##' @export
@@ -361,11 +361,13 @@ quantileDifference  <-  function(q=.5){
 ##' @param z z
 ##' @return RandomizationDistribution
 ##' @name ksBackEnd
+##' @importFrom dgof ks.test
 .ksBackEnd  <-  function( adjusted.y, z) {
 
   # adjusted.data should be a matrix, where each column is an adjusted data
   tmp  <-  apply(adjusted.y, 2, function(y) {
-               res  <-  stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
+               ##res  <-  stats::ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
+               res  <-  ks.test(y[!!z], y[!z]) # small problems may still be figured exactly
                return(res[c("statistic", "p.value")])
                        })
 
@@ -378,7 +380,7 @@ quantileDifference  <-  function(q=.5){
 }
 
 ##' KS Test Statistic
-##' 
+##'
 ##' Calculates Kolmogorov-Smirnov test statistic
 ##' @param y Outcome variable
 ##' @param z Treatment indicator vector, must be binary or logical
@@ -432,7 +434,7 @@ ksTestStatistic  <-  new("AsymptoticTestStatistic",
 }
 
 ##' Anderson-Darling Test Statistic
-##' 
+##'
 ##' Calculates Anderson-Darling (AD) test statistic
 ##' @param y Outcome variable
 ##' @param z Treatment indicator vector, must be binary or logical
@@ -453,9 +455,9 @@ adTestStatistic  <-  new("AsymptoticTestStatistic",
 
 ##' Sum of Squared Residuals
 ##'
-##' The sum of squared residuals (SSR) test statistic with F-test as a 
+##' The sum of squared residuals (SSR) test statistic with F-test as a
 ##' potential asymptotic version. F is used as the test statistic
-##' @param S Adjacency matrix of size NxN. Each entry takes the value of 1 if 
+##' @param S Adjacency matrix of size NxN. Each entry takes the value of 1 if
 ##' two units are adjacent and 0 otherwise
 ##' @return Function to calculate SSR test statistic
 ##' @seealso \code{\link{RItest}}
@@ -531,7 +533,7 @@ ssrTestStatistic  <-  new("AsymptoticTestStatistic",
 ##' @param adjusted.y y
 ##' @param z z
 ##' @return RandomizationDistribution
-##' @import dgof
+##' @importFrom dgof cvm.test
 ##' @name cvmBackEnd
 .cvmBackEnd  <-  function(
                         adjusted.y,
@@ -552,7 +554,7 @@ ssrTestStatistic  <-  new("AsymptoticTestStatistic",
 }
 
 ##' CVM Test Statistic
-##' 
+##'
 ##' Calculates Cramer-Von Mises Test Statistic
 ##' @param y Outcome Variable
 ##' @param z Treatment indicator vector, must be binary or logical
@@ -607,7 +609,7 @@ cvmTestStatistic  <-  new("AsymptoticTestStatistic",
 ## Neymans Smooth Test
 
 ##' Quasi Relative Distance
-##' 
+##'
 ##' Calculates quasi relative distance test statistic
 ##' @param y y
 ##' @param yo y0
@@ -684,7 +686,7 @@ quasireldist <- function(y,yo,binn=100,location="median"){
 ##' @param binn binn
 ##' @param location location
 ##' @return function
-##' @import ddst
+##' @importFrom ddst ddst.uniform.Nk ddst.IIC ddst.base.legendre
 ##' @export
 ddstTestStatistic <- function(binn=100,location="median"){
   function(ys,z){
