@@ -1,5 +1,5 @@
 Package: RItools
-Version: 0.2-1.9001
+Version: 3.0.0
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut", "cre")),
 	   person("Joshua", "Errickson", email="jerrick@umich.edu", role=c("ctb")),
@@ -11,7 +11,8 @@ License: GPL (>=2)
 LazyData: true
 Depends:
     R (>= 2.2.0),
-    SparseM
+    SparseM,
+    dgof
 Imports:
     grDevices,
     abind,
@@ -36,7 +37,8 @@ Suggests:
     knitr,
     rmarkdown
 Enhances: optmatch
-URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
+URL: http://CRAN.R-project.org/package=RItools
     RItools.html
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
+Encoding: UTF-8
