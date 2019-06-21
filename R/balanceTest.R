@@ -111,6 +111,7 @@
 ##'   this type performed separately in each stratum. Significance
 ##'   assessments are based on the large-sample Normal approximation
 ##'   to these reference distributions.
+##'   We might need to import stats below too.
 ##' @export
 ##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
 ##'   Balance in Simple, Stratified and Clustered Comparative
@@ -121,7 +122,7 @@
 ##'   118--136.
 ##' @author Ben Hansen and Jake Bowers and Mark Fredrickson
 ##' @keywords design nonparametric
-##' @import svd stats
+##' @import svd
 ##' @examples
 ##' data(nuclearplants)
 ##' ##No strata, default output
