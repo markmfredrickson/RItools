@@ -13,6 +13,7 @@ matrixNotation.Rnw
 tests/testthat/test.notforCRAN.R
 tests/testthat/test.tidiers.R
 tests/testthat/tricky_rectangular_matrix.rda
+tests/testthat/test.multicore.R
 tests/*.R
 tests/*.Rout.save
 ^.*\.Rproj$
