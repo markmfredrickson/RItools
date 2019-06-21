@@ -7,14 +7,14 @@
 ssrTSmaker(S)
 }
 \arguments{
-\item{S}{Adjacency matrix of size NxN. Each entry takes the value of 1 if 
+\item{S}{Adjacency matrix of size NxN. Each entry takes the value of 1 if
 two units are adjacent and 0 otherwise}
 }
 \value{
 Function to calculate SSR test statistic
 }
 \description{
-The sum of squared residuals (SSR) test statistic with F-test as a 
+The sum of squared residuals (SSR) test statistic with F-test as a
 potential asymptotic version. F is used as the test statistic
 }
 \seealso{

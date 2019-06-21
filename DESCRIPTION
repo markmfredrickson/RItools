@@ -20,7 +20,6 @@ Imports:
     hexbin,
     svd,
     ddst,
-    dgof,
     kSamples,
     mgcv,
     lattice,

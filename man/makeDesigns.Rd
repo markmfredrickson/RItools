@@ -26,5 +26,7 @@ On the RHS:
 NAs in a cluster() or strata() variable will be dropped.
 NAs in covariates will be passed through, but without
 being flagged as NotMissing (as available data items will)
+
+We might import stats, but better to just import parts
 }
 \keyword{internal}

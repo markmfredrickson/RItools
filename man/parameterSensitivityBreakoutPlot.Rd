@@ -4,7 +4,8 @@
 \alias{parameterSensitivityBreakoutPlot}
 \title{Plots the results of the parameter sensitivity on the original parameter space.}
 \usage{
-parameterSensitivityBreakoutPlot(x, subset, col = rgb(0, 0, 0, 0.25), ...)
+parameterSensitivityBreakoutPlot(x, subset, col = rgb(0, 0, 0, 0.25),
+  ...)
 }
 \arguments{
 \item{x}{The results of the call to \code{\link{parameterSensitivity}}.}

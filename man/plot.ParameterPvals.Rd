@@ -4,7 +4,7 @@
 \alias{plot.ParameterPvals}
 \title{Plot function for ParameterPvals}
 \usage{
-\method{plot}{ParameterPvals}(object, ...)
+plot.ParameterPvals(object, ...)
 }
 \arguments{
 \item{object}{ParameterPvals}
