@@ -207,10 +207,10 @@ setClass("DesignOptions",
 ##' NAs in covariates will be passed through, but without
 ##' being flagged as NotMissing (as available data items will)
 ##' 
+##'  We might import stats, but better to just import parts
 ##' @param fmla Formula
 ##' @param data Data
 ##' @return DesignOptions
-##' @import stats
 ##' @keywords internal
 ##' 
 makeDesigns <- function(fmla, data) {
