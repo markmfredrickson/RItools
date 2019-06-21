@@ -62,7 +62,10 @@ t.mean.difference  <-  function(ys, z) {
 ##' @export
 fastvar <- function(ys){
   ## See var for this. Right now it removes missing values
-  .Call(stats:::C_cov,ys,NULL,5,FALSE)
+  ## Shouldn't call non exported functions
+  ## .Call(stats:::C_cov,ys,NULL,5,FALSE)
+  ## Maybe look at pieces of https://github.com/vandomed/crowdopt esp var2()
+  var(ys)
 }
 
 ############################## Rank Based Functions ##############################
@@ -686,18 +689,19 @@ quasireldist <- function(y,yo,binn=100,location="median"){
 ##' @param binn binn
 ##' @param location location
 ##' @return function
-##' @importFrom ddst ddst.uniform.Nk ddst.IIC ddst.base.legendre
+##' @importFrom ddst ddst.uniform.test
 ##' @export
 ddstTestStatistic <- function(binn=100,location="median"){
+	## Issue with using non-exported functions https://community.rstudio.com/t/build-a-package-import-a-non-exported-function-from-a-imported-package/18062
   function(ys,z){
     ## Neyman's Smooth test with data driven tuning parameter choice from Ledwina
     qdat <- quasireldist(y=ys[!!z],yo=ys[!z])
-    ## theddst <- ddst.uniform.test(qdat)
-    ## return(theddst$statistic)
+    theddst <- ddst.uniform.test(qdat)
+    return(theddst$statistic)
     ## this next from ddst.uniform.test.R
-    coord <- ddst:::ddst.uniform.Nk(qdat,ddst:::ddst.base.legendre,10)
-    l <- ddst:::ddst.IIC(coord,length(qdat),2.4)
-    return(coord[l])
+    ##coord <- ddst:::ddst.uniform.Nk(qdat,ddst:::ddst.base.legendre,10)
+    ##l <- ddst:::ddst.IIC(coord,length(qdat),2.4)
+    ##return(coord[l])
   }
 }
 
