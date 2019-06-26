@@ -67,6 +67,15 @@ plot.balancetest <- function(x,
 
   tmp <- prepareXbalForPlot(x, statistic, absolute,
                             strata.labels, variable.labels)
+}
+new_plot <- function(x,
+                       xlab = "Standardized Differences",
+                       statistic = "std.diff",
+                       absolute = FALSE,
+                       strata.labels = NULL,
+                       variable.labels = NULL,
+                       groups = NULL,
+                       ...){
   autogroup <- attr(tmp, "term.labels")[attr(tmp, "groups")]
   autogroup[is.na(autogroup)] <- ""
   names(autogroup) <- rownames(tmp)
