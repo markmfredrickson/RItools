@@ -13,3 +13,5 @@ matrixNotation.Rnw
 tests/testthat/test.notforCRAN.R
 tests/testthat/test.tidiers.R
 tests/testthat/tricky_rectangular_matrix.rda
+^doc$
+^Meta$

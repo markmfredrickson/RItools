@@ -91,10 +91,7 @@ ggplot(x, aes(y = rowname, x = values, color = strata, shape = strata)) +
   geom_vline(xintercept = 0) +
   geom_point() +
   theme(legend.position = "bottom")
-plot.xbal(bal)
 plot(bal)
-
-
 ```
 This plot is using the xBalance() function as opposed to the balanceTest() function and includes stratification as well. 
 
@@ -107,7 +104,7 @@ To allow for easy plotting of balance tests, the plot.xbal function will be give
 
 
 ```{r}
-roxygenise(package.dir = "C:/Users/17349/Documents/Undergraduate Research/RItools")
+## roxygenise(package.dir = "C:/Users/17349/Documents/Undergraduate Research/RItools")
 
 ```
 
