@@ -47,15 +47,24 @@ plot.xbal <- function(x,
                       strata.labels = NULL,
                       variable.labels = NULL,
                       groups = NULL,
+                      ggplot = FALSE,
                       ...) {
 
   x <- prepareXbalForPlot(x, statistic, absolute, strata.labels, variable.labels)
 
+
   if (is.null(groups)) {
     groups <- attr(x, "groups")
   }
+  
+  if(ggplot == TRUE){
+    return(new_plot(as.data.frame(x),xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups))
+  } else {
+    return(balanceplot(x, xlab = xlab, groups = groups, ...))
+  }
+}
 
-  return(balanceplot(x, xlab = xlab, groups = groups, ...))
+  
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function
 
@@ -122,7 +131,7 @@ plot.xbal <- function(x,
   #          pch=thesymbols,
   #          bty="n")
   # }
-}
+
 
 # Internal function for turning an xBalance object into something for `balanceplot`
 prepareXbalForPlot <- function(x,
@@ -428,3 +437,5 @@ balanceplot <- function(x,
 
   return(offset + n + 1)
 }
+
+

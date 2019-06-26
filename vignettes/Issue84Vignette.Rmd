@@ -68,9 +68,12 @@ fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
 
 bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data)
 
+  
 plot(bt)
 
+plot.balancetest(bt)
 
+#new_plot(bt)
 ```
 
 This plot was used in base R plotting. However, a number of issued have arose using base R to produce these plots such as nonsensical bounds on the x-axis and problems with the plot margins. To fix this, plots are now going to be produced using ggplot.
@@ -92,7 +95,7 @@ ggplot(x, aes(y = rowname, x = values, color = strata, shape = strata)) +
   geom_point() +
   theme(legend.position = "bottom")
 plot.xbal(bal)
-plot(bal)
+plot(bal, ggplot = TRUE)
 
 
 ```
@@ -101,6 +104,8 @@ This plot is using the xBalance() function as opposed to the balanceTest() funct
 To allow for easy plotting of balance tests, the plot.xbal function will be given an additonal argument ggplot where the default is false, which plots the balance plot with base R formatting and in ggplot formatting if true. 
 
 
+# identify within plot.balancetest() which parts to pull out(to make a new function) integrate into plot.xbal() and still optionally plot.balancetets()
+# in vignette take out ggplot code chunk and just call again with plot.balancetets()  with argument ggplpot == true
 
 
 
@@ -108,6 +113,7 @@ To allow for easy plotting of balance tests, the plot.xbal function will be give
 
 ```{r}
 roxygenise(package.dir = "C:/Users/17349/Documents/Undergraduate Research/RItools")
+build_vignettes(pkg = "C:/Users/17349/Documents/Undergraduate Research/RItools")
 
 ```
 
