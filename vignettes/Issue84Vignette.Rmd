@@ -66,17 +66,14 @@ Now the dataframe named simply as data is ready to be used to produced balance p
 ```{r}
 fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
 
-bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data)
-
+bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
   
 plot(bt)
 
 plot.balancetest(bt)
-
-#new_plot(bt)
 ```
 
-This plot was used in base R plotting. However, a number of issued have arose using base R to produce these plots such as nonsensical bounds on the x-axis and problems with the plot margins. To fix this, plots are now going to be produced using ggplot.
+These plots above are the same but were called using different functions, the normal plot function from base R and plot.balancetest() from RItools. These are included to demonstrate that both functions can be used to produce the same plot. 
 
 ```{r}
 fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
@@ -88,32 +85,27 @@ x <- as.data.frame(RItools:::prepareXbalForPlot(bal))
 x <- rownames_to_column(x)
 
 x <- gather(x, strata, values, -rowname)
-#x <- mutate(values = abs(values)) # enable for `abs = TRUE`.
 
-ggplot(x, aes(y = rowname, x = values, color = strata, shape = strata)) + 
-  geom_vline(xintercept = 0) +
-  geom_point() +
-  theme(legend.position = "bottom")
-plot.xbal(bal)
+plot.xbal(bal, ggplot = FALSE)
+
+plot(bal, ggplot = FALSE)
+
+plot.xbal(bal, ggplot = TRUE)
+
 plot(bal, ggplot = TRUE)
 
 
 ```
-This plot is using the xBalance() function as opposed to the balanceTest() function and includes stratification as well. 
 
-To allow for easy plotting of balance tests, the plot.xbal function will be given an additonal argument ggplot where the default is false, which plots the balance plot with base R formatting and in ggplot formatting if true. 
+To increase ease and efficiency of plotting, the ggplot argument was added to the plot.xbal() function in plot.xbal.R. Set to false by default, it allows the user to decide whether or not the balance plot is to be produced using ggplot, which usually provides better plots, or base-R plotting. These four plots show how both the plot() function and the plot.xbal() function take in this ggplot argument and both produce the same plot. 
 
-
-# identify within plot.balancetest() which parts to pull out(to make a new function) integrate into plot.xbal() and still optionally plot.balancetets()
-# in vignette take out ggplot code chunk and just call again with plot.balancetets()  with argument ggplpot == true
-
-
-
+Furthermore, this balance test was created using the xBalance() function as opposed to the balanceTest() function. This allows the inclusion of stratification via the fullmatch() function from the optmatch library into the plots. 
 
 
 ```{r}
-roxygenise(package.dir = "C:/Users/17349/Documents/Undergraduate Research/RItools")
 build_vignettes(pkg = "C:/Users/17349/Documents/Undergraduate Research/RItools")
+
+
 
 ```
 
