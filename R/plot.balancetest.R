@@ -77,19 +77,15 @@ plot.balancetest <- function(x,
     groups <- autogroup
   }
   x <- as.data.frame(tmp)
-  new_plot(x, xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups)
+  balanceTest_ggplot(x, xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups)
 }
-new_plot <- function(x,
+balanceTest_ggplot <- function(x,
                        xlab = "Standardized Differences",
-                       
                        absolute = FALSE,
                        strata.labels = NULL,
-                  
                        groups = NULL,
                        ...){
-  #see what argumeents are necessary.Argument variables must be the same as in balance.test. 
- 
-
+  
   # Tidyverse doesn't like rownames
   x <- tibble::rownames_to_column(x)
 
