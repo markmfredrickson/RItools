@@ -58,6 +58,7 @@ plot.balancetest <- function(x,
                              strata.labels = NULL,
                              variable.labels = NULL,
                              groups = NULL,
+                             ggplot = FALSE,
                              ...) {
   ## this next line is for compatability with Josh's version of the function
   ## while I make it work with the usual plot signature
@@ -66,16 +67,25 @@ plot.balancetest <- function(x,
   stopifnot(is.null(var.order) | is.null(var.grouping))
 
   tmp <- prepareXbalForPlot(x, statistic, absolute,
-                            strata.labels, variable.labels)
+                            strata.labels, variable.labels) #square matrix, each row is row in plot, columns are horixzontal locations
+  #plot(tmp)
   autogroup <- attr(tmp, "term.labels")[attr(tmp, "groups")]
   autogroup[is.na(autogroup)] <- ""
   names(autogroup) <- rownames(tmp)
-
+  
   if (is.null(groups)) {
     groups <- autogroup
   }
   x <- as.data.frame(tmp)
-
+  balanceTest_ggplot(x, xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups)
+}
+balanceTest_ggplot <- function(x,
+                       xlab = "Standardized Differences",
+                       absolute = FALSE,
+                       strata.labels = NULL,
+                       groups = NULL,
+                       ...){
+  
   # Tidyverse doesn't like rownames
   x <- tibble::rownames_to_column(x)
 
