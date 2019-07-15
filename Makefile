@@ -18,11 +18,11 @@ dependencies: DEVTOOLSARG=dependencies=TRUE
 test: FUNC=test
 check: FUNC=check
 document: FUNC=document
-# vignette: FUNC=build_vignettes # To be renabled if we add vignettes
-# clean-vignette: FUNC=clean_vignettes
+vignette: FUNC=build_vignettes # To be renabled if we add vignettes
+clean-vignette: FUNC=clean_vignettes
 build: FUNC=build
 dependencies test check document build: .devtools
-#vignette clean-vignette: .devtools
+vignette clean-vignette: .devtools
 
 clean: #clean-vignette
 	git clean -Xfd

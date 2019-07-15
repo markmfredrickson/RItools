@@ -84,6 +84,8 @@ balanceTest_ggplot <- function(x,
                        absolute = FALSE,
                        strata.labels = NULL,
                        groups = NULL,
+                       var.order = NULL,
+                       var.grouping = NULL,
                        ...){
   
   # Tidyverse doesn't like rownames

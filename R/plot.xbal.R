@@ -58,7 +58,7 @@ plot.xbal <- function(x,
   }
   
   if(ggplot == TRUE){
-    return(new_plot(as.data.frame(x),xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups))
+      return(balanceTest_ggplot(as.data.frame(x),xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups))
   } else {
     return(balanceplot(x, xlab = xlab, groups = groups, ...))
   }

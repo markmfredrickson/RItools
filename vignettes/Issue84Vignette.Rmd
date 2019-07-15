@@ -70,7 +70,6 @@ bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
   
 plot(bt)
 
-plot.balancetest(bt)
 ```
 
 These plots above are the same but were called using different functions, the normal plot function from base R and plot.balancetest() from RItools. These are included to demonstrate that both functions can be used to produce the same plot. 
@@ -78,28 +77,17 @@ These plots above are the same but were called using different functions, the no
 ```{r}
 fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
 
-bal <- xBalance(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data, strata = list(~ fm, unstratified = NULL))
+bal <- xBalance(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data, strata = list(stratified = ~ fm, unstratified = NULL))
 
-x <- as.data.frame(RItools:::prepareXbalForPlot(bal))
 
-x <- rownames_to_column(x)
-
-x <- gather(x, strata, values, -rowname)
-
-plot.xbal(bal, ggplot = FALSE)
 
 plot(bal, ggplot = FALSE)
+plot(bal, ggplot = TRUE)
 
 ```
 
 To increase ease and efficiency of plotting, the ggplot argument was added to the plot.xbal() function in plot.xbal.R. Set to false by default, it allows the user to decide whether or not the balance plot is to be produced using ggplot, which usually provides better plots, or base-R plotting. These four plots show how both the plot() function and the plot.xbal() function take in this ggplot argument and both produce the same plot. 
 
 Furthermore, this balance test was created using the xBalance() function as opposed to the balanceTest() function. This allows the inclusion of stratification via the fullmatch() function from the optmatch library into the plots. 
-
-
-```{r}
-## build_vignettes(pkg = "C:/Users/17349/Documents/Undergraduate Research/RItools")
-```
-
 
 
