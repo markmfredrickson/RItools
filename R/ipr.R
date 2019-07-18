@@ -68,7 +68,7 @@ ipr <- function(z,strata,clus=NULL, type="inverse probability")
                         tbl <- table(strata, clus, useNA = "ifany")
                         isGood <- apply(tbl, 2, function(x) { sum(x != 0) == 1 })
                         if (!(all(isGood))) {
-                          stop("In ", s, ", the following clusters were not nested within stratum levels: ",
+                          stop("In ", strata, ", the following clusters were not nested within stratum levels: ",
                                paste(collapse = ", ", colnames(tbl)[!isGood]))
                         }
 
