@@ -27,7 +27,6 @@ Suggests:
     MASS,
     RSVGTipsDevice
 Enhances: optmatch
-URL: http://CRAN.R-project.org/package=RItools
-    RItools.html
+URL: https://CRAN.R-project.org/package=RItools
 RoxygenNote: 6.1.1
 Encoding: UTF-8
