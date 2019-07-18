@@ -9,3 +9,4 @@ r:
   - devel
 r_packages:
   - data.table
+  - optmatch
