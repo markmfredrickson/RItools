@@ -7,7 +7,7 @@ Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut
 	   person("Ben", "Hansen", email="ben.hansen@umich.edu", role=c("aut")) )
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization-based inference. Current focus is on the d^2 omnibus test of differences of means following Hansen and Bowers (2008) useful for assessing balance in matched observational studies or for analysis of outcomes in block-randomized experiments.
-License: MIT
+License: MIT + file LICENSE
 LazyData: true
 Depends:
     R (>= 3.6.0),
