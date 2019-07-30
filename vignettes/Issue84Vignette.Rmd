@@ -10,8 +10,6 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-library(roxygen2)
-library(haven)
 library(tidyverse)
 library(optmatch)
 library(RItools)
@@ -19,7 +17,7 @@ library(RItools)
 
 This vignette is in regards to issue 84 of the RItools package, which focuses on the plotting of balance tests, a stistical test that tests whether there is appropriate randomization between treatment and control groups. In other words, it checks to see if the covariate distributions between the treatment and control groups are as expected. 
 
-As an example of a balance plot, which are simply plots of balance tests, the NHANES data on Aspirin useage will be used. The response variable is a binary variable which is 1 if the patient has taken a doseage of Aspirin and 0 otherwise. The data also has a number of explanatory variables. 
+As an example of a balance plot, which are simply plots of balance tests, the 2013-2014 NHANES data, which includes data on Aspirin useage, will be used. The response variable is a binary variable which is 1 if the patient has taken a doseage of Aspirin and 0 otherwise. The data also has a number of explanatory variables. 
 
 ```{r}
 # Reading in aspirin data
@@ -59,6 +57,7 @@ save.image(file = "analyzing_aspirin_data.rda")
 demo <- read_xpt("./DEMO_H.XPT")
 
 data <- aspirin %>% left_join(demo)
+# save analzing_aspirin_Data.rda again 
 
 ```
 Now the dataframe named simply as data is ready to be used to produced balance plots. 
@@ -69,25 +68,50 @@ fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
 bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
   
 plot(bt)
-
+View(data)
+plot.balancetest(bt)
 ```
 
-These plots above are the same but were called using different functions, the normal plot function from base R and plot.balancetest() from RItools. These are included to demonstrate that both functions can be used to produce the same plot. 
+These plots above are the same but were called using different functions, the normal plot function from base R and plot.balancetest() from RItools. These are included to demonstrate that both functions can be used to produce the same plot. RIDRETH1 is a categorical variable where each level represents the patients race. It has 6 levels. The variable DMDHRAGE gives the age of the HH reference persons, in years. The variable INDFMIN2 is the total family income reported as a range value, in dollars.
 
 ```{r}
-fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
+fm <- fullmatch(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data)
 
-bal <- xBalance(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data, strata = list(stratified = ~ fm, unstratified = NULL))
+bal <- xBalance(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data, strata = list(~ fm, unstratified = NULL))
 
+x <- as.data.frame(RItools:::prepareXbalForPlot(bal))
 
+x <- rownames_to_column(x)
+
+x <- gather(x, strata, values, -rowname)
+
+plot.xbal(bal, ggplot = FALSE)
 
 plot(bal, ggplot = FALSE)
-plot(bal, ggplot = TRUE)
+
+plot.xbal(bal, ggplot = TRUE)
+
+plot(bal, ggplot = TRUE) + theme_bw()
+
 
 ```
 
 To increase ease and efficiency of plotting, the ggplot argument was added to the plot.xbal() function in plot.xbal.R. Set to false by default, it allows the user to decide whether or not the balance plot is to be produced using ggplot, which usually provides better plots, or base-R plotting. These four plots show how both the plot() function and the plot.xbal() function take in this ggplot argument and both produce the same plot. 
 
 Furthermore, this balance test was created using the xBalance() function as opposed to the balanceTest() function. This allows the inclusion of stratification via the fullmatch() function from the optmatch library into the plots. 
+
+
+```{r}
+build_vignettes(pkg = "C:/Users/17349/Documents/Undergraduate Research/RItools")
+
+
+
+```
+# include more features of ggplpot such as themes (update vignette)
+# include plot with more variables. go through data documentation
+# write up brief explanation of data
+# include categorical variables and grouped variables
+# run build_vignettes() in console, ignore incomplete line error at end
+# move top part into new file, delete the vignette
 
 
