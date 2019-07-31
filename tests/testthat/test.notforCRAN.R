@@ -33,7 +33,15 @@ test_that("proper inversion in full rank case",{
     m2 <- XtX_pseudoinv_sqrt(mat)
     expect_equivalent(basis %*% tcrossprod(m2) %*% t(basis), diag(c(1/2^2, 1, 0)) )
 })
-load("tricky_rectangular_matrix.rda")
+
+
+##load("tricky_rectangular_matrix.rda")
+##Make a matrix that is singular
+##tricky_rectangular_matrix <- matrix(c(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+##                                      0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1), 9, 4)
+n <- 14 
+tricky_rectangular_matrix <- matrix(NA, n, n) 
+for (i in 1:n) for (j in 1:n) tricky_rectangular_matrix[i,j] <- 1/(i+j-1) 
 
 test_that("answers match MASS::ginv() under near rank deficiency",{
     XtX  <- crossprod(tricky_rectangular_matrix)

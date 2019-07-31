@@ -4,7 +4,8 @@
 \alias{balanceTest.make.stratwts}
 \title{balanceTest helper function}
 \usage{
-balanceTest.make.stratwts(stratum.weights, ss.df, zz, data, normalize.weights)
+balanceTest.make.stratwts(stratum.weights, ss.df, zz, data,
+  normalize.weights)
 }
 \arguments{
 \item{stratum.weights}{Weights}

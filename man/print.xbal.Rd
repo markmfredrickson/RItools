@@ -10,7 +10,8 @@
   which.vars = dimnames(x$results)[["vars"]], print.overall = TRUE,
   digits = NULL, printme = TRUE,
   show.signif.stars = getOption("show.signif.stars"),
-  show.pvals = !show.signif.stars, horizontal = TRUE, report = NULL, ...)
+  show.pvals = !show.signif.stars, horizontal = TRUE, report = NULL,
+  ...)
 }
 \arguments{
 \item{x}{An object of class "xbal" which is the result of a call

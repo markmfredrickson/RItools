@@ -22,26 +22,26 @@ suitable to be associated with an existing design and used in further calcs.
 The function expects its DesignOptions argument to represent aggregated data,
 i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
 is a function that is applied to a data frame representing clusters,
-with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the 
+with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the
 \code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
-culled or inferred from originating \link{\code{balanceTest}} call or as aggregated up
-from those unit weights).  Returns a 
-weighting factor to be associated with each stratum, this factor determining the stratum 
+culled or inferred from originating \code{\link{balanceTest}} call or as aggregated up
+from those unit weights).  Returns a
+weighting factor to be associated with each stratum, this factor determining the stratum
 weight by being multiplied by mean of unit weights over clusters in that stratum.
 
 Specifically, the function's value is a data frame of two variables,
 \code{sweights}  and \code{wtratio}, with rows representing strata.
 The \code{sweights} vector represents internally
-calculated or user-provided \code{stratum.weights}, one for each 
+calculated or user-provided \code{stratum.weights}, one for each
 stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
 weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
 \code{sweights} to the product of half the harmonic
 mean of n_{tb} and n_{cb}, the number of treatment and control
 clusters in stratum b, with the mean of the weights associated with
 each of these clusters.  In the notation of Hansen & Bowers
-(2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name 
-\sQuote{\code{wtratio}}, this ratio's denominator is not a weight 
-in the sense of summing to 1 across strata.  The ratio is expected 
+(2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
+\sQuote{\code{wtratio}}, this ratio's denominator is not a weight
+in the sense of summing to 1 across strata.  The ratio is expected
 downstream in \code{alignedToInferentials} (in internal calculations
 involving \sQuote{\code{wtr}}).
 }
