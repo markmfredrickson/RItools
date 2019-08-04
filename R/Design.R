@@ -724,7 +724,6 @@ aggregateDesigns <- function(design) {
 setClass("CovsAlignedToADesign",
          slots =
              c(Covariates="matrix",
-               UnitWeights="numeric",
              Z                 = "logical",
              StrataMatrix    = "matrix.csr",
              StrataFactor       = "factor",
@@ -823,10 +822,10 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         )
     }
     colnames(covars.Sctr) <- vars
+    covars.Sctr  <- covars.Sctr * non_null_record_wts
 
       new("CovsAlignedToADesign",
           Covariates        = covars.Sctr,
-          UnitWeights       = non_null_record_wts,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataFactor=ss,
@@ -864,8 +863,8 @@ alignedToInferentials <- function(alignedcovs) {
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
     dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2))
 
-    tmat <- Covs * (alignedcovs@UnitWeights * #the sum statistic we're about to compute corresponds
-        alignedcovs@StrataWeightRatio) # to averaging within-stratum differences using stratum
+    tmat <- Covs *#the sum statistic we're about to compute averages within-
+        alignedcovs@StrataWeightRatio # stratum differences using stratum
     ## weights proportional to harmonic means of n_t's and n_c's.  To override w/ weights we want,
     ## factor in a wtratio as constructed by DesignWeights().
 
