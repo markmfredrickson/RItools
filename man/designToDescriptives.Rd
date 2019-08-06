@@ -15,14 +15,14 @@ designToDescriptives(design, covariate.scaling = NULL)
 Descriptives
 }
 \description{
-Use a design object to generate descriptive statistics that ignore clustering.
-Stratum weights are respected if provided (by passing a design arg of
-class StratumWeightedDesignOptions). If not provided, stratum weights
-default to "Effect of Treatment on Treated" weighting.  That is, when
+Use a design object to generate descriptive statistics that ignore clustering. 
+Stratum weights are respected if provided (by passing a design arg of 
+class StratumWeightedDesignOptions). If not provided, stratum weights 
+default to "Effect of Treatment on Treated" weighting.  That is, when 
 combining within-stratum averages (which will themselves have been
 weighted by unit weights), each stratum receives a weight equal to
 the product of the stratum sum of unit weights with the fraction
-of clusters within the stratum that were assigned to the treatment
+of clusters within the stratum that were assigned to the treatment 
 condition.
 }
 \keyword{internal}

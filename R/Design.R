@@ -40,7 +40,7 @@ setClass("ModelMatrixPlus",
                   UnitWeights = "numeric" )
          )
 
-#' @export
+#' @method as.matrix ModelMatrixPlus
 as.matrix.ModelMatrixPlus <- function(x, ...)
     {
         ans <- x@Covariates
