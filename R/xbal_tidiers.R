@@ -31,6 +31,7 @@
 #' @param strata which stratification to return info about? Defaults
 #'    to last one specified in originating function call (which appears first in the xbal array).
 #' @param varnames_crosswalk character vector of new names for xbal columns, named by the xbal column
+#' @param ... Not used.
 #' @return data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
 #'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
 #'         a combined differences test, if found, and otherwise `NULL`.

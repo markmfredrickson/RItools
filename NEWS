@@ -1,3 +1,10 @@
+CHANGES IN next RITOOLS VERSION
+
+* Addressed error relating to setting of pseudo-inversion tolerances (#103).
+  xBalance() stops short of correcting the error, to maintain back-compatibility;
+  but it gains a new argument, pseudoinversion_tol, with which it can readily
+  be fixed.
+
 CHANGES IN RITOOLS VERSION 0.1-15
 
 This is a maintenance release.

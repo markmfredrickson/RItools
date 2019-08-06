@@ -33,6 +33,67 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
 
 })
 
+test_that("Consistency between lm() and balTest()", {
+    set.seed(20180821)
+
+    ## working with aggregated cluster totals already
+    n <- 100
+
+    ## we lose the treated in the first block
+    dta.all <- data.frame(z = rep(c(1,1,0,0), n/4),
+                          x1 = rnorm(n),
+                          blk = rep(1:(n/4), each = 4),
+                          size = rpois(n = n, lambda = 200))
+
+    dta.lost <- dta.all[3:n, ]
+
+    bt.all <- balanceTest(z ~ x1 + strata(blk) - 1,
+                      data = dta.all,
+                      unit.weights = size, # weighted by cluster size
+                      report = c("std.diffs", "z.scores",
+                                 "adj.means", "adj.mean.diffs"))
+
+    ## we don't further test these values, but we should handle this situation
+    expect_warning(bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
+                          data = dta.lost,
+                          unit.weights = size, # weighted by cluster size
+                          report = c("std.diffs", "z.scores",
+                                     "adj.means", "adj.mean.diffs")))
+
+    dta.all$zerosize <- c(0,0, dta.all$size[3:n])
+    bt.zeroed <- balanceTest(z ~ x1 + strata(blk) - 1,
+                             data = dta.all,
+                             unit.weights = zerosize, # weighted by cluster size
+                             report = c("std.diffs", "z.scores",
+                                        "adj.means", "adj.mean.diffs"))
+
+
+    ## everyone has prob 1/2 of assignment, so inv. prob. is 2
+    lm.all  <- lm(x1 ~ z, weights = 2 * dta.all$size, data = dta.all)
+    lm.lost <- lm(x1 ~ z, weights = 2 * dta.lost$size, data = dta.lost)
+
+    ## compute a Hajek estimator
+    hajek <- function(x, z, weight, prob) {
+        ipw <- 1/prob
+        a <- sum(z * ipw * x * weight) / sum(z * ipw * weight)
+        b <- sum((1 - z) * ipw * x * weight) / sum((1 - z) * ipw * weight)
+        return(c(a, b, a - b))
+    }
+
+    hh.all <- hajek(dta.all$x1, dta.all$z, dta.all$size, 1/2)
+    hh.lost <- hajek(dta.lost$x1, dta.lost$z, dta.lost$size, 1/2)
+
+    ## first, confirm that lm agrees with the hajek estimator:
+    expect_equivalent(coef(lm.all), c(hh.all[2], hh.all[3]))
+    expect_equivalent(coef(lm.lost), c(hh.lost[2], hh.lost[3]))
+
+    ## now check that balance test gives us the same answers
+    expect_equivalent(coef(lm.all)["z"], bt.all$results["x1", "adj.diff", ])
+    expect_equivalent(coef(lm.lost)["z"], bt.zeroed$results["x1", "adj.diff", ])
+
+    
+})
+
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
@@ -145,23 +206,6 @@ test_that("Passing post.alignment.transform, #26", {
 
 })
 
-test_that("NA in stratify factor are dropped", {
-  data(nuclearplants)
-
-  n2 <- nuclearplants
-  n2 <- rbind(n2, n2[1,])
-  n2$pt[1] <- NA
-
-  f <- function(d) {
-    balanceTest(pr ~ . - pt + strata(pt) - 1, data = d)
-  }
-
-  xb1 <- f(nuclearplants)
-  xb2 <- f(n2)
-
-  expect_equal(xb1, xb2)
-})
-
 test_that("Use of subset argument", {
   data(nuclearplants)
 
@@ -174,10 +218,22 @@ test_that("Use of subset argument", {
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
   expect_warning(xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1),
-                 "ropped") #if we get rid of warning re dropping levels which did not include
+                 "did not include both treated and control units") #if we get rid of warning re dropping levels which did not include
                                         #both treated and control, get rid of expect_warning here too
   expect_equal(xb1, xb3)
 })
+
+test_that("unit.weights: NAs treated as 0, logicals coerced to numeric",{
+    data(nuclearplants)
+    nuclearplants$pt <- factor(nuclearplants$pt)
+    expect_warning(xb1 <- balanceTest(pr ~ ., data = nuclearplants, unit.weights=ifelse(pt=='0',1,NA)),
+                   "NA unit.weights detected")
+    ## confirm that we still see the '1' level, even if it receives no weight
+    expect_match(dimnames(xb1$results)[[1]], "pt1", all=FALSE)
+    xb2 <- balanceTest(pr ~ ., data = nuclearplants, unit.weights=(pt=='0'))
+    expect_equivalent(xb1$results[,,],
+                      xb2$results[,,])
+    })
 
 test_that("Observations not meeting subset condition are retained although downweighted to 0",{
 

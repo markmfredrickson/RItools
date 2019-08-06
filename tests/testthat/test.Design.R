@@ -89,6 +89,7 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
 })
 
 test_that("Issue #76: Using I() in formulas", {
+
   x <- data.frame(z=c(1,1))  # have to exclude 
   while (all(x$z==x[1L,'z'])) # degenerate case
     x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))

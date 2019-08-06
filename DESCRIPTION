@@ -1,5 +1,5 @@
 Package: RItools
-Version: 0.2-0.9002
+Version: 0.2.0.9002
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut", "cre")),
 	   person("Joshua", "Errickson", email="jerrick@umich.edu", role=c("ctb")),
@@ -7,10 +7,10 @@ Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut
 	   person("Ben", "Hansen", email="ben.hansen@umich.edu", role=c("aut")) )
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization inference.
-License: GPL (>=2)
+License: MIT
 LazyData: true
 Depends:
-    R (>= 2.2.0),
+    R (>= 3.6.0),
     SparseM
 Imports:
     grDevices,
@@ -27,6 +27,6 @@ Suggests:
     MASS,
     RSVGTipsDevice
 Enhances: optmatch
-URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
+URL: http://CRAN.R-project.org/package=RItools
     RItools.html
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1
