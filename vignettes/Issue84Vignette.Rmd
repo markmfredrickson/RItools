@@ -20,45 +20,8 @@ This vignette is in regards to issue 84 of the RItools package, which focuses on
 As an example of a balance plot, which are simply plots of balance tests, the 2013-2014 NHANES data, which includes data on Aspirin useage, will be used. The response variable is a binary variable which is 1 if the patient has taken a doseage of Aspirin and 0 otherwise. The data also has a number of explanatory variables. 
 
 ```{r}
-# Reading in aspirin data
-aspirin <- read_xpt("./RXQASA_H.XPT")
-
-eq1 <- function(x) {
-  tmp <- x == 1 
-  tmp[is.na(tmp)] <- FALSE
-  return(tmp)
-}
-
-aspirin$taking_aspirin <- eq1(aspirin$RXQ515) | eq1(aspirin$RXQ520)
-
-## Blood pressure exam
-# https://wwwn.cdc.gov/Nchs/Nhanes/2013-2014/BPX_H.htm 
-
-bp <- read_xpt("./BPX_H.XPT")
-
-bp$sys_mean <- rowMeans(bp[, c("BPXSY1", "BPXSY2", "BPXSY3", "BPXSY4")], na.rm = TRUE)
-bp$dia_mean <- rowMeans(bp[, c("BPXDI1", "BPXDI2", "BPXDI3", "BPXDI4")], na.rm = TRUE)
-
-## now we need to match up the aspirin and bp tables
-
-
-temp <- aspirin[aspirin$SEQN %in% bp$SEQN, ]
-
-rownames(bp) <- bp$SEQN
-
-combined <- cbind(temp, bp[as.character(temp$SEQN), ])
-
-### TODO: load DEMO_H.XPT and merge it in
-### https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Demographics&CycleBeginYear=2013
-
-
-save.image(file = "analyzing_aspirin_data.rda")
-
-demo <- read_xpt("./DEMO_H.XPT")
-
-data <- aspirin %>% left_join(demo)
-# save analzing_aspirin_Data.rda again 
-
+# Loading Rda file
+load(system.file("analyzing_aspirin_data.Rda",package = "RItools"))
 ```
 Now the dataframe named simply as data is ready to be used to produced balance plots. 
 
@@ -68,7 +31,7 @@ fm <- fullmatch(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
 bt <- balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data = data)
   
 plot(bt)
-View(data)
+
 plot.balancetest(bt)
 ```
 
@@ -93,7 +56,7 @@ plot.xbal(bal, ggplot = TRUE)
 
 plot(bal, ggplot = TRUE) + theme_bw()
 
-
+#add betetr labels, go through ggplot documentation find things we can tweak, i.e. change/stylize title and labels, 
 ```
 
 To increase ease and efficiency of plotting, the ggplot argument was added to the plot.xbal() function in plot.xbal.R. Set to false by default, it allows the user to decide whether or not the balance plot is to be produced using ggplot, which usually provides better plots, or base-R plotting. These four plots show how both the plot() function and the plot.xbal() function take in this ggplot argument and both produce the same plot. 

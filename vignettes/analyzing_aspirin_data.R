@@ -53,29 +53,11 @@ combined <- cbind(temp, bp[as.character(temp$SEQN), ])
 ### https://wwwn.cdc.gov/nchs/nhanes/search/datapage.aspx?Component=Demographics&CycleBeginYear=2013
 
 
-save.image(file = "analyzing_aspirin_data.rda")
+
 
 demo = read_xpt("./DEMO_H.XPT")
 
-data = aspirin %>% left_join(demo) 
-#TO DO combine demo file, create balance plots. 
-plot(balanceTest(taking_aspirin ~ ., data))
-plot(balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR, data))
-plot(balanceTest(taking_aspirin ~ RXQ515 + SIALANG + DMDEDUC2 + FIALANG, data))
-plot(balanceTest(taking_aspirin ~ MIAINTRP + SDDSRVYR, data))
+data = aspirin %>% left_join(demo)
+save.image(file = "analyzing_aspirin_data.rda")
 
 
-# Meeting
-# Matching: find groups with at least one treatment and at least one control s.t. e(x) similar
-# e(x) can be estimated by logistic regression (glm)
-f = glm(taking_aspirin ~RXQ515 + SIAPROXY + WTINT2YR, data, family = "binomial" )
-summary(f)
-# strata is adding weights to balance plots
-# use roxygen2 to make vignette on aspirin data
-# optmatch
-install.packages("optmatch")
-library(optmatch)
-weights = fullmatch(f,data = data)
-plot(balanceTest(taking_aspirin ~ RXQ515 + SIAPROXY + WTINT2YR + strata(weights), cbind(data,weights = weights)))
-
-# for vignette, in devtools, use document() to turn into vignette
