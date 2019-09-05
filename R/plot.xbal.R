@@ -36,7 +36,6 @@
 #' @param ... additional arguments to pass to \code{\link{balanceplot}}
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
-#' @import abind
 #' @export
 plot.xbal <- function(x,
                       xlab = "Standardized Differences",

@@ -121,7 +121,7 @@
 ##'   118--136.
 ##' @author Ben Hansen and Jake Bowers and Mark Fredrickson
 ##' @keywords design nonparametric
-##' @import svd stats
+##' @import svd stats abind
 ##' @examples
 ##' data(nuclearplants)
 ##' ##No strata, default output
