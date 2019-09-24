@@ -119,7 +119,7 @@ RItest <- function(
       this.distrib <- apply.fn(as.data.frame(randomizations$samples), function(z) {
           test.stat(adjusted.y, z)})
 
-      return(upper.p.value(obs.t, this.distrib))
+      return(pvaluefn(obs.t, this.distrib))
     }
   }
 
