@@ -35,21 +35,21 @@ setClass("ParameterizedTest",
 ##' @param y Outcome variable of interest
 ##' @param z Treatment indicator vector, must be binary or logical
 ##' @param test.stat Test statistic to be reported
-##' @param moe Model of effect, single function with signature 
+##' @param moe Model of effect, single function with signature
 ##' f(y, z, param1, param2, etc.)
-##' @param parameters Parameters values in model of effect 
+##' @param parameters Parameters values in model of effect
 ##' List of name = values, name = values, ...
-##' @param sampler Function specifying sampling procedure, uses simple 
+##' @param sampler Function specifying sampling procedure, uses simple
 ##' randomization by default
-##' @param samples Number of samples to use in direct permutation, uses 5000 
+##' @param samples Number of samples to use in direct permutation, uses 5000
 ##' by default
-##' @param type Either \code{"exact"} (direct permutation) or 
-##' \code{"asymptotic"} (distributional approximation). Currently, 
+##' @param type Either \code{"exact"} (direct permutation) or
+##' \code{"asymptotic"} (distributional approximation). Currently,
 ##' \code{type = "asymptotic"} is not supported
 ##' @param ... Additional arguments
 ##' @return Observed test statistic and associated p-value
 ##' @seealso Update with vignettes here
-##' @examples 
+##' @examples
 ##' data(nuclearplants)
 ##' RItest(nuclearplants$cost, nuclearplants$pr, test.stat = t.mean.difference)
 ##' @export
@@ -62,6 +62,7 @@ RItest <- function(
   sampler = simpleRandomSampler(z = z, b = rep(1, length(z))),
   samples = 5000,
   type = "exact",
+  pvaluefn = upper.p.value,
   ...) {
 
   # if either moe or parameters are present, both must be present

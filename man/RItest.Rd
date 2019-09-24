@@ -6,7 +6,7 @@
 \usage{
 RItest(y, z, test.stat, moe = NULL, parameters = NULL,
   sampler = simpleRandomSampler(z = z, b = rep(1, length(z))),
-  samples = 5000, type = "exact", ...)
+  samples = 5000, type = "exact", pvaluefn = upper.p.value, ...)
 }
 \arguments{
 \item{y}{Outcome variable of interest}
@@ -15,20 +15,20 @@ RItest(y, z, test.stat, moe = NULL, parameters = NULL,
 
 \item{test.stat}{Test statistic to be reported}
 
-\item{moe}{Model of effect, single function with signature 
+\item{moe}{Model of effect, single function with signature
 f(y, z, param1, param2, etc.)}
 
-\item{parameters}{Parameters values in model of effect 
+\item{parameters}{Parameters values in model of effect
 List of name = values, name = values, ...}
 
-\item{sampler}{Function specifying sampling procedure, uses simple 
+\item{sampler}{Function specifying sampling procedure, uses simple
 randomization by default}
 
-\item{samples}{Number of samples to use in direct permutation, uses 5000 
+\item{samples}{Number of samples to use in direct permutation, uses 5000
 by default}
 
-\item{type}{Either \code{"exact"} (direct permutation) or 
-\code{"asymptotic"} (distributional approximation). Currently, 
+\item{type}{Either \code{"exact"} (direct permutation) or
+\code{"asymptotic"} (distributional approximation). Currently,
 \code{type = "asymptotic"} is not supported}
 
 \item{...}{Additional arguments}
