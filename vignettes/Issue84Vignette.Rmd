@@ -41,8 +41,8 @@ fm <- fullmatch(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data
 bal <- xBalance(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data, strata = list(~ fm, unstratified = NULL))
 
 
-plot.xbal(bal, ggplot = FALSE)
-plot.xbal(bal, ggplot = TRUE) + theme_bw()
+plot(bal, ggplot = FALSE)
+plot(bal, ggplot = TRUE) + theme_bw()
 
 #add betetr labels, go through ggplot documentation find things we can tweak, i.e. change/stylize title and labels, 
 ```
