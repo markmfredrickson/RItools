@@ -1,6 +1,6 @@
 ---
 title: "Issue 84 Vignette"
-author: "Abe Rycus"
+author: "Abe Rycus & Paul M"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
