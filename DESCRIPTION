@@ -23,7 +23,8 @@ Imports:
     survival,
     ggplot2,
     tidyr,
-    dplyr
+    dplyr,
+    tibble
 Suggests:
     knitr, rmarkdown,
     testthat,

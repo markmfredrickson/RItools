@@ -35,13 +35,13 @@ plot(bt)
 
 These plots above are the same but were called using different functions, the normal plot function from base R and plot.balancetest() from RItools. These are included to demonstrate that both functions can be used to produce the same plot. RIDRETH1 is a categorical variable where each level represents the patients race. It has 6 levels. The variable DMDHRAGE gives the age of the HH reference persons, in years. The variable INDFMIN2 is the total family income reported as a range value, in dollars.
 
-```{r}
+```{r height = 3, width = 3}
 fm <- fullmatch(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data)
 
-bal <- xBalance(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data, strata = list(~ fm, unstratified = NULL))
+bal <- xBalance(taking_aspirin ~ as.factor(RIDRETH1) + DMDHRAGE + INDFMIN2, data = data, strata = list(stratified = ~ fm, unstratified = NULL))
 
 
-plot(bal, ggplot = FALSE)
+# plot(bal, ggplot = FALSE)
 plot(bal, ggplot = TRUE) + theme_bw()
 
 #add betetr labels, go through ggplot documentation find things we can tweak, i.e. change/stylize title and labels, 
