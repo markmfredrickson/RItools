@@ -1,7 +1,7 @@
 # load.R fixes a bug with devtool's `help` to enable `help` on
 # functions in this package, as well as loading the package
 LOAD=R_PROFILE=load.R
-RCMD=R_LIBS=.local R -q 
+RCMD=R -q
 
 interactive:
 	@$(LOAD) $(RCMD) --no-save
@@ -26,3 +26,9 @@ vignette clean-vignette: .devtools
 
 clean: #clean-vignette
 	git clean -Xfd
+
+inst/aspirin_use.rda: nonbuild/aspirin/analyzing_aspirin_data.R \
+	nonbuild/aspirin/BPX_H.XPT \
+	nonbuild/aspirin/DEMO_H.XPT \
+	nonbuild/aspirin/RXQASA_H.XPT
+	cd nonbuild/aspirin/ && $(RCMD) -f analyzing_aspirin_data.R && mv analyzing_aspirin_data.rda ../../inst/aspirin_use.rda
