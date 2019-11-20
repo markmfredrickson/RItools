@@ -287,7 +287,7 @@ balanceTest <- function(fmla,
   if (length(nmvars) & length(group_mean_labs))
   {
 	  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
-	  bad <- apply(abs(groupmeans - 1)<.sqrt(Machine$double.eps), 1, all)
+	  bad <- apply(abs(groupmeans - 1) < sqrt(Machine$double.eps), 1, all)
 	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
 	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
 		  descriptives <- descriptives[-toremove,,,drop=FALSE]
