@@ -286,8 +286,8 @@ balanceTest <- function(fmla,
                              c("std.diff", "adj.diff", "pooled.sd", "z", "p"))
   if (length(nmvars) & length(group_mean_labs))
   {
-	  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE],1,
-		       function(x){ all.equal(x,matrix(rep(1,length(x)),nrow=1),check.attributes=FALSE) })
+	  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
+	  bad <- apply(abs(groupmeans - 1)<.sqrt(Machine$double.eps), 1, all)
 	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
 	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
 		  descriptives <- descriptives[-toremove,,,drop=FALSE]
