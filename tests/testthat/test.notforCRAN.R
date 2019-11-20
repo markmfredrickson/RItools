@@ -80,21 +80,31 @@ test_that("First, that we end  up with an empty matrix when we just wanted to de
 		  ##Browse[2]> save(nmvars,group_mean_labs,descriptives,origvars,file="objects_from_debug_balanceTest.rda")
 		  load("objects_from_debug_balanceTest.rda")
 		  ## The problem lines from lines 289--292 in balanceTest.R
-		  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
-		  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-		  expect_equal(toremove,integer(0))
-		  descriptives_gone	 <- descriptives[-toremove,,,drop=FALSE]
-		  origvars_gone	 <- origvars[-toremove,]
+		  bad1 <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
+		  toremove1 <- match(nmvars[bad1], dimnames(descriptives)[["vars"]])
+		  expect_equal(toremove1,integer(0))
+		  descriptives_gone	 <- descriptives[-toremove1,,,drop=FALSE]
+		  origvars_gone	 <- origvars[-toremove1]
 		  expect_equal(nrow(descriptives_gone),0)
 		  expect_equal(dim(origvars_gone),NULL)
 		  ## Now showing one inelegant fix
-		  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE],1,
+		  bad2 <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE],1,
 			       function(x){ all.equal(x,matrix(rep(1,length(x)),nrow=1),check.attributes=FALSE) })
-		  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-		  expect_equal(toremove,82)
-		  descriptives_ok <- descriptives[-toremove,,,drop=FALSE]
+		  toremove2 <- match(nmvars[bad2], dimnames(descriptives)[["vars"]])
+		  expect_equal(toremove2,82)
+		  descriptives_ok <- descriptives[-toremove2,,,drop=FALSE]
 		  expect_equal(nrow(descriptives_ok),81)
-		  origvars_ok <- origvars[-toremove]
+		  origvars_ok <- origvars[-toremove2]
+		  expect_equal(origvars_ok,1:81)
+		  ## A better fix?
+		  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
+		  ## sqrt(.Machine$double.eps) is the default tolerance in all.equal()
+		  bad3 <- apply(abs(groupmeans - 1)<sqrt(.Machine$double.eps), 1, all)
+		  toremove3 <- match(nmvars[bad3], dimnames(descriptives)[["vars"]])
+		  expect_equal(toremove3,82)
+		  descriptives_ok <- descriptives[-toremove3,,,drop=FALSE]
+		  expect_equal(nrow(descriptives_ok),81)
+		  origvars_ok <- origvars[-toremove3]
 		  expect_equal(origvars_ok,1:81)
 })
 
