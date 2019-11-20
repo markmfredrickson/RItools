@@ -50,3 +50,52 @@ test_that("answers match MASS::ginv() under near rank deficiency",{
                                          tol=.Machine$double.eps^0.25)
     expect_equivalent(pinv_XtX, tcrossprod(pinv_sqrt_XtX))
 })
+
+
+context("Diagnose and fix a problem with balanceTest descriptives")
+## Evaluate issue with floating point equalities in balanceTest
+source("dumpdata.R")
+source("moredat.R")
+xb0i <- balanceTest(baselineFmlaCluster, data = dat17i, report = "all", p.adjust.method = "none")
+
+test_that("First, that we end  up with an empty matrix when we just wanted to delete one row",{
+expect_equal(nrow(descriptives),82)
+		  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
+toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+expect_equal(toremove,82)
+descriptives2 <- descriptives[-toremove,,,drop=FALSE]
+expect_equal(nrow(descriptives2),81)
+})
+
+
+context("Diagnose and fix a problem with balanceTest descriptives")
+## Evaluate issue with floating point equalities in balanceTest
+test_that("First, that we end  up with an empty matrix when we just wanted to delete one row",{
+		  source("moredat.R")
+		  baselineFmla <- reformulate(covs3, response = "soldvsnot17")
+		  baselineFmlaCluster <- update(baselineFmla, . ~ . + cluster(Q56))
+		  xb0i <- balanceTest(baselineFmlaCluster, data = dat17i, report = "all", p.adjust.method = "none")
+		  expect_equal(nrow(xb0i$results),0)
+		  ## This  next  does not work  even though the objects were exported from with the debug session of the call to balanceTest above.
+		  ##Browse[2]> save(nmvars,group_mean_labs,descriptives,origvars,file="objects_from_debug_balanceTest.rda")
+		  load("objects_from_debug_balanceTest.rda")
+		  ## The problem lines from lines 289--292 in balanceTest.R
+		  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
+		  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+		  expect_equal(toremove,integer(0))
+		  descriptives_gone	 <- descriptives[-toremove,,,drop=FALSE]
+		  origvars_gone	 <- origvars[-toremove,]
+		  expect_equal(nrow(descriptives_gone),0)
+		  expect_equal(dim(origvars_gone),NULL)
+		  ## Now showing one inelegant fix
+		  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE],1,
+			       function(x){ all.equal(x,matrix(rep(1,length(x)),nrow=1),check.attributes=FALSE) })
+		  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+		  expect_equal(toremove,82)
+		  descriptives_ok <- descriptives[-toremove,,,drop=FALSE]
+		  expect_equal(nrow(descriptives_ok),81)
+		  origvars_ok <- origvars[-toremove]
+		  expect_equal(origvars_ok,1:81)
+})
+
+
