@@ -289,7 +289,7 @@ balanceTest <- function(fmla,
 	  bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE],1,
 		       function(x){ all.equal(x,matrix(rep(1,length(x)),nrow=1),check.attributes=FALSE) })
 	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-	  if(length(toremove)<1){ ## if toremove=integer(0) then it drops all vars from descriptives
+	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
 		  descriptives <- descriptives[-toremove,,,drop=FALSE]
 		  origvars <- origvars[-toremove]
 	  }
