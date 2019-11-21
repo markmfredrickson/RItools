@@ -284,7 +284,7 @@ balanceTest <- function(fmla,
   # over a group assigned to some treatment condition.
   group_mean_labs <- setdiff(dimnames(descriptives)[["stat"]],
                              c("std.diff", "adj.diff", "pooled.sd", "z", "p"))
-  if (length(nmvars) & length(group_mean_labs))
+  if (length(nmvars) & length(group_mean_labs)) #cf #111
   {
 	  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
 	  bad <- apply(abs(groupmeans - 1) < sqrt(.Machine$double.eps), 1, all)
