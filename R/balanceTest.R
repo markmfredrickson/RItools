@@ -19,7 +19,7 @@
 ##' a standardization appropriate to the designated (post-)
 ##' stratification of the sample.  In the case without stratification
 ##' or clustering, the only weighting used to calculate treatment and
-##' control group means is that provided by the user as 
+##' control group means is that provided by the user as
 ##' \code{unit.weights}; in the absence of such an argument, these
 ##' means are unweighted.  When there are strata, within-stratum means
 ##' of treatment or of control observations are calculated using
@@ -40,35 +40,35 @@
 ##' statistics, targeting the hypothesis that assignment was random within strata. These
 ##' calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 ##' but the default weighting of strata differs from that of the descriptive calculations.
-##' With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum 
-##' is weighted in proportion to the product of the stratum mean of \code{unit.weights} 
-##' and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of 
-##' treated units (a) and control units (b) in the stratum; this weighting is optimal 
+##' With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum
+##' is weighted in proportion to the product of the stratum mean of \code{unit.weights}
+##' and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of
+##' treated units (a) and control units (b) in the stratum; this weighting is optimal
 ##' under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 ##' Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 ##' distance that combines each of the univariate mean differences while accounting
 ##' for correlations among them. It's similar to the Hotelling's T-squared statistic,
-##' except standarized using a permutation covariance.  See Hansen and Bowers (2008).  
+##' except standarized using a permutation covariance.  See Hansen and Bowers (2008).
 ##'
 ##' In contrast to the earlier function \code{xBalance} that it is intended to replace,
-##' \code{balanceTest} accepts only binary assignment variables (for now). 
+##' \code{balanceTest} accepts only binary assignment variables (for now).
 ##'
 ##' \code{stratum.weights} must be a function of a single argument,
 ##' a data frame containing the variables in \code{data} and
-##' additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights}, 
+##' additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights},
 ##' returning a named numeric vector of non-negative weights identified by stratum.
 ##' (For an example, enter \code{getFromNamespace("harmonic", "RItools")}.)
-##' the data  \code{stratum.weights} function.  
+##' the data  \code{stratum.weights} function.
 ##'
 ##' If the stratifying factor has NAs, these cases are dropped.  On the other
 ##' hand, if NAs in a covariate are found then those observations are dropped for descriptive
-##' calculations and "imputed" to the stratum mean of the variable for inferential calculations. 
+##' calculations and "imputed" to the stratum mean of the variable for inferential calculations.
 ##' When covariate values are dropped due to missingness, proportions of observations not missing on
 ##' that variable are recorded and returned.  The printed output presents non-missing proportions alongside of
 ##' the variables themselves, distinguishing the former by placing them at the bottom of the list and enclosing the
 ##' variable's name in parentheses.  If a variable shares a missingness pattern with other another variable,
-##' its missingness information may be labeled with the name of the other variable in the output. 
-##' 
+##' its missingness information may be labeled with the name of the other variable in the output.
+##'
 ##'
 ##' @title Standardized Differences for Stratified Comparisons
 ##' @param fmla A formula containing an indicator of treatment
@@ -91,7 +91,7 @@
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
 ##' @param covariate.scaling A scale factor to apply to covariates in
-##'   calculating \code{std.diffs} (currently ignored). 
+##'   calculating \code{std.diffs} (currently ignored).
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
@@ -190,7 +190,7 @@ balanceTest <- function(fmla,
 
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
 
-  if (missing(data)) 
+  if (missing(data))
      data <- environment(formula)
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "unit.weights"), names(mf), 0L)
@@ -227,7 +227,7 @@ balanceTest <- function(fmla,
         data[NAwts, '(weights)'] <- 0
         warning("NA unit.weights detected; treating as 0s")
         }
-  
+
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
   valid.for.report <- c("adj.means","adj.mean.diffs","chisquare.test",
@@ -249,8 +249,8 @@ balanceTest <- function(fmla,
 
   design          <- makeDesigns(fmla, data)
   aggDesign       <- aggregateDesigns(design)
-  ## (Creation of stratum weightings for use in 
-  ##  descriptives calculations would go here, if 
+  ## (Creation of stratum weightings for use in
+  ##  descriptives calculations would go here, if
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
   descriptives    <- designToDescriptives(design, covariate.scaling)
@@ -263,7 +263,7 @@ balanceTest <- function(fmla,
 
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
-  
+
   tmp <- lapply(strataAligned, alignedToInferentials)
   names(tmp) <- names(aggDesign@StrataMatrices)
 
@@ -275,22 +275,25 @@ balanceTest <- function(fmla,
   nstats.previous <- dim(descriptives)[2]
   descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p, use.first.dimnames = TRUE)
   names(dimnames(descriptives)) <- c("vars", "stat", "strata")
-    
+
   dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
 
   # strip out summaries of not-missing indicators that only ever take the value T
   nmvars <- identify_NM_vars(dimnames(descriptives)[["vars"]])
   # next line assumes every "stat" not in the given list is a mean
-  # over a group assigned to some treatment condition. 
+  # over a group assigned to some treatment condition.
   group_mean_labs <- setdiff(dimnames(descriptives)[["stat"]],
                              c("std.diff", "adj.diff", "pooled.sd", "z", "p"))
-    if (length(nmvars) & length(group_mean_labs))
-    {
-        bad <- apply(descriptives[nmvars, group_mean_labs,,drop=FALSE]==1,1,all)
-        toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-        descriptives <- descriptives[-toremove,,,drop=FALSE]
-        origvars <- origvars[-toremove]
-        }
+  if (length(nmvars) & length(group_mean_labs)) #cf #111
+  {
+	  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
+	  bad <- apply(abs(groupmeans - 1) < sqrt(.Machine$double.eps), 1, all)
+	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
+		  descriptives <- descriptives[-toremove,,,drop=FALSE]
+		  origvars <- origvars[-toremove]
+	  }
+  }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
     c(s$csq, s$DF, pchisq(s$csq, df = s$DF, lower.tail = FALSE))
