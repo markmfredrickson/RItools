@@ -10,7 +10,7 @@ Description: Tools for randomization inference.
 License: MIT
 LazyData: true
 Depends:
-    R (>= 3.6.0),
+    R (>= 3.5.3),
     SparseM
 Imports:
     grDevices,
