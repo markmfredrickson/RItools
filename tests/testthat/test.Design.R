@@ -614,8 +614,7 @@ test_that("alignDesigns centers covars by stratum", {
     simple1@Sweights <- RItools:::DesignWeights(simple1, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    expect_equivalent(colSums(asimple1[["--"]]@Covariates *
-                              asimple1[["--"]]@UnitWeights ),
+    expect_equivalent(colSums(asimple1[["--"]]@Covariates),
                       rep(0,ncol(asimple1[["--"]]@Covariates)))
 
     tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
@@ -626,8 +625,7 @@ test_that("alignDesigns centers covars by stratum", {
 
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
-    expect_equivalent(colSums(asimple2[["--"]]@Covariates *
-                              asimple2[["--"]]@UnitWeights ),
+    expect_equivalent(colSums(asimple2[["--"]]@Covariates  ),
                       rep(0,ncol(asimple2[["--"]]@Covariates)))
 
     tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 

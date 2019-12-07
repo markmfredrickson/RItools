@@ -11,14 +11,14 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' First col is entirely \code{TRUE} or 1, like an intercept, unless corresponding
 ##' UnitWeight is 0, in which case it may also be 0 (see below). Subsequent cols
 ##' present only if there are missing covariate values, in which case these cols are
-##' named for terms (of the original calling formula or data frame) that possess 
+##' named for terms (of the original calling formula or data frame) that possess
 ##' missing values.  Terms with the same missing data pattern are mapped to a single
 ##' column of this matrix.  If the ModelMatrixPlus is representing elements, each column should
 ##' be all 1s and 0s, indicating which elements have non-missing values for the term
 ##' represented by that column.  If the ModelMatrixPlus as a whole represents clusters,
 ##' then there can be fractional values, but that situation should only arise in the
-##' DesignOptions class exension of this class, so it's documented there. 
-##' 
+##' DesignOptions class exension of this class, so it's documented there.
+##'
 ##' @slot Covariates The numeric matrix that `model.matrix` would have returned.
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
 ##' @slot TermLabels labels of terms of the originating model formula
@@ -28,7 +28,6 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
 ##' @slot UnitWeights vector of weights associated w/ rows of the ModelMatrixPlus
 ##' @keywords internal
-##' 
 setClass("ModelMatrixPlus",
          slots=c(Covariates="matrix",
                   OriginalVariables="integer",
@@ -41,11 +40,12 @@ setClass("ModelMatrixPlus",
          )
 
 #' @method as.matrix ModelMatrixPlus
+#' @export
 as.matrix.ModelMatrixPlus <- function(x, ...)
     {
         ans <- x@Covariates
         attr(ans, "assign") <- x@OriginalVariables
-###        attr(ans, "term.labels") <- # a model.matrix wouldn't really 
+###        attr(ans, "term.labels") <- # a model.matrix wouldn't really
 ###            x@TermLabels # have this, although maybe it should
         attr(ans, "contrasts") <- x@Contrasts
         ans
@@ -53,8 +53,8 @@ as.matrix.ModelMatrixPlus <- function(x, ...)
 
 ##' Grow a model matrix while at the same time compactly
 ##' encoding missingness patterns in RHS variables of a model frame.
-##' 
-##' 
+##'
+##'
 ##' @title Model matrices along with compact encodings of data availability/missingness
 ##' @param object Model formula or terms object (as in `model.matrix`)
 ##' @param data data.frame, as in `model.matrix()` but has to have \sQuote{\code{(weights)}} column
@@ -75,7 +75,6 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
   stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
   
   covariates <- model.matrix(object = object, data = data, ...) 
-
 
   assign <- attr(covariates, "assign")
   attr(covariates, "assign") <- NULL
@@ -121,10 +120,10 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
       null.record[null.record] <- apply(is.na(covariates[null.record,,drop=FALSE]), 1, all)
 
   terms.with.missings <- !sapply(ccs.by.term, all)
-    
+
   ccs.by.term <- c(list('_non-null record_'=!null.record),
                    ccs.by.term)
-  terms.with.missings <- c(TRUE, # in order always to have same leading entry 
+  terms.with.missings <- c(TRUE, # in order always to have same leading entry
                            terms.with.missings)
 
   nm.covs <- integer(ncol(covariates))
@@ -149,7 +148,7 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
     names(notmissing) <- names(ccs.by.term)[terms.with.missings][!nmcols.dupes]
     ## Now form the look-up table associating columns of the covariates matrix
     ## with columns of matrix `notmissing` describing relevant missingness patterns.
-    ## Columns associated with terms on which there was no missingness get a 0 here. 
+    ## Columns associated with terms on which there was no missingness get a 0 here.
     nm.terms <- nm.terms[-1L]
     nm.covs[assign>0] <- nm.terms[assign[assign>0]]
 
@@ -181,13 +180,13 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
 ##' NotMissing columns consist of weighted averages of element-wise non-missingness indicators
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
 ##' vector.  As otherwise, columns of the NotMissing matrix represent terms
-##' from a model formula, rather than columns the terms may have expanded to.  
+##' from a model formula, rather than columns the terms may have expanded to.
 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataFrame Factors indicating strata
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @keywords internal
-#' 
+#'
 setClass("DesignOptions",
          representation = list(
            Z                 = "logical",
@@ -210,13 +209,13 @@ setClass("DesignOptions",
 ##' NAs in a cluster() or strata() variable will be dropped.
 ##' NAs in covariates will be passed through, but without
 ##' being flagged as NotMissing (as available data items will)
-##' 
+##'
 ##' @param fmla Formula
 ##' @param data Data
 ##' @return DesignOptions
 ##' @import stats
 ##' @keywords internal
-##' 
+##'
 makeDesigns <- function(fmla, data) {
 
     ts <- terms(fmla, data = data[setdiff(colnames(data), '(weights)')],
@@ -247,11 +246,11 @@ makeDesigns <- function(fmla, data) {
   # Following resolution to #86 in [master ad6ed6a], we have to indicate specifically
   # that `cluster` and `strata` are to be found in the survival package.
   str.vnames.safe <- gsub('(?<!:)cluster\\(', 'survival::cluster\\(', str.vnames, perl=TRUE)
-  str.vnames.safe <- gsub('(?<!:)strata\\(', 'survival::strata\\(', str.vnames.safe, perl=TRUE)     
+  str.vnames.safe <- gsub('(?<!:)strata\\(', 'survival::strata\\(', str.vnames.safe, perl=TRUE)
   # The purposes of the regexp lookbehinds (`(?<!:)`) above are to avoid overwriting
   # "survival::cluster(" with "survival::survival::cluster(", and also to avoid
-  # overruling users who prefer to get their `cluster()` or `strata()` from elsewhere 
-  # than the survival package. 
+  # overruling users who prefer to get their `cluster()` or `strata()` from elsewhere
+  # than the survival package.
 
   str.fmla <- formula(paste0("factor(", treatment.name, ")", " ~ ", paste0(collapse = "+", c(1, str.vnames.safe))),
                       env=environment(fmla))
@@ -385,33 +384,33 @@ setClass("StratumWeightedDesignOptions",
 ##' The function expects its DesignOptions argument to represent aggregated data,
 ##' i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
 ##' is a function that is applied to a data frame representing clusters,
-##' with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the 
+##' with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the
 ##' \code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
 ##' culled or inferred from originating \code{\link{balanceTest}} call or as aggregated up
-##' from those unit weights).  Returns a 
-##' weighting factor to be associated with each stratum, this factor determining the stratum 
+##' from those unit weights).  Returns a
+##' weighting factor to be associated with each stratum, this factor determining the stratum
 ##' weight by being multiplied by mean of unit weights over clusters in that stratum.
 ##'
 ##' Specifically, the function's value is a data frame of two variables,
 ##' \code{sweights}  and \code{wtratio}, with rows representing strata.
 ##' The \code{sweights} vector represents internally
-##' calculated or user-provided \code{stratum.weights}, one for each 
+##' calculated or user-provided \code{stratum.weights}, one for each
 ##' stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
 ##' weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
 ##' \code{sweights} to the product of half the harmonic
 ##' mean of n_{tb} and n_{cb}, the number of treatment and control
 ##' clusters in stratum b, with the mean of the weights associated with
 ##' each of these clusters.  In the notation of Hansen & Bowers
-##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name 
-##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight 
-##' in the sense of summing to 1 across strata.  The ratio is expected 
+##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
+##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight
+##' in the sense of summing to 1 across strata.  The ratio is expected
 ##' downstream in \code{alignedToInferentials} (in internal calculations
 ##' involving \sQuote{\code{wtr}}).
-##' 
-##' 
+##'
+##'
 ##' @param design DesignOptions
 ##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, all other covariates and unit.weights.
-##' @return data frame w/ rows for strata, cols \code{sweights} and \code{wtratio}. 
+##' @return data frame w/ rows for strata, cols \code{sweights} and \code{wtratio}.
 ##'
 ##' @keywords internal
 
@@ -457,7 +456,7 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
         ## harmonic_times_mean_weight(). Since wtratio needs to
         ## compare these weights to (h_b * m-bar_b) as in H&B, we have:
         wtratio <- rep(2, length(swts))
-        ## (normalization of sweights to be addressed below). 
+        ## (normalization of sweights to be addressed below).
     } else {
         hwts <- harmonic_times_mean_weight(
             data.frame(Tx.grp = design@Z,
@@ -482,20 +481,20 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 
 ##' Generate Descriptives
 ##'
-##' Use a design object to generate descriptive statistics that ignore clustering. 
-##' Stratum weights are respected if provided (by passing a design arg of 
-##' class StratumWeightedDesignOptions). If not provided, stratum weights 
-##' default to "Effect of Treatment on Treated" weighting.  That is, when 
+##' Use a design object to generate descriptive statistics that ignore clustering.
+##' Stratum weights are respected if provided (by passing a design arg of
+##' class StratumWeightedDesignOptions). If not provided, stratum weights
+##' default to "Effect of Treatment on Treated" weighting.  That is, when
 ##' combining within-stratum averages (which will themselves have been
 ##' weighted by unit weights), each stratum receives a weight equal to
 ##' the product of the stratum sum of unit weights with the fraction
-##' of clusters within the stratum that were assigned to the treatment 
-##' condition. 
+##' of clusters within the stratum that were assigned to the treatment
+##' condition.
 ##' @param design A DesignOptions object
 ##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
 ##' @return Descriptives
 ##' @keywords internal
-##' 
+##'
 designToDescriptives <- function(design, covariate.scaling = NULL) {
   stopifnot(inherits(design, "DesignOptions")) # defensive programming
   if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
@@ -532,13 +531,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
         } else {
           if (length(stratlevs)==1) {Swts <- 1
           ## if the stratifier has just 1 level, we don't
-          ## need stratum weights, so just use 1.  If it has more 
+          ## need stratum weights, so just use 1.  If it has more
           ## than 1 level, then we're here because stratum weights
           ## were not passed down, and we'll need to use defaults,
           ## which are more convenient to set only implictly; see further down.
             names(Swts) <- stratlevs} else Swts <- NULL
                 }
-    
+
     Z <- as.numeric(design@Z)
     ZZ <- S * Z
     WW <- S * (1 - Z)
@@ -551,7 +550,7 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     n1 <- n1[covars.nmcols, ]
     n0 <- t(Uweights) %*% (1 - Z)
     n0 <- n0[covars.nmcols, ]
-    
+
     ## Now calculate assignment/stratum weights
     cluster.representatives <- !duplicated(design@Cluster)
     txclus.by.strat <- t(ZZ) %*% as.matrix(cluster.representatives)
@@ -568,18 +567,18 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
     tx.wt <- ifelse(strat.sum.uweights, tx.wt/strat.sum.uweights, 0)  # approp. HT weights to estimate, by stratum,
     ctl.wt <-ifelse(strat.sum.uweights, ctl.wt/strat.sum.uweights, 0) # (total uweighted measurements)/(total uweights)
-    ## Next factor in stratum weights, `Swts`. 
+    ## Next factor in stratum weights, `Swts`.
     tx.wt <- tx.wt * Swts
     ctl.wt <- ctl.wt * Swts
-    } else { # in this condition no Swts were passed, so we default to 
+    } else { # in this condition no Swts were passed, so we default to
       ## strat.sum.uweights *(txclus.by.strat / nclus.by.strat)
-      tx.wt <- ifelse(txclus.by.strat, 1, 0)  
+      tx.wt <- ifelse(txclus.by.strat, 1, 0)
       ctl.wt <-ifelse(ctlclus.by.strat, txclus.by.strat/ctlclus.by.strat, 0)
       }
     ## now expand up tx.wt and ctl.wt to match dimensions of data
     tx.wts <- as.vector(as.matrix(S %*% tx.wt))
     ctl.wts <- as.vector(as.matrix(S %*% ctl.wt))
-    
+
     # ok, now that preliminaries are out of the way, compute some useful stuff.
     ## ratio estimates of means for a "domain" equal to intersection of
     ## treatment group with units for which which the covariate is non-missing
@@ -612,13 +611,13 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
 ##'
 ##' Totals up all the covariates, as well as user-provided unit weights.
 ##' (What it does to NotMissing entries is described in docs for DesignOptions class.)
-##' 
+##'
 ##' If \code{design@Cluster} has extraneous (non-represented) levels, they will be dropped.
-##' 
+##'
 ##' @param design DesignOptions
 ##' @return another DesignOptions representing the clusters
 ##' @keywords internal
-##' 
+##'
 aggregateDesigns <- function(design) {
   clusters <- factor(design@Cluster)
   n.clusters <- nlevels(clusters)
@@ -647,7 +646,7 @@ aggregateDesigns <- function(design) {
 
   dim(unit.weights) <- NULL
   names(unit.weights) <- levels(Cluster)
-  
+
   Uweights.tall <- design@UnitWeights * design@NotMissing
   Covariates <- as.matrix(C_transp %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           design@Covariates *
@@ -665,7 +664,7 @@ aggregateDesigns <- function(design) {
     Covariates <- as.matrix(Covariates)
     colnames(Covariates)   <- colnames(design@Covariates)
     row.names(Covariates) <- levels(Cluster)
-    
+
   new("DesignOptions",
       Z = Z,
       StrataFrame = StrataFrame,
@@ -684,7 +683,7 @@ aggregateDesigns <- function(design) {
 #'
 #' A class for representing covariate matrices after alignment within stratum,
 #' for a (single) given stratifying factor.  There can also be a clustering variable,
-#' assumed to be nested within the stratifying variable. 
+#' assumed to be nested within the stratifying variable.
 #'
 #' In contrast to DesignOptions, this class represents the combination of a single Covariates
 #' table, realized treatment assignment and treatment assignment scheme, not multiple treatment
@@ -692,8 +691,8 @@ aggregateDesigns <- function(design) {
 #' missings have been patched with a value and then all of the covariate values have been aligned
 #' within each stratum.  In lieu of a NotMissing slot there will be Covariates columns, also
 #' centered within a stratum, recording
-#' non-missingness of the original data. 
-#' 
+#' non-missingness of the original data.
+#'
 #' The StrataWeightRatio slot has an entry for each unit, representing ratio of
 #' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 #' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
@@ -710,7 +709,6 @@ aggregateDesigns <- function(design) {
 setClass("CovsAlignedToADesign",
          slots =
              c(Covariates="matrix",
-               UnitWeights="numeric",
              Z                 = "logical",
              StrataMatrix    = "matrix.csr", 
              StrataWeightRatio = "numeric",
@@ -727,7 +725,7 @@ setClass("CovsAlignedToADesign",
 ##' @param post.align.transform A post-align transform
 ##' @return list List of `CovsAlignedToADesign` objects
 ##' @keywords internal
-##' 
+##'
 alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
   stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
@@ -767,7 +765,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
                   all(levels(ss)  %in% names(wtratio) ) )
     wtr.short <- wtratio[match(levels(ss),
                                names(design@Sweights[[s]]$wtratio),
-                               nomatch=1L) # <-- this is to handle 
+                               nomatch=1L) # <-- this is to handle
                          ]                 # the unstratified case
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
@@ -776,9 +774,9 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     covars.Sctr <- covars
     for (jj in 1L:ncol(covars))
     {
-        covars.Sctr[,jj] <- if (all(covars[,jj]==covars[1L,jj])) 0 else 
+        covars.Sctr[,jj] <- if (all(covars[,jj]==covars[1L,jj])) 0 else
             suppressWarnings( #throws singularity warning if covar is linear in S
-                slm.wfit.csr( # see note in ./utils.R on why we use our own 
+                slm.wfit.csr( # see note in ./utils.R on why we use our own
                     S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
                     weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
             )
@@ -808,10 +806,10 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         )
     }
     colnames(covars.Sctr) <- vars
-      
+    covars.Sctr  <- covars.Sctr * non_null_record_wts
+
       new("CovsAlignedToADesign",
           Covariates        = covars.Sctr,
-          UnitWeights       = non_null_record_wts,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataWeightRatio = wtr, #as extracted from the design
@@ -828,13 +826,13 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##'
 ##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list
-##' @keywords internal 
+##' @keywords internal
 alignedToInferentials <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
 
     Covs <- alignedcovs@Covariates
-    
+
     n <- t(S) %*% S
     n.inv <- 1 / n
     n1 <- t(S) %*% zz
@@ -846,11 +844,11 @@ alignedToInferentials <- function(alignedcovs) {
     tmp@ra <- ifelse(!is.finite(tmp@ra), 0, tmp@ra) # we can have strata of 1 unit, which causes a divide by zero error
 
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
-    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2)) 
-    
-    tmat <- Covs * (alignedcovs@UnitWeights * #the sum statistic we're about to compute corresponds 
-        alignedcovs@StrataWeightRatio) # to averaging within-stratum differences using stratum 
-    ## weights proportional to harmonic means of n_t's and n_c's.  To override w/ weights we want, 
+    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2))
+
+    tmat <- Covs *#the sum statistic we're about to compute averages within-
+        alignedcovs@StrataWeightRatio # stratum differences using stratum
+    ## weights proportional to harmonic means of n_t's and n_c's.  To override w/ weights we want,
     ## factor in a wtratio as constructed by DesignWeights().
 
     ZtH <- S %*% n.inv %*% n1
@@ -859,8 +857,8 @@ alignedToInferentials <- function(alignedcovs) {
 
     scaled.tmat <- as.matrix(tmat * sqrt(dv))
     tcov <- crossprod(scaled.tmat)
-    ssvar <- diag(tcov)    
-    
+    ssvar <- diag(tcov)
+
     zstat <- ifelse(ssvar <= .Machine$double.eps, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
@@ -868,13 +866,13 @@ alignedToInferentials <- function(alignedcovs) {
     tmat <- tmat[,ssvar > .Machine$double.eps, drop=FALSE]
     scaled.tmat <- scaled.tmat[,ssvar > .Machine$double.eps, drop=FALSE]
     cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.tmat)
-    
+
     mvz <- drop(crossprod(ssn[ssvar > .Machine$double.eps], cov_minus_.5))
 
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
 
-    list(z = zstat, p = p, csq = csq , DF = DF, 
+    list(z = zstat, p = p, csq = csq , DF = DF,
        adj.mean.diffs=ssn, tcov = tcov)
 }
 
@@ -901,7 +899,7 @@ sparseToVec <- function(s, column = TRUE) {
 ##' to make this assumption untrue, then this
 ##' helper is designed to err on the side of not
 ##' identifying other columns as NM cols.
-##' 
+##'
 ##' @param vnames character, variable names
 ##' @return character vector of names of NM vars, possibly of length 0
 ##' @author Hansen

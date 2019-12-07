@@ -22,8 +22,8 @@ to last one specified in originating function call (which appears first in the x
 \item{...}{Not used.}
 }
 \value{
-data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
-        additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
+data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and
+        additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing
         a combined differences test, if found, and otherwise `NULL`.
 }
 \description{
@@ -35,13 +35,26 @@ with assumptions of the broom package.
 statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 calculations. In both cases one has to specify which stratification one wants
 statistics about, as xbal objects can store info about several stratifications.
-[RItools::tidy.xbal()] has a parameter `varnames_crosswalk` not shared with 
+[RItools::tidy.xbal()] has a parameter `varnames_crosswalk` not shared with
 [RItools::glance.xbal()]. It should be a named character vector, the elements
 of which give names of columns to be returned and the names of which correspond
 to columns of xbal objects' \sQuote{results} entry.  Its ordering dictates the order
 of the result. The default value translates between conventional xbal
 column names and broom package conventional names.
 
+\describe{
+    \item{vars}{variable name}
+    \item{Control}{mean of LHS variable = 0 group}
+    \item{Treatment}{ mean of LHS variable = 1 group}
+    \item{adj.diff}{T - C diff w/ direct standardization for strata if applicable}
+    \item{std.diff}{adj.diff/pooled.sd}
+    \item{pooled.sd}{pooled SD}
+    \item{statistic}{`z` column from the xbal object}
+    \item{p.value}{`p` column from the xbal object}
+}
+Additional parameters beyond those listed here are ignored (at this time).
+}
+\details{
 \describe{
     \item{vars}{variable name}
     \item{Control}{mean of LHS variable = 0 group}

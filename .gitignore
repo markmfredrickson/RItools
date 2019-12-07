@@ -1,3 +1,4 @@
+.Rhistory
 *.Rcheck
 *.tar.gz
 .local
