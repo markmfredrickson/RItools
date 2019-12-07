@@ -617,7 +617,7 @@ test_that("alignDesigns centers covars by stratum", {
     expect_equivalent(colSums(asimple1[["--"]]@Covariates),
                       rep(0,ncol(asimple1[["--"]]@Covariates)))
 
-    tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
+    tmp1 <- asimple1[["strat"]]@Covariates 
     expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
     expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
@@ -628,7 +628,7 @@ test_that("alignDesigns centers covars by stratum", {
     expect_equivalent(colSums(asimple2[["--"]]@Covariates  ),
                       rep(0,ncol(asimple2[["--"]]@Covariates)))
 
-    tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
+    tmp2 <- asimple2[["strat"]]@Covariates 
     expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
     expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),

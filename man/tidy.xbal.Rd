@@ -54,16 +54,3 @@ column names and broom package conventional names.
 }
 Additional parameters beyond those listed here are ignored (at this time).
 }
-\details{
-\describe{
-    \item{vars}{variable name}
-    \item{Control}{mean of LHS variable = 0 group}
-    \item{Treatment}{ mean of LHS variable = 1 group}
-    \item{adj.diff}{T - C diff w/ direct standardization for strata if applicable}
-    \item{std.diff}{adj.diff/pooled.sd}
-    \item{pooled.sd}{pooled SD}
-    \item{statistic}{`z` column from the xbal object}
-    \item{p.value}{`p` column from the xbal object}
-}
-Additional parameters beyond those listed here are ignored (at this time).
-}
