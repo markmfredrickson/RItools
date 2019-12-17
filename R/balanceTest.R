@@ -98,8 +98,8 @@
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
-##' @param covariate.scaling A scale factor to apply to covariates in
-##'   calculating \code{std.diffs} (currently ignored).
+##' @param covariate.scales covariate dispersion estimates to use
+##' as denominators of\code{std.diffs} (optional).
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
@@ -183,7 +183,7 @@ balanceTest <- function(fmla,
                      stratum.weights = harmonic_times_mean_weight,
                      subset,
                      include.NA.flags = TRUE,
-                     covariate.scaling = NULL,
+                     covariate.scales = setNames(numeric(0), character(0)),
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 ### API Assumptions:
@@ -261,7 +261,7 @@ balanceTest <- function(fmla,
   ##  descriptives calculations would go here, if
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
-  descriptives    <- designToDescriptives(design, covariate.scaling)
+  descriptives    <- designToDescriptives(design, covariate.scales)
 
   # these weights govern inferential but not descriptive calculations
 

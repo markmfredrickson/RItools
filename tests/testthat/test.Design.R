@@ -291,7 +291,6 @@ test_that("Issue 88: logical Covariates correctly generated",
 
           })
 
-
 test_that("DesignOptions to descriptive statistics", {
   set.seed(20130801)
 
@@ -330,6 +329,22 @@ test_that("DesignOptions to descriptive statistics", {
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
 
+})
+
+test_that("designToDescriptives uses provided covariate scales",{
+    d  <- data.frame(x=rnorm(50), z=rep(c(0,1), 25))
+    d$'(weights)'  <- 1
+    simple <- RItools:::makeDesigns(z ~ x, data=d)
+    sd_x  <- sd(resid(lm(x ~z, data=d)))
+    descriptives <- designToDescriptives(simple, covariate.scales=c(x=sd_x*10))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    descriptives <- designToDescriptives(simple,
+                                         covariate.scales=c(x=sd_x*10, y=Inf))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    expect_warning(designToDescriptives(simple, covariate.scales=sd_x),
+                   "name")
+    expect_warning(designToDescriptives(simple, covariate.scales=c(x="foo")),
+                   "numeric")
 })
 
 test_that("descriptives for NotMissing variables", 

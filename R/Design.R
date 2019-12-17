@@ -501,9 +501,6 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 ##' of clusters within the stratum that were assigned to the treatment
 ##' condition.
 ##'
-##' At present the \code{covariate.scaling} argument is being ignored, with
-##' a warning.
-##' 
 ##' By default, covariates are scaled by their pooled s.d.s, square roots
 ##' of half of their treatment group variances plus half of their control
 ##' group variances.  If weights are provided, these are weighted variances.
@@ -513,16 +510,19 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 ##' and are calculated against the first stratification found.  Either way,
 ##' if descriptives are calculated for multiple stratifications, only one
 ##' set of covariate s.d.s will have been calculated, and these underlie
-##' standard difference calculations for each of the stratifications.  
+##' standard difference calculations for each of the stratifications.
+##'
+##' If a named numeric \code{covariate.scales} argument is provided, any
+##' covariates named in the vector will have their pooled s.d.s taken from
+##' it, rather than from the internal calculation. 
 ##' 
 ##' @param design A DesignOptions object
-##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs (currently ignored)
+##' @param covariate.scales Scale estimates for covariates, a named numeric vector
 ##' @return Descriptives
 ##' @keywords internal
 ##'
-designToDescriptives <- function(design, covariate.scaling = NULL) {
+designToDescriptives <- function(design, covariate.scales = NULL) {
   stopifnot(inherits(design, "DesignOptions")) # defensive programming
-  if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
   covars <- ifelse(is.na(design@Covariates), 0, design@Covariates)
 
   ## Tack NM cols onto covars, but with intercept col listed last
@@ -531,6 +531,22 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   vars <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   colnames(covars)   <-  vars
   covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
+
+  covariate.scales  <-
+      if (is.null(covariate.scales) |
+          (bad  <- !is.null(covariate.scales) &
+               (  !is.numeric(covariate.scales) | is.null(names(covariate.scales)) )
+              )
+          )
+      {
+          if (bad)
+              warning("'covariate.scales' should be NULL or a named numeric; ignoring")
+          setNames(numeric(0), character (0))
+      } else {
+          common_names  <- intersect(names(covariate.scales), vars)
+          covariate.scales[common_names]
+      }  
+
   stratifications <- colnames(design@StrataFrame)
 
   Uweights <- design@UnitWeights * design@NotMissing
@@ -630,6 +646,11 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     var.0 <- var.0* ifelse(n0>1, n0/(n0 - 1), 0)
 
     pooled <- sqrt((var.1 + var.0) / 2)
+    ## if covariate scales were provided, they override what
+    ## was just calculated
+    if (length(covariate.scales)) {
+        pooled[match(names(covariate.scales), rownames(pooled)),]  <- covariate.scales
+        }
     }
 
     adjustedDifference    <- treated.avg - control.avg
