@@ -101,11 +101,11 @@ test_that("Null stratification is encoded by '--'",{
     nuclearplants$"(weights)" <- 1
     d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
     expect_equal(colnames(d0@StrataFrame), "--")
-    expect_equal(colnames(d0@StrataMatrices), "--")
+    expect_equal(names(d0@StrataMatrices), "--")
     foo <- nuclearplants$pt
     d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
     expect_true("--" %in% colnames(d1@StrataFrame))
-    expect_true("--" %in% colnames(d1@StrataMatrices))    
+    expect_true("--" %in% names(d1@StrataMatrices))    
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
@@ -318,7 +318,10 @@ test_that("DesignOptions to descriptive statistics", {
   
   # the strata should imply different stats
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
-  
+
+  # however, the pooled s.d.s should be the same.
+  expect_identical(descriptives[,"pooled.sd","--"], descriptives[,"pooled.sd","s"])
+
   # ok, now checking that values are correct.
   expect_equal(mean(d$x[d$z == 1]), descriptives["x", "Treatment", "--"])
   expect_equal(mean(d$x[d$z == 0]), descriptives["x", "Control", "--"])

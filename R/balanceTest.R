@@ -12,11 +12,19 @@
 ##' The function assembles various univariate descriptive statistics
 ##' for the groups to be compared: (weighted) means of treatment and
 ##' control groups; differences of these (adjusted differences); and
-##' adjusted differences as multiples of a pooled S.D. of the variable
-##' in the treatment and control groups (standard differences). This
-##' is done separately for each provided stratifying factor and, by
-##' default, for the unstratified comparison, in each case reflecting
-##' a standardization appropriate to the designated (post-)
+##' adjusted differences as multiples of a pooled s.d. of the variable
+##' in the treatment and control groups (standard differences). Pooled
+##' s.d.s are calculated with weights but without attention to clustering, 
+##' and ordinarily without attention to stratification.  (If the user does 
+##' not request unstratified comparisons, overriding the default setting,
+##' then pooled s.d.s are calculated with weights corresponding to the first
+##' stratification for which comparison is requested.  In this case as
+##' in the default setting, the same pooled s.d.s are used for standardization
+##' under each stratification considered. This facilitates comparison of
+##' standard differences across stratification schemes.)  Means
+##' are contrasted separately for each provided stratifying factor and, by
+##' default, for the unstratified comparison, in each case with weights
+##' reflecting a standardization appropriate to the designated (post-)
 ##' stratification of the sample.  In the case without stratification
 ##' or clustering, the only weighting used to calculate treatment and
 ##' control group means is that provided by the user as
