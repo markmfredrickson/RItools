@@ -91,6 +91,21 @@ test_that("Issue #76: Using I() in formulas", {
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
+  ## While we're at it, confirm that the non-stratification
+  ## encoded in this DesignOptions bears the column name "--".
+  
+})
+
+test_that("Null stratification is encoded by '--'",{
+    data(nuclearplants)
+    nuclearplants$"(weights)" <- 1
+    d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
+    expect_equal(colnames(d0@StrataFrame), "--")
+    expect_equal(colnames(d0@StrataMatrices), "--")
+    foo <- nuclearplants$pt
+    d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
+    expect_true("--" %in% colnames(d1@StrataFrame))
+    expect_true("--" %in% colnames(d1@StrataMatrices))    
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{

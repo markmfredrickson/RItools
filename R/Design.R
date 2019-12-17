@@ -175,6 +175,10 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
 ##' vector.  As otherwise, columns of the NotMissing matrix represent terms
 ##' from a model formula, rather than columns the terms may have expanded to.
+##'
+##' If present, the null stratification (all units in same stratum) in indicated
+##' by the corresponding column of the \code{StrataFrame} slot bearing the name
+##' \sQuote{\code{--}}.
 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
@@ -496,8 +500,9 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 ##' the product of the stratum sum of unit weights with the fraction
 ##' of clusters within the stratum that were assigned to the treatment
 ##' condition.
+##' 
 ##' @param design A DesignOptions object
-##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
+##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs (currently ignored)
 ##' @return Descriptives
 ##' @keywords internal
 ##'
