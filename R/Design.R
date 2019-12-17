@@ -184,7 +184,7 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 #' @keywords internal
 #'
 setClass("DesignOptions",
-         representation = list(
+         slots = c(
            Z                 = "logical",
            StrataMatrices    = "list",
            StrataFrame       = "data.frame",
