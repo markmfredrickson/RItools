@@ -188,7 +188,7 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
 #' @keywords internal
 #'
 setClass("DesignOptions",
-         representation = list(
+         slots = c(
            Z                 = "logical",
            StrataFrame       = "data.frame",  
              Cluster           = "factor"),
