@@ -97,6 +97,21 @@ test_that("Issue #76: Using I() in formulas", {
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
+  ## While we're at it, confirm that the non-stratification
+  ## encoded in this DesignOptions bears the column name "--".
+  
+})
+
+test_that("Null stratification is encoded by '--'",{
+    data(nuclearplants)
+    nuclearplants$"(weights)" <- 1
+    d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
+    expect_equal(colnames(d0@StrataFrame), "--")
+    expect_equal(names(d0@StrataMatrices), "--")
+    foo <- nuclearplants$pt
+    d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
+    expect_true("--" %in% colnames(d1@StrataFrame))
+    expect_true("--" %in% names(d1@StrataMatrices))    
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
@@ -284,7 +299,6 @@ test_that("Issue 88: logical Covariates correctly generated",
 
           })
 
-
 test_that("DesignOptions to descriptive statistics", {
   set.seed(20130801)
 
@@ -311,7 +325,10 @@ test_that("DesignOptions to descriptive statistics", {
   
   # the strata should imply different stats
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
-  
+
+  # however, the pooled s.d.s should be the same.
+  expect_identical(descriptives[,"pooled.sd","--"], descriptives[,"pooled.sd","s"])
+
   # ok, now checking that values are correct.
   expect_equal(mean(d$x[d$z == 1]), descriptives["x", "Treatment", "--"])
   expect_equal(mean(d$x[d$z == 0]), descriptives["x", "Control", "--"])
@@ -320,6 +337,22 @@ test_that("DesignOptions to descriptive statistics", {
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
 
+})
+
+test_that("designToDescriptives uses provided covariate scales",{
+    d  <- data.frame(x=rnorm(50), z=rep(c(0,1), 25))
+    d$'(weights)'  <- 1
+    simple <- RItools:::makeDesigns(z ~ x, data=d)
+    sd_x  <- sd(resid(lm(x ~z, data=d)))
+    descriptives <- designToDescriptives(simple, covariate.scales=c(x=sd_x*10))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    descriptives <- designToDescriptives(simple,
+                                         covariate.scales=c(x=sd_x*10, y=Inf))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    expect_warning(designToDescriptives(simple, covariate.scales=sd_x),
+                   "name")
+    expect_warning(designToDescriptives(simple, covariate.scales=c(x="foo")),
+                   "numeric")
 })
 
 test_that("descriptives for NotMissing variables", 

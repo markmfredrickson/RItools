@@ -181,6 +181,10 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
 ##' vector.  As otherwise, columns of the NotMissing matrix represent terms
 ##' from a model formula, rather than columns the terms may have expanded to.
+##'
+##' If present, the null stratification (all units in same stratum) in indicated
+##' by the corresponding column of the \code{StrataFrame} slot bearing the name
+##' \sQuote{\code{--}}.
 
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataFrame Factors indicating strata
@@ -490,14 +494,29 @@ DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) 
 ##' the product of the stratum sum of unit weights with the fraction
 ##' of clusters within the stratum that were assigned to the treatment
 ##' condition.
+##'
+##' By default, covariates are scaled by their pooled s.d.s, square roots
+##' of half of their treatment group variances plus half of their control
+##' group variances.  If weights are provided, these are weighted variances.
+##' If descriptives are requested for an unstratified setup, i.e. a 
+##' stratification named \sQuote{\code{--}}, then covariate s.d.s
+##' are calculated against it; otherwise the variances reflect stratification,
+##' and are calculated against the first stratification found.  Either way,
+##' if descriptives are calculated for multiple stratifications, only one
+##' set of covariate s.d.s will have been calculated, and these underlie
+##' standard difference calculations for each of the stratifications.
+##'
+##' If a named numeric \code{covariate.scales} argument is provided, any
+##' covariates named in the vector will have their pooled s.d.s taken from
+##' it, rather than from the internal calculation. 
+##' 
 ##' @param design A DesignOptions object
-##' @param covariate.scaling Scale estimates for covs, to use instead of internally calculated pooled SDs
+##' @param covariate.scales Scale estimates for covariates, a named numeric vector
 ##' @return Descriptives
 ##' @keywords internal
 ##'
-designToDescriptives <- function(design, covariate.scaling = NULL) {
+designToDescriptives <- function(design, covariate.scales = NULL) {
   stopifnot(inherits(design, "DesignOptions")) # defensive programming
-  if (!is.null(covariate.scaling)) warning("Non-null 'covariate.scaling' currently being ignored")
   covars <- ifelse(is.na(design@Covariates), 0, design@Covariates)
 
   ## Tack NM cols onto covars, but with intercept col listed last
@@ -506,6 +525,22 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
   vars <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   colnames(covars)   <-  vars
   covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
+
+  covariate.scales  <-
+      if (is.null(covariate.scales) |
+          (bad  <- !is.null(covariate.scales) &
+               (  !is.numeric(covariate.scales) | is.null(names(covariate.scales)) )
+              )
+          )
+      {
+          if (bad)
+              warning("'covariate.scales' should be NULL or a named numeric; ignoring")
+          setNames(numeric(0), character (0))
+      } else {
+          common_names  <- intersect(names(covariate.scales), vars)
+          covariate.scales[common_names]
+      }  
+
   stratifications <- colnames(design@StrataFrame)
 
   Uweights <- design@UnitWeights * design@NotMissing
@@ -516,6 +551,9 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
                    "vars" = vars,
                    "stat" = c("Control", "Treatment", "std.diff", "adj.diff", "pooled.sd"),
                    "strata" = stratifications))
+  if (any(null_strat  <- stratifications=="--"))
+      stratifications  <- c("--", stratifications[!null_strat])
+      
   for (s in stratifications) {
 
     S <- SparseMMFromFactor(design@StrataFrame[[s]])
@@ -591,12 +629,21 @@ designToDescriptives <- function(design, covariate.scaling = NULL) {
     wtsum.ctl <- wtsum.ctl[covars.nmcols, ]
     control.avg <- t(X.use * ctl.wts) %*% (1 - Z) / wtsum.ctl
 
+    ## only perform pooled s.d. calculation the first time.
+      if (s==stratifications[1L])
+          {
     var.1 <- (t(X2.use *tx.wts) %*% Z - wtsum.tx * treated.avg^2) / wtsum.tx
     var.1 <- var.1 * ifelse(n1>1, n1/(n1 - 1), 0)
     var.0 <- (t(X2.use * ctl.wts) %*% (1 - Z) - wtsum.ctl * control.avg^2) / wtsum.ctl
     var.0 <- var.0* ifelse(n0>1, n0/(n0 - 1), 0)
 
     pooled <- sqrt((var.1 + var.0) / 2)
+    ## if covariate scales were provided, they override what
+    ## was just calculated
+    if (length(covariate.scales)) {
+        pooled[match(names(covariate.scales), rownames(pooled)),]  <- covariate.scales
+        }
+    }
 
     adjustedDifference    <- treated.avg - control.avg
     standardizedDifference <- adjustedDifference / pooled

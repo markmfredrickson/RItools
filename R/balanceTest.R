@@ -12,11 +12,19 @@
 ##' The function assembles various univariate descriptive statistics
 ##' for the groups to be compared: (weighted) means of treatment and
 ##' control groups; differences of these (adjusted differences); and
-##' adjusted differences as multiples of a pooled S.D. of the variable
-##' in the treatment and control groups (standard differences). This
-##' is done separately for each provided stratifying factor and, by
-##' default, for the unstratified comparison, in each case reflecting
-##' a standardization appropriate to the designated (post-)
+##' adjusted differences as multiples of a pooled s.d. of the variable
+##' in the treatment and control groups (standard differences). Pooled
+##' s.d.s are calculated with weights but without attention to clustering, 
+##' and ordinarily without attention to stratification.  (If the user does 
+##' not request unstratified comparisons, overriding the default setting,
+##' then pooled s.d.s are calculated with weights corresponding to the first
+##' stratification for which comparison is requested.  In this case as
+##' in the default setting, the same pooled s.d.s are used for standardization
+##' under each stratification considered. This facilitates comparison of
+##' standard differences across stratification schemes.)  Means
+##' are contrasted separately for each provided stratifying factor and, by
+##' default, for the unstratified comparison, in each case with weights
+##' reflecting a standardization appropriate to the designated (post-)
 ##' stratification of the sample.  In the case without stratification
 ##' or clustering, the only weighting used to calculate treatment and
 ##' control group means is that provided by the user as
@@ -90,8 +98,8 @@
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
-##' @param covariate.scaling A scale factor to apply to covariates in
-##'   calculating \code{std.diffs} (currently ignored).
+##' @param covariate.scales covariate dispersion estimates to use
+##' as denominators of\code{std.diffs} (optional).
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
@@ -175,7 +183,7 @@ balanceTest <- function(fmla,
                      stratum.weights = harmonic_times_mean_weight,
                      subset,
                      include.NA.flags = TRUE,
-                     covariate.scaling = NULL,
+                     covariate.scales = setNames(numeric(0), character(0)),
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 ### API Assumptions:
@@ -253,7 +261,7 @@ balanceTest <- function(fmla,
   ##  descriptives calculations would go here, if
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
-  descriptives    <- designToDescriptives(design, covariate.scaling)
+  descriptives    <- designToDescriptives(design, covariate.scales)
 
   # these weights govern inferential but not descriptive calculations
 
