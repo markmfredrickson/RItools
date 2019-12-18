@@ -107,11 +107,9 @@ test_that("Null stratification is encoded by '--'",{
     nuclearplants$"(weights)" <- 1
     d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
     expect_equal(colnames(d0@StrataFrame), "--")
-    expect_equal(names(d0@StrataMatrices), "--")
     foo <- nuclearplants$pt
     d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
     expect_true("--" %in% colnames(d1@StrataFrame))
-    expect_true("--" %in% names(d1@StrataMatrices))    
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
