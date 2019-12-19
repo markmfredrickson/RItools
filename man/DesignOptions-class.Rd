@@ -15,6 +15,10 @@ NotMissing columns consist of weighted averages of element-wise non-missingness 
 over clusters, with weights given by (the element-level precursor to) the UnitWeights
 vector.  As otherwise, columns of the NotMissing matrix represent terms
 from a model formula, rather than columns the terms may have expanded to.
+
+If present, the null stratification (all units in same stratum) in indicated
+by the corresponding column of the \code{StrataFrame} slot bearing the name
+\sQuote{\code{--}}.
 }
 \section{Slots}{
 
