@@ -667,6 +667,36 @@ test_that("alignDesigns centers covars by stratum", {
 
 } )
 
+test_that("scale() method wrapping to alignDesignsByStrata()",{
+    # at first pass, we're testing form but not content here.
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                      clus=factor(c(1,1,2:4)),
+                      z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                      x1=rep(c(NA, 1), c(3,2)),
+                      x2=c(1:5),
+                      fac=factor(c(rep(1:2,2), NA))
+                      )
+    dat$'(weights)' <- 1
+
+    simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
+    simple2@Sweights <- RItools:::DesignWeights(simple2, # need stratum weights to be present, even if ignored
+                                                RItools:::effectOfTreatmentOnTreated)
+    scl2_scaleF  <- scale(simple2, center=TRUE, scale=FALSE)
+    asimple2  <- RItools:::alignDesignsByStrata(simple2, post.align.transform = NULL)
+    expect_identical(scl2_scaleF, asimple2[["--"]]@Covariates)
+    scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
+    expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
+    scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
+    expect_identical(dim(scl2_scaleF_centerrank), dim(scl2_scaleF))
+    expect_false(isTRUE(all.equal(scl2_scaleF, scl2_scaleF_centerrank, check.attributes=FALSE)),
+                 "post alignment transform ignored")
+    scl2_scaleT  <- scale(simple2, center=TRUE, scale=TRUE)
+    expect_equal(length(dim(scl2_scaleT)), 2L)
+    expect_equivalent(is.na(scl2_scaleT),
+                      matrix(FALSE, nrow(scl2_scaleT), ncol(scl2_scaleT)))
+    
+})
 
 test_that("Issue #89: Proper strata weights", {
 

@@ -763,8 +763,28 @@ setClass("CovsAlignedToADesign",
              Cluster = "factor"
              )
          )
+# apply this & pass through en route to svd
+#' @method scale StratumWeightedDesignOptions
+scale.StratumWeightedDesignOptions  <- function(x, center=TRUE, scale=TRUE)
+{
+    refstrat  <- which(colnames(x@StrataFrame)=="--")
+    if (length(refstrat)==0) refstrat  <- 1L
+    x@StrataFrame <- x@StrataFrame[refstrat]
+    x@Sweights  <- x@Sweights[refstrat]
+    wtsum  <- sum(x@UnitWeights[complete.cases(x@StrataFrame)])
 
-
+    trans  <- if (is(center, "function")) center else NULL
+    aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
+    aligned_covs  <- aligned[[1]]@Covariates
+    if (scale)
+        {
+    scales  <- .colSums(aligned_covs^2,
+                        nrow(aligned_covs), ncol(aligned_covs))
+    scales  <- scales/wtsum
+    scales[scales<.Machine$double.eps^.5]  <- 1
+    sweep(aligned_covs, 2L, scales, "/", check.margin=FALSE)
+        } else aligned_covs
+    }
 
 ##' Align DesignOptions by Strata
 ##'
