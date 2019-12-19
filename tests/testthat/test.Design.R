@@ -4,7 +4,7 @@
 
 library("testthat")
 
-context("DesignMatrix S4 class carries per-covariate missingness info")
+context("ModelMatrixPlus S4 class carries per-covariate missingness info")
 
 test_that("If no missing data, then NotMissing is a matrix w n rows and 0 cols",{
 
@@ -17,7 +17,7 @@ test_that("If no missing data, then NotMissing is a matrix w n rows and 0 cols",
       z.good      = rep(c(0,1), 250),
       z.bad       = sample(c(0,1), size = 500, replace = T))
   d$'(weights)' = 1 # meet expectation of a weights column
-  simple <- RItools:::design_matrix(z.good ~ x, data = d)
+  simple <- RItools:::model_matrix(z.good ~ x, data = d)
   expect_equivalent(dim(simple@NotMissing), c(500,1))
 
 })
@@ -30,9 +30,9 @@ test_that("Missingness gets passed through in Covariates, recorded in NotMissing
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-              dat$'(weights)' <- 1
               datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
-              simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
+              datmf$'(weights)' <- 1
+              simple2 <- RItools:::model_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
               expect_equivalent(colnames(simple2@NotMissing), c("_non-null record_", "x1", "fac"))
               
@@ -46,9 +46,9 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-    dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass)
-    simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data=datmf)
+    datmf$'(weights)' <- 1
+    simple2 <- RItools:::model_matrix(z ~ x1 + x2 + fac, data=datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c( "x1", "x2", "fac"))
     expect_equal(simple2@NM.Covariates, c(2,0,3))
@@ -57,7 +57,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## check that complex term don't spell trouble in themselves
     datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple3 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf)
+    datmf$'(weights)' <- 1    
+    simple3 <- RItools:::model_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf)
     expect_equal(simple3@OriginalVariables, 1:3)
     expect_equal(simple3@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
     expect_equal(simple3@NM.Covariates, c(2,0,3))
@@ -66,7 +67,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## now try a complex term that actually expands to multiple columns
     datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple4 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf,
+    datmf$'(weights)' <- 1
+    simple4 <- RItools:::model_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x2, c(0, 3, 6))"=diag(2)))
     expect_equal(simple4@OriginalVariables, c(1,2,2,3))
     expect_equal(simple4@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
@@ -76,7 +78,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## now put NAs in the multi-column complex term
     datmf <- model.frame(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple5 <- RItools:::design_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = datmf,
+    datmf$'(weights)' <- 1
+    simple5 <- RItools:::model_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x1, c(0, 3, 6))"=diag(2)))
     expect_equal(simple5@OriginalVariables, c(1,2,2,3))
     expect_equal(simple5@TermLabels, c("x2", "cut(x1, c(0, 3, 6))", "fac"))
@@ -86,8 +89,11 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
 })
 
 test_that("Issue #76: Using I() in formulas", {
-  set.seed(12345)
-  x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
+  x <- data.frame(z=c(1,1))  # have to exclude 
+  while (all(x$z==x[1L,'z'])) # degenerate case
+    x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
@@ -101,11 +107,9 @@ test_that("Null stratification is encoded by '--'",{
     nuclearplants$"(weights)" <- 1
     d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
     expect_equal(colnames(d0@StrataFrame), "--")
-    expect_equal(names(d0@StrataMatrices), "--")
     foo <- nuclearplants$pt
     d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
     expect_true("--" %in% colnames(d1@StrataFrame))
-    expect_true("--" %in% names(d1@StrataMatrices))    
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
@@ -125,9 +129,9 @@ test_that("Duplicated missingness patterns handled appropriately",{
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-    dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
-    simple2 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
+    datmf$'(weights)' <- 1
+    simple2 <- RItools:::model_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(simple2@NM.Covariates, 1+c(1,1,2))
@@ -136,7 +140,8 @@ test_that("Duplicated missingness patterns handled appropriately",{
     ## If exactly two terms have missing data but in the same pattern, then
     ## NotMissing is a matrix w/ n rows and 1 col.
     datmf <- model.frame(z ~ x1 + I(x1^2), data=dat, na.action = na.pass)
-    simple3 <- RItools:::design_matrix(z ~ x1 + I(x1^2), data = datmf)
+    datmf$'(weights)' <- 1
+    simple3 <- RItools:::model_matrix(z ~ x1 + I(x1^2), data = datmf)
     expect_equal(simple3@OriginalVariables, 1:2)
     expect_equal(simple3@TermLabels, c("x1", "I(x1^2)"))
     expect_equal(ncol(simple3@NotMissing), 1)
@@ -156,7 +161,8 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
                     )
     dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
-    simple6 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
+    datmf$'(weights)' <- 1
+    simple6 <- RItools:::model_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple6@OriginalVariables, 1:3)
     expect_equal(simple6@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(colnames(simple6@NotMissing)[1], "_non-null record_")
@@ -519,7 +525,7 @@ test_that("Aggregation of unit weights to cluster level",{
           })
 
 
-context("DesignMatrix S4 class enriches model.matrix-value 'class' ")
+context("ModelMatrixPlus S4 class enriches model.matrix-value 'class' ")
 
 test_that("R core hasn't revised conventions we may depend on",
           {
@@ -538,33 +544,39 @@ test_that("Model matrix material is properly formed",
           {
               
      ff <- log(Volume) ~ log(Height) + log(Girth)
-     DM0 <- design_matrix(ff, trees, remove.intercept=FALSE)
-     expect_is(DM0, "DesignMatrix")
+     trees1 <- trees
+     trees1$'(weights)' <- 1
+     DM0 <- model_matrix(ff, trees1, remove.intercept=FALSE)
+     expect_is(DM0, "ModelMatrixPlus")
      m <- model.frame(ff, trees)
      expect_equivalent(model.matrix(ff, m), as.matrix(DM0))
      fff <- update(ff, .~.-1)
      trees2 <- trees
      trees2[1, "Volume"] <- NA # LHS variable, shouldn't affect anything
-     expect_equivalent(model.matrix(fff, m), as.matrix(design_matrix(fff, model.frame(fff, trees2, na.action = na.pass))))
+     m2a <- model.frame(fff, trees2, na.action = na.pass)
+     m2a$'(weights)' <- 1
+     expect_equivalent(model.matrix(fff, m), as.matrix(model_matrix(fff, m2a)))
      trees2[1, "Height"] <- NA # RHS variable, but still shouldn't cause rows to be dropped
-     expect_equal(dim(model.matrix(fff, m)), dim(as.matrix(design_matrix(fff,
-model.frame(fff, trees2, na.action = na.pass)
-                                                                                ))))
-
+     m2b <- model.frame(fff, trees2, na.action = na.pass)
+     m2b$'(weights)' <- 1
+     expect_equal(dim(model.matrix(fff, m)), 
+                  dim(as.matrix(model_matrix(fff,m2b) ) )
+                  )
 
      ## specified contrasts
      dd <- data.frame(a = gl(3,4), b = gl(4,1,12)) # balanced 2-way
+     dd$'(weights)' <- 1
      expect_equal(model.matrix(~ a + b, dd),
-                  as.matrix(design_matrix(~ a + b, dd, remove.intercept=FALSE)))
+                  as.matrix(model_matrix(~ a + b, dd, remove.intercept=FALSE)))
      expect_equal(model.matrix(~ a + b-1, dd),
-                  as.matrix(design_matrix(~ a + b-1, dd)))
+                  as.matrix(model_matrix(~ a + b-1, dd)))
      expect_equal(model.matrix(~ a + b, dd, contrasts = list(a = "contr.sum")),
-                  as.matrix(design_matrix(~ a + b, dd,
+                  as.matrix(model_matrix(~ a + b, dd,
                                           contrasts = list(a = "contr.sum"), remove.intercept=FALSE))
                   )
      expect_equal(model.matrix(~ a + b, dd,
                                contrasts = list(a = "contr.sum", b = "contr.poly")),
-                  as.matrix(design_matrix(~ a + b, dd,
+                  as.matrix(model_matrix(~ a + b, dd,
                                           contrasts =
                                               list(a = "contr.sum", b = "contr.poly"),
                                           remove.intercept=FALSE))
@@ -586,6 +598,7 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     dat$'(weights)' <- 1
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    expect_equal(colnames(simple2@StrataFrame), c("strat", "--"))
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
                                                 RItools:::effectOfTreatmentOnTreated)
@@ -617,10 +630,10 @@ test_that("alignDesigns centers covars by stratum", {
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
     expect_equivalent(colSums(asimple0[["--"]]@Covariates),
                       rep(0,ncol(asimple0[["--"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple0[["strat"]]@StrataMatrix) %*% asimple0[["strat"]]@Covariates),
+                      matrix(0,2,ncol(asimple0[["strat"]]@Covariates)))
 
     ## now with weights
     dat1 <- dat
@@ -636,10 +649,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple1[["--"]]@Covariates)))
 
     tmp1 <- asimple1[["strat"]]@Covariates 
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
+                      matrix(0,2, ncol(asimple1[["strat"]]@Covariates)))
 
     ## now with weights, post alignment transform
     asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
@@ -647,10 +660,10 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple2[["--"]]@Covariates)))
 
     tmp2 <- asimple2[["strat"]]@Covariates 
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
+    expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+    expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),
+                      matrix(0,2, ncol(asimple2[["strat"]]@Covariates)))
 
 } )
 

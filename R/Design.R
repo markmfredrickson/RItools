@@ -1,9 +1,9 @@
 ###############################################################################
-# DesignMatrix Objects: covariates with term-specific missingness info & indexing
+# ModelMatrixPlus Objects: covariates with term-specific missingness info & indexing
 ################################################################################
 
 setClassUnion("Contrasts", c("list", "NULL"))
-##' DesignMatrix S4 class
+##' ModelMatrixPlus S4 class
 ##'
 ##' If the Covariates matrix has an intercept, it will only be in the first column.
 ##'
@@ -13,9 +13,9 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' present only if there are missing covariate values, in which case these cols are
 ##' named for terms (of the original calling formula or data frame) that possess
 ##' missing values.  Terms with the same missing data pattern are mapped to a single
-##' column of this matrix.  If the DesignMatrix is representing elements, each column should
+##' column of this matrix.  If the ModelMatrixPlus is representing elements, each column should
 ##' be all 1s and 0s, indicating which elements have non-missing values for the term
-##' represented by that column.  If the DesignMatrix as a whole represents clusters,
+##' represented by that column.  If the ModelMatrixPlus as a whole represents clusters,
 ##' then there can be fractional values, but that situation should only arise in the
 ##' DesignOptions class exension of this class, so it's documented there.
 ##'
@@ -26,21 +26,22 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot NotMissing Matrix of numbers in [0,1] with as many rows as the Covariates table but only one more col than there are distinct covariate missingness patterns (at least 1, nothing missing). First col is entirely T or 1, like an intercept.
 ##' @slot NM.Covariates integer look-up table mapping Covariates columns to columns of NotMissing.  (If nothing missing for that column, this is 0.)
 ##' @slot NM.terms integer look-up table mapping term labels to columns of NotMissing (0 means nothing missing in that column)
+##' @slot UnitWeights vector of weights associated w/ rows of the ModelMatrixPlus
 ##' @keywords internal
-##'
-setClass("DesignMatrix",
+setClass("ModelMatrixPlus",
          slots=c(Covariates="matrix",
                   OriginalVariables="integer",
                   TermLabels="character",
                   Contrasts="Contrasts",
                   NotMissing="matrix",
                   NM.Covariates="integer",
-                  NM.terms="integer" )
+                  NM.terms="integer",
+                  UnitWeights = "numeric" )
          )
 
-#' @method as.matrix DesignMatrix
+#' @method as.matrix ModelMatrixPlus
 #' @export
-as.matrix.DesignMatrix <- function(x, ...)
+as.matrix.ModelMatrixPlus <- function(x, ...)
     {
         ans <- x@Covariates
         attr(ans, "assign") <- x@OriginalVariables
@@ -56,20 +57,24 @@ as.matrix.DesignMatrix <- function(x, ...)
 ##'
 ##' @title Model matrices along with compact encodings of data availability/missingness
 ##' @param object Model formula or terms object (as in `model.matrix`)
-##' @param data Data frame (as in `model.matrix`)
+##' @param data data.frame, as in `model.matrix()` but has to have \sQuote{\code{(weights)}} column
 ##' @param remove.intercept logical
 ##' @param ... passed to `model.matrix.default` (and further)
-##' @return DesignMatrix instance of an S4 class that enriches model matrices with missing data info
+##' @return ModelMatrixPlus, i.e. model matrix enriched with missing data info
 ##' @author Ben B Hansen
 ##' @keywords internal
-##'
-design_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
+##' 
+model_matrix <- function(object, data = environment(object), remove.intercept=TRUE, ...) {
   # mf <- model.frame(object, data, na.action = na.pass)
   tms <- terms(object)
   term.labels <- attr(tms, "term.labels")
 
-  covariates <- model.matrix(object = object, data = data, ...)
-
+  uweights <- as.vector(model.weights(data))
+  if (is.null(uweights))
+    stop("model_matrix() expects its data arg to be a model frame containing weights")
+  stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
+  
+  covariates <- model.matrix(object = object, data = data, ...) 
 
   assign <- attr(covariates, "assign")
   attr(covariates, "assign") <- NULL
@@ -148,15 +153,16 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
     nm.covs[assign>0] <- nm.terms[assign[assign>0]]
 
     notmissing <- as.matrix(notmissing)
-
-  new("DesignMatrix",
+    
+  new("ModelMatrixPlus",
       Covariates=covariates,
       OriginalVariables=assign,
       TermLabels=term.labels,
       Contrasts=contrasts,
       NotMissing=notmissing,
       NM.Covariates=nm.covs,
-      NM.terms=nm.terms )
+      NM.terms=nm.terms,
+      UnitWeights = uweights )
 }
 
 
@@ -166,10 +172,10 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 
 #' DesignOptions S4 class
 #'
-#' Extends the DesignMatrix class
+#' Extends the ModelMatrixPlus class
 #'
 ##' If the DesignOptions represents clusters of elements, as when it was created
-##' by aggregating another DesignOptions or DesignMatrix object, then its Covariates
+##' by aggregating another DesignOptions or ModelMatrixPlus object, then its Covariates
 ##' and NotMissing slots are populated with (weighted) averages, not totals.  E.g.,
 ##' NotMissing columns consist of weighted averages of element-wise non-missingness indicators
 ##' over clusters, with weights given by (the element-level precursor to) the UnitWeights
@@ -181,20 +187,16 @@ design_matrix <- function(object, data = environment(object), remove.intercept=T
 ##' \sQuote{\code{--}}.
 
 #' @slot Z Logical indicating treatment assignment
-#' @slot StrataMatrices This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataFrame Factors indicating strata (not the sparse matrices, as we use them in the weighting function)
+#' @slot StrataFrame Factors indicating strata
 #' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot UnitWeights vector of weights associated w/ rows of the DesignMatrix
 #' @keywords internal
 #'
 setClass("DesignOptions",
          slots = c(
            Z                 = "logical",
-           StrataMatrices    = "list",
-           StrataFrame       = "data.frame",
-             Cluster           = "factor",
-             UnitWeights = "numeric"),
-         contains = "DesignMatrix"
+           StrataFrame       = "data.frame",  
+             Cluster           = "factor"),
+         contains = "ModelMatrixPlus"
          )
 
 #
@@ -219,11 +221,6 @@ setClass("DesignOptions",
 ##' @keywords internal
 ##'
 makeDesigns <- function(fmla, data) {
-
-    uweights <- as.vector(model.weights(data))
-    if (is.null(uweights))
-        stop("makeDesigns() expects its data arg to be a model frame containing weights")
-    stopifnot(is.numeric(uweights), all(!is.na(uweights)), all(uweights>=0))
 
     ts <- terms(fmla, data = data[setdiff(colnames(data), '(weights)')],
                 specials = c("cluster", "strata"))
@@ -327,7 +324,8 @@ makeDesigns <- function(fmla, data) {
 
   data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
-
+  data.data$'(weights)' <- data$'(weights)'
+  
   # knock out any levels that are not used
   fcts <- colnames(data.data)[sapply(data.data, is.factor)]
   for (f in fcts) {
@@ -345,7 +343,7 @@ makeDesigns <- function(fmla, data) {
     names(clist) <- colnames(data.data)
     clist <- clist[!sapply(clist, is.null)]
 
-    desm <- design_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
+    desm <- model_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
 
   if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]
@@ -357,16 +355,12 @@ makeDesigns <- function(fmla, data) {
   tmp <- str.data[, strataCols, drop = FALSE]
   colnames(tmp) <- gsub(colnames(tmp), pattern = "survival::strata\\((.*)\\)", replacement = "\\1")
   strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
-  strata.mats  <- lapply(strata.frame, function(s) { SparseMMFromFactor(s) })
-  names(strata.mats) <- colnames(strata.frame)
-
 
   return(new("DesignOptions",
              Z                 = as.logical(as.numeric(Z) - 1), #b/c it was built as factor
-             StrataMatrices    = strata.mats,
              StrataFrame       = strata.frame,
              Cluster           = factor(Cluster),
-             UnitWeights = uweights,
+             UnitWeights = desm@UnitWeights,
              Covariates = desm@Covariates,
                   OriginalVariables=desm@OriginalVariables,
                   TermLabels=desm@TermLabels,
@@ -562,9 +556,7 @@ designToDescriptives <- function(design, covariate.scales = NULL) {
       
   for (s in stratifications) {
 
-    S <- design@StrataMatrices[[s]]
-    if (ncol(S)!=nlevels(design@StrataFrame[[s]]))
-        stop(paste("Levels of StrataFrame don't match StratMatrices colnames, stratification", s))
+    S <- SparseMMFromFactor(design@StrataFrame[[s]])
     stratlevs <- levels(design@StrataFrame[[s]])
     if (inherits(design, "StratumWeightedDesignOptions") & length(stratlevs)>1)
         {
@@ -687,47 +679,41 @@ aggregateDesigns <- function(design) {
   Cluster <- clusters[!dupes]
   names(Z) <- as.character(Cluster)
 
-  C <- SparseMMFromFactor(clusters)
-  # To align w/ this `C`, everything to be returned
-  # needs to align w/ `levels(Cluster)`, not with
+  C_transp <- t(SparseMMFromFactor(clusters))
+  # To align w/ this `C`, everything to be returned 
+  # needs to align w/ `levels(Cluster)`, not with 
   # `Cluster` itself. So,
   Z <- Z[levels(Cluster)]
   Cluster  <- as.factor(levels(Cluster))
   StrataFrame  <-
       StrataFrame[match(levels(Cluster), as.character(Cluster)),
                   , drop=FALSE]
+  
+  unit.weights <- as.matrix(C_transp %*% as.matrix(design@UnitWeights))
 
-  unit.weights <- as.matrix(t(C) %*% as.matrix(design@UnitWeights))
   dim(unit.weights) <- NULL
   names(unit.weights) <- levels(Cluster)
 
   Uweights.tall <- design@UnitWeights * design@NotMissing
-  Covariates <- as.matrix(t(C) %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
+  Covariates <- as.matrix(C_transp %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           design@Covariates *
                                               Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           0)
                           )
-  Uweights <- as.matrix(t(C) %*% Uweights.tall)
+  Uweights <- as.matrix(C_transp %*% Uweights.tall)
   Covariates <- ifelse(Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE] > 0,
                        Covariates/Uweights[,pmax(1L,design@NM.Covariates), drop=FALSE],
                        0)
   NotMissing <- ifelse(matrix(unit.weights>0, nrow(Uweights), ncol(Uweights)),
                        Uweights/unit.weights, 0)
   colnames(NotMissing) <- colnames(design@NotMissing)
-
-  StrataMatrices <- lapply(design@StrataMatrices, function(S) {
-    tmp <- t(C) %*% S
-    tmp@ra <- rep(1, length(tmp@ra))
-    return(tmp)
-  })
-
+  
     Covariates <- as.matrix(Covariates)
     colnames(Covariates)   <- colnames(design@Covariates)
     row.names(Covariates) <- levels(Cluster)
 
   new("DesignOptions",
       Z = Z,
-      StrataMatrices = StrataMatrices,
       StrataFrame = StrataFrame,
       Cluster = Cluster,
       UnitWeights = unit.weights,
@@ -758,22 +744,20 @@ aggregateDesigns <- function(design) {
 #' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 #' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
 #' (the arithmetic mean of aggregated cluster weights within that stratum).
-#'
-#' @slot Covariates Numeric matrix, as in DesignMatrix, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
+#' 
+#' @slot Covariates Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataFactor Factor indicating strata
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix
+#' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
 setClass("CovsAlignedToADesign",
          slots =
              c(Covariates="matrix",
              Z                 = "logical",
-             StrataMatrix    = "matrix.csr",
-             StrataFactor       = "factor",
+             StrataMatrix    = "matrix.csr", 
              StrataWeightRatio = "numeric",
              OriginalVariables="integer",
              Cluster = "factor"
@@ -794,7 +778,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
   vars   <- colnames(design@Covariates)
-  strata <- names(design@StrataMatrices)
+  stratifications <- colnames(design@StrataFrame)
 
   Ewts  <- design@UnitWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
@@ -875,13 +859,12 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           Covariates        = covars.Sctr,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
-          StrataFactor=ss,
           StrataWeightRatio = wtr, #as extracted from the design
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
           )
 }
-  sapply(strata, f, simplify = FALSE, USE.NAMES = TRUE)
+  sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
 # I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up

@@ -273,7 +273,7 @@ balanceTest <- function(fmla,
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
 
   tmp <- lapply(strataAligned, alignedToInferentials)
-  names(tmp) <- names(aggDesign@StrataMatrices)
+  names(tmp) <- colnames(aggDesign@StrataFrame)
 
   ans <- list()
 

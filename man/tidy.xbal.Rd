@@ -28,7 +28,10 @@ data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`v
 }
 \description{
 Portion out the value of a [RItools::balanceTest()] call in a manner consistent
-with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
+with assumptions of the broom package.
+}
+\details{
+[RItools::tidy.xbal()] gives per-variable
 statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 calculations. In both cases one has to specify which stratification one wants
 statistics about, as xbal objects can store info about several stratifications.
@@ -38,8 +41,7 @@ of which give names of columns to be returned and the names of which correspond
 to columns of xbal objects' \sQuote{results} entry.  Its ordering dictates the order
 of the result. The default value translates between conventional xbal
 column names and broom package conventional names.
-}
-\details{
+
 \describe{
     \item{vars}{variable name}
     \item{Control}{mean of LHS variable = 0 group}

@@ -76,7 +76,7 @@ default, for the unstratified comparison, in each case reflecting
 a standardization appropriate to the designated (post-)
 stratification of the sample.  In the case without stratification
 or clustering, the only weighting used to calculate treatment and
-control group means is that provided by the user as 
+control group means is that provided by the user as
 \code{unit.weights}; in the absence of such an argument, these
 means are unweighted.  When there are strata, within-stratum means
 of treatment or of control observations are calculated using
@@ -97,10 +97,10 @@ The function also calculates univariate and multivariate inferential
 statistics, targeting the hypothesis that assignment was random within strata. These
 calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 but the default weighting of strata differs from that of the descriptive calculations.
-With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum 
-is weighted in proportion to the product of the stratum mean of \code{unit.weights} 
-and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of 
-treated units (a) and control units (b) in the stratum; this weighting is optimal 
+With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum
+is weighted in proportion to the product of the stratum mean of \code{unit.weights}
+and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of
+treated units (a) and control units (b) in the stratum; this weighting is optimal
 under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 distance that combines each of the univariate mean differences while accounting
@@ -112,14 +112,14 @@ In contrast to the earlier function \code{xBalance} that it is intended to repla
 
 \code{stratum.weights} must be a function of a single argument,
 a data frame containing the variables in \code{data} and
-additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights}, 
+additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights},
 returning a named numeric vector of non-negative weights identified by stratum.
 (For an example, enter \code{getFromNamespace("harmonic", "RItools")}.)
 the data  \code{stratum.weights} function.
 
 If the stratifying factor has NAs, these cases are dropped.  On the other
 hand, if NAs in a covariate are found then those observations are dropped for descriptive
-calculations and "imputed" to the stratum mean of the variable for inferential calculations. 
+calculations and "imputed" to the stratum mean of the variable for inferential calculations.
 When covariate values are dropped due to missingness, proportions of observations not missing on
 that variable are recorded and returned.  The printed output presents non-missing proportions alongside of
 the variables themselves, distinguishing the former by placing them at the bottom of the list and enclosing the
