@@ -184,7 +184,6 @@ balanceTest <- function(fmla,
                      subset,
                      include.NA.flags = TRUE,
                      covariate.scales = setNames(numeric(0), character(0)),
-                     X_rotation=svd(scale(design), nu=0),
                      post.alignment.transform = NULL,
                      p.adjust.method = "holm") {
 ### API Assumptions:
@@ -257,12 +256,6 @@ balanceTest <- function(fmla,
     report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesigns(fmla, data)
-
-  ## now that we've generated `design`, force evaluation of X_rotation
-    stopifnot(is(X_rotation, "list"),
-              any(names(X_rotation)=="d"), any(names(X_rotation)=="v")
-              )
-
   aggDesign       <- aggregateDesigns(design)
   ## (Creation of stratum weightings for use in
   ##  descriptives calculations would go here, if
