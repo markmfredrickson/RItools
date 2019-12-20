@@ -764,10 +764,10 @@ test_that("Issue #89: Proper strata weights", {
 
 })
 
-context("alignedToInferentials")
+context("HB08")
 
 
-test_that("alignedToInferentials agreement w/ xBal()", {
+test_that("HB08 agreement w/ xBal()", {
 
   set.seed(20180605)
   n <- 100
@@ -789,7 +789,7 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    btis0 <- lapply(asimple0, alignedToInferentials)
+    btis0 <- lapply(asimple0, HB08)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
@@ -797,14 +797,14 @@ test_that("alignedToInferentials agreement w/ xBal()", {
                       xb0$results[,'adj.diff',"unmatched"])
     expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
-    expect_equivalent(btis0[['--']][c('csq', 'DF')],
+    expect_equivalent(btis0[['--']][c('Msq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
     expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"matched"])
     expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$matched)
-    expect_equivalent(btis0[['m']][c('csq', 'DF')],
+    expect_equivalent(btis0[['m']][c('Msq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
     ## now with weights.  Comparing adjusted diffs based on totals will only work
@@ -821,7 +821,7 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    btis1 <- lapply(asimple1, alignedToInferentials)
+    btis1 <- lapply(asimple1, HB08)
 
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
@@ -833,7 +833,7 @@ test_that("alignedToInferentials agreement w/ xBal()", {
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                     attr(xb1u$overall, 'tcov')$unmatched)
-  expect_equivalent(btis1[['--']][c('csq', 'DF')],
+  expect_equivalent(btis1[['--']][c('Msq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
 
@@ -847,7 +847,7 @@ test_that("alignedToInferentials agreement w/ xBal()", {
                     xb1m$results[,'adj.diff',"matched"])
   expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                     attr(xb1m$overall, 'tcov')$matched)
-  expect_equivalent(btis1[['m']][c('csq', 'DF')],
+  expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
 

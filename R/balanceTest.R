@@ -117,8 +117,9 @@
 ##'   assignments of clusters are freely permuted.  For
 ##'   stratified comparisons, the reference distributions describes re-randomizations of
 ##'   this type performed separately in each stratum. Significance
-##'   assessments are based on the large-sample Normal approximation
+##'   assessments are based on large-sample approximations
 ##'   to these reference distributions.
+##' @seealso \code{\link{HB08}}
 ##' @export
 ##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
 ##'   Balance in Simple, Stratified and Clustered Comparative
@@ -185,6 +186,7 @@ balanceTest <- function(fmla,
                      include.NA.flags = TRUE,
                      covariate.scales = setNames(numeric(0), character(0)),
                      post.alignment.transform = NULL,
+                     inferentials.calculator = HB08, 
                      p.adjust.method = "holm") {
 ### API Assumptions:
 ### - no ... in the xBal formula
@@ -272,7 +274,7 @@ balanceTest <- function(fmla,
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
 
-  tmp <- lapply(strataAligned, alignedToInferentials)
+  tmp <- lapply(strataAligned, inferentials.calculator)
   names(tmp) <- colnames(aggDesign@StrataFrame)
 
   ans <- list()
@@ -304,7 +306,7 @@ balanceTest <- function(fmla,
   }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
-    c(s$csq, s$DF, pchisq(s$csq, df = s$DF, lower.tail = FALSE))
+    c(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
   }))
   colnames(inferentials) <- c("chisquare", "df", "p.value")
 

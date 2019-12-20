@@ -408,7 +408,7 @@ setClass("StratumWeightedDesignOptions",
 ##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
 ##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight
 ##' in the sense of summing to 1 across strata.  The ratio is expected
-##' downstream in \code{alignedToInferentials} (in internal calculations
+##' downstream in \code{HB08} (in internal calculations
 ##' involving \sQuote{\code{wtr}}).
 ##'
 ##'
@@ -898,14 +898,23 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
-# I'd prefer to have a better API here, but right now, just trying to get compatability with old xBalance set up
-# e.g. something that is a list of strata with a given structure, rather than just a list.
-##' Align to Inferentials
-##'
+##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
 ##' @param alignedcovs A CovsAlignedToADesign object
-##' @return list
+##' @return list with components:
+##' \describe{
+##'   \item{z}{First item}
+##'   \item{p}{Second item}
+##'   \item{Msq}{Squared Mahalanobis distance of combined differences from origin}
+##'   \item{DF}{degrees of freedom}
+##'   \item{adj.mean.diffs}{Vector of sum statistics z'x-tilde, where x-tilde is the unit- and stratum-weighted covariate, with stratum centering.  This differs from the adjusted difference vector of Hansen & Bowers (2008) by a constant of proportionality.}
+##'   \item{tcov}{Matrix of null covariances of Z'x-tilde vector, as above.}
+##' }
+##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
+##'   Balance in Simple, Stratified and Clustered Comparative
+##'   Studies,'' \emph{Statistical Science} \bold{23}.
+##' @seealso \code{\link{balanceTest}}, \code{\link{alignDesignsByStrata}}
 ##' @keywords internal
-alignedToInferentials <- function(alignedcovs) {
+HB08 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
 
@@ -950,7 +959,7 @@ alignedToInferentials <- function(alignedcovs) {
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
 
-    list(z = zstat, p = p, csq = csq , DF = DF,
+    list(z = zstat, p = p, Msq = csq , DF = DF,
        adj.mean.diffs=ssn, tcov = tcov)
 }
 

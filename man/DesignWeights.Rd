@@ -42,7 +42,7 @@ each of these clusters.  In the notation of Hansen & Bowers
 (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
 \sQuote{\code{wtratio}}, this ratio's denominator is not a weight
 in the sense of summing to 1 across strata.  The ratio is expected
-downstream in \code{alignedToInferentials} (in internal calculations
+downstream in \code{HB08} (in internal calculations
 involving \sQuote{\code{wtr}}).
 }
 \keyword{internal}

@@ -10,7 +10,7 @@ balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
   stratum.weights = harmonic_times_mean_weight, subset,
   include.NA.flags = TRUE, covariate.scales = setNames(numeric(0),
   character(0)), post.alignment.transform = NULL,
-  p.adjust.method = "holm")
+  inferentials.calculator = HB08, p.adjust.method = "holm")
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment
@@ -146,7 +146,7 @@ Evidence pertaining to the hypothesis that a treatment
   assignments of clusters are freely permuted.  For
   stratified comparisons, the reference distributions describes re-randomizations of
   this type performed separately in each stratum. Significance
-  assessments are based on the large-sample Normal approximation
+  assessments are based on large-sample approximations
   to these reference distributions.
 }
 \examples{
@@ -201,6 +201,9 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Kalton, G. (1968), ``Standardization: A technique to control for
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
+}
+\seealso{
+\code{\link{HB08}}
 }
 \author{
 Ben Hansen and Jake Bowers and Mark Fredrickson
