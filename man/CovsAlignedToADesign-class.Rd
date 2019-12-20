@@ -18,10 +18,11 @@ within each stratum.  In lieu of a NotMissing slot there will be Covariates colu
 centered within a stratum, recording
 non-missingness of the original data.
 
-The StrataWeightRatio slot has an entry for each unit, representing ratio of
+Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
 specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
-(the arithmetic mean of aggregated cluster weights within that stratum).
+(the arithmetic mean of aggregated cluster weights within that stratum). It can also
+be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 }
 \section{Slots}{
 

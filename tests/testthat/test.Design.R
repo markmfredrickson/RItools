@@ -679,12 +679,16 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
     dat$'(weights)' <- 1
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
-    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
-    simple2@Sweights <- RItools:::DesignWeights(simple2, # need stratum weights to be present, even if ignored
-                                                RItools:::effectOfTreatmentOnTreated)
     scl2_scaleF  <- scale(simple2, center=TRUE, scale=FALSE)
-    asimple2  <- RItools:::alignDesignsByStrata(simple2, post.align.transform = NULL)
+    simple2b  <- as(simple2, "StratumWeightedDesignOptions")
+    simple2b@Sweights <- RItools:::DesignWeights(simple2b, # need stratum weights to be present, even if ignored
+                                        RItools:::effectOfTreatmentOnTreated)
+    asimple2  <- RItools:::alignDesignsByStrata(simple2b, post.align.transform = NULL)
     expect_identical(scl2_scaleF, asimple2[["--"]]@Covariates)
+
+    simple2c  <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus) - 1, data = dat)
+    scl2c_scaleF  <- scale(simple2c, center=TRUE, scale=FALSE)
+    expect_identical(scl2c_scaleF, asimple2[["strat"]]@Covariates)
     scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
     expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
     scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)

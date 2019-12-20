@@ -740,10 +740,11 @@ aggregateDesigns <- function(design) {
 #' centered within a stratum, recording
 #' non-missingness of the original data.
 #'
-#' The StrataWeightRatio slot has an entry for each unit, representing ratio of
+#' Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
 #' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 #' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
-#' (the arithmetic mean of aggregated cluster weights within that stratum).
+#' (the arithmetic mean of aggregated cluster weights within that stratum). It can also
+#' be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 #' 
 #' @slot Covariates Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
@@ -764,15 +765,25 @@ setClass("CovsAlignedToADesign",
              )
          )
 # apply this & pass through en route to svd
-#' @method scale StratumWeightedDesignOptions
-scale.StratumWeightedDesignOptions  <- function(x, center=TRUE, scale=TRUE)
+#' @method scale DesignOptions
+scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 {
+    stopifnot(is(x, "DesignOptions"))
     refstrat  <- which(colnames(x@StrataFrame)=="--")
-    if (length(refstrat)==0) refstrat  <- 1L
+    refstrat  <- if (length(refstrat)==0) 1L else refstrat[1]
     x@StrataFrame <- x@StrataFrame[refstrat]
-    x@Sweights  <- x@Sweights[refstrat]
     wtsum  <- sum(x@UnitWeights[complete.cases(x@StrataFrame)])
-
+    if (is(x, "StratumWeightedDesignOptions"))
+    {
+        x@Sweights  <- x@Sweights[refstrat]
+    } else {
+        x  <- as(x, "StratumWeightedDesignOptions")
+        x@Sweights <- setNames(
+            list(data.frame(wtratio=rep(1, nlevels(x@StrataFrame[[1]])),
+                                           row.names=levels(x@StrataFrame[[1]]))
+                 ), names(x@StrataFrame)
+        )
+        }
     trans  <- if (is(center, "function")) center else NULL
     aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
     aligned_covs  <- aligned[[1]]@Covariates
