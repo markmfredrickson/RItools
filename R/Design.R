@@ -898,6 +898,71 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
+##' @title Hansen & Bowers (2008) inferentials, done a bit differently
+##' @param alignedcovs A CovsAlignedToADesign object
+##' @return list, as in \code{\link{HB08}}
+##' @keywords internal
+HB08_ <- function(alignedcovs) {
+    zz <- as.numeric(alignedcovs@Z)
+    S <- alignedcovs@StrataMatrix
+    s_ <- ncol(S)
+
+    Covs <- alignedcovs@Covariates
+    n_  <- nrow(Covs)
+    p_  <- ncol(Covs)
+
+    ## by-stratum treatment and control counts
+    n <- t(S) %*% S
+    n.inv <- 1 / n
+    n1 <- t(S) %*% zz
+###    n0 <- t(S) %*% (1 - zz)
+    n1_over_n <- S %*% n.inv %*% n1
+
+    x_tilde <- Covs *#the sum statistic we're about to compute averages within-
+        alignedcovs@StrataWeightRatio # stratum differences using stratum
+    ## weights proportional to harmonic means of n_t's and n_c's.  If a different
+    ## stratum weighting was indicated, it's shoehorned in here.
+
+    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
+    names(ssn) <- colnames(Covs)
+
+    stratsizes <-  data.frame(n=diag(n), n1=sparseToVec(n1))
+    stratsizes$n0  <- stratsizes[['n']] - stratsizes[['n1']]
+
+    xt_covar_stratwise  <- t(S) %*% matrix(x_tilde *rep(x_tilde, p_),
+                                           nrow=n_, ncol=p_^2)
+    xt_covar_stratwise  <- as.matrix(xt_covar_stratwise) # s_ * (p_^2)
+    xt_covar_stratwise  <- array(xt_covar_stratwise,
+                                 dim=c(s_, p_, p_) # s_ * p_ * p_
+                                 )
+    xt_covar_stratwise  <- (stratsizes$n -1)^(-1) *
+        xt_covar_stratwise # still s_ * p_ * p_
+    ## now we have sample covariances, by stratum.
+
+    ## Combine with factors equal to half the harmonic means of n1 and n0. 
+    xt_c_s_scaled  <- xt_covar_stratwise *
+        with(stratsizes, (1/n0 + 1/n1)^(-1) )
+    tcov  <- apply(xt_c_s_scaled, 2:3, sum)
+
+    ssvar <- diag(tcov)
+
+    non_negligible_variance  <- (ssvar <= .Machine$double.eps)
+    zstat <- ifelse(non_negligible_variance, NA_real_, ssn/sqrt(ssvar))
+    p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
+
+    ## moving forward, we'll do without those sum statistics that have 0 null variation.
+    ssn  <- ssn[non_negligible_variance]
+    tcov  <- tcov[non_negligible_variance, non_negligible_variance]
+
+    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde, mat.is.XtX = TRUE)
+    mvz <- drop(crossprod(ssn, cov_minus_.5))
+    csq <- drop(crossprod(mvz))
+    DF <- ncol(cov_minus_.5)
+
+    list(z = zstat, p = p, Msq = csq , DF = DF,
+       adj.mean.diffs=ssn, tcov = tcov)
+}
+
 ##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
 ##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list with components:
@@ -926,36 +991,38 @@ HB08 <- function(alignedcovs) {
     n0 <- t(S) %*% (1 - zz)
 
     # set up 1/(n-1)
-    tmp <- n
-    tmp@ra <- 1 / (tmp@ra - 1)
-    tmp@ra <- ifelse(!is.finite(tmp@ra), 0, tmp@ra) # we can have strata of 1 unit, which causes a divide by zero error
+    n_minus_1_inv <- n
+    n_minus_1_inv@ra <- 1 / (n_minus_1_inv@ra - 1)
+    n_minus_1_inv@ra <- ifelse(!is.finite(n_minus_1_inv@ra), # we can have strata of 1 unit,
+                               0, n_minus_1_inv@ra) #  which causes a divide by zero error
 
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
-    dv <- sparseToVec(S %*% tmp %*% (n1 - n.inv %*% n1^2))
+    dv <- sparseToVec(S %*% n_minus_1_inv %*% (n1 - n.inv %*% n1^2))
 
-    tmat <- Covs *#the sum statistic we're about to compute averages within-
+    x_tilde <- Covs *#the sum statistic we're about to compute averages within-
         alignedcovs@StrataWeightRatio # stratum differences using stratum
-    ## weights proportional to harmonic means of n_t's and n_c's.  To override w/ weights we want,
-    ## factor in a wtratio as constructed by DesignWeights().
+    ## weights proportional to harmonic means of n_t's and n_c's.  If a different
+    ## stratum weighting was indicated, it's shoehorned in here.
 
-    ZtH <- S %*% n.inv %*% n1
-    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - ZtH) %*% tmat, column = FALSE)
+    n1_over_n <- S %*% n.inv %*% n1
+    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
     names(ssn) <- colnames(Covs)
 
-    scaled.tmat <- as.matrix(tmat * sqrt(dv))
-    tcov <- crossprod(scaled.tmat)
+    scaled.x_tilde <- as.matrix(x_tilde * sqrt(dv))
+    tcov <- crossprod(scaled.x_tilde)
     ssvar <- diag(tcov)
 
-    zstat <- ifelse(ssvar <= .Machine$double.eps, NA_real_, ssn/sqrt(ssvar))
+    non_negligible_variance  <- (ssvar <= .Machine$double.eps)
+    zstat <- ifelse(non_negligible_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
     ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    tmat <- tmat[,ssvar > .Machine$double.eps, drop=FALSE]
-    scaled.tmat <- scaled.tmat[,ssvar > .Machine$double.eps, drop=FALSE]
-    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.tmat)
+    x_tilde <- x_tilde[,non_negligible_variance, drop=FALSE]
+    scaled.x_tilde <- scaled.x_tilde[,ssvar > .Machine$double.eps, drop=FALSE]
+    ssn  <- ssn[ssvar > .Machine$double.eps]
 
-    mvz <- drop(crossprod(ssn[ssvar > .Machine$double.eps], cov_minus_.5))
-
+    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde)
+    mvz <- drop(crossprod(ssn, cov_minus_.5))
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
 
