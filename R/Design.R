@@ -946,15 +946,16 @@ HB08_ <- function(alignedcovs) {
 
     ssvar <- diag(tcov)
 
-    non_negligible_variance  <- (ssvar <= .Machine$double.eps)
-    zstat <- ifelse(non_negligible_variance, NA_real_, ssn/sqrt(ssvar))
+    zero_variance  <- (ssvar <= .Machine$double.eps)
+    zstat <- ifelse(zero_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
     ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    ssn  <- ssn[non_negligible_variance]
-    tcov  <- tcov[non_negligible_variance, non_negligible_variance]
+    ssn  <- ssn[zero_variance]
+    tcov  <- tcov[zero_variance, zero_variance]
 
-    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde, mat.is.XtX = TRUE)
+    cov_minus_.5 <-
+        XtX_pseudoinv_sqrt(mat=scaled.x_tilde, mat.is.XtX = TRUE)
     mvz <- drop(crossprod(ssn, cov_minus_.5))
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
@@ -1012,12 +1013,12 @@ HB08 <- function(alignedcovs) {
     tcov <- crossprod(scaled.x_tilde)
     ssvar <- diag(tcov)
 
-    non_negligible_variance  <- (ssvar <= .Machine$double.eps)
-    zstat <- ifelse(non_negligible_variance, NA_real_, ssn/sqrt(ssvar))
+    zero_variance  <- (ssvar <= .Machine$double.eps)
+    zstat <- ifelse(zero_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
     ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    x_tilde <- x_tilde[,non_negligible_variance, drop=FALSE]
+    x_tilde <- x_tilde[,zero_variance, drop=FALSE]
     scaled.x_tilde <- scaled.x_tilde[,ssvar > .Machine$double.eps, drop=FALSE]
     ssn  <- ssn[ssvar > .Machine$double.eps]
 
