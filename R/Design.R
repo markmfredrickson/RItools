@@ -907,6 +907,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##' @title Hansen & Bowers (2008) inferentials, done a bit differently
 ##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list, as in \code{\link{HB08}}
+##' @importMethodsFrom SparseM diag
 ##' @keywords internal
 HB08_ <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
@@ -940,8 +941,15 @@ HB08_ <- function(alignedcovs) {
     stratsizes <-  data.frame(n=diag(n), n1=sparseToVec(n1))
     stratsizes$n0  <- stratsizes[['n']] - stratsizes[['n1']]
 
-    xt_covar_stratwise  <- t(S) %*% matrix(x_tilde *rep(x_tilde, p_),
-                                           nrow=n_, ncol=p_^2)
+    ## this next block first creates the n_ * p_^2 matrix
+    ## of 2nd-order monomials in columns of x-tilde, then
+    ## immediately sums each of these within each of s_ strata,
+    ## resulting in a n_ * p_^2 matrix.
+    xt_df  <- as.data.frame(x_tilde) # to get rep() to treat as a list
+    xt_covar_stratwise  <- t(S) %*%
+        ( as.matrix( as.data.frame(rep(xt_df, each=p_)) ) *
+          as.matrix( as.data.frame(rep(xt_df, times=p_)) )
+            )
     xt_covar_stratwise  <- as.matrix(xt_covar_stratwise) # s_ * (p_^2)
     xt_covar_stratwise  <- array(xt_covar_stratwise,
                                  dim=c(s_, p_, p_) # s_ * p_ * p_
@@ -961,18 +969,16 @@ HB08_ <- function(alignedcovs) {
     zstat <- ifelse(zero_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
-    ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    ssn  <- ssn[zero_variance]
-    tcov  <- tcov[zero_variance, zero_variance]
 
     cov_minus_.5 <-
-        XtX_pseudoinv_sqrt(mat=scaled.x_tilde, mat.is.XtX = TRUE)
-    mvz <- drop(crossprod(ssn, cov_minus_.5))
+        XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance],
+                           mat.is.XtX = TRUE)
+    mvz <- drop(crossprod(ssn[!zero_variance], cov_minus_.5))
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-       adj.mean.diffs=ssn, tcov = tcov)
+         adj.mean.diffs=ssn, tcov = tcov)
 }
 
 ##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
