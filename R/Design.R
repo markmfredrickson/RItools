@@ -904,12 +904,24 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
-##' @title Hansen & Bowers (2008) inferentials, done a bit differently
+##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
 ##' @param alignedcovs A CovsAlignedToADesign object
-##' @return list, as in \code{\link{HB08}}
+##' @return list with components:
+##' \describe{
+##'   \item{z}{First item}
+##'   \item{p}{Second item}
+##'   \item{Msq}{Squared Mahalanobis distance of combined differences from origin}
+##'   \item{DF}{degrees of freedom}
+##'   \item{adj.mean.diffs}{Vector of sum statistics z'x-tilde, where x-tilde is the unit- and stratum-weighted covariate, with stratum centering.  This differs from the adjusted difference vector of Hansen & Bowers (2008) by a constant of proportionality.}
+##'   \item{tcov}{Matrix of null covariances of Z'x-tilde vector, as above.}
+##' }
+##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
+##'   Balance in Simple, Stratified and Clustered Comparative
+##'   Studies,'' \emph{Statistical Science} \bold{23}.
+##' @seealso \code{\link{balanceTest}}, \code{\link{alignDesignsByStrata}}
 ##' @importMethodsFrom SparseM diag
 ##' @keywords internal
-HB08_ <- function(alignedcovs) {
+HB08 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
     s_ <- ncol(S)
@@ -954,7 +966,8 @@ HB08_ <- function(alignedcovs) {
     xt_covar_stratwise  <- array(xt_covar_stratwise,
                                  dim=c(s_, p_, p_) # s_ * p_ * p_
                                  )
-    xt_covar_stratwise  <- (stratsizes$n -1)^(-1) *
+    xt_covar_stratwise  <-
+        ifelse(stratsizes$n==1, 0, (stratsizes$n -1)^(-1) ) *
         xt_covar_stratwise # still s_ * p_ * p_
     ## now we have sample covariances, by stratum.
 
@@ -971,7 +984,7 @@ HB08_ <- function(alignedcovs) {
 
 
     cov_minus_.5 <-
-        XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance],
+        XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance, drop=FALSE],
                            mat.is.XtX = TRUE)
     mvz <- drop(crossprod(ssn[!zero_variance], cov_minus_.5))
     csq <- drop(crossprod(mvz))
@@ -981,23 +994,11 @@ HB08_ <- function(alignedcovs) {
          adj.mean.diffs=ssn, tcov = tcov)
 }
 
-##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
+##' @title Hansen & Bowers (2008) inferentials 2016 [81e3ecf] version
 ##' @param alignedcovs A CovsAlignedToADesign object
-##' @return list with components:
-##' \describe{
-##'   \item{z}{First item}
-##'   \item{p}{Second item}
-##'   \item{Msq}{Squared Mahalanobis distance of combined differences from origin}
-##'   \item{DF}{degrees of freedom}
-##'   \item{adj.mean.diffs}{Vector of sum statistics z'x-tilde, where x-tilde is the unit- and stratum-weighted covariate, with stratum centering.  This differs from the adjusted difference vector of Hansen & Bowers (2008) by a constant of proportionality.}
-##'   \item{tcov}{Matrix of null covariances of Z'x-tilde vector, as above.}
-##' }
-##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
-##'   Balance in Simple, Stratified and Clustered Comparative
-##'   Studies,'' \emph{Statistical Science} \bold{23}.
-##' @seealso \code{\link{balanceTest}}, \code{\link{alignDesignsByStrata}}
+##' @return list, as in \code{\link{HB08}}
 ##' @keywords internal
-HB08 <- function(alignedcovs) {
+HB08_2016 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@StrataMatrix
 

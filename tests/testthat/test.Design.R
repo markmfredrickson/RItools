@@ -767,7 +767,7 @@ test_that("Issue #89: Proper strata weights", {
 context("HB08")
 
 
-test_that("HB08_ agreement w/ xBal()", {
+test_that("HB08 agreement w/ xBal()", {
 
   set.seed(20180605)
   n <- 100
@@ -789,7 +789,7 @@ test_that("HB08_ agreement w/ xBal()", {
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
     asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    btis0 <- lapply(asimple0, HB08_)
+    btis0 <- lapply(asimple0, HB08)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
@@ -821,7 +821,7 @@ test_that("HB08_ agreement w/ xBal()", {
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
     asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    btis1 <- lapply(asimple1, HB08_)
+    btis1 <- lapply(asimple1, HB08)
 
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
