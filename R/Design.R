@@ -778,6 +778,12 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
         x@Sweights  <- x@Sweights[refstrat]
     } else {
         x  <- as(x, "StratumWeightedDesignOptions")
+        ## The weights below are not meaningful -- even
+        ## for the default harmonic weighting, there'd need
+        ## to be a normalization factor -- but that's harmless
+        ## because they'll have no effect on the shaping of
+        ## covariates or stratum alignment provided by
+        ## alignDesignsByStrata(). 
         x@Sweights <- setNames(
             list(data.frame(wtratio=rep(1, nlevels(x@StrataFrame[[1]])),
                                            row.names=levels(x@StrataFrame[[1]]))
@@ -921,7 +927,12 @@ HB08_ <- function(alignedcovs) {
     x_tilde <- Covs *#the sum statistic we're about to compute averages within-
         alignedcovs@StrataWeightRatio # stratum differences using stratum
     ## weights proportional to harmonic means of n_t's and n_c's.  If a different
-    ## stratum weighting was indicated, it's shoehorned in here.
+    ## stratum weighting was indicated, it's shoehorned in here.  Whether
+    ## or not that's so, weight normalization is also being factored in.
+    ## In the default harmonic weighting, this weight ratio equals
+    ## the reciprocal of the sum across strata of those harmonic weights.
+    ## With another weighting, the weight ratios are all divided through
+    ## by the sum of those other weights. 
 
     ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
     names(ssn) <- colnames(Covs)
@@ -1003,8 +1014,12 @@ HB08 <- function(alignedcovs) {
     x_tilde <- Covs *#the sum statistic we're about to compute averages within-
         alignedcovs@StrataWeightRatio # stratum differences using stratum
     ## weights proportional to harmonic means of n_t's and n_c's.  If a different
-    ## stratum weighting was indicated, it's shoehorned in here.
-
+    ## stratum weighting was indicated, it's shoehorned in here. Whether
+    ## or not that's so, weight normalization is also being factored in.
+    ## In the default harmonic weighting, this weight ratio equals
+    ## the reciprocal of the sum across strata of those harmonic weights.
+    ## With another weighting, the weight ratios are all divided through
+    ## by the sum of those other weights. 
     n1_over_n <- S %*% n.inv %*% n1
     ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
     names(ssn) <- colnames(Covs)
