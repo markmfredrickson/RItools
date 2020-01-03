@@ -4,10 +4,15 @@
 \alias{XtX_pseudoinv_sqrt}
 \title{Matrix square root of XtX's pseudoinverse}
 \usage{
-XtX_pseudoinv_sqrt(mat, tol = .Machine$double.eps^0.25)
+XtX_pseudoinv_sqrt(mat, mat.is.XtX = FALSE,
+  tol = .Machine$double.eps^0.25)
 }
 \arguments{
 \item{mat}{double-precision matrix}
+
+\item{mat.is.XtX}{is mat a crossproduct of an X matrix, or X itself?}
+
+\item{tol}{tolerance}
 }
 \value{
 matrix of \code{ncol(mat)} rows and col rank (mat) columns

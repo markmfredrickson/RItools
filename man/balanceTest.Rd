@@ -8,8 +8,9 @@ balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
   "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test", "p.values",
   "all")[1:2], unit.weights,
   stratum.weights = harmonic_times_mean_weight, subset,
-  include.NA.flags = TRUE, covariate.scaling = NULL,
-  post.alignment.transform = NULL, p.adjust.method = "holm")
+  include.NA.flags = TRUE, covariate.scales = setNames(numeric(0),
+  character(0)), post.alignment.transform = NULL,
+  inferentials.calculator = HB08, p.adjust.method = "holm")
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment
@@ -39,11 +40,13 @@ measures.}
 
 \item{include.NA.flags}{Present item missingness comparisons as well as covariates themselves?}
 
-\item{covariate.scaling}{A scale factor to apply to covariates in
-calculating \code{std.diffs} (currently ignored).}
+\item{covariate.scales}{covariate dispersion estimates to use
+as denominators of\code{std.diffs} (optional).}
 
 \item{post.alignment.transform}{Optional transformation applied to
 covariates just after their stratum means are subtracted off.}
+
+\item{inferentials.calculator}{Function used to calculate "inferential" statistics}
 
 \item{p.adjust.method}{Method of p-value adjustment.}
 }
@@ -69,11 +72,19 @@ stratification variables can be provided, and are addressed by the tests.
 The function assembles various univariate descriptive statistics
 for the groups to be compared: (weighted) means of treatment and
 control groups; differences of these (adjusted differences); and
-adjusted differences as multiples of a pooled S.D. of the variable
-in the treatment and control groups (standard differences). This
-is done separately for each provided stratifying factor and, by
-default, for the unstratified comparison, in each case reflecting
-a standardization appropriate to the designated (post-)
+adjusted differences as multiples of a pooled s.d. of the variable
+in the treatment and control groups (standard differences). Pooled
+s.d.s are calculated with weights but without attention to clustering, 
+and ordinarily without attention to stratification.  (If the user does 
+not request unstratified comparisons, overriding the default setting,
+then pooled s.d.s are calculated with weights corresponding to the first
+stratification for which comparison is requested.  In this case as
+in the default setting, the same pooled s.d.s are used for standardization
+under each stratification considered. This facilitates comparison of
+standard differences across stratification schemes.)  Means
+are contrasted separately for each provided stratifying factor and, by
+default, for the unstratified comparison, in each case with weights
+reflecting a standardization appropriate to the designated (post-)
 stratification of the sample.  In the case without stratification
 or clustering, the only weighting used to calculate treatment and
 control group means is that provided by the user as
@@ -137,7 +148,7 @@ Evidence pertaining to the hypothesis that a treatment
   assignments of clusters are freely permuted.  For
   stratified comparisons, the reference distributions describes re-randomizations of
   this type performed separately in each stratum. Significance
-  assessments are based on the large-sample Normal approximation
+  assessments are based on large-sample approximations
   to these reference distributions.
 }
 \examples{
@@ -192,6 +203,9 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Kalton, G. (1968), ``Standardization: A technique to control for
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
+}
+\seealso{
+\code{\link{HB08}}
 }
 \author{
 Ben Hansen and Jake Bowers and Mark Fredrickson

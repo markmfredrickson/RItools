@@ -262,10 +262,12 @@ slm.wfit.csr <- function (x, y, weights, ...)
 ##' 
 ##' @title Matrix square root of XtX's pseudoinverse
 ##' @param mat double-precision matrix
+##' @param mat.is.XtX is mat a crossproduct of an X matrix, or X itself?
+##' @param tol tolerance
 ##' @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
 ##' @author Ben Hansen
 ##' @keywords internal
-XtX_pseudoinv_sqrt <- function(mat, tol = .Machine$double.eps^0.25)
+XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.25)
 {
     pst.svd <- try(svd(mat, nu=0))
 
@@ -273,17 +275,20 @@ XtX_pseudoinv_sqrt <- function(mat, tol = .Machine$double.eps^0.25)
     pst.svd <- propack.svd(mat)
   }
 
-  Positive <- pst.svd$d > max(tol * pst.svd$d[1], 0)
-  Positive[is.na(Positive)] <- FALSE 
+    d  <-  if (mat.is.XtX) sqrt(pst.svd$d) else pst.svd$d
+    v  <- pst.svd$v
+
+    Positive <- d > max(tol * d[1], 0)
+    Positive[is.na(Positive)] <- FALSE
 
   if (all(Positive)) { 
-    ytl <- pst.svd$v *
-      matrix(1/pst.svd$d, nrow = ncol(mat), ncol = length(pst.svd$d), byrow = T)
+    ytl <- v *
+      matrix(1/d, nrow = ncol(mat), ncol = length(d), byrow = T)
   } else if (!any(Positive)) {
     ytl <- array(0, c(ncol(mat), 0) )
   } else  {
-    ytl <- pst.svd$v[, Positive, drop = FALSE] *
-      matrix(1/pst.svd$d[Positive], ncol = sum(Positive), nrow = ncol(mat), byrow = TRUE)
+    ytl <- v[, Positive, drop = FALSE] *
+      matrix(1/d[Positive], ncol = sum(Positive), nrow = ncol(mat), byrow = TRUE)
   }
 ytl
 }
