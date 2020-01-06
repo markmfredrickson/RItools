@@ -101,7 +101,7 @@
 ##' @param covariate.scales covariate dispersion estimates to use
 ##' as denominators of\code{std.diffs} (optional).
 ##' @param include.NA.flags Present item missingness comparisons as well as covariates themselves?
-##' @param inferentials.calculator Function used to calculate "inferential" statistics
+##' @param inferentials.calculator Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
 ##' @return An object of class \code{c("xbal", "list")}.  There are
