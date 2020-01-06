@@ -46,7 +46,7 @@ as denominators of\code{std.diffs} (optional).}
 \item{post.alignment.transform}{Optional transformation applied to
 covariates just after their stratum means are subtracted off.}
 
-\item{inferentials.calculator}{Function used to calculate "inferential" statistics}
+\item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
 \item{p.adjust.method}{Method of p-value adjustment.}
 }
