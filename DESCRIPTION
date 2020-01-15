@@ -20,8 +20,13 @@ Imports:
     stats,
     graphics,
     methods,
-    survival
+    survival,
+    ggplot2,
+    tidyr,
+    tibble,
+    dplyr
 Suggests:
+    knitr, rmarkdown,
     testthat,
     roxygen2,
     MASS,

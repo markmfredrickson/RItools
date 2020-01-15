@@ -121,7 +121,7 @@
 ##'   118--136.
 ##' @author Ben Hansen and Jake Bowers and Mark Fredrickson
 ##' @keywords design nonparametric
-##' @import svd stats
+##' @import svd stats abind
 ##' @examples
 ##' data(nuclearplants)
 ##' ##No strata, default output
@@ -318,6 +318,6 @@ balanceTest <- function(fmla,
   })
   attr(ans, "fmla") <- formula(fmla)
   attr(ans, "report") <- report # hinting to our summary method later
-  class(ans) <- c("xbal", "list")
+  class(ans) <- c("balancetest", "xbal", "list")
   ans
 }

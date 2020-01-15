@@ -33,10 +33,10 @@
 #' @param groups A vector of group names for each variable in
 #' \code{x$results}. By default, factor level variables will be
 #' grouped.
+#' @param ggplot Use ggplot2 to create figure. By default, uses base R graphics.
 #' @param ... additional arguments to pass to \code{\link{balanceplot}}
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
-#' @import abind
 #' @export
 plot.xbal <- function(x,
                       xlab = "Standardized Differences",
@@ -47,15 +47,24 @@ plot.xbal <- function(x,
                       strata.labels = NULL,
                       variable.labels = NULL,
                       groups = NULL,
+                      ggplot = FALSE,
                       ...) {
 
   x <- prepareXbalForPlot(x, statistic, absolute, strata.labels, variable.labels)
 
+
   if (is.null(groups)) {
     groups <- attr(x, "groups")
   }
+  
+  if(ggplot == TRUE){
+      return(balanceTest_ggplot(as.data.frame(x),xlab = xlab, absolute = absolute, strata.labels = strata.labels, groups = groups))
+  } else {
+    return(balanceplot(x, xlab = xlab, groups = groups, ...))
+  }
+}
 
-  return(balanceplot(x, xlab = xlab, groups = groups, ...))
+  
 
   ### NOT RUN: (but saving while we transition to the more general balanceplot function
 
@@ -122,7 +131,7 @@ plot.xbal <- function(x,
   #          pch=thesymbols,
   #          bty="n")
   # }
-}
+
 
 # Internal function for turning an xBalance object into something for `balanceplot`
 prepareXbalForPlot <- function(x,
@@ -373,8 +382,8 @@ balanceplot <- function(x,
   if (length(colnames(x)) > 0 && include.legend) {
     legend(x = "topright",
            legend = colnames(x),
-           pch = origshapes,
-           col = origcolors,
+           pch = shapes,
+           col = colors,
            title = legend.title,
            bty = "n")
   }
@@ -428,3 +437,5 @@ balanceplot <- function(x,
 
   return(offset + n + 1)
 }
+
+

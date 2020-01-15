@@ -17,3 +17,6 @@ tests/*.R
 tests/*.Rout.save
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^doc$
+^Meta$
+nonbuild

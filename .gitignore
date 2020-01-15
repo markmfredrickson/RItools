@@ -4,3 +4,6 @@
 RItools_*
 RITOOLS_TIMESTAMP
 revdep/checks.rds
+doc
+Meta
+vignettes/*.R
