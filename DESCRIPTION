@@ -30,9 +30,10 @@ Suggests:
     testthat,
     roxygen2,
     MASS,
-    RSVGTipsDevice
-Enhances: optmatch
+    RSVGTipsDevice,
+    optmatch
 URL: http://CRAN.R-project.org/package=RItools, http://www.jakebowers.org/
     RItools.html
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
+
