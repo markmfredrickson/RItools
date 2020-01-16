@@ -142,12 +142,19 @@ balanceTest_ggplot <- function(x,
                                        shape = "strata")) +
     ggplot2::geom_point() +
     ggplot2::geom_vline(xintercept = 0) +
-    ggplot2::geom_line(ggplot2::aes_string(group = "rowname"), color = "black") +
     ggplot2::labs(color = legend.title,
                   shape = legend.title,
                   x = xlab,
                   y = ggplot2::element_blank()) +
     ggplot2::facet_grid(group ~ ., scales = "free_y")
-
+  
+  
+  # Only draw connectors if there are multiple strata (avoids warning
+  # from geom_path)
+  if (length(unique(x$strata)) > 1) {
+    plot <- plot + 
+      ggplot2::geom_line(ggplot2::aes_string(group = "rowname"), color = "black")
+  }
+    
   return(plot)
 }
