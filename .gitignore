@@ -7,3 +7,4 @@ revdep/checks.rds
 doc
 Meta
 vignettes/*.R
+.Rproj.user
