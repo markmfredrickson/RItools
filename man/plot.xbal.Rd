@@ -4,9 +4,17 @@
 \alias{plot.xbal}
 \title{Plot of balance across multiple strata}
 \usage{
-\method{plot}{xbal}(x, xlab = "Standardized Differences",
-  statistic = "std.diff", absolute = FALSE, strata.labels = NULL,
-  variable.labels = NULL, groups = NULL, ggplot = FALSE, ...)
+\method{plot}{xbal}(
+  x,
+  xlab = "Standardized Differences",
+  statistic = "std.diff",
+  absolute = FALSE,
+  strata.labels = NULL,
+  variable.labels = NULL,
+  groups = NULL,
+  ggplot = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object returned by \code{\link{xBalance}}}
@@ -57,6 +65,7 @@ selected using the \code{statistic} argument.
 }
 \examples{
 data(nuclearplants)
+library(survival)
 
 xb <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
                data = nuclearplants)

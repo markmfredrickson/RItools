@@ -4,8 +4,7 @@
 \alias{design_matrix}
 \title{Model matrices along with compact encodings of data availability/missingness}
 \usage{
-design_matrix(object, data = environment(object),
-  remove.intercept = TRUE, ...)
+design_matrix(object, data = environment(object), remove.intercept = TRUE, ...)
 }
 \arguments{
 \item{object}{Model formula or terms object (as in `model.matrix`)}

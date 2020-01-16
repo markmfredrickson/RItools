@@ -5,8 +5,12 @@
 \alias{glance.xbal}
 \title{[broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results}
 \usage{
-tidy.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1],
-  varnames_crosswalk = c(z = "statistic", p = "p.value"), ...)
+tidy.xbal(
+  x,
+  strata = dimnames(x[["results"]])[["strata"]][1],
+  varnames_crosswalk = c(z = "statistic", p = "p.value"),
+  ...
+)
 
 glance.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1], ...)
 }

@@ -4,9 +4,17 @@
 \alias{plot.balancetest}
 \title{Plot of balance across multiple strata}
 \usage{
-\method{plot}{balancetest}(x, xlab = "Standardized Differences",
-  statistic = "std.diff", absolute = FALSE, strata.labels = NULL,
-  variable.labels = NULL, groups = NULL, ggplot = FALSE, ...)
+\method{plot}{balancetest}(
+  x,
+  xlab = "Standardized Differences",
+  statistic = "std.diff",
+  absolute = FALSE,
+  strata.labels = NULL,
+  variable.labels = NULL,
+  groups = NULL,
+  ggplot = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object returned by \code{\link{xBalance}}}
