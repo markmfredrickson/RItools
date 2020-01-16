@@ -1,4 +1,5 @@
 data(nuclearplants)
+library(survival)
 
 xb <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
                data = nuclearplants)
