@@ -1,4 +1,5 @@
 library('testthat')
+library(MASS)
 context('Moment Calculation')
 
 ## @param s A n x s stratum membership matrix
@@ -123,4 +124,57 @@ test_that("Calculating moments of Mahalanobis statistic", {
 
     expect_true(all((ms - bts)^2 <= sqrt(.Machine$double.eps)))
     expect_true(all((xbs - bts)^2 <= sqrt(.Machine$double.eps)))
+})
+
+test_that("Direct moment calculations are correct", {
+    
+
+### Set up
+    ## Generate some random data
+    set.seed(30303)
+    n <- 12
+    x1 <- rnorm(n)
+    x2 <- x1 + runif(n, -1,  3)
+    x3 <- sample(letters[1:3], n, replace = TRUE )
+    df <- data.frame(x1, x2, x3)
+    df <- df[order(x1), ]
+    df$match <- as.factor(
+        c(1, 1,
+          2, 2,
+          3, 3, 3,
+          4, 4, 4, 4, 4))
+    df$z <- c(1, 0,
+              0, 1,
+              0, 1, 0,
+              0, 1, 0, 1, 1)
+
+### end data set up
+    x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+    s <- model.matrix(~ match - 1, data = df)
+
+    ## set up some matrices to indicate strata level stuff
+    sn <- as.vector(t(s) %*% rep(1, n))
+    sn1 <- as.vector(t(s) %*% df$z)
+    sn0 <- sn - sn1
+
+    ## assumes X is in strata sorted order
+    zs <- design_to_zs(s, sn, sn1)
+
+    ### this is largely taken from balanceTest
+    fmla <- z ~ x1 + x2 + x3 + strata(match) - 1
+    df$`(weights)` <- 1
+    design <- makeDesigns(fmla, df)
+    aggDesign       <- aggregateDesigns(design)
+    aggDesign <- as(aggDesign, "StratumWeightedDesignOptions")
+    aggDesign@Sweights <-
+        DesignWeights(aggDesign, harmonic_times_mean_weight)
+    aligned <- alignDesignsByStrata(aggDesign)$match
+
+    ## lets double check that we are aligned
+    xbar_s <- t(s) %*% x / sn
+    xaligned <- x - s %*% xbar_s
+
+    expect_true(all((xaligned - aligned@Covariates[, 1:5])^2 <= sqrt(.Machine$double.eps)))
+
+    
 })
