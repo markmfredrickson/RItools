@@ -1,4 +1,3 @@
-#' @import svd abind stats
 #' @export
 xBalance <- function(fmla, strata=list(unstrat=NULL),
                      data,
