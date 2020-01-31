@@ -5,20 +5,13 @@
 \alias{print}
 \title{Printing xBalance Objects}
 \usage{
-\method{print}{xbal}(
-  x,
-  which.strata = dimnames(x$results)[["strata"]],
+\method{print}{xbal}(x, which.strata = dimnames(x$results)[["strata"]],
   which.stats = dimnames(x$results)[["stat"]],
-  which.vars = dimnames(x$results)[["vars"]],
-  print.overall = TRUE,
-  digits = NULL,
-  printme = TRUE,
+  which.vars = dimnames(x$results)[["vars"]], print.overall = TRUE,
+  digits = NULL, printme = TRUE,
   show.signif.stars = getOption("show.signif.stars"),
-  show.pvals = !show.signif.stars,
-  horizontal = TRUE,
-  report = NULL,
-  ...
-)
+  show.pvals = !show.signif.stars, horizontal = TRUE, report = NULL,
+  ...)
 }
 \arguments{
 \item{x}{An object of class "xbal" which is the result of a call
@@ -70,12 +63,13 @@ A \code{print} method for \code{xBalance} objects.
 \examples{
 data(nuclearplants)
 
-xb0 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+xb0 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
               data=nuclearplants)
 
 print(xb0)
 
-xb1 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb1 <- xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+         strata = list(unstratified = NULL, pt = ~pt),
          data = nuclearplants,
          report = c("all"))
 
@@ -87,25 +81,9 @@ print(xb1, show.pvals = TRUE)
 
 print(xb1, horizontal = FALSE)
 
-## The following doesn't work yet.
-\dontrun{print(xb1, which.vars=c("date","t1"),
-         which.stats=c("adj.means","z.scores","p.values"))}
-
-## The following example prints the adjusted means
-## labeled as "treatmentvar=0" and "treatmentvar=1" using the
-## formula provided to xBalance().
-
-# This is erroring with the change to devtools, FIXME
-\dontrun{print(xb1,
-      which.vars = c("date", "t1"),
-      which.stats = c("pr=0", "pr=1", "z", "p"))}
-
 ## Now, not asking for the omnibus test
-xb2 <- balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
-         data = nuclearplants,
-         report = c("all"))
 
-print(xb2, which.strata = "pt")
+print(xb1, which.strata = "pt")
 }
 \seealso{
 xBalance

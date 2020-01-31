@@ -4,7 +4,8 @@
 \alias{subset.xbal}
 \title{Select variables, strata, and statistics from a \code{xbal} object}
 \usage{
-\method{subset}{xbal}(x, vars = NULL, strata = NULL, stats = NULL, tests = NULL, ...)
+\method{subset}{xbal}(x, vars = NULL, strata = NULL, stats = NULL,
+  tests = NULL, ...)
 }
 \arguments{
 \item{x}{The \code{xbal} object, the result of a call to

@@ -4,7 +4,8 @@
 \alias{naImpute}
 \title{Impute NA's}
 \usage{
-naImpute(FMLA, DATA, impfn = median, na.rm = TRUE, include.NA.flags = TRUE)
+naImpute(FMLA, DATA, impfn = median, na.rm = TRUE,
+  include.NA.flags = TRUE)
 }
 \arguments{
 \item{FMLA}{Formula}

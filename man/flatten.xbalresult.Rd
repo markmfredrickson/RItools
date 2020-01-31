@@ -4,12 +4,8 @@
 \alias{flatten.xbalresult}
 \title{Flattens xBalance output.}
 \usage{
-flatten.xbalresult(
-  x,
-  show.signif.stars = getOption("show.signif.stars"),
-  show.pvals = !show.signif.stars,
-  ...
-)
+flatten.xbalresult(x, show.signif.stars = getOption("show.signif.stars"),
+  show.pvals = !show.signif.stars, ...)
 }
 \arguments{
 \item{x}{x}

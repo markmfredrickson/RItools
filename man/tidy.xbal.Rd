@@ -3,20 +3,15 @@
 \name{tidy.xbal}
 \alias{tidy.xbal}
 \alias{glance.xbal}
-\title{[broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results}
+\title{[broom::tidy()/glance()] methods for [RItools::/xBalance()] results}
 \usage{
-tidy.xbal(
-  x,
-  strata = dimnames(x[["results"]])[["strata"]][1],
-  varnames_crosswalk = c(z = "statistic", p = "p.value"),
-  ...
-)
+tidy.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1],
+  varnames_crosswalk = c(z = "statistic", p = "p.value"), ...)
 
 glance.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1], ...)
 }
 \arguments{
-\item{x}{object of class `"xbal"`, result of [RItools::balancetest()]
-or [RItools::xBalance()]}
+\item{x}{object of class `"xbal"`, result of [RItools::xBalance()]}
 
 \item{strata}{which stratification to return info about? Defaults
 to last one specified in originating function call (which appears first in the xbal array).}
@@ -31,7 +26,7 @@ data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`v
         a combined differences test, if found, and otherwise `NULL`.
 }
 \description{
-Portion out the value of a [RItools::balanceTest()] call in a manner consistent
+Portion out the value of a [RItools::xBalance()] call in a manner consistent
 with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
 statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 calculations. In both cases one has to specify which stratification one wants

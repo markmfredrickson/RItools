@@ -3,8 +3,6 @@
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Standardized Differences for Stratified Comparisons}
 \description{
-  Deprecated in favor of \code{\link{balanceTest}}.
-  
   Given covariates, a treatment variable, and a stratifying
   factor, calculates standardized mean differences along each 
   covariate, with and without the stratification and tests for

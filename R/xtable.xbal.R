@@ -1,10 +1,10 @@
 ##' This function uses the \code{\link[xtable]{xtable}} package
 ##' framework to display the results of a call to
-##' \code{\link{balanceTest}} in LaTeX format. At the moment, it ignores
+##' \code{\link{xBalance}} in LaTeX format. At the moment, it ignores
 ##' the omnibus chi-squared test information.
 ##'
 ##' The resulting LaTeX will present one row for each variable in the
-##' formula originally passed to \code{\link{balanceTest}}, using the
+##' formula originally passed to \code{\link{xBalance}}, using the
 ##' variable name used in the original formula. If you wish to have
 ##' reader friendly labels instead of the original variables names,
 ##' see the code examples below.
@@ -18,7 +18,7 @@
 ##' document's preamble.
 ##' @title An \code{xtable} method for \code{xbal} objects
 ##' @param x An object resulting from a call to
-##'   \code{\link{balanceTest}}.
+##'   \code{\link{xBalance}}.
 ##' @param caption See \code{\link[xtable]{xtable}}.
 ##' @param label See \code{\link[xtable]{xtable}}.
 ##' @param align See \code{\link[xtable]{xtable}}. Our default (as of
@@ -42,7 +42,8 @@
 ##' # Test balance on a variety of variables, with the 'pr' factor
 ##' # indicating which sites are control and treatment units, with
 ##' # stratification by the 'pt' factor to group similar sites
-##' xb1 <- balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' xb1 <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##'                 strata = list(unstratified = NULL, pt = ~pt),   
 ##'                 data = nuclearplants,
 ##'                 report = c('adj.means', 'adj.mean.diffs',
 ##'                            'std.diffs', 'z.scores',
@@ -72,7 +73,7 @@ xtable.xbal <- function(x,
   ##By default use decimal alignment, which will require the dcolumn package in latex and an appropriate column definition like:
   ##\newcolumntype{.}{D{.}{.}{2.2}}
   ##Here is an example which works
-  ##xb1<-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+  ##xb1<-xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
   ##           pt=factor(nuclearplants$pt)),
   ##         data=nuclearplants,
   ##         report=c("adj.means","adj.mean.diffs",'std.diffs', 'z.scores', 'chisquare.test','p.values'))
