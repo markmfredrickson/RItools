@@ -129,6 +129,7 @@ balanceTest_ggplot <- function(x,
   }
 
   x$group <- groups[as.character(x$rowname)]
+  x$group[is.na(x$group)] <- ""
 
   if (!is.null(strata.labels)) {
     x$strata <- factor(x$strata, levels = strata.labels)
@@ -145,8 +146,11 @@ balanceTest_ggplot <- function(x,
     ggplot2::labs(color = legend.title,
                   shape = legend.title,
                   x = xlab,
-                  y = ggplot2::element_blank()) +
-    ggplot2::facet_grid(group ~ ., scales = "free_y")
+                  y = ggplot2::element_blank())
+
+    if (!is.null(x$group) && nlevels(x$group) > 0 ) {
+        plot <- plot + ggplot2::facet_grid(group ~ ., scales = "free_y")
+    }
   
   
   # Only draw connectors if there are multiple strata (avoids warning

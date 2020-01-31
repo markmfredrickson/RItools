@@ -165,6 +165,7 @@ prepareXbalForPlot <- function(x,
     }
     rownames(x) <- variable.labels[rownames(x)]
   }
+  names(origs) <- rownames(x)
 
   if (!is.null(strata.labels)) {
     if (is.null(names(strata.labels))) {
