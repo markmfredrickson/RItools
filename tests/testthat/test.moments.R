@@ -176,5 +176,10 @@ test_that("Direct moment calculations are correct", {
 
     expect_true(all((xaligned - aligned@Covariates[, 1:5])^2 <= sqrt(.Machine$double.eps)))
 
-    
+    ms <- empirical_mahalanobis(x, s, sn, sn1)
+    ms_aligned <- empirical_mahalanobis(x, s, sn, sn1)
+    expect_true(all(ms == ms_aligned))
+
+
+
 })

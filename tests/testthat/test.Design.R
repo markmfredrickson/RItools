@@ -632,7 +632,7 @@ test_that("alignDesigns centers covars by stratum", {
                       rep(0,ncol(asimple0[["--"]]@Covariates)))
     expect_equivalent(colSums(asimple0[["strat"]]@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple0[["strat"]]@StrataMatrix) %*% asimple0[["strat"]]@Covariates),
+    expect_equivalent(as.matrix(t(asimple0[["strat"]]@Design@Units) %*% asimple0[["strat"]]@Covariates),
                       matrix(0,2,ncol(asimple0[["strat"]]@Covariates)))
 
     ## now with weights
@@ -651,7 +651,7 @@ test_that("alignDesigns centers covars by stratum", {
     tmp1 <- asimple1[["strat"]]@Covariates 
     expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
+    expect_equivalent(as.matrix(t(asimple1[["strat"]]@Design@Units) %*% tmp1),
                       matrix(0,2, ncol(asimple1[["strat"]]@Covariates)))
 
     ## now with weights, post alignment transform
@@ -662,7 +662,7 @@ test_that("alignDesigns centers covars by stratum", {
     tmp2 <- asimple2[["strat"]]@Covariates 
     expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),
+    expect_equivalent(as.matrix(t(asimple2[["strat"]]@Design@Units) %*% tmp2),
                       matrix(0,2, ncol(asimple2[["strat"]]@Covariates)))
 
 } )
@@ -852,6 +852,30 @@ test_that("HB08 agreement w/ xBal()", {
 
 
 } )
+
+
+context("Stratified Design Objects")
+
+test_that("Basic stratified designs using either counts or Z", {
+    s <- factor(c("A", "B", "A", "B", "B"))
+    z <- c(T, T, F, F, T)
+    sn1 <- c(B = 2, A = 1)
+
+    sdz <- create_stratified_design(s, z = z)
+    sdn <- create_stratified_design(s, treated = sn1)
+
+    sm <- matrix(c(1, 0, 1, 0, 0,
+                   0, 1, 0, 1, 1), ncol = 2)
+
+    expect_equal(as.matrix(sdz@Units), sm)
+    expect_equal(as.matrix(sdn@Units), sm)
+
+    expect_equal(sdz@Count, c(2, 3))
+    expect_equal(sdn@Count, c(2, 3))
+
+    expect_equal(sdn@Treated, c(1, 2))
+    expect_equal(sdn@Treated, c(1, 2))
+})
 
 ### Tests to write...
 ##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})

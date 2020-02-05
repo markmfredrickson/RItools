@@ -749,21 +749,73 @@ aggregateDesigns <- function(design) {
 #' @slot Covariates Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
-#' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
+#' @slot Design A StratafiedDesign object that captures the stratification and weighting 
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
 setClass("CovsAlignedToADesign",
-         slots =
-             c(Covariates="matrix",
+         slots                 =
+             c(Covariates      ="matrix",
              Z                 = "logical",
-             StrataMatrix    = "matrix.csr", 
+             Design            = "StratifiedDesign",
              StrataWeightRatio = "numeric",
-             OriginalVariables="integer",
-             Cluster = "factor"
+             OriginalVariables ="integer",
+             Cluster           = "factor"
              )
          )
+
+
+## Stratified design of x units into k strata with fixed numbers of units and treated per strata
+##
+## @slot Unit A n by k (sparse) matrix with a single 1 in each row. Rows indicated the randomized units (clusters in cluster randomized trials). Columns indicate stratum membership.
+## @slot Counts A k vector of units in each stratum
+## @slot Treated A k vector of the number treated in each stratum.
+## @slot Weights A k vector of strata weights.
+setClass("StratifiedDesign",
+         slots = c(
+             Units = "matrix.csr",
+             Count = "integer",
+             Treated = "integer",
+             Weights = "numeric"
+         ))
+
+## Create stratified design object.
+##
+## @param strata A factor of length n, with k levels.
+## @param treated (Optional) An integer vector of length k, with names corresponding to levels of strata, indicating treated units. Either `treated` or `z` must be included
+## @param z A logical or two level vector of length n indicating if each unit is treated or not.
+## @param weights (Optional) A numeric of length n.
+create_stratified_design <- function(strata, treated = NULL, z = NULL, weights = NULL) {
+    n <- length(strata)
+    k <- nlevels(n)
+
+    units <- SparseMMFromFactor(strata)
+
+    count <- as.vector(table(strata))
+
+    if (is.null(treated) && !is.null(z)) {
+        treated <- as.vector(t(units) %*% toZ(z))
+    }
+
+    if (!is.null(names(treated))) {
+       treated <- treated[levels(strata)]
+    }
+
+    if (is.null(weights)) {
+        weights <- rep(1, k)
+    }
+
+    if (!is.null(names(weights))) {
+        treated <- weights[levels(strata)]
+    }
+
+    new("StratifiedDesign",
+        Units = units,
+        Count = as.integer(count),
+        Treated = as.integer(treated),
+        Weights = weights)
+}
+
 # apply this & pass through en route to svd
 #' @method scale DesignOptions
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
@@ -834,7 +886,8 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     ss <- design@StrataFrame[, s]
     keep <- !is.na(ss)
     ss <- ss[keep]
-    S <- SparseMMFromFactor(ss)
+    zz <- design@Z[keep]
+
 
     ewts <- Ewts[keep,,drop=FALSE]
     non_null_record_wts <- ewts[,1L,drop=TRUE]
@@ -842,6 +895,8 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
 
+
+    #### This stuff should be moved to create_stratified_design
     wtratio <- design@Sweights[[s]]$wtratio
     names(wtratio) <- rownames(design@Sweights[[s]])
 
@@ -854,6 +909,10 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
+    stratified <- create_stratified_design(ss, zz, wtr)
+
+    #### End move
+
     # align weighted observations within stratum by subtracting weighted stratum means
     covars.Sctr <- covars
     for (jj in 1L:ncol(covars))
@@ -861,7 +920,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         covars.Sctr[,jj] <- if (all(covars[,jj]==covars[1L,jj])) 0 else
             suppressWarnings( #throws singularity warning if covar is linear in S
                 slm.wfit.csr( # see note in ./utils.R on why we use our own
-                    S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
+                    stratified@Units, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
                     weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
             )
         ## A value that was missing might have received an odd residual.
@@ -885,7 +944,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
       }
       ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
         covars.Sctr[,1L:k.Covs] <- suppressWarnings(
-            slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
+            slm.wfit.csr(stratified@Units, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
                          weights=non_null_record_wts)$residuals
         )
     }
@@ -894,8 +953,8 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
       new("CovsAlignedToADesign",
           Covariates        = covars.Sctr,
-          Z=as.logical(design@Z[keep]),
-          StrataMatrix=S,
+          Z = zz,
+          Design = stratified,
           StrataWeightRatio = wtr, #as extracted from the design
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
@@ -923,7 +982,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##' @keywords internal
 HB08 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
-    S <- alignedcovs@StrataMatrix
+    S <- alignedcovs@Design@Units
     s_ <- ncol(S)
 
     Covs <- alignedcovs@Covariates
@@ -1000,7 +1059,7 @@ HB08 <- function(alignedcovs) {
 ##' @keywords internal
 HB08_2016 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
-    S <- alignedcovs@StrataMatrix
+    S <- alignedcovs@Design@Units
 
     Covs <- alignedcovs@Covariates
 
