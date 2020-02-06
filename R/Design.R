@@ -755,12 +755,9 @@ aggregateDesigns <- function(design) {
 #' @keywords internal
 setClass("CovsAlignedToADesign",
          slots                 =
-             c(Covariates      ="matrix",
+             c(Covariates      = "matrix",
              Z                 = "logical",
-             Design            = "StratifiedDesign",
-             StrataWeightRatio = "numeric",
-             OriginalVariables ="integer",
-             Cluster           = "factor"
+             Design            = "StratifiedDesign"
              )
          )
 
@@ -787,7 +784,7 @@ setClass("StratifiedDesign",
 ## @param weights (Optional) A numeric of length n.
 create_stratified_design <- function(strata, treated = NULL, z = NULL, weights = NULL) {
     n <- length(strata)
-    k <- nlevels(n)
+    k <- nlevels(strata)
 
     units <- SparseMMFromFactor(strata)
 
@@ -806,7 +803,7 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
     }
 
     if (!is.null(names(weights))) {
-        treated <- weights[levels(strata)]
+        weights <- weights[levels(strata)]
     }
 
     new("StratifiedDesign",
@@ -909,7 +906,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
-    stratified <- create_stratified_design(ss, zz, wtr)
+    stratified <- create_stratified_design(ss, z = zz, weights = wtratio)
 
     #### End move
 
@@ -952,12 +949,9 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     covars.Sctr  <- covars.Sctr * non_null_record_wts
 
       new("CovsAlignedToADesign",
-          Covariates        = covars.Sctr,
+          Covariates = covars.Sctr,
           Z = zz,
-          Design = stratified,
-          StrataWeightRatio = wtr, #as extracted from the design
-          OriginalVariables = origvars,
-          Cluster           = factor(design@Cluster[keep])
+          Design = stratified
           )
 }
   sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
@@ -981,59 +975,11 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##' @importMethodsFrom SparseM diag
 ##' @keywords internal
 HB08 <- function(alignedcovs) {
-    zz <- as.numeric(alignedcovs@Z)
-    S <- alignedcovs@Design@Units
-    s_ <- ncol(S)
 
-    Covs <- alignedcovs@Covariates
-    n_  <- nrow(Covs)
-    p_  <- ncol(Covs)
+    ## appropriately weighted sum of each requested variable
+    ssn <- manifest_variable_sums(alignedcovs@Design, alignedcovs@Covariates, alignedcovs@Z)
 
-    ## by-stratum treatment and control counts
-    n <- t(S) %*% S
-    n.inv <- 1 / n
-    n1 <- t(S) %*% zz
-###    n0 <- t(S) %*% (1 - zz)
-    n1_over_n <- S %*% n.inv %*% n1
-
-    x_tilde <- Covs *#the sum statistic we're about to compute averages within-
-        alignedcovs@StrataWeightRatio # stratum differences using stratum
-    ## weights proportional to harmonic means of n_t's and n_c's.  If a different
-    ## stratum weighting was indicated, it's shoehorned in here.  Whether
-    ## or not that's so, weight normalization is also being factored in.
-    ## In the default harmonic weighting, this weight ratio equals
-    ## the reciprocal of the sum across strata of those harmonic weights.
-    ## With another weighting, the weight ratios are all divided through
-    ## by the sum of those other weights. 
-
-    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
-    names(ssn) <- colnames(Covs)
-
-    stratsizes <-  data.frame(n=diag(n), n1=sparseToVec(n1))
-    stratsizes$n0  <- stratsizes[['n']] - stratsizes[['n1']]
-
-    ## this next block first creates the n_ * p_^2 matrix
-    ## of 2nd-order monomials in columns of x-tilde, then
-    ## immediately sums each of these within each of s_ strata,
-    ## resulting in a n_ * p_^2 matrix.
-    xt_df  <- as.data.frame(x_tilde) # to get rep() to treat as a list
-    xt_covar_stratwise  <- t(S) %*%
-        ( as.matrix( as.data.frame(rep(xt_df, each=p_)) ) *
-          as.matrix( as.data.frame(rep(xt_df, times=p_)) )
-            )
-    xt_covar_stratwise  <- as.matrix(xt_covar_stratwise) # s_ * (p_^2)
-    xt_covar_stratwise  <- array(xt_covar_stratwise,
-                                 dim=c(s_, p_, p_) # s_ * p_ * p_
-                                 )
-    xt_covar_stratwise  <-
-        ifelse(stratsizes$n==1, 0, (stratsizes$n -1)^(-1) ) *
-        xt_covar_stratwise # still s_ * p_ * p_
-    ## now we have sample covariances, by stratum.
-
-    ## Combine with factors equal to half the harmonic means of n1 and n0. 
-    xt_c_s_scaled  <- xt_covar_stratwise *
-        with(stratsizes, (1/n0 + 1/n1)^(-1) )
-    tcov  <- apply(xt_c_s_scaled, 2:3, sum)
+    tcov <- manifest_variable_covariance(alignedcovs@Design, alignedcovs@Covariates)
 
     ssvar <- diag(tcov)
 
@@ -1078,7 +1024,7 @@ HB08_2016 <- function(alignedcovs) {
     dv <- sparseToVec(S %*% n_minus_1_inv %*% (n1 - n.inv %*% n1^2))
 
     x_tilde <- Covs *#the sum statistic we're about to compute averages within-
-        alignedcovs@StrataWeightRatio # stratum differences using stratum
+        as.vector(design@Units %*% design@Weights) # stratum differences using stratum
     ## weights proportional to harmonic means of n_t's and n_c's.  If a different
     ## stratum weighting was indicated, it's shoehorned in here. Whether
     ## or not that's so, weight normalization is also being factored in.

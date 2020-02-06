@@ -273,7 +273,7 @@ balanceTest <- function(fmla,
       DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
-  origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
+  origvars <- aggDesign@OriginalVariables #to include NotMissing columns
 
   tmp <- lapply(strataAligned, inferentials.calculator)
   names(tmp) <- colnames(aggDesign@StrataFrame)
