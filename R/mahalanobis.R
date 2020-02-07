@@ -61,3 +61,48 @@ manifest_variable_covariance.StratifiedDesign <- function(design, x) {
 
     return(tcov)
 }
+
+
+## Virtual class for MahalanobisDistance objects
+setClass("MahalanobisDistance", representation = "numeric")
+
+## First order approximations of Mahalanobis statistics
+##
+## @slot EM The expected value of the statistic
+setClass("ChisquareApproximation",
+         representation = "MahalanobisDistance",
+         slots = c(EM = "numeric"))
+
+## @slot VarM The variance of the Mahalanobis statistic
+## @slot CovT2 Provides the covariance terms Cov(T_i^2 T_j^2) where M = \sum T_k^2
+setClass("SecondOrderChisquareApproximation",
+         representation = "MahalanobisDistanceChisquareApproximation",
+         slots = c(EM = "numeric",
+                   VarM = "numeric",
+                   CovT2 = "matrix"))
+
+## Compute Mahalanobis distance statistic for two groups
+##
+## @param x An object giving the design and covariates
+## @param z A treatment assignment vector
+## @return A MahalanobisDistance object contains both the distance and components useful for calculating moments and other approximations
+mahalanobis_distance <- function(x, z) { UseMethod("mahalanobis_distance") }
+
+## If `x` is a matrix, we assume that that is a complete random assignment design
+mahalanobis_distance.matrix <- function(x, z) {
+    n <- nrow(x)
+    d <- create_stratified_design(factor(rep(1, n)), z = z)
+    mahalanobis_distance(d, z)
+}
+
+## If we can, we see if we can rotate the covariates and then compute mahalanobis_distance
+mahalanobis_distance.default <- function(x, z) {
+    mahalanobis_distance(rotate_covariates(x), z)
+}
+
+mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
+    J <- toJ(x@design, z)
+    JTx <- t(J) %*% x
+    new("ChisquareApproximation", sum(JTx^2)
+        EM  = ncol(x@Rotation))
+}

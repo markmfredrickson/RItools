@@ -747,11 +747,8 @@ aggregateDesigns <- function(design) {
 #' be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 #' 
 #' @slot Covariates Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)
-#' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot Design A StratafiedDesign object that captures the stratification and weighting 
-#' @slot Cluster Factor indicating who's in the same cluster with who
-#' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
 setClass("CovsAlignedToADesign",
          slots                 =
@@ -762,56 +759,39 @@ setClass("CovsAlignedToADesign",
          )
 
 
-## Stratified design of x units into k strata with fixed numbers of units and treated per strata
+## A set of virtual classes to be used with specific kinds of designs
+setClass("RandomizedDesign")
+
+## Useful methods for RandomizedDesigns to implement:
+## toJ: given a Z, return (Z - P(Z = 1)) / (P(Z = 1)P(Z = 0))
+
+## Prepare the J vector from M = J' W J
 ##
-## @slot Unit A n by k (sparse) matrix with a single 1 in each row. Rows indicated the randomized units (clusters in cluster randomized trials). Columns indicate stratum membership.
-## @slot Counts A k vector of units in each stratum
-## @slot Treated A k vector of the number treated in each stratum.
-## @slot Weights A k vector of strata weights.
-setClass("StratifiedDesign",
-         slots = c(
-             Units = "matrix.csr",
-             Count = "integer",
-             Treated = "integer",
-             Weights = "numeric"
-         ))
+## @param z A treatment assignment vector (length n).
+## @return A vector of length n
+toJ <- function(z) { UseMethod("toJ") }
 
-## Create stratified design object.
+setClass("IndependentRandomizationDesign", representation = "RandomizedDesign",
+         slots = c(InclusionProbabilities = "numeric"))
+
+## Combines a design with a covariate matrix, modifying the covariate matrix by multiplying it 
+setClass("DesignRotatedCovariates", representation = "matrix",
+         slots = c(Design = "RandomizedDesign", Rotation = "matrix"))
+
+
+
+## Modify covariates to have be multiplied by the inverse of the square root inverse covariance matrix of the mahalanobis statistic
 ##
-## @param strata A factor of length n, with k levels.
-## @param treated (Optional) An integer vector of length k, with names corresponding to levels of strata, indicating treated units. Either `treated` or `z` must be included
-## @param z A logical or two level vector of length n indicating if each unit is treated or not.
-## @param weights (Optional) A numeric of length n.
-create_stratified_design <- function(strata, treated = NULL, z = NULL, weights = NULL) {
-    n <- length(strata)
-    k <- nlevels(strata)
-
-    units <- SparseMMFromFactor(strata)
-
-    count <- as.vector(table(strata))
-
-    if (is.null(treated) && !is.null(z)) {
-        treated <- as.vector(t(units) %*% toZ(z))
-    }
-
-    if (!is.null(names(treated))) {
-       treated <- treated[levels(strata)]
-    }
-
-    if (is.null(weights)) {
-        weights <- rep(1, k)
-    }
-
-    if (!is.null(names(weights))) {
-        weights <- weights[levels(strata)]
-    }
-
-    new("StratifiedDesign",
-        Units = units,
-        Count = as.integer(count),
-        Treated = as.integer(treated),
-        Weights = weights)
+## @param design A RandomizedDesign object
+## @param x A covariate matrix
+## @return a DesignRotatedCovariates object (subclass of matrix)
+rotate_covariates <- function(design, x) {
+    UseMethod("rotate_covariates")
 }
+
+
+
+
 
 # apply this & pass through en route to svd
 #' @method scale DesignOptions
