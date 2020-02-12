@@ -12,11 +12,10 @@ manifest_variable_sums <- function(design, x, z) { UseMethod("manifest_variable_
 
 manifest_variable_sums.StratifiedDesign <- function(design, x, z) {
 
-    x_tilde <- x * as.vector(design@Units %*% design@Weights)
 
     n1_over_n <- as.vector(design@Units %*% (design@Treated / design@Count))
 
-    ssn <- sparseToVec(t(matrix(toZ(z), ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
+    ssn <- sparseToVec(t(matrix(toZ(z), ncol = 1) - n1_over_n) %*% x, column = FALSE)
     names(ssn) <- colnames(x)
 
     return(ssn)
@@ -32,15 +31,14 @@ manifest_variable_covariance <- function(design, x) { UseMethod("manifest_variab
 manifest_variable_covariance.StratifiedDesign <- function(design, x) {
 
     ## the fact that this is duplicated suggests it should be a function or pre-computed in an object
-    x_tilde <- x * as.vector(design@Units %*% design@Weights)
-    p_ <- ncol(x_tilde)
+    p_ <- ncol(x)
     s_ <- ncol(design@Units)
 
     ## this next block first creates the n_ * p_^2 matrix
     ## of 2nd-order monomials in columns of x-tilde, then
     ## immediately sums each of these within each of s_ strata,
     ## resulting in a n_ * p_^2 matrix.
-    xt_df  <- as.data.frame(x_tilde) # to get rep() to treat as a list
+    xt_df  <- as.data.frame(x) # to get rep() to treat as a list
     xt_covar_stratwise  <- t(design@Units) %*%
         ( as.matrix( as.data.frame(rep(xt_df, each=p_)) ) *
           as.matrix( as.data.frame(rep(xt_df, times=p_)) )
@@ -64,19 +62,19 @@ manifest_variable_covariance.StratifiedDesign <- function(design, x) {
 
 
 ## Virtual class for MahalanobisDistance objects
-setClass("MahalanobisDistance", representation = "numeric")
+setClass("MahalanobisDistance", contains = "numeric")
 
 ## First order approximations of Mahalanobis statistics
 ##
 ## @slot EM The expected value of the statistic
 setClass("ChisquareApproximation",
-         representation = "MahalanobisDistance",
+         contains = "MahalanobisDistance",
          slots = c(EM = "numeric"))
 
 ## @slot VarM The variance of the Mahalanobis statistic
 ## @slot CovT2 Provides the covariance terms Cov(T_i^2 T_j^2) where M = \sum T_k^2
 setClass("SecondOrderChisquareApproximation",
-         representation = "MahalanobisDistanceChisquareApproximation",
+         contains = "ChisquareApproximation",
          slots = c(EM = "numeric",
                    VarM = "numeric",
                    CovT2 = "matrix"))
@@ -103,6 +101,6 @@ mahalanobis_distance.default <- function(x, z) {
 mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
     J <- toJ(x@design, z)
     JTx <- t(J) %*% x
-    new("ChisquareApproximation", sum(JTx^2)
+    new("ChisquareApproximation", sum(JTx^2),
         EM  = ncol(x@Rotation))
 }

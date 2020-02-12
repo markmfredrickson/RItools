@@ -165,9 +165,6 @@ test_that("Direct moment calculations are correct", {
     df$`(weights)` <- 1
     design <- makeDesigns(fmla, df)
     aggDesign       <- aggregateDesigns(design)
-    aggDesign <- as(aggDesign, "StratumWeightedDesignOptions")
-    aggDesign@Sweights <-
-        DesignWeights(aggDesign, harmonic_times_mean_weight)
     aligned <- alignDesignsByStrata(aggDesign)$match
 
     ## lets double check that we are aligned

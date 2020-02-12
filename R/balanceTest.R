@@ -182,7 +182,6 @@ balanceTest <- function(fmla,
                          "chisquare.test","p.values", "all")[1:2],
                      #                     include.means=FALSE, chisquare.test=FALSE,
                      unit.weights,
-                     stratum.weights = harmonic_times_mean_weight,
                      subset,
                      include.NA.flags = TRUE,
                      covariate.scales = setNames(numeric(0), character(0)),
@@ -260,17 +259,7 @@ balanceTest <- function(fmla,
 
   design          <- makeDesigns(fmla, data)
   aggDesign       <- aggregateDesigns(design)
-  ## (Creation of stratum weightings for use in
-  ##  descriptives calculations would go here, if
-  ## we wanted to allow departures from the ETT default.
-  ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
   descriptives    <- designToDescriptives(design, covariate.scales)
-
-  # these weights govern inferential but not descriptive calculations
-
-  aggDesign <- as(aggDesign, "StratumWeightedDesignOptions")
-  aggDesign@Sweights <-
-      DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
   origvars <- aggDesign@OriginalVariables #to include NotMissing columns

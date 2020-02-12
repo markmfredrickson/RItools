@@ -153,7 +153,6 @@ test_that("balT returns covariance of tests", {
   # in the descriptives section
   res <- balanceTest(z ~ . + strata(s),
                   data = as.data.frame(dat),
-                  stratum.weights = RItools:::effectOfTreatmentOnTreated,
                   report = 'all')
 
   tcov <- attr(res$overall, "tcov")

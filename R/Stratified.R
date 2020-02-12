@@ -8,13 +8,11 @@
 ## @slot Treated A k vector of the number treated in each stratum.
 ## @slot Weights A k vector of strata weights.
 ## @slot JCoefs A n vector of precomputes coefficients to produce J = Z (1 - P(Z = 1)) / (P(Z = 1) P(Z = 0))
-setClass("StratifiedDesign", representation = "RandomizedDesign"
+setClass("StratifiedDesign", contains = "RandomizedDesign",
          slots = c(
              Units = "matrix.csr",
              Count = "integer",
-             Treated = "integer",
-             Weights = "numeric",
-             JCoefs = "numeric"
+             Treated = "integer"
          ))
 
 ## Create stratified design object.
@@ -43,27 +41,17 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
        treated <- treated[levels(strata)]
     }
 
-    if (is.null(weights)) {
-        weights <- rep(1, k)
-    }
-
-    if (!is.null(names(weights))) {
-        weights <- weights[levels(strata)]
-    }
-
-    jcs <- as.vector(units %*% (1 - treated/count) / (treated * (count - treated) / count^2))
 
     new("StratifiedDesign",
         Units   = units,
         Count   = as.integer(count),
-        Treated = as.integer(treated),
-        Weights = weights,
-        JCoefs  = jcs)
+        Treated = as.integer(treated))
 }
 
 ## method for stratified designs
 toJ.StratifiedDesign <- function(x, z) {
-    toZ(z) * x@JCoefs
+    pZ <- as.vector(x@Units %*% (x@Treated / x@Count)) ## P(Z = 1)
+    (toZ(z) - pZ) / (pZ * (1 - pZ))
 }
 
 

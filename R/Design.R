@@ -371,117 +371,6 @@ makeDesigns <- function(fmla, data) {
          )
 }
 
-# Add stratum weights to a design
-#' Stratum Weighted DesignOptions
-#'
-#' @slot Sweights stratum weights
-setClass("StratumWeightedDesignOptions",
-         slots = list(Sweights = "list"),
-         contains = "DesignOptions")
-
-
-##' Create stratum weights to be associated with a DesignOptions
-##'
-##' Apply weighting function to a DesignOptions by stratum, returning results in a format
-##' suitable to be associated with an existing design and used in further calcs.
-##'
-##' The function expects its DesignOptions argument to represent aggregated data,
-##' i.e. clusters not elements within clusters.  Its \code{stratum.weights} argument
-##' is a function that is applied to a data frame representing clusters,
-##' with variables \code{Tx.grp}, \code{stratum.code}, covariates as named in the
-##' \code{design} argument (a DesignOptions object), and \code{unit.weights} (either as
-##' culled or inferred from originating \code{\link{balanceTest}} call or as aggregated up
-##' from those unit weights).  Returns a
-##' weighting factor to be associated with each stratum, this factor determining the stratum
-##' weight by being multiplied by mean of unit weights over clusters in that stratum.
-##'
-##' Specifically, the function's value is a data frame of two variables,
-##' \code{sweights}  and \code{wtratio}, with rows representing strata.
-##' The \code{sweights} vector represents internally
-##' calculated or user-provided \code{stratum.weights}, one for each
-##' stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
-##' weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
-##' \code{sweights} to the product of half the harmonic
-##' mean of n_{tb} and n_{cb}, the number of treatment and control
-##' clusters in stratum b, with the mean of the weights associated with
-##' each of these clusters.  In the notation of Hansen & Bowers
-##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
-##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight
-##' in the sense of summing to 1 across strata.  The ratio is expected
-##' downstream in \code{HB08} (in internal calculations
-##' involving \sQuote{\code{wtr}}).
-##'
-##'
-##' @param design DesignOptions
-##' @param stratum.weights Stratum weights function. Will be fed a count data.frame with Tx.grp (indicating the treatment group), stratum.code, all other covariates and unit.weights.
-##' @return data frame w/ rows for strata, cols \code{sweights} and \code{wtratio}.
-##'
-##' @keywords internal
-
-DesignWeights <- function(design, stratum.weights = harmonic_times_mean_weight) {
-  stopifnot(inherits(design, "DesignOptions"),
-            is.function(stratum.weights),
-            !is.null(design@UnitWeights),  # TODO: take these checks out if we do not use unit weights in this function
-            all(design@UnitWeights >= 0 ) )
-
-  lapply(design@StrataFrame, function(s) {
-
-    stratifier <- factor(s)
-
-    swts <- do.call(stratum.weights,
-                    args = list(data =
-                                  data.frame(Tx.grp = design@Z,
-                                             stratum.code = stratifier,
-                                             design@Covariates,
-                                             unit.weights=design@UnitWeights,
-                               check.names = FALSE)),
-                envir=parent.frame())
-
-    ## checking that the returned swts meet their requirements
-    if (all(is.na(swts)))
-      stop(paste("All stratum weights NA."))
-
-    if (any(is.na(swts))) {
-      swts[is.na(swts)] <- 0
-      warning(paste("NAs in stratum weights; to be interpreted as 0s.", sep=""))
-    }
-
-    if (any(swts<0))
-      stop("stratum weights must be nonnegative")
-
-    if (identical(harmonic_times_mean_weight, stratum.weights)) {
-        ## Subtlety re correspondence of codebase with H&B08:
-        ## H&B's h_b equals *half* the harmonic mean of n_t, n_c;
-        ## RItools's harmonic() calculates harmonic means of
-        ## (n_t, n_c) pairs, w/o the (1/2) factor. (Likewise for
-        ## harmonic_times_mean_weight().)
-        ## If we're here, then the current sweights
-        ## will have been calculated as (2 * h_b * m-bar_b), by
-        ## harmonic_times_mean_weight(). Since wtratio needs to
-        ## compare these weights to (h_b * m-bar_b) as in H&B, we have:
-        wtratio <- rep(2, length(swts))
-        ## (normalization of sweights to be addressed below).
-    } else {
-        hwts <- harmonic_times_mean_weight(
-            data.frame(Tx.grp = design@Z,
-                       stratum.code=stratifier,
-                       unit.weights=design@UnitWeights,
-                       check.names = FALSE))
-      wtratio <- swts/(hwts/2) # Re 1/2 factor, see note immediately above
-    }
-
-    sweights <- swts
-    sum.sweights <- sum(sweights, na.rm=TRUE)
-    sweights <- sweights / sum.sweights
-
-    wtratio <- wtratio / sum.sweights
-    names(wtratio) <- levels(stratifier)
-
-    data.frame(sweights = sweights,
-               wtratio = wtratio,
-               row.names = levels(stratifier))
-  })
-}
 
 ##' Generate Descriptives
 ##'
@@ -558,23 +447,6 @@ designToDescriptives <- function(design, covariate.scales = NULL) {
 
     S <- SparseMMFromFactor(design@StrataFrame[[s]])
     stratlevs <- levels(design@StrataFrame[[s]])
-    if (inherits(design, "StratumWeightedDesignOptions") & length(stratlevs)>1)
-        {
-            Sweights <- design@Sweights[[s]][['sweights']]
-            if (!all(names(Sweights) %in% stratlevs))
-                stop(paste("Strata weights/names mismatch, stratification", s) )
-            Swts <- rep(0, length(stratlevs))
-            names(Swts) <- stratlevs
-            Swts[names(Sweights)] <- Sweights
-        } else {
-          if (length(stratlevs)==1) {Swts <- 1
-          ## if the stratifier has just 1 level, we don't
-          ## need stratum weights, so just use 1.  If it has more
-          ## than 1 level, then we're here because stratum weights
-          ## were not passed down, and we'll need to use defaults,
-          ## which are more convenient to set only implictly; see further down.
-            names(Swts) <- stratlevs} else Swts <- NULL
-                }
 
     Z <- as.numeric(design@Z)
     ZZ <- S * Z
@@ -598,21 +470,11 @@ designToDescriptives <- function(design, covariate.scales = NULL) {
     nclus.by.strat <- txclus.by.strat + ctlclus.by.strat
     strat.sum.uweights <- t(S) %*% as.matrix(design@UnitWeights)
     strat.sum.uweights <- as.matrix(strat.sum.uweights)
-    if (!is.null(Swts)) ## this means stratum weights were passed
-    {
-    ## Horwitz Thompson-type assignment weights
-    tx.wt <- ifelse(txclus.by.strat, nclus.by.strat/txclus.by.strat, 0)
-    ctl.wt <-ifelse(ctlclus.by.strat, nclus.by.strat/ctlclus.by.strat, 0)
-    tx.wt <- ifelse(strat.sum.uweights, tx.wt/strat.sum.uweights, 0)  # approp. HT weights to estimate, by stratum,
-    ctl.wt <-ifelse(strat.sum.uweights, ctl.wt/strat.sum.uweights, 0) # (total uweighted measurements)/(total uweights)
-    ## Next factor in stratum weights, `Swts`.
-    tx.wt <- tx.wt * Swts
-    ctl.wt <- ctl.wt * Swts
-    } else { # in this condition no Swts were passed, so we default to
-      ## strat.sum.uweights *(txclus.by.strat / nclus.by.strat)
-      tx.wt <- ifelse(txclus.by.strat, 1, 0)
-      ctl.wt <-ifelse(ctlclus.by.strat, txclus.by.strat/ctlclus.by.strat, 0)
-      }
+
+    ## strat.sum.uweights *(txclus.by.strat / nclus.by.strat)
+    tx.wt <- ifelse(txclus.by.strat, 1, 0)
+    ctl.wt <-ifelse(ctlclus.by.strat, txclus.by.strat/ctlclus.by.strat, 0)
+
     ## now expand up tx.wt and ctl.wt to match dimensions of data
     tx.wts <- as.vector(as.matrix(S %*% tx.wt))
     ctl.wts <- as.vector(as.matrix(S %*% ctl.wt))
@@ -726,6 +588,33 @@ aggregateDesigns <- function(design) {
       NM.terms=design@NM.terms)
 }
 
+
+
+### Putting these two classes here to quiet warning about missing class.
+### A better solution will use collation to get the right file order.
+
+## A set of virtual classes to be used with specific kinds of designs
+setClass("RandomizedDesign")
+
+## Stratified design of x units into k strata with fixed numbers of units and
+## treated per strata
+##
+## @slot Unit A n by k (sparse) matrix with a single 1 in each row. Rows
+##   indicated the randomized units (clusters in cluster randomized trials).
+##   Columns indicate stratum membership.
+## @slot Counts A k vector of units in each stratum
+## @slot Treated A k vector of the number treated in each stratum.
+## @slot Weights A k vector of strata weights.
+## @slot JCoefs A n vector of precomputes coefficients to produce J = Z (1 - P(Z = 1)) / (P(Z = 1) P(Z = 0))
+setClass("StratifiedDesign", contains = "RandomizedDesign",
+         slots = c(
+             Units = "matrix.csr",
+             Count = "integer",
+             Treated = "integer",
+             Weights = "numeric",
+             JCoefs = "numeric"
+         ))
+
 #' CovsAlignedToADesign S4 class
 #'
 #' A class for representing covariate matrices after alignment within stratum,
@@ -759,8 +648,6 @@ setClass("CovsAlignedToADesign",
          )
 
 
-## A set of virtual classes to be used with specific kinds of designs
-setClass("RandomizedDesign")
 
 ## Useful methods for RandomizedDesigns to implement:
 ## toJ: given a Z, return (Z - P(Z = 1)) / (P(Z = 1)P(Z = 0))
@@ -771,11 +658,11 @@ setClass("RandomizedDesign")
 ## @return A vector of length n
 toJ <- function(z) { UseMethod("toJ") }
 
-setClass("IndependentRandomizationDesign", representation = "RandomizedDesign",
+setClass("IndependentRandomizationDesign", contains = "RandomizedDesign",
          slots = c(InclusionProbabilities = "numeric"))
 
 ## Combines a design with a covariate matrix, modifying the covariate matrix by multiplying it 
-setClass("DesignRotatedCovariates", representation = "matrix",
+setClass("DesignRotatedCovariates", contains = "matrix",
          slots = c(Design = "RandomizedDesign", Rotation = "matrix"))
 
 
@@ -802,23 +689,6 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
     refstrat  <- if (length(refstrat)==0) 1L else refstrat[1]
     x@StrataFrame <- x@StrataFrame[refstrat]
     wtsum  <- sum(x@UnitWeights[complete.cases(x@StrataFrame)])
-    if (is(x, "StratumWeightedDesignOptions"))
-    {
-        x@Sweights  <- x@Sweights[refstrat]
-    } else {
-        x  <- as(x, "StratumWeightedDesignOptions")
-        ## The weights below are not meaningful -- even
-        ## for the default harmonic weighting, there'd need
-        ## to be a normalization factor -- but that's harmless
-        ## because they'll have no effect on the shaping of
-        ## covariates or stratum alignment provided by
-        ## alignDesignsByStrata(). 
-        x@Sweights <- setNames(
-            list(data.frame(wtratio=rep(1, nlevels(x@StrataFrame[[1]])),
-                                           row.names=levels(x@StrataFrame[[1]]))
-                 ), names(x@StrataFrame)
-        )
-        }
     trans  <- if (is(center, "function")) center else NULL
     aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
     aligned_covs  <- aligned[[1]]@Covariates
@@ -841,7 +711,6 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 ##'
 alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
-  stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
   vars   <- colnames(design@Covariates)
   stratifications <- colnames(design@StrataFrame)
@@ -872,21 +741,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
 
-
-    #### This stuff should be moved to create_stratified_design
-    wtratio <- design@Sweights[[s]]$wtratio
-    names(wtratio) <- rownames(design@Sweights[[s]])
-
-    stopifnot(nlevels(ss)==1 ||
-                  all(levels(ss)  %in% names(wtratio) ) )
-    wtr.short <- wtratio[match(levels(ss),
-                               names(design@Sweights[[s]]$wtratio),
-                               nomatch=1L) # <-- this is to handle
-                         ]                 # the unstratified case
-    wtr <- wtr.short[ as.integer(ss) ]
-    dim(wtr) <- NULL
-
-    stratified <- create_stratified_design(ss, z = zz, weights = wtratio)
+    stratified <- create_stratified_design(ss, z = zz)
 
     #### End move
 
@@ -1003,21 +858,12 @@ HB08_2016 <- function(alignedcovs) {
     # product of {half the harmonic mean of n1, n0} with {1/(n-1)}
     dv <- sparseToVec(S %*% n_minus_1_inv %*% (n1 - n.inv %*% n1^2))
 
-    x_tilde <- Covs *#the sum statistic we're about to compute averages within-
-        as.vector(design@Units %*% design@Weights) # stratum differences using stratum
-    ## weights proportional to harmonic means of n_t's and n_c's.  If a different
-    ## stratum weighting was indicated, it's shoehorned in here. Whether
-    ## or not that's so, weight normalization is also being factored in.
-    ## In the default harmonic weighting, this weight ratio equals
-    ## the reciprocal of the sum across strata of those harmonic weights.
-    ## With another weighting, the weight ratios are all divided through
-    ## by the sum of those other weights. 
     n1_over_n <- S %*% n.inv %*% n1
-    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% x_tilde, column = FALSE)
+    ssn <- sparseToVec(t(matrix(zz, ncol = 1) - n1_over_n) %*% Covs, column = FALSE)
     names(ssn) <- colnames(Covs)
 
-    scaled.x_tilde <- as.matrix(x_tilde * sqrt(dv))
-    tcov <- crossprod(scaled.x_tilde)
+    scaled.Covs <- as.matrix(Covs * sqrt(dv))
+    tcov <- crossprod(scaled.Covs)
     ssvar <- diag(tcov)
 
     zero_variance  <- (ssvar <= .Machine$double.eps)
@@ -1025,8 +871,8 @@ HB08_2016 <- function(alignedcovs) {
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
     ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    x_tilde <- x_tilde[,zero_variance, drop=FALSE]
-    scaled.x_tilde <- scaled.x_tilde[,ssvar > .Machine$double.eps, drop=FALSE]
+    x_tilde <- Covs[,zero_variance, drop=FALSE]
+    scaled.x_tilde <- scaled.Covs[,ssvar > .Machine$double.eps, drop=FALSE]
     ssn  <- ssn[ssvar > .Machine$double.eps]
 
     cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde)
