@@ -79,9 +79,57 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     ## with inverse Q^T D^{-} Q (with - indicating any 0 entries are still zero, otherwise 1/d)
     ## the matrix square root of the inverse is therefore Q^T D^{-1/2}
     ## we have a utility for that computation (where the "X" here is x %*% V^{1/2}):
-    rotation <- XtX_pseudoinv_sqrt(t(x) %*% V %*% x, mat.is.XtX = TRUE)
+    ## Note: while V is sparse, the result should be dense so there is no harm in the cast to a dense type
+    ## and (as of this note) there is not an SVD method for the sparse matrix.
+    rotation <- XtX_pseudoinv_sqrt(as.matrix(t(x) %*% V %*% x), mat.is.XtX = TRUE)
 
     new("DesignRotatedCovariates", x %*% rotation,
         Design = design,
         Rotation = rotation)
 }
+
+## Method for stratified designs
+manifest_variable_sums.StratifiedDesign <- function(design, x, z) {
+
+
+    n1_over_n <- as.vector(design@Units %*% (design@Treated / design@Count))
+
+    ssn <- sparseToVec(t(matrix(toZ(z), ncol = 1) - n1_over_n) %*% x, column = FALSE)
+    names(ssn) <- colnames(x)
+
+    return(ssn)
+}
+
+## Method for stratified designs
+manifest_variable_covariance.StratifiedDesign <- function(design, x) {
+
+    ## the fact that this is duplicated suggests it should be a function or pre-computed in an object
+    p_ <- ncol(x)
+    s_ <- ncol(design@Units)
+
+    ## this next block first creates the n_ * p_^2 matrix
+    ## of 2nd-order monomials in columns of x-tilde, then
+    ## immediately sums each of these within each of s_ strata,
+    ## resulting in a n_ * p_^2 matrix.
+    xt_df  <- as.data.frame(x) # to get rep() to treat as a list
+    xt_covar_stratwise  <- t(design@Units) %*%
+        ( as.matrix( as.data.frame(rep(xt_df, each=p_)) ) *
+          as.matrix( as.data.frame(rep(xt_df, times=p_)) )
+            )
+    xt_covar_stratwise  <- as.matrix(xt_covar_stratwise) # s_ * (p_^2)
+    xt_covar_stratwise  <- array(xt_covar_stratwise,
+                                 dim=c(s_, p_, p_) # s_ * p_ * p_
+                                 )
+    xt_covar_stratwise  <-
+        ifelse(design@Count == 1, 0, (design@Count -1)^(-1) ) *
+        xt_covar_stratwise # still s_ * p_ * p_
+    ## now we have sample covariances, by stratum.
+
+    ## Combine with factors equal to half the harmonic means of n1 and n0. 
+    xt_c_s_scaled  <- xt_covar_stratwise /
+        (1/(design@Count - design@Treated) + 1/design@Treated) 
+    tcov  <- apply(xt_c_s_scaled, 2:3, sum)
+
+    return(tcov)
+}
+

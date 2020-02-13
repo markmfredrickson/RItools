@@ -17,7 +17,7 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' be all 1s and 0s, indicating which elements have non-missing values for the term
 ##' represented by that column.  If the ModelMatrixPlus as a whole represents clusters,
 ##' then there can be fractional values, but that situation should only arise in the
-##' DesignOptions class exension of this class, so it's documented there.
+##' DesignOptions class extension of this class, so it's documented there.
 ##'
 ##' @slot Covariates The numeric matrix that `model.matrix` would have returned.
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
