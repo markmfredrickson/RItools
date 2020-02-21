@@ -91,7 +91,6 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
 ## Method for stratified designs
 manifest_variable_sums.StratifiedDesign <- function(design, x, z) {
 
-
     n1_over_n <- as.vector(design@Units %*% (design@Treated / design@Count))
 
     ssn <- sparseToVec(t(matrix(toZ(z), ncol = 1) - n1_over_n) %*% x, column = FALSE)
@@ -102,6 +101,7 @@ manifest_variable_sums.StratifiedDesign <- function(design, x, z) {
 
 ## Method for stratified designs
 manifest_variable_covariance.StratifiedDesign <- function(design, x) {
+    ## TODO: is the returned thing just the rotation from rotate_covariates?
 
     ## the fact that this is duplicated suggests it should be a function or pre-computed in an object
     p_ <- ncol(x)
@@ -133,3 +133,85 @@ manifest_variable_covariance.StratifiedDesign <- function(design, x) {
     return(tcov)
 }
 
+## Method for stratified designs
+t_squared_covariance.StratifiedDesign <- function(design, covariates) {
+    strata_mats <- strata_covariance_matrices(design, covariates)
+    strata_matrix_sum(strata_mats)
+}
+
+## Helper to get per strata covariance matrices
+strata_covariance_matrices <- function(design, covariates) {
+    ## overall we are computing (for each strata)
+    ## E(T^2 T^2') - E(T^2) E(T^2)'
+    ## where T = (T_1, ..., T_k)'
+
+    rotated <- rotate_covariates(design, covariates) # strata centers the data
+
+    ## Finucan uses a subscript notation for, eg., \mu_{ab} = N^{-1} \sum x_{ia} x_{ib} 
+    ## with \sigma_a^2 = \mu_{aa}, etc
+
+    mu11 <- strata_pairwise_means(design, rotated)
+    mu22 <- strata_pairwise_means(design, rotated^2)
+
+    ## the last piece we need is the products E(T_k^2) E(T_j^2) per strata
+    mu2 <- as.matrix(t(design@Units) %*% rotated^2) / design@Count
+    mu2_mu2 <- pairwise_products(mu2) 
+
+    ## the quantity $n(N - n)$ shows up frequently
+    N <- design@Count
+    n1n0 <- design@Treated * (N - design@Treated)
+
+    ## For any estimate with the same order, we need the same coefficients when
+    ## computing the strata level expected values
+    ## TODO: fix of strata with fewer then 2 or 4 units (respectively)
+    coef1 <- n1n0 / (N - 1)
+    coef2 <- coef1 / ((N - 2) * (N - 3))
+    coef2a <- (N * (N + 1) - 6 * n1n0)
+    coef2b <- N * (N - 1 - n1n0)
+
+    ## now we strata expected values
+    mean_22 <- coef2 * (coef2a * mu22 - coef2b * (2 * mu11^2 + mu2_mu2))
+    mean_2_mean_2 <- coef1 * mu2_mu2
+
+    ## now compute the (per stratum) covariance matrices $E(T^2 [T^2]') - E(T^2) E(T^2)'
+    strata_covariance_array <- mean_22 - mean_2_mean_2
+
+    return(strata_covariance_array)
+}
+
+## @param x A matrix of n by k
+## @return An array of n by k by k, with each [i, j, l] entry being x[i, j] * x[i, l]
+pairwise_products <- function(x) {
+    n <- dim(x)[1]
+    k <- dim(x)[2]
+
+    ## the apply will get all the column wise products, but the ordering isn't quite what we want
+    aperm(perm = c(1, 3, 2),
+          array(apply(x, 2, function(xx) { as.vector(x * xx)}),
+                dim = c(n, k, k)))
+}
+
+## Returns strata level means of \sum_i x_{ij} x_{ik}
+## @param d A Stratified Design object
+## @param x An array of n by k
+## @return An array of s by k by k indicating strata level means of x_i * x_j
+strata_pairwise_means <- function(d, x) {
+    xx <- pairwise_products(x)
+    sx <- apply(xx, 2:3, function(xi) { t(d@Units) %*% xi / d@Count })
+    return(sx)
+}
+
+## Sum matrices over strata
+## @param a s by j by k matrix
+## @return A j by k matrix produced by summing the other component matrices
+strata_matrix_sum <- function(a) {
+    s <- dim(a)[1]
+    tmp <- a[1,,]
+    if (s > 1) {
+        for (j in 2:s) {
+            tmp <- a[j,,] + tmp
+        }
+    }
+
+    return(tmp)
+}

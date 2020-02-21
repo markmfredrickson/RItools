@@ -651,12 +651,24 @@ setClass("CovsAlignedToADesign",
 
 ## Useful methods for RandomizedDesigns to implement:
 ## toJ: given a Z, return (Z - P(Z = 1)) / (P(Z = 1)P(Z = 0))
+## squared_diff_covariance, return the Cov(T^2) k by k matrix
 
 ## Prepare the J vector from M = J' W J
 ##
 ## @param z A treatment assignment vector (length n).
 ## @return A vector of length n
-toJ <- function(z) { UseMethod("toJ") }
+toJ <- function(x, z) { UseMethod("toJ") }
+
+## Return the Cov(T^2) matrix of rotated variable totals T_k
+##
+## We can write the Mahalanobis distance as \sum_{i = 1}^k T_i^2 where
+## T = (xV)'J
+## where xV is the design rotated covariates
+##
+## The variance of the Mahalanobis distance is then 1' Cov(T^2) 1
+t_squared_covariance <- function(design, covariates) {
+    UseMethod("t_squared_covariance")
+}
 
 setClass("IndependentRandomizationDesign", contains = "RandomizedDesign",
          slots = c(InclusionProbabilities = "numeric"))
@@ -674,6 +686,11 @@ setClass("DesignRotatedCovariates", contains = "matrix",
 ## @return a DesignRotatedCovariates object (subclass of matrix)
 rotate_covariates <- function(design, x) {
     UseMethod("rotate_covariates")
+}
+
+## Return T = (xV)'J starting from a treatment assignment vector.
+toT <- function(rotated, z) {
+    stop("not implemented yet")
 }
 
 
