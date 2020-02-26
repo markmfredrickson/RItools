@@ -41,12 +41,8 @@ empirical_mahalanobis <- function(x, s, sn, sn1) {
     Gamma <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2))  %*% t(s)
     diag(Gamma) <- 1 / as.vector(s %*% p_one_p)
 
-    ## now combine Gamma with x get the central matrix of the treatment assignment sandwich
-    x_svd <- svd(x)
-    u <- x_svd$u[, x_svd$d > sqrt(.Machine$double.eps)]
-
     ## meat in the J' a J sandwich
-    meat <- u %*% ginv(t(u) %*% Gamma %*% u) %*% t(u)
+    meat <- x %*% ginv(t(x) %*% Gamma %*% x) %*% t(x)
 
     ZtoJ <- function(z) { (z - s %*% p) / (s %*% p_one_p) }
 
@@ -71,33 +67,74 @@ empirical_mahalanobis <- function(x, s, sn, sn1) {
 empirical_t2 <- function(x, s, sn, sn1) {
     sn0 <- sn - sn1
 
+    zs <- design_to_zs(s, sn, sn1)
+    k <- dim(zs)[2]
+
     ## strata level probabilities
     p <- sn1 / sn # pi
     one_p <- sn0 / sn # 1 - pi
     p_one_p <- p * one_p # pi (1 - pi)
 
-    ## The E(JJ') matrix
-    Gamma <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2))  %*% t(s)
-    diag(Gamma) <- 1 / as.vector(s %*% p_one_p)
-
-    ## rotated covariates that form the basis of the 
-    meat_sq <- XtX_pseudoinv_sqrt(as.matrix(t(x) %*% Gamma %*% x), TRUE)
-    x_tilde_t <- t(x %*% meat_sq)
-
     ZtoJ <- function(z) { (z - s %*% p) / (s %*% p_one_p) }
 
     ## Compute the Mahalanobis distance
-    t2 <- function(z) {
+    xj <- function(z) {
         j <- ZtoJ(z)
-        as.vector(x_tilde_t %*% j)^2
+        t(x) %*% j
     }
 
-    zs <- design_to_zs(s, sn, sn1)
+    xjs <- apply(zs, 2, xj)
 
-    ts <- apply(zs, 2, t2)
+    cov_xj <- (k - 1) / k * cov(t(xjs))
 
-    return(ts)
+    cov_xj_inv_sq <- XtX_pseudoinv_sqrt(cov_xj, TRUE)
+
+    tmaker <- function(z) {
+        j <- ZtoJ(z)
+        t(x %*% cov_xj_inv_sq) %*% j
+    }
+
+    ts <- apply(zs, 2, tmaker)
+
+    return(ts^2)
 }
+
+test_that("Set up code agrees with itself", {
+
+    ## Set up
+    ## Generate some random data
+    set.seed(30303)
+    n <- 12
+    x1 <- rnorm(n)
+    x2 <- x1 + runif(n, -1,  3)
+    x3 <- sample(letters[1:3], n, replace = TRUE )
+    df <- data.frame(x1, x2, x3)
+    df <- df[order(x1), ]
+    df$match <- as.factor(
+        c(1, 1, 1, 1, 1,
+          2, 2, 2, 2, 2, 2, 2))
+    df$z <- c(1, 0,
+              0, 1,
+              0, 1, 0,
+              0, 1, 0, 1, 1)
+    ## end data set up
+
+    x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+
+    d <- create_stratified_design(df$match, z = df$z)
+
+    t2_cov <- t_squared_covariance(d, x)
+
+    emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
+    expect_equal(dim(emp_t2), c(4, 350))
+
+    emp_t2_sums <- colSums(emp_t2)
+    expect_equal(mean(emp_t2_sums), 4)
+
+    emp_mal <- empirical_mahalanobis(x, as.matrix(d@Units), d@Count, d@Treated)
+
+    expect_true(all((emp_t2_sums - emp_mal)^2 < sqrt(.Machine$double.eps)))
+})
 
 test_that("Calculating moments of Mahalanobis statistic", {
     library(MASS)
@@ -223,6 +260,7 @@ test_that("Stratified design covariance calculations", {
 
     ## Set up
     ## Generate some random data
+    ## only one stratum
     set.seed(30303)
     n <- 12
     x1 <- rnorm(n)
@@ -230,9 +268,7 @@ test_that("Stratified design covariance calculations", {
     x3 <- sample(letters[1:3], n, replace = TRUE )
     df <- data.frame(x1, x2, x3)
     df <- df[order(x1), ]
-    df$match <- as.factor(
-        c(1, 1, 1, 1, 1,
-          2, 2, 2, 2, 2, 2, 2))
+    df$match <- factor(rep("A", n))
     df$z <- c(1, 0,
               0, 1,
               0, 1, 0,
@@ -248,6 +284,11 @@ test_that("Stratified design covariance calculations", {
     emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
     emp_mal <- empirical_mahalanobis(x, as.matrix(d@Units), d@Count, d@Treated)
 
+    k <- dim(emp_t2)[2]
+    emp_t2_cov <- cov(t(emp_t2)) * (k - 1) / k 
 
-     expect_equal(emp_t2, t2_cov)
+    expect_equal(dim(emp_t2_cov), c(4,4))
+    expect_equal(dim(t2_cov), c(4,4))
+
+    expect_true(all((emp_t2_cov - t2_cov)^2 < sqrt(.Machine$double.eps)))
 })

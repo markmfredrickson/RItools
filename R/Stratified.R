@@ -62,6 +62,8 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     sn <- design@Count
     sn1 <- design@Treated
     sn0 <- sn - sn1
+    k <- length(sn)
+    n <- sum(sn)
 
     ## strata level probabilities
     p <- sn1 / sn # pi
@@ -72,8 +74,14 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     ## but I couldn't quite figure out how to do that. It might not be possible.
 
     ## the matrix E(JJ'), J_i = (Z_i - pi_i) / (pi_i (1 - pi_i)) = (Z_i - n1/n) / (n1 n0 / n^2)
-    V <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2))  %*% t(s)
-    diag(V) <- 1 / as.vector(s %*% p_one_p)
+    V <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2), ncol = k, nrow = k)  %*% t(s)
+
+    ## For some reason, this doesn't work in some cases
+    ## diag(V) <- 1 / as.vector(s %*% p_one_p)
+    diag_V <- 1 / as.vector(s %*% p_one_p)
+    for (i in 1:n) {
+        V[i,i] <- diag_V[i]
+    }
 
     ## Since t(x) %*% V %*% x is symmetric, it is diagonalizable as Q D Q^T
     ## with inverse Q^T D^{-} Q (with - indicating any 0 entries are still zero, otherwise 1/d)
@@ -156,6 +164,14 @@ strata_covariance_matrices <- function(design, covariates) {
     ## the last piece we need is the products E(T_k^2) E(T_j^2) per strata
     mu2 <- as.matrix(t(design@Units) %*% rotated^2) / design@Count
     mu2_mu2 <- pairwise_products(mu2) 
+
+    ## handling single stratum case:
+    if (length(design@Count) == 1) {
+        v <- dim(rotated)[2]
+        mu11 <- array(mu11, c(v, v, 1))
+        mu22 <- array(mu22, c(v, v, 1))
+        mu2_mu2 <- array(mu2_mu2, c(v, v, 1))
+    }
 
     ## the quantity $n(N - n)$ shows up frequently
     N <- design@Count
