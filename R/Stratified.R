@@ -51,7 +51,7 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
 ## method for stratified designs
 toJ.StratifiedDesign <- function(x, z) {
     pZ <- as.vector(x@Units %*% (x@Treated / x@Count)) ## P(Z = 1)
-    (toZ(z) - pZ) / (pZ * (1 - pZ))
+    (toZ(z) - pZ) / pZ 
 }
 
 
@@ -67,18 +67,16 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
 
     ## strata level probabilities
     p <- sn1 / sn # pi
-    one_p <- sn0 / sn # 1 - pi
-    p_one_p <- p * one_p # pi (1 - pi)
 
     ## TODO: I would like to write this as a smaller k by k matrix, where k is number of strata 
     ## but I couldn't quite figure out how to do that. It might not be possible.
 
-    ## the matrix E(JJ'), J_i = (Z_i - pi_i) / (pi_i (1 - pi_i)) = (Z_i - n1/n) / (n1 n0 / n^2)
-    V <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2), ncol = k, nrow = k)  %*% t(s)
+    ## the matrix E(JJ'), J_i = (Z_i - pi_i) / pi_i = (Z_i - n1/n) / (n1 / n)
+    V <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2, ncol = k, nrow = k)  %*% t(s)
 
     ## For some reason, this doesn't work in some cases
     ## diag(V) <- 1 / as.vector(s %*% p_one_p)
-    diag_V <- 1 / as.vector(s %*% p_one_p)
+    diag_V <-  as.vector(s %*% ((1 - p) / p))
     for (i in 1:n) {
         V[i,i] <- diag_V[i]
     }
@@ -153,21 +151,33 @@ strata_covariance_matrices <- function(design, covariates) {
     ## E(T^2 T^2') - E(T^2) E(T^2)'
     ## where T = (T_1, ..., T_k)'
 
-    rotated <- rotate_covariates(design, covariates) # strata centers the data
+    rotated <- rotate_covariates(design, covariates)
+
+    ## rotated assumes we will be multiplying by J = (Z - P(Z = 1)) / P(Z = 1) 
+    ## knowing that P(Z = 1) = n1/n (by stratum), rearranging terms
+    ## shows that T = x'J = [(x - \bar x ) / (n1/n)] ' Z, again all by strata
+
+    strata_means <- as.matrix(t(design@Units) %*% rotated) / design@Count
+
+    rotated_centered <- rotated - design@Units %*% strata_means
+
+    ## now multiply through by n/n1
+    xtilde <- rotated_centered * as.vector(design@Units %*% (design@Count / design@Treated))
+    xtilde <- as.matrix(xtilde) ## make sure this is dense
 
     ## Finucan uses a subscript notation for, eg., \mu_{ab} = N^{-1} \sum x_{ia} x_{ib} 
     ## with \sigma_a^2 = \mu_{aa}, etc
 
-    mu11 <- strata_pairwise_means(design, rotated)
-    mu22 <- strata_pairwise_means(design, rotated^2)
+    mu11 <- strata_pairwise_means(design, xtilde)
+    mu22 <- strata_pairwise_means(design, xtilde^2)
 
     ## the last piece we need is the products E(T_k^2) E(T_j^2) per strata
-    mu2 <- as.matrix(t(design@Units) %*% rotated^2) / design@Count
+    mu2 <- as.matrix(t(design@Units) %*% xtilde^2) / design@Count
     mu2_mu2 <- pairwise_products(mu2) 
 
     ## handling single stratum case:
     if (length(design@Count) == 1) {
-        v <- dim(rotated)[2]
+        v <- dim(xtilde)[2]
         mu11 <- array(mu11, c(v, v, 1))
         mu22 <- array(mu22, c(v, v, 1))
         mu2_mu2 <- array(mu2_mu2, c(v, v, 1))
@@ -187,10 +197,10 @@ strata_covariance_matrices <- function(design, covariates) {
 
     ## now we strata expected values
     mean_22 <- coef2 * (coef2a * mu22 - coef2b * (2 * mu11^2 + mu2_mu2))
-    mean_2_mean_2 <- coef1 * mu2_mu2
 
     ## now compute the (per stratum) covariance matrices $E(T^2 [T^2]') - E(T^2) E(T^2)'
-    strata_covariance_array <- mean_22 - mean_2_mean_2
+    ## E(T^2) = 1, so
+    strata_covariance_array <- mean_22 - 1
 
     return(strata_covariance_array)
 }
@@ -221,11 +231,11 @@ strata_pairwise_means <- function(d, x) {
 ## @param a s by j by k matrix
 ## @return A j by k matrix produced by summing the other component matrices
 strata_matrix_sum <- function(a) {
-    s <- dim(a)[1]
-    tmp <- a[1,,]
+    s <- dim(a)[3]
+    tmp <- a[,,1]
     if (s > 1) {
         for (j in 2:s) {
-            tmp <- a[j,,] + tmp
+            tmp <- a[,,j] + tmp
         }
     }
 

@@ -15,7 +15,7 @@ design_to_zs <- function(s, sn, sn1) {
             zz[idx] <- 1
             return(zz)
         })
-    })
+    }, SIMPLIFY = FALSE)
 
     zj <- sapply(zs_by_strata, ncol)
     idxes <- as.matrix(do.call(expand.grid, lapply(zj, function(k) { 1:k })))
@@ -38,7 +38,8 @@ empirical_mahalanobis <- function(x, s, sn, sn1) {
     p_one_p <- p * one_p # pi (1 - pi)
 
     ## The E(JJ') matrix
-    Gamma <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2))  %*% t(s)
+    k <- length(sn)
+    Gamma <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2), ncol = k, nrow = k)  %*% t(s)
     diag(Gamma) <- 1 / as.vector(s %*% p_one_p)
 
     ## meat in the J' a J sandwich
@@ -268,7 +269,7 @@ test_that("Stratified design covariance calculations", {
     x3 <- sample(letters[1:3], n, replace = TRUE )
     df <- data.frame(x1, x2, x3)
     df <- df[order(x1), ]
-    df$match <- factor(rep("A", n))
+    df$match <- factor(c(rep("A", 4), rep("B", 8)))
     df$z <- c(1, 0,
               0, 1,
               0, 1, 0,
