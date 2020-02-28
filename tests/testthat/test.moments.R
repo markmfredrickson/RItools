@@ -256,7 +256,7 @@ test_that("Direct moment calculations are correct", {
 })
 
 
-test_that("Stratified design covariance calculations", {
+test_that("Single strata covariance calculations", {
     
 
     ## Set up
@@ -291,5 +291,73 @@ test_that("Stratified design covariance calculations", {
     expect_equal(dim(emp_t2_cov), c(4,4))
     expect_equal(dim(t2_cov), c(4,4))
 
-    expect_true(all((emp_t2_cov - t2_cov)^2 < sqrt(.Machine$double.eps)))
+    expect_equivalent(emp_t2_cov, t2_cov)
+})
+
+test_that("Multiple strata covariance calculations", {
+    
+
+    ## Set up
+    ## Generate some random data
+    set.seed(30303)
+    n <- 12
+    x1 <- rnorm(n)
+    x2 <- x1 + runif(n, -1,  3)
+    x3 <- sample(letters[1:3], n, replace = TRUE )
+    df <- data.frame(x1, x2, x3)
+    df <- df[order(x1), ]
+    df$match <- factor(c(rep("A", 5),
+                         rep("B", 7)))
+    df$z <- c(1, 0, 0, 1, 0,
+              1, 0, 0, 1, 0, 1, 1)
+    ## end data set up
+
+    ## set up the numeric covariance matrix for all the data
+    x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+
+    ## the design using both strata
+    d <- create_stratified_design(df$match, z = df$z)
+    
+    ## now create designs for the A and B strata
+    dfa <- df[df$match == "A", ]
+    dfa$match <- factor("A")
+    da <- create_stratified_design(dfa$match, z = dfa$z)
+    
+    dfb <- df[df$match == "B", ]
+    dfb$match <- factor("B")
+    db <- create_stratified_design(dfb$match, z = dfb$z)
+
+    ## generating all possible T^2 and getting cov
+    ## helper function first
+    covh <- function(tdist) {
+        k <- dim(tdist)[2]
+        cov(t(tdist)) * (k - 1) / k
+    }
+
+    emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
+    emp_t2_cov <- covh(emp_t2)
+
+    emp_t2_a <- empirical_t2(x[df$match == "A", ], da@Units, da@Count, da@Treated)
+    emp_t2_a_cov <- covh(emp_t2_a)
+
+    emp_t2_b <- empirical_t2(x[df$match == "B", ], db@Units, db@Count, db@Treated)
+    emp_t2_b_cov <- covh(emp_t2_b)
+
+
+    ## these are the functions in Stratified.R
+    t2_cov <- t_squared_covariance(d, x)
+    t2_a_cov <- t_squared_covariance(da, x[df$match == "A",])
+    t2_b_cov <- t_squared_covariance(db, x[df$match == "B",])
+
+    ## make sure we are computing the per strata covariances correctly when doing both
+    expect_equal(t2_cov, t2_a_cov + t2_b_cov)
+
+    ## basic checks for number of variables left after rotation
+    expect_equal(dim(emp_t2_cov), c(4,4))
+    expect_equal(dim(t2_cov), c(4,4))
+
+    ## Now check to make sure everything matches up to the empirical results
+    expect_equivalent(emp_t2a_cov, t2_a_cov)
+    expect_equivalent(emp_t2b_cov, t2_b_cov)
+    expect_equivalent(emp_t2_cov, t2_cov)
 })

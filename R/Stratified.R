@@ -41,7 +41,6 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
        treated <- treated[levels(strata)]
     }
 
-
     new("StratifiedDesign",
         Units   = units,
         Count   = as.integer(count),
@@ -178,9 +177,9 @@ strata_covariance_matrices <- function(design, covariates) {
     ## handling single stratum case:
     if (length(design@Count) == 1) {
         v <- dim(xtilde)[2]
-        mu11 <- array(mu11, c(v, v, 1))
-        mu22 <- array(mu22, c(v, v, 1))
-        mu2_mu2 <- array(mu2_mu2, c(v, v, 1))
+        mu11 <- array(mu11, c(1, v, v))
+        mu22 <- array(mu22, c(1, v, v))
+        mu2_mu2 <- array(mu2_mu2, c(1, v, v))
     }
 
     ## the quantity $n(N - n)$ shows up frequently
@@ -189,11 +188,13 @@ strata_covariance_matrices <- function(design, covariates) {
 
     ## For any estimate with the same order, we need the same coefficients when
     ## computing the strata level expected values
-    ## TODO: fix of strata with fewer then 2 or 4 units (respectively)
+
+    ## for strata with fewer than 4 units, we need to special case the
+    ## coefficients so that result in the multiplication is equal to mu22
     coef1 <- n1n0 / (N - 1)
-    coef2 <- coef1 / ((N - 2) * (N - 3))
-    coef2a <- (N * (N + 1) - 6 * n1n0)
-    coef2b <- N * (N - 1 - n1n0)
+    coef2 <- ifelse(N > 3, coef1 / ((N - 2) * (N - 3)), 1)
+    coef2a <- ifelse(N > 3, (N * (N + 1) - 6 * n1n0), 1)
+    coef2b <- ifelse(N > 3, N * (N - 1 - n1n0), 0)
 
     ## now we strata expected values
     mean_22 <- coef2 * (coef2a * mu22 - coef2b * (2 * mu11^2 + mu2_mu2))
@@ -231,11 +232,11 @@ strata_pairwise_means <- function(d, x) {
 ## @param a s by j by k matrix
 ## @return A j by k matrix produced by summing the other component matrices
 strata_matrix_sum <- function(a) {
-    s <- dim(a)[3]
-    tmp <- a[,,1]
+    s <- dim(a)[1]
+    tmp <- a[1,,]
     if (s > 1) {
         for (j in 2:s) {
-            tmp <- a[,,j] + tmp
+            tmp <- a[j,,] + tmp
         }
     }
 

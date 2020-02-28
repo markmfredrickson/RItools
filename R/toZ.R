@@ -4,7 +4,7 @@
 ## @return A numeric vector of 1s and 0s
 toZ <- function(x) { UseMethod("toZ") }
 
-toZ.numeric <- function(x) { as.numeric(x > median(x)) }
+toZ.numeric <- function(x) { as.numeric(x > 0) }
 toZ.logical <- function(x) { as.numeric(x) }
 toZ.factor <- function(x) {
     fst <- levels(x)[1]
