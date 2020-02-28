@@ -269,7 +269,7 @@ test_that("Single strata covariance calculations", {
     x3 <- sample(letters[1:3], n, replace = TRUE )
     df <- data.frame(x1, x2, x3)
     df <- df[order(x1), ]
-    df$match <- factor(c(rep("A", 4), rep("B", 8)))
+    df$match <- factor((rep("A", 12)))
     df$z <- c(1, 0,
               0, 1,
               0, 1, 0,
