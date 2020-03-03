@@ -349,9 +349,6 @@ test_that("Multiple strata covariance calculations", {
     t2_a_cov <- t_squared_covariance(da, x[df$match == "A",])
     t2_b_cov <- t_squared_covariance(db, x[df$match == "B",])
 
-    ## make sure we are computing the per strata covariances correctly when doing both
-    expect_equal(t2_cov, t2_a_cov + t2_b_cov)
-
     ## basic checks for number of variables left after rotation
     expect_equal(dim(emp_t2_cov), c(4,4))
     expect_equal(dim(t2_cov), c(4,4))

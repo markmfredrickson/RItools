@@ -196,12 +196,15 @@ strata_covariance_matrices <- function(design, covariates) {
     coef2a <- ifelse(N > 3, (N * (N + 1) - 6 * n1n0), 1)
     coef2b <- ifelse(N > 3, N * (N - 1 - n1n0), 0)
 
-    ## now we strata expected values
+    ## strata expected values E(T_k^2 T_j^2)
     mean_22 <- coef2 * (coef2a * mu22 - coef2b * (2 * mu11^2 + mu2_mu2))
+
+    ## strata products of expected values E(T_k^2) E(T_j^)
+    mean2_mean2 <- coef1^2 * mu2_mu2
 
     ## now compute the (per stratum) covariance matrices $E(T^2 [T^2]') - E(T^2) E(T^2)'
     ## E(T^2) = 1, so
-    strata_covariance_array <- mean_22 - 1
+    strata_covariance_array <- mean_22 - mean2_mean2
 
     return(strata_covariance_array)
 }
