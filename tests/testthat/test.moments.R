@@ -124,8 +124,6 @@ test_that("Set up code agrees with itself", {
 
     d <- create_stratified_design(df$match, z = df$z)
 
-    t2_cov <- t_squared_covariance(d, x)
-
     emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
     expect_equal(dim(emp_t2), c(4, 350))
 
@@ -135,6 +133,7 @@ test_that("Set up code agrees with itself", {
     emp_mal <- empirical_mahalanobis(x, as.matrix(d@Units), d@Count, d@Treated)
 
     expect_true(all((emp_t2_sums - emp_mal)^2 < sqrt(.Machine$double.eps)))
+
 })
 
 test_that("Calculating moments of Mahalanobis statistic", {
@@ -280,6 +279,9 @@ test_that("Single strata covariance calculations", {
 
     d <- create_stratified_design(df$match, z = df$z)
 
+
+    ## compute covariances on natural scale
+
     t2_cov <- t_squared_covariance(d, x)
 
     emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
@@ -292,6 +294,26 @@ test_that("Single strata covariance calculations", {
     expect_equal(dim(t2_cov), c(4,4))
 
     expect_equivalent(emp_t2_cov, t2_cov)
+
+    ## Interesting: my hypothesis was wrong. I thought since using the singular
+    ## vectors was equivalent to using x for Mahalanobis distance, the
+    ## distribution of T^2 would also be the same.
+    ## Wrong! The only test that passes compares emp_mal and emp_u_mal
+    ## Leaving this in as an interesting little finding.
+
+    ##  xu <- svd(x)$u
+    ##  u_cov <- t_squared_covariance(d, xu)
+    ##  expect_equivalent(t2_cov, u_cov)
+
+    ##  emp_u <- empirical_t2(xu, d@Units, d@Count, d@Treated)
+    ##  k <- dim(emp_u)[2]
+    ##  emp_u_cov <- cov(t(emp_u)) * (k - 1) / k 
+
+    ##  emp_u_mal <- empirical_mahalanobis(xu, as.matrix(d@Units), d@Count, d@Treated)
+    ##  expect_equivalent(emp_mal, emp_u_mal)
+
+    ##  expect_equivalent(emp_u_cov, emp_t2_cov)
+    ##  expect_equivalent(emp_u_cov, u_cov)
 })
 
 test_that("Multiple strata covariance calculations", {
