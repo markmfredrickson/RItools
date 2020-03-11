@@ -71,14 +71,9 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     ## but I couldn't quite figure out how to do that. It might not be possible.
 
     ## the matrix E(JJ'), J_i = (Z_i - pi_i) / pi_i = (Z_i - n1/n) / (n1 / n)
-    V <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2, ncol = k, nrow = k)  %*% t(s)
+    V <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2, ncol = k, nrow = k)  %*% t(s))
 
-    ## For some reason, this doesn't work in some cases
-    ## diag(V) <- 1 / as.vector(s %*% p_one_p)
-    diag_V <-  as.vector(s %*% ((1 - p) / p))
-    for (i in 1:n) {
-        V[i,i] <- diag_V[i]
-    }
+    diag(V) <-  as.vector(s %*% ((1 - p) / p))
 
     ## Since t(x) %*% V %*% x is symmetric, it is diagonalizable as Q D Q^T
     ## with inverse Q^T D^{-} Q (with - indicating any 0 entries are still zero, otherwise 1/d)
@@ -203,7 +198,6 @@ strata_covariance_matrices <- function(design, covariates) {
     mean2_mean2 <- coef1^2 * mu2_mu2
 
     ## now compute the (per stratum) covariance matrices $E(T^2 [T^2]') - E(T^2) E(T^2)'
-    ## E(T^2) = 1, so
     strata_covariance_array <- mean_22 - mean2_mean2
 
     return(strata_covariance_array)

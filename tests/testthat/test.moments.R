@@ -39,13 +39,13 @@ empirical_mahalanobis <- function(x, s, sn, sn1) {
 
     ## The E(JJ') matrix
     k <- length(sn)
-    Gamma <- s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / (p^2 * one_p^2), ncol = k, nrow = k)  %*% t(s)
-    diag(Gamma) <- 1 / as.vector(s %*% p_one_p)
+    Gamma <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2 , ncol = k, nrow = k)  %*% t(s))
+    diag(Gamma) <-  as.vector(s %*% ((1 - p) / p))
 
     ## meat in the J' a J sandwich
     meat <- x %*% ginv(t(x) %*% Gamma %*% x) %*% t(x)
 
-    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p_one_p) }
+    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
 
     ## Compute the Mahalanobis distance
     mahal <- function(z) {
@@ -73,10 +73,8 @@ empirical_t2 <- function(x, s, sn, sn1) {
 
     ## strata level probabilities
     p <- sn1 / sn # pi
-    one_p <- sn0 / sn # 1 - pi
-    p_one_p <- p * one_p # pi (1 - pi)
 
-    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p_one_p) }
+    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
 
     ## Compute the Mahalanobis distance
     xj <- function(z) {
@@ -98,6 +96,29 @@ empirical_t2 <- function(x, s, sn, sn1) {
     ts <- apply(zs, 2, tmaker)
 
     return(ts^2)
+}
+
+empirical_ts_by_strata <- function(f, treated,  x) {
+    design <- create_stratified_design(f, treated = treated)
+
+    rotated <- rotate_covariates(design, x)
+
+    by_s <- lapply(levels(f), function(s) {
+        idx <- f == s
+        sr <- rotated[idx, ]
+        n <- dim(sr)[1]
+        n1 <- treated[s]
+
+        ts <- apply(combn(n, n1), 2, function(idx) {
+            z <- numeric(n)
+            z[idx] <- 1
+            j <- (z - n1/n )  / (n1/n)
+            t(sr) %*% j
+        })
+
+        ts
+    })
+
 }
 
 test_that("Set up code agrees with itself", {
@@ -132,8 +153,23 @@ test_that("Set up code agrees with itself", {
 
     emp_mal <- empirical_mahalanobis(x, as.matrix(d@Units), d@Count, d@Treated)
 
-    expect_true(all((emp_t2_sums - emp_mal)^2 < sqrt(.Machine$double.eps)))
+    expect_equivalent(emp_t2_sums, emp_mal)
 
+    ## explicit strata level T_k's
+    es_t <- empirical_ts_by_strata(df$match, c("1" = 2, "2" = 4), x)
+    indexes <- lapply(es_t, function(x) { 1:dim(x)[2] })
+    grd <- as.matrix(do.call(expand.grid, indexes))
+
+    es_t_t <- apply(grd, 1, function(ab) {
+        es_t[[1]][, ab[1]] + es_t[[2]][, ab[2]]
+    })
+
+    es_t_t2 <- es_t_t^2
+    es_t_m <- colSums(es_t_t2)
+    expect_equal(mean(es_t_m), 4)
+    expect_equal(var(es_t_m), var(emp_mal))
+
+    expect_equivalent(sort(es_t_m), sort(emp_mal))
 })
 
 test_that("Calculating moments of Mahalanobis statistic", {
@@ -376,7 +412,21 @@ test_that("Multiple strata covariance calculations", {
     expect_equal(dim(t2_cov), c(4,4))
 
     ## Now check to make sure everything matches up to the empirical results
-    expect_equivalent(emp_t2a_cov, t2_a_cov)
-    expect_equivalent(emp_t2b_cov, t2_b_cov)
+    expect_equivalent(emp_t2_a_cov, t2_a_cov)
+    expect_equivalent(emp_t2_b_cov, t2_b_cov)
     expect_equivalent(emp_t2_cov, t2_cov)
+
+
+    ## Breaking down per strata covariance matrices
+    emp_strata_t <- empirical_ts_by_strata(df$match, c("A" = 2, "B" = 4), x)
+    emp_strata_t2_cov <- lapply(emp_strata_t, function(st) {
+        covh(st^2)
+    })
+
+    scm <- strata_covariance_matrices(d, x)
+    expect_equivalent(scm[1,,], emp_strata_t2_cov[[1]])
+    expect_equivalent(scm[2,,], emp_strata_t2_cov[[2]])
+
+    expect_equivalent(emp_t2_cov, emp_strata_t2_cov[[1]] + emp_strata_t2_cov[[2]])
+    expect_equivalent(t2_cov, emp_strata_t2_cov[[1]] + emp_strata_t2_cov[[2]])
 })
