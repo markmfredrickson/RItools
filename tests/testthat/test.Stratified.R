@@ -76,3 +76,4 @@ test_that("Lower rank X", {
     rotxx <- rotate_covariates(d, xx)
     expect_equal(dim(rotx), c(30, 2))
 })
+

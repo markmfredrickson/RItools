@@ -135,28 +135,28 @@ manifest_variable_covariance.StratifiedDesign <- function(design, x) {
 
 ## Method for stratified designs
 t_squared_covariance.StratifiedDesign <- function(design, covariates) {
+    euclidean_squared_covariance(design, rotate_covariates(design, covariates))
+}
+
+## Method for stratified designs
+euclidean_squared_covariance.StratifiedDesign <- function(design, covariates) {
     strata_mats <- strata_covariance_matrices(design, covariates)
     strata_matrix_sum(strata_mats)
 }
 
+
 ## Helper to get per strata covariance matrices
 strata_covariance_matrices <- function(design, covariates) {
-    ## overall we are computing (for each strata)
-    ## E(T^2 T^2') - E(T^2) E(T^2)'
-    ## where T = (T_1, ..., T_k)'
 
-    rotated <- rotate_covariates(design, covariates)
-
-    ## rotated assumes we will be multiplying by J = (Z - P(Z = 1)) / P(Z = 1) 
+    ## we will be multiplying by J = (Z - P(Z = 1)) / P(Z = 1) 
     ## knowing that P(Z = 1) = n1/n (by stratum), rearranging terms
     ## shows that T = x'J = [(x - \bar x ) / (n1/n)] ' Z, again all by strata
 
-    strata_means <- as.matrix(t(design@Units) %*% rotated) / design@Count
-
-    rotated_centered <- rotated - design@Units %*% strata_means
+    strata_means <- as.matrix(t(design@Units) %*% covariates) / design@Count
+    centered <- covariates - design@Units %*% strata_means
 
     ## now multiply through by n/n1
-    xtilde <- rotated_centered * as.vector(design@Units %*% (design@Count / design@Treated))
+    xtilde <- centered * as.vector(design@Units %*% (design@Count / design@Treated))
     xtilde <- as.matrix(xtilde) ## make sure this is dense
 
     ## Finucan uses a subscript notation for, eg., \mu_{ab} = N^{-1} \sum x_{ia} x_{ib} 

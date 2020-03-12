@@ -670,6 +670,11 @@ t_squared_covariance <- function(design, covariates) {
     UseMethod("t_squared_covariance")
 }
 
+## Return the Cov(S^2) matrix of variable totals S_k
+euclidean_squared_covariance <- function(design, covariates) {
+    UseMethod("euclidean_squared_covariance")
+}
+
 setClass("IndependentRandomizationDesign", contains = "RandomizedDesign",
          slots = c(InclusionProbabilities = "numeric"))
 
