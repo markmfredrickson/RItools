@@ -456,13 +456,20 @@ test_that("Multiple strata covariance calculations", {
     ## Breaking down per strata covariance matrices
     ## using eudclidean distance
     emp_strata_S <- empirical_S_by_strata(df$match, c("A" = 2, "B" = 4), x)
+    emp_strata_S_cov <- lapply(emp_strata_S, function(st) {
+        covh(st)
+    })
     emp_strata_S2_cov <- lapply(emp_strata_S, function(st) {
         covh(st^2)
     })
 
-    scm <- strata_covariance_matrices(d, x)
+    scm <- strata_t_covariance_matrices(d, x)
     expect_equivalent(scm[1,,], emp_strata_S_cov[[1]])
     expect_equivalent(scm[2,,], emp_strata_S_cov[[2]])
+
+    scm2 <- strata_t2_covariance_matrices(d, x)
+    expect_equivalent(scm2[1,,], emp_strata_S2_cov[[1]])
+    expect_equivalent(scm2[2,,], emp_strata_S2_cov[[2]])
 
     ## recompute the covariance of squared euclidean distance
     emp_S2 <- empirical_S2(x, d@Units, d@Count, d@Treated)
@@ -471,6 +478,5 @@ test_that("Multiple strata covariance calculations", {
     S2_cov <- euclidean_squared_covariance(d, x)
 
     expect_equivalent(S2_cov, emp_S2_cov)
-    expect_equivalent(emp_S2_cov, emp_strata_S2_cov[[1]] + emp_strata_S2_cov[[2]])
-    expect_equivalent(S2_cov, emp_strata_S2_cov[[1]] + emp_strata_S2_cov[[2]])
+    expect_equal(sum(S2_cov), sum(emp_S2_cov))
 })

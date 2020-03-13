@@ -140,13 +140,30 @@ t_squared_covariance.StratifiedDesign <- function(design, covariates) {
 
 ## Method for stratified designs
 euclidean_squared_covariance.StratifiedDesign <- function(design, covariates) {
-    strata_mats <- strata_covariance_matrices(design, covariates)
-    strata_matrix_sum(strata_mats)
+    first_order <- strata_t_covariance_matrices(design, covariates)
+    second_order <- strata_t2_covariance_matrices(design, covariates)
+
+    s <- dim(first_order)[1]
+    k <- dim(first_order)[2]
+
+    if (s == 1) {
+        return(strata_matrix_sum(second_order))
+    }
+
+    ## at this point, s >= 2
+    tmp <- matrix(0, k, k)
+    for (i in 1:(s-1)) {
+        for (j in (i+1):s) {
+            tmp <- tmp + first_order[i,,] * first_order[j,,]
+        }
+    }
+
+    return(strata_matrix_sum(second_order) + 4 * tmp)
 }
 
-
-## Helper to get per strata covariance matrices
-strata_covariance_matrices <- function(design, covariates) {
+## Helper to preprocess strata cy by centering and scaling.
+## Name comes from the fact we usually call such matrices \tilde X
+tilde_maker <- function(design, covariates) {
 
     ## we will be multiplying by J = (Z - P(Z = 1)) / P(Z = 1) 
     ## knowing that P(Z = 1) = n1/n (by stratum), rearranging terms
@@ -158,6 +175,34 @@ strata_covariance_matrices <- function(design, covariates) {
     ## now multiply through by n/n1
     xtilde <- centered * as.vector(design@Units %*% (design@Count / design@Treated))
     xtilde <- as.matrix(xtilde) ## make sure this is dense
+
+    return(xtilde)
+}
+
+## Compute the first order covariance matrices
+strata_t_covariance_matrices <- function(design, covariates) {
+    xtilde <- tilde_maker(design, covariates)
+
+    mu11 <- strata_pairwise_means(design, xtilde)
+
+    ## the quantity $n(N - n)$ shows up frequently
+    N <- design@Count
+    n1n0 <- design@Treated * (N - design@Treated)
+    coef1 <- n1n0 / (N - 1)
+
+    if (length(design@Count) == 1) {
+        v <- dim(xtilde)[2]
+        mu11 <- array(mu11, c(1, v, v))
+    }
+
+
+    coef1 * mu11
+}
+
+## Helper to get second order covariance matrices
+strata_t2_covariance_matrices <- function(design, covariates) {
+
+    xtilde <- tilde_maker(design, covariates)
 
     ## Finucan uses a subscript notation for, eg., \mu_{ab} = N^{-1} \sum x_{ia} x_{ib} 
     ## with \sigma_a^2 = \mu_{aa}, etc
