@@ -480,3 +480,45 @@ test_that("Multiple strata covariance calculations", {
     expect_equivalent(S2_cov, emp_S2_cov)
     expect_equal(sum(S2_cov), sum(emp_S2_cov))
 })
+
+test_that("Small strata calculations", {
+    
+
+    ## Set up
+    ## Generate some random data
+    set.seed(30303)
+    n <- 12
+    x1 <- rnorm(n)
+    x2 <- x1 + runif(n, -1,  3)
+    x3 <- sample(letters[1:3], n, replace = TRUE )
+    df <- data.frame(x1, x2, x3)
+    df <- df[order(x1), ]
+    df$match <- factor(
+        c("A", "A",
+          "B", "B",
+          "C", "C", "C",
+          "D", "D", "D",
+          "E", "E"))
+    df$z <- c(1, 0,
+              0, 1,
+              0, 1, 0,
+              0, 1, 1,
+              1, 0)
+    ## end data set up
+
+    x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+    d <- create_stratified_design(df$match, z = df$z)
+
+    ## generating all possible T^2 and getting cov
+    ## helper function first
+    covh <- function(tdist) {
+        k <- dim(tdist)[2]
+        cov(t(tdist)) * (k - 1) / k
+    }
+
+    emp_t2 <- empirical_t2(x, d@Units, d@Count, d@Treated)
+    emp_t2_cov <- covh(emp_t2)
+    t2_cov <- t_squared_covariance(d, x)
+    expect_equivalent(emp_t2_cov, t2_cov)
+
+})
