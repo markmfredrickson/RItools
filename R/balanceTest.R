@@ -178,9 +178,6 @@
 balanceTest <- function(fmla,
                      data,
                      strata = NULL,
-                     report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
-                         "chisquare.test","p.values", "all")[1:2],
-                     #                     include.means=FALSE, chisquare.test=FALSE,
                      unit.weights,
                      subset,
                      include.NA.flags = TRUE,
@@ -188,7 +185,8 @@ balanceTest <- function(fmla,
                      post.alignment.transform = NULL,
                      inferentials.calculator = HB08, 
                      p.adjust.method = "holm") {
-### API Assumptions:
+  report <- 'all' # temporary hack to remove report argument
+ ### API Assumptions:
 ### - no ... in the xBal formula
 ### (if this assumption ceases to be met then we have to add an explicit check that
 ### the user hasn't tried to specify an offset, given that we're repurposing that

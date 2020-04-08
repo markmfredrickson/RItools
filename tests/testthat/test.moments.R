@@ -262,7 +262,7 @@ test_that("Calculating moments of Mahalanobis statistic", {
     bts <- apply(zs, 2, function(z) {
         tmp <-df
         tmp$z <- z
-        bt <- balanceTest(z ~ x1 + x2 + x3 + strata(match), data = tmp, report = 'all')$overall[1,1]
+        bt <- balanceTest(z ~ x1 + x2 + x3 + strata(match), data = tmp)$overall[1,1]
     })
 
     expect_equal(mean(bts), 4)
