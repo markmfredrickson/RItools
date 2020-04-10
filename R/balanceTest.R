@@ -175,26 +175,35 @@
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"),
 ##' 	 post.alignment.transform=rank)
-balanceTest <- function(fmla,
+balanceTest <- function(x,
                      data,
-                     strata = NULL,
                      unit.weights,
                      subset,
                      include.NA.flags = TRUE,
-                     covariate.scales = setNames(numeric(0), character(0)),
-                     post.alignment.transform = NULL,
-                     inferentials.calculator = HB08, 
-                     p.adjust.method = "holm") {
+                     p.adjust.method = "holm",
+                     ... ) {
+
+    UseMethod("balanceTest")
+}
+
+balanceTest.formula <- function(x,
+                                data,
+                                unit.weights,
+                                subset,
+                                include.NA.flags = TRUE,
+                                p.adjust.method = "holm",
+                                post.alignment.transform = NULL,
+                                inferentials.calculator = HB08, 
+                                covariate.scales = setNames(numeric(0), character(0)),
+                                ...
+                                ) {
+  fmla <- x ## name change hack
   report <- 'all' # temporary hack to remove report argument
  ### API Assumptions:
 ### - no ... in the xBal formula
 ### (if this assumption ceases to be met then we have to add an explicit check that
 ### the user hasn't tried to specify an offset, given that we're repurposing that
 ### model.frame option)
-
-  if (!is.null(strata)) {
-    stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?balanceTest, examples.")
-  }
 
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
 
@@ -319,3 +328,4 @@ balanceTest <- function(fmla,
   class(ans) <- c("xbal", "list")
   ans
 }
+
