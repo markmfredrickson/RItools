@@ -81,7 +81,9 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     ## we have a utility for that computation (where the "X" here is x %*% V^{1/2}):
     ## Note: while V is sparse, the result should be dense so there is no harm in the cast to a dense type
     ## and (as of this note) there is not an SVD method for the sparse matrix.
-    rotation <- XtX_pseudoinv_sqrt(as.matrix(t(x) %*% V %*% x), mat.is.XtX = TRUE)
+    ## Note on the tolerance arg: in an empirical example, I noticed tha the default in the function
+    ## set too many to zero because the first PC had an absolutely giant proportion of the variance
+    rotation <- XtX_pseudoinv_sqrt(as.matrix(t(x) %*% V %*% x), mat.is.XtX = TRUE, tol = sqrt(.Machine$double.eps))
 
     new("DesignRotatedCovariates", x %*% rotation,
         Design = design,
