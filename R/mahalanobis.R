@@ -56,7 +56,7 @@ mahalanobis_distance.default <- function(x, z) {
 }
 
 mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
-    J <- toJ(x@design, z)
+    J <- toJ(x@Design, z)
     JTx <- t(J) %*% x
     new("ChisquareApproximation", sum(JTx^2),
         EM  = ncol(x@Rotation))
