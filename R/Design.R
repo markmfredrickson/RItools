@@ -824,7 +824,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
   Covs <- cbind(Covs, 0+design@NotMissing[,NMcolperm])
   vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
-  covars.nmcols <- c(design@NM.Covariates, rep(1L, k.NM ) )
+  covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
   origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
   origvars <- c(design@OriginalVariables, origvars)
 
@@ -839,7 +839,6 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     ewts <- Ewts[keep,,drop=FALSE]
     non_null_record_wts <- ewts[,1L,drop=TRUE]
     NM <- design@NotMissing[keep,,drop=FALSE]
-    NMCovs <- design@NM.Covariates
     covars <- Covs[keep,,drop=FALSE]
 
     wtratio <- design@Sweights[[s]]$wtratio
@@ -862,13 +861,13 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
             suppressWarnings( #throws singularity warning if covar is linear in S
                 slm.wfit.csr( # see note in ./utils.R on why we use our own
                     S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
-                    weights=ewts[, max(1L, covars.nmcols[jj]), drop = TRUE])$residuals
+                    weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
             )
         ## A value that was missing might have received an odd residual.
         ## Although such values don't themselves contribute anything, they'll affect a
         ## post alignment transformation such as `rank`.  So, per #47 we set them to 0 (the stratum mean).
         if (jj<= k.Covs)
-            covars.Sctr[ !NM[, NMCovs[jj] ], # picks out rows w/ missing observations
+            covars.Sctr[ !NM[, covars.nmcols[jj] ], # picks out rows w/ missing observations
                    jj] <- 0
     }
 
