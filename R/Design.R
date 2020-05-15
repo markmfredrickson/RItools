@@ -817,6 +817,8 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   vars   <- colnames(design@Covariates)
   stratifications <- colnames(design@StrataFrame)
 
+  ## TO DO: CONSIDER DEFINING AN `ewts` TABLE JUST ONCE,
+  ##        INSIDE OF HELPER FUNCTION THAT FOLLOWS, STRIKING `Ewts`.  
   Ewts  <- design@UnitWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
                  design@Covariates[, , drop = FALSE], 0)
@@ -830,6 +832,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
   # we can't return an array because different stratifications will have varying numbers
   # of strata levels. A list is more flexible here, but less structured.
+  ## TO DO: FACTOR THIS FUNCTION OUT, FOR DIRECT TESTING.
   f <- function(s){
     ss <- design@StrataFrame[, s]
     keep <- !is.na(ss)
@@ -838,6 +841,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
     ewts <- Ewts[keep,,drop=FALSE]
     non_null_record_wts <- ewts[,1L,drop=TRUE]
+    ## MAY NOT NEED `NM`; SEE NOTE BY SINGLE INVOCATION BELOW
     NM <- design@NotMissing[keep,,drop=FALSE]
     covars <- Covs[keep,,drop=FALSE]
 
@@ -853,6 +857,15 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
+    ## TO DO: REVISE & REPURPOSE LOOP THAT FOLLOWS, TO CALCULATE
+    ## WEIGHTED MEANS FOR EACH STRATUM, AS 'FITTED VALUES'.
+    ## RENAME AND REPURPOSE THE `covars.Sctr` TABLE TO CARRY THESE
+    ## FITTED VALUES.  THEN CREATE A THIRD TABLE CARRYING
+    ## WEIGHTED AVERAGES OF `covars` AND THE FITTED VALUES, WITH
+    ## WEIGHT 1 ON `covars` FOR CLUSTER-VARIABLE COMBOS WITH NOTHING
+    ## MISSING, WEIGHT 1 ON THE FITTED VALUES FOR CLUSTER-VARIABLE
+    ## COMBOS WITH EVERYTHING MISSING.
+    ##
     # align weighted observations within stratum by subtracting weighted stratum means
     covars.Sctr <- covars
     for (jj in 1L:ncol(covars))
@@ -866,14 +879,21 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         ## A value that was missing might have received an odd residual.
         ## Although such values don't themselves contribute anything, they'll affect a
         ## post alignment transformation such as `rank`.  So, per #47 we set them to 0 (the stratum mean).
+        ## TO DO: UPDATE THE BELOW (& ATTENDING INLINE COMMENTS).
+        ## ORDINARILY WE IMPUTE A FITTED VALUE, NOT 0.
+        ## HOWEVER, THERE MAY STILL BE AN EDGE CASE TO ATTEND TO IN CASES
+        ## WHERE `ewts` SUMS TO ZERO ACROSS THE ENTIRE STRATUM.  CHECK
+        ## AND ACCOMODATE AS NECESSARY. 
         if (jj<= k.Covs)
             covars.Sctr[ !NM[, covars.nmcols[jj] ], # picks out rows w/ missing observations
                    jj] <- 0
     }
 
     if (!is.null(post.align.transform)) {
-        ## Transform the columns of covars.Sctr using the function in post.align.trans
+        ## UPDATE COMMENT BELOW
+        ## Transform the columns of ¿¿covars.Sctr?? using the function in post.align.trans
         ## only do so for actual covariates, however, not missingness weights
+        ## ADD WEIGHTS TO ... SLOT
       covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2, post.align.transform)
 
       # Ensure that post.align.trans wasn't something that changes the size of covars.Sctr (e.g. mean).
@@ -882,6 +902,9 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           ncol(covars.Sctr.new) != k.Covs) {
         stop("Invalid post.alignment.transform given")
       }
+        ## TO DO: END p.a.t. BLOCK HERE, NOT FURTHER DOWN. REPURPOSE
+        ## FOLLOWING "RECENTERING" BLOCK AS THE BLOCK THAT DOES CENTERING
+        ## FOR THE FIRST TIME.  REMEMBER TO CENTER ON TOTALS, W/O WEIGHTING
       ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
         covars.Sctr[,1L:k.Covs] <- suppressWarnings(
             slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
