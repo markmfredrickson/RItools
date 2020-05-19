@@ -460,27 +460,28 @@ with variation in weights at the element or sub-cluster level, a
 distinction can be drawn between cluster size, the number of elements
 in the cluster, and cluster \textit{mass}, the clusterwise total of
 element weights.  We interpret the ``${m}_{bc}$'' of
-\citet{hansen:bowers:2008} to mean the latter.  For consistency with
-these concepts, when disaggregated element weights are provided, the
-weight (mass) associated with element $i$, cluster $c$, block $b$ is
-${m}_{bci}$.
+\citet{hansen:bowers:2008} to mean the latter.  
+%% For consistency with
+%% these concepts, when disaggregated element weights are provided, the
+%% weight (mass) associated with element $i$, cluster $c$, block $b$ is
+%% ${m}_{bci}$.
 
 Here we depart from \citet{hansen:bowers:2008} notation by using
 $\mathbf{x}$ to denote a
-matrix of cluster means, calculated with weighting for cluster sizes
-$w$;  when a notation for the matrix of cluster
-totals is needed, we use $\mathbf{t}_{b} = [x_{cr} m_{r} : c\leq n_{b}, r\leq p]$.
+matrix of cluster means, calculated with weighting for element masses;  when a notation for the matrix of cluster
+totals is needed, we use (setting aside missingness in $x$, for now)
+$\mathbf{t}_{b} = [x_{bcr} m_{bc} : c\leq n_{b}, r\leq p]$.
 The adjusted mean differences of \citet{hansen:bowers:2008} become
 \begin{align}
    d(\mathbf{Z}, \mathbf{t}) =& \sum_{b=1}^B w_b h_b^{-1} \bar{m}_b^{-1} \mathbf{Z}_{b}' \mathbf{t}_{b} - \sum_{b=1}^B w_b
-  \bar{m}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}   \nonumber \\
+  \bar{m}_b^{-1} (n_b - n_{tb})^{-1} \mathbf{1}'\mathbf{t}_{b}  \label{eq:1} \\
   =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \mathbf{Z}_{b}'
  (\mathbf{t}_{b}  - \bar{t}_{b}\mathbf{1}_{b}), \, 
-  \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi}, \nonumber \\
+  \bar{t}_{b} = n_{b}^{-1}\sum_{i} t_{bi},  \label{eq:11} \\
   =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \sum_{i\leq n_{b}}{Z}_{bi}
      \left[ {m}_{bi} \vec{x}_{bi} - n_{b}^{-1} \sum_{i\leq n_{b}}
      m_{bi} \vec{x}_{bi}
-     \right] \label{eq:11}  \\
+     \right]  \nonumber \\
   =& \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \sum_{i\leq n_{b}}{Z}_{bi}
      \left[ {m}_{bi} \vec{x}_{bi} - \left(\frac{\sum_{i\leq n_{b}}
      m_{bi}}{n_{b}}\right) \left(\frac{\sum_{i\leq n_{b}}
@@ -500,39 +501,33 @@ where $\bar{m}_{b}$ is the simple average of cluster masses $\{m_{bc}:
   $\vec{x}$'s, i.e. $\{m_{bc} (\vec{x}_{bc} -
   \text{wavg}_{b}(\mathbf{x})) : c\}$; instead they are $\{m_{bc}
   \vec{x}_{bc} - \bar{m}_{b}
-  \text{wavg}_{b}(\mathbf{x})) : c\}$.  (Centered totals are not the same
-  as upweightings of weighted observations centered around weighted
-  means. Losing track of this led to \#  89.)   
+  \text{wavg}_{b}(\mathbf{x})) : c\}$.  Centering on totals is not the same
+  as centering cluster means around the stratumwise weighted averages of
+  cluster means and then multiplying each centered mean by the
+  cluster's mass
+  (cf. \#  89).   ``Stratum alignment'' will refer to \eqref{eq:11},
+  the centering of cluster totals around their (unweighted)
+  within-stratum means.
   
-  On the other hand,
-  if $\mathbf{x}$ has the property that within each $b$,
-  $\text{wavg}_{b}(\mathbf{x}) = 0$, then $\bar{t}_{b} = 0$ and \eqref{eq:12} reduces to 
-  \begin{equation*}
-    \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b} \mathbf{Z}_{b}'
- \mathbf{t}_{b} = \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_b}
- \mathbf{Z}_{b}'(m_{b} \cdot \mathbf{x}_{b}),
-  \end{equation*}
- $v_{b} \cdot \mathbf{y}_{b} = [v_{bc} y_{bci} : c,i]$.  Thus we
- approach adjusted difference calculations by first \textit{aligning} the
-$\mathbf{x}_{b}$ submatrices, shifting them in such a way that their
-weighted means will be 0.  For the calculation of these means around
-which to center, NAs in $\mathbf{x}$ are omitted, separately for each
-$x$-column. Following this centering, NAs are replaced with 0s to form $\tilde{\mathbf{x}}_{b}$. 
-Then $\text{wavg}_{b}(\tilde{\mathbf{x}}) = 0$ and 
-\begin{equation*} 
-  d(\mathbf{Z}, \mathbf{x})  
-  = \sum_{b=1}^B \frac{w_b}{h_b\bar{m}_{b}}
-  \mathbf{Z}_{b}' ({m}_{b} \cdot \tilde{\mathbf{x}}_{b} 
- ), %\label{eq:2}
-\end{equation*}
-where $\cdot$ indicates unit-wise product. 
+  Now consider the case with potentially distinct missingness patterns
+  for each covariate, and accordingly distinguishable ``mass''-vectors
+  for each covariate, $\mathbf{m}_{1}, \ldots, \mathbf{m}_{r}$.  Continuing to denote overall cluster masses as
+  $\mathbf{m}=[m_{bc}: b, c\leq n_{b}]$, we have $ 0 \leq m_{bcr}
+  \leq m_{bc}$ for each $b,c$.  In this case we define, for each $b,c,r$,
+  \begin{align*}
+    t_{bcr}=& 
+    \begin{cases}
+     0,& m_{bc'r}=0 \text{ for all } c' \leq n_{b}\\
+     m_{bcr}x_{bcr} + (m_{cr}-m_{bcr})\text{wavg}_{b}([x_{bcr}: c\leq
+ n_{b}]),
+ & m_{bc'r}>0 \text{ for any } c' \leq n_{b}, \\ 
+    \end{cases} \\
+        &  \text{where } \text{wavg}_{b}([x_{bcr}: c\leq n_{b}]) = \frac{\sum_{c \leq n_{b}}m_{bcr}x_{bcr}}{\sum_{c \leq n_{b}}m_{bcr}}.
+  \end{align*}
+Then $\mathbf{t}_{b}= [t_{bcr}: c\leq n_{b}, r]$ and $d(\mathbf{Z}, \mathbf{t})$ is understood as in \eqref{eq:1} and \eqref{eq:11}. 
 
-NAs in $\mathbf{x}_{b} $ become 0s in $\tilde{\mathbf{x}}$, in
-effect being imputed to weighted stratum means.  In terms of its
-effects on the values of $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
-$\mathbf{E}_{0}[d(\mathbf{Z}, \mathbf{x}_{(j)}) ]$, this imputation is
-the same as omitting records that have NAs on the $j$-th $x$
-variable.  To instead impute the mean of $\mathbf{x}_{(j)}$ across
+
+(Were we to instead impute the mean of $\mathbf{x}_{(j)}$ across
 strata $b$, as \texttt{xBalance} did in \texttt{RItools} version
 0.1.14 and earlier, would have given the same values for $d(\mathbf{z}, \mathbf{x}_{(j)})$ or
 $\mathbf{E}_{0}[d(\mathbf{Z}, \mathbf{x}_{(j)}) ]$, but would lead to
@@ -540,7 +535,7 @@ somewhat larger calculated values of $\mathrm{Var}_{0}[d(\mathbf{Z}_{b},
 \mathbf{x}_{b(j)}) ]$, and in turn $\mathrm{Var}_{0}[d(\mathbf{Z},
 \mathbf{x}_{(j)}) ]$: \textit{stratum}-mean imputation is
 variance-minimizing, with the end result that the overall balance
-check is more sensitive than it otherwise would be.  (Hansen \& Bowers
+check is more sensitive than it otherwise would be.  Hansen \& Bowers
 [\citeyear{hansen:bowers:2008}] give formulas for these moments.) 
 
 Some conventions about stratum weighting, from \citet{hansen:bowers:2008}:
@@ -598,10 +593,8 @@ As seen earlier, this is the same as to say
   \left( \sum_{b} n_{b} \bar{m}_{b}\right)^{-1}
   \sum_{b}  \frac{n_{b}}{h_{b}} \mathbf{Z}_{b}' (m_{b} \cdot \tilde{\mathbf{x}}_{b}) . 
 \end{equation*}
-Perhaps these should be the default stratum weights for univariate
-inferentials.  They might even be enforced, ie removed from user
-control, eventually. But only for univariate inferentials; for multivariate
-inferentials we might be better advised to stick with the \citet{hansen:bowers:2008}
+Perhaps we could make these a named option for stratum weighting.  But
+note that they differ from the \citet{hansen:bowers:2008}
 recommendation that $w_{b} \propto h_{b} \bar{m}_{b}$. 
 %% \begin{align*}
 %%   d(\mathbf{Z}, \mathbf{x}) &= \sum_{b} \bar{m}_{b}\left\{  \frac{\mathbf{Z}_{b}'
@@ -626,13 +619,7 @@ Additional notes:
 \begin{itemize}
 \item When \citet{small:etal:2007} used
   the Hodges-Lehmann aligned rank test in a cluster randomized study, they aligned and transformed to
-  ranks \textit{prior to} aggregating within the cluster.  Something I hope
-  we'll enable soon (\#64).
-\item That said, the covariate alignment $x \mapsto \tilde{x}$  
-  has the property that you can apply it either before or after aggregating to the cluster
-  level, with the same result. 
-\item In tandem with the planned relocation of $x \mapsto \tilde{x}$ we can off the user some more options
-  for handling missingness in the x's (see  comment on \#64 thread). 
+  ranks \textit{prior to} aggregating within the cluster.  
 \item The advantage of imputation as opposed to simple omission is to
 preserve the common structure across $x$ variables, which will in
 general have different missingness patterns. This in turn is needed
