@@ -1,14 +1,14 @@
 ################################################################################
 # Tests for balanceTest function
 ################################################################################
-## if working interactively in inst/tests you'll need
-## library(RItools, lib.loc = '../../.local')
 library("testthat")
-
+if (!exists('nreps_')) nreps_  <- 10L
 context("balanceTest Function")
 
 test_that("balT univariate descriptive means agree w/ reference calculations",{
     set.seed(20160406)
+    for(rep_ in nreps_)
+        {
     n <- 7 
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
                         s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
@@ -30,12 +30,13 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
     mndiffs <- sapply(d, function(Data) {with(Data, mean(x1[z==1]) - mean(x1[z==0]))})
     cmndiff <- weighted.mean(mndiffs, w = sapply(d, function(Data) sum(Data$z==1)))
     expect_equivalent(xb1$results["x1", "adj.diff", "s"], cmndiff)
-
+}
 })
 
 test_that("Consistency between lm() and balTest()", {
     set.seed(20180821)
-
+    for(rep_ in nreps_)
+        {
     ## working with aggregated cluster totals already
     n <- 100
 
@@ -90,13 +91,15 @@ test_that("Consistency between lm() and balTest()", {
     ## now check that balance test gives us the same answers
     expect_equivalent(coef(lm.all)["z"], bt.all$results["x1", "adj.diff", ])
     expect_equivalent(coef(lm.lost)["z"], bt.zeroed$results["x1", "adj.diff", ])
-
+}
     
 })
 
 test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logistic regr",{
     library(survival)
     set.seed(20160406)
+    for(rep_ in nreps_)
+        {    
     n <- 51 # increase at your peril -- clogit can suddenly get slow as stratum size increases
      dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
                         s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
@@ -129,13 +132,15 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
     ## statistics.  Unremarkable here, but can be alarming when you see it on the screen (cf #75 ). 
     expect_true(all(colSums(xb3$results[,'z',]^2, na.rm=T) < xb3$overall[,'chisquare']))
 }
-          )
+          })
 
 test_that("balT returns covariance of tests", {
   set.seed(20130801)
   n <- 500
 
   library(MASS)
+    for(rep_ in nreps_)
+        {  
   xs <- mvrnorm(n,
                 mu = c(1,2,3),
                 Sigma = matrix(c(1, 0.5, 0.2,
@@ -167,7 +172,7 @@ test_that("balT returns covariance of tests", {
   ## have to filter out rows and cols named "(Intercept)", separately for each
   ## entry in list tcov.  (Recording while updating test that follows, `c(4,4)` --> `c(5,5)`)
   expect_equal(dim(tcov[[1]]), c(5,5))
-
+}
 })
 
 test_that("Passing post.alignment.transform, #26", {
@@ -297,6 +302,8 @@ test_that("p.adjust.method argument", {
 
 test_that("NAs properly handled", {
   set.seed(2903934)
+    for(rep_ in nreps_)
+        {
   n <- 20
   df <- data.frame(Z = rep(c(0,1), n/2),
                    X1 = rnorm(n),
@@ -313,6 +320,7 @@ test_that("NAs properly handled", {
   expect_s3_class(bt2, "xbal")
   expect_true("(X1)" %in% dimnames(bt2[["results"]])[["vars"]])
   expect_false("(_non-null record_)" %in% dimnames(bt2[["results"]])[["vars"]])
+  }
 })
 
 ## To do: adapt the below to test print.xbal instead of lower level functions
@@ -320,7 +328,8 @@ test_that("NAs properly handled", {
 replicate(0,
 {
     set.seed(20130801)
-
+    for(rep_ in nreps_)
+        {
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -337,6 +346,7 @@ replicate(0,
 
   expect_equal(dim(design.flags@Covariates)[2], 5)
   expect_equal(dim(design.noFlags@Covariates)[2], 4)
+  }
 })
 
 test_that("balanceTest agrees with other methods where appropriate", {
@@ -344,6 +354,8 @@ test_that("balanceTest agrees with other methods where appropriate", {
   library(survival) # for conditional logistic regression
 
   set.seed(20180207)
+    for(rep_ in nreps_)
+        {  
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -393,4 +405,5 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(xb2m$overall$chisquare, bt2m$overall['m', "chisquare"])
   expect_equivalent(xb2m$overall$p.value, summary(cr2)$sctest["pvalue"])
   expect_equivalent(bt2m$overall[1, "p.value"], summary(cr2)$sctest[["pvalue"]])
+  }
 })
