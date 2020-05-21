@@ -766,6 +766,7 @@ setClass("CovsAlignedToADesign",
          )
 # apply this & pass through en route to svd
 #' @method scale DesignOptions
+#' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()} 
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 {
     stopifnot(is(x, "DesignOptions"))
@@ -791,8 +792,12 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
         )
         }
     trans  <- if (is(center, "function")) center else NULL
-    aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
-    aligned_covs  <- aligned[[1]]@Covariates
+    aligned  <-
+        alignDesignsByStrata(colnames(x@StrataFrame)[1],
+                             design=x,
+                             post.align.transform=trans
+                             )
+    aligned_covs  <- aligned@Covariates
     if (scale)
         {
     scales  <- .colSums(aligned_covs^2,
@@ -805,21 +810,19 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 
 ##' Align DesignOptions by Strata
 ##'
+##' @param a_stratification name of a column of `design@strataFrame`/ element of `design@Sweights`
 ##' @param design DesignOptions
-##' @param post.align.transform A post-align transform
-##' @return list List of `CovsAlignedToADesign` objects
+##' @param post.align.transform A post-align transform (cf \code{\link{balanceTest}})
+##' @return CovsAlignedToADesign 
 ##' @keywords internal
 ##'
-alignDesignsByStrata <- function(design, post.align.transform = NULL) {
+alignDesignsByStrata <- function(a_stratification, design, post.align.transform = NULL) {
 
   stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
   vars   <- colnames(design@Covariates)
   stratifications <- colnames(design@StrataFrame)
 
-  ## TO DO: CONSIDER DEFINING AN `ewts` TABLE JUST ONCE,
-  ##        INSIDE OF HELPER FUNCTION THAT FOLLOWS, STRIKING `Ewts`.  
-  Ewts  <- design@UnitWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
                  design@Covariates[, , drop = FALSE], 0)
   k.Covs <- ncol(Covs)
@@ -829,29 +832,24 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
   covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
   origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
   origvars <- c(design@OriginalVariables, origvars)
-
-  # we can't return an array because different stratifications will have varying numbers
-  # of strata levels. A list is more flexible here, but less structured.
-  ## TO DO: FACTOR THIS FUNCTION OUT, FOR DIRECT TESTING.
-  f <- function(s){
-    ss <- design@StrataFrame[, s]
+    ss <- design@StrataFrame[, a_stratification]
     keep <- !is.na(ss)
     ss <- ss[keep]
     S <- SparseMMFromFactor(ss)
 
-    ewts <- Ewts[keep,,drop=FALSE]
+    ewts <- (design@UnitWeights * design@NotMissing)[keep,,drop=FALSE]
     non_null_record_wts <- ewts[,1L,drop=TRUE]
     ## MAY NOT NEED `NM`; SEE NOTE BY SINGLE INVOCATION BELOW
     NM <- design@NotMissing[keep,,drop=FALSE]
     covars <- Covs[keep,,drop=FALSE]
 
-    wtratio <- design@Sweights[[s]]$wtratio
-    names(wtratio) <- rownames(design@Sweights[[s]])
+    wtratio <- design@Sweights[[a_stratification]]$wtratio
+    names(wtratio) <- rownames(design@Sweights[[a_stratification]])
 
     stopifnot(nlevels(ss)==1 ||
                   all(levels(ss)  %in% names(wtratio) ) )
     wtr.short <- wtratio[match(levels(ss),
-                               names(design@Sweights[[s]]$wtratio),
+                               names(design@Sweights[[a_stratification]]$wtratio),
                                nomatch=1L) # <-- this is to handle
                          ]                 # the unstratified case
     wtr <- wtr.short[ as.integer(ss) ]
@@ -893,8 +891,10 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
         ## UPDATE COMMENT BELOW
         ## Transform the columns of ¿¿covars.Sctr?? using the function in post.align.trans
         ## only do so for actual covariates, however, not missingness weights
-        ## ADD WEIGHTS TO ... SLOT
-      covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2, post.align.transform)
+        covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2,
+                                 post.align.transform,
+                                 non_null_record_wts #2nd arg to p.a.t.
+                                 )
 
       # Ensure that post.align.trans wasn't something that changes the size of covars.Sctr (e.g. mean).
       # It would crash later anyway, but this is more informative
@@ -922,8 +922,6 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
           )
-}
-  sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
 ##' @title Adjusted & combined differences as in Hansen & Bowers (2008)

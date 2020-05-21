@@ -614,10 +614,10 @@ test_that("alignDesigns, designToDescriptives output alignment", {
                                                 RItools:::effectOfTreatmentOnTreated)
     expect_true(setequal(names(simple2@Sweights), c("strat", "--")))
     dsimple2 <- RItools:::designToDescriptives(simple2)
-    asimple2 <- RItools:::alignDesignsByStrata(simple2)
-    expect_true(setequal(names(asimple2), c("strat", "--")))
-    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[["--"]]@Covariates))
-
+    asimple2a <- RItools:::alignDesignsByStrata("--", simple2)
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2a@Covariates))
+    asimple2b <- RItools:::alignDesignsByStrata("strat", simple2)
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2b@Covariates))
 })
 
 
@@ -637,13 +637,14 @@ test_that("alignDesigns centers covars by stratum", {
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
-    asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    expect_equivalent(colSums(asimple0[["--"]]@Covariates),
-                      rep(0,ncol(asimple0[["--"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple0[["strat"]]@StrataMatrix) %*% asimple0[["strat"]]@Covariates),
-                      matrix(0,2,ncol(asimple0[["strat"]]@Covariates)))
+    asimple0u <- RItools:::alignDesignsByStrata("--",simple0)
+    expect_equivalent(colSums(asimple0u@Covariates),
+                      rep(0,ncol(asimple0u@Covariates)))
+    asimple0s <- RItools:::alignDesignsByStrata("strat",simple0)
+    expect_equivalent(colSums(asimple0s@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
+                      rep(0,ncol(asimple0s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple0s@StrataMatrix) %*% asimple0s@Covariates),
+                      matrix(0,2,ncol(asimple0s@Covariates)))
 
     ## now with weights
     dat1 <- dat
@@ -654,26 +655,30 @@ test_that("alignDesigns centers covars by stratum", {
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
-    asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    expect_equivalent(colSums(asimple1[["--"]]@Covariates),
-                      rep(0,ncol(asimple1[["--"]]@Covariates)))
+    asimple1u <- RItools:::alignDesignsByStrata("--",simple1)
+    expect_equivalent(colSums(asimple1u@Covariates),
+                      rep(0,ncol(asimple1u@Covariates)))
 
-    tmp1 <- asimple1[["strat"]]@Covariates 
+    asimple1s <- RItools:::alignDesignsByStrata("strat",simple1)   
+    tmp1 <- asimple1s@Covariates 
     expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple1[["strat"]]@StrataMatrix) %*% tmp1),
-                      matrix(0,2, ncol(asimple1[["strat"]]@Covariates)))
+                      rep(0,ncol(asimple1s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple1s@StrataMatrix) %*% tmp1),
+                      matrix(0,2, ncol(asimple1s@Covariates)))
 
     ## now with weights, post alignment transform
-    asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
-    expect_equivalent(colSums(asimple2[["--"]]@Covariates  ),
-                      rep(0,ncol(asimple2[["--"]]@Covariates)))
+    asimple2u <- RItools:::alignDesignsByStrata("--", simple1,
+                                               post.align.transform = rank)
+    expect_equivalent(colSums(asimple2u@Covariates  ),
+                      rep(0,ncol(asimple2u@Covariates)))
 
-    tmp2 <- asimple2[["strat"]]@Covariates 
+    asimple2s <- RItools:::alignDesignsByStrata("strat", simple1,
+                                               post.align.transform = rank)
+    tmp2 <- asimple2s@Covariates 
     expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(as.matrix(t(asimple2[["strat"]]@StrataMatrix) %*% tmp2),
-                      matrix(0,2, ncol(asimple2[["strat"]]@Covariates)))
+                      rep(0,ncol(asimple2s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple2s@StrataMatrix) %*% tmp2),
+                      matrix(0,2, ncol(asimple2s@Covariates)))
 
 } )
 
@@ -693,12 +698,15 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
     simple2b  <- as(simple2, "StratumWeightedDesignOptions")
     simple2b@Sweights <- RItools:::DesignWeights(simple2b, # need stratum weights to be present, even if ignored
                                         RItools:::effectOfTreatmentOnTreated)
-    asimple2  <- RItools:::alignDesignsByStrata(simple2b, post.align.transform = NULL)
-    expect_identical(scl2_scaleF, asimple2[["--"]]@Covariates)
+    asimple2u  <- RItools:::alignDesignsByStrata("--", simple2b,
+                                                post.align.transform = NULL)
+    expect_identical(scl2_scaleF, asimple2u@Covariates)
 
+    asimple2s  <- RItools:::alignDesignsByStrata("strat", simple2b,
+                                                post.align.transform = NULL)
     simple2c  <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus) - 1, data = dat)
     scl2c_scaleF  <- scale(simple2c, center=TRUE, scale=FALSE)
-    expect_identical(scl2c_scaleF, asimple2[["strat"]]@Covariates)
+    expect_identical(scl2c_scaleF, asimple2s@Covariates)
     scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
     expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
     scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
@@ -777,6 +785,9 @@ test_that("Issue #89: Proper strata weights", {
 
 context("HB08*")
 
+## IN PROCESS: ADJUST `HB08()` TESTS TO DROP
+## REQUIREMENT OF PRIOR STRATUM ALIGNMENT
+## NEXT: TEST MISSINGNESS HANDLING MECHANISM
 test_that("HB08 agreement w/ xBal()", {
 
     set.seed(20180605)
@@ -800,7 +811,8 @@ test_that("HB08 agreement w/ xBal()", {
     simple0 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy)
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
-    asimple0 <- RItools:::alignDesignsByStrata(simple0)
+    asimple0 <- sapply(colnames(simple0@StrataFrame), RItools:::alignDesignsByStrata,
+                     design=simple0, simplify=FALSE, USE.NAMES=TRUE)
     btis0 <- lapply(asimple0, HB08)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
@@ -819,10 +831,13 @@ test_that("HB08 agreement w/ xBal()", {
     expect_equivalent(btis0[['m']][c('Msq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
-    ## now with weights.  Comparing adjusted diffs based on totals will only work
-    ## if the weights don't vary with by stratum, at least in stratified case.
+    ## now with weights.
+  ## TO DO: [] FIRST DROP CENTERING ASSUMPTION. THEN
+  ## [] DROP ASSUMPTION THAT WEIGHTS DON'T VARY WITHIN STRATUM.
     xy_wted <- xy; mwts <- 0
     while (any(mwts==0)) mwts <- rpois(n/2, lambda=10)
+    ## Comparing adjusted diffs based on totals will only work
+    ## if the weights don't vary by stratum, at least in stratified case.
     ## centering of variables is needed for unstratified mean diffs comparison.
     xy_wted <- transform(xy_wted, x1=x1-weighted.mean(x1,unsplit(mwts, xy$m)), 
                          x2=x2-weighted.mean(x2,unsplit(mwts, xy$m)), 
@@ -832,7 +847,9 @@ test_that("HB08 agreement w/ xBal()", {
     simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
-    asimple1 <- RItools:::alignDesignsByStrata(simple1)
+  asimple1 <- sapply(colnames(simple1@StrataFrame),
+                     RItools:::alignDesignsByStrata, design=simple1,
+                     simplify=FALSE, USE.NAMES=TRUE)
     btis1 <- lapply(asimple1, HB08)
 
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
@@ -888,7 +905,9 @@ test_that("HB08_2016 agreement w/ xBal()", {
     simple0 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy)
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
-    asimple0 <- RItools:::alignDesignsByStrata(simple0)
+  asimple0 <- sapply(colnames(simple0@StrataFrame),
+                     RItools:::alignDesignsByStrata, simple0,
+                     simplify=TRUE, USE.NAMES=TRUE)
     btis0 <- lapply(asimple0, HB08_2016)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
@@ -920,7 +939,9 @@ test_that("HB08_2016 agreement w/ xBal()", {
     simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
-    asimple1 <- RItools:::alignDesignsByStrata(simple1)
+  asimple1 <- sapply(colnames(simple1@StrataFrame),
+                     RItools:::alignDesignsByStrata, simple1,
+                     simplify=TRUE, USE.NAMES=TRUE)
     btis1 <- lapply(asimple1, HB08_2016)
 
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
