@@ -180,24 +180,26 @@ test_that("Passing post.alignment.transform, #26", {
 
   # Identity shouldn't have an effect
   res1 <- balanceTest(pr ~ ., data=nuclearplants)
-  res2 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = function(x) x)
+  res2 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = function(x, y) x)
 
   expect_true(all.equal(res1, res2)) ## allow for small numerical differences
 
-  res3 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank)
+  rank_ <-  function(x,y) rank(x)
+  res3 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank_)
 
   expect_true(all(dim(res1$results) == dim(res3$results)))
 
-  expect_error(balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = mean),
+  mean_ <- function(x,y) mean(x)
+  expect_error(balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = mean_),
                "Invalid post.alignment.transform given")
 
-  res4 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank, report="all")
+  res4 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank_, report="all")
   res5 <- balanceTest(pr ~ ., data=nuclearplants, report="all")
 
   expect_false(isTRUE(all.equal(res4,res5)))
 
   # a wilcoxon rank sum test, asymptotic and w/o continuity correction
-  res6 <- balanceTest(pr ~ cost, data=nuclearplants, post.alignment.transform = rank,
+  res6 <- balanceTest(pr ~ cost, data=nuclearplants, post.alignment.transform = rank_,
                    report="all", p.adjust.method='none')
 
   expect_equal(res6$results["cost", "p", "--"],
