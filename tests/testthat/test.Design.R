@@ -805,9 +805,54 @@ test_that("Issue #89: Proper strata weights", {
 }
 })
 
+test_that("In inferentials, NAs imputed to stratum means",{
+    dat  <- data.frame(z=rep(0:1, 2), x=c(0, NA, 2, 10),
+                       x_median_imputed=c(0,2,2,10),
+                       x_grandmean_imputed=c(0,4,2,10),
+                       m=factor(rep(c("a", "b"), each=2)),
+                       clus=factor(c("a", "b", "c", "b")),
+                       w=1)
+    mf  <- model.frame(z~x+x_median_imputed+x_grandmean_imputed+
+                           m+clus, dat, weights=w, na.action=na.pass)
+
+    simple1 <- RItools:::makeDesigns(z ~ x+x_median_imputed+x_grandmean_imputed +
+                                         strata(m), data = mf)
+    simple1 <-   as(simple1, "StratumWeightedDesignOptions")
+    simple1@Sweights <- RItools:::DesignWeights(simple1) 
+    asimple1 <- sapply(colnames(simple1@StrataFrame),
+                       RItools:::alignDesignsByStrata, design=simple1,
+                       simplify=FALSE, USE.NAMES=TRUE)
+    expect_equivalent(asimple1[['--']]@Covariates[2,"x"],
+                      mean(asimple1[['--']]@Covariates[c(1,3,4),"x"])
+                      )
+    expect_lt(var(asimple1[['--']]@Covariates[,"x"]),
+              var(asimple1[['--']]@Covariates[,"x_median_imputed"])
+              )
+    expect_equivalent(var(asimple1[['--']]@Covariates[,"x"]),
+              var(asimple1[['--']]@Covariates[,"x_grandmean_imputed"])
+              )
+    expect_lt(var(asimple1[['m']]@Covariates[,"x"]),
+              var(asimple1[['m']]@Covariates[,"x_median_imputed"])
+              )
+    expect_lt(var(asimple1[['m']]@Covariates[,"x"]),
+              var(asimple1[['m']]@Covariates[,"x_grandmean_imputed"])
+              )
+    expect_equivalent(asimple1[['m']]@Covariates[2,"x"],
+                      asimple1[['m']]@Covariates[1,"x"])
+
+    simple2 <- RItools:::makeDesigns(z ~ x+x_median_imputed+x_grandmean_imputed + cluster(clus), data = mf)
+    simple2  <- aggregateDesigns(simple2)
+    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
+    simple2@Sweights <- RItools:::DesignWeights(simple2) 
+    asimple2  <- alignDesignsByStrata("--", design=simple2)
+    expect_equivalent(var(asimple2@Covariates[,"x"]),
+              var(asimple2@Covariates[,"x_grandmean_imputed"])
+              )
+
+})
+
 context("HB08*")
 
-## NEXT: TEST MISSINGNESS HANDLING MECHANISM
 test_that("HB08 agreement w/ xBal()", {
 
     set.seed(20180605)
@@ -937,6 +982,7 @@ wt2.scaled  <- xy_wted2$'(weights)' /
 }
 
 } )
+
 
 test_that("HB08_2016 agreement w/ xBal()", {
 
