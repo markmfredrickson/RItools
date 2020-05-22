@@ -37,6 +37,28 @@ test_that("Missingness gets passed through in Covariates, recorded in NotMissing
               expect_equivalent(colnames(simple2@NotMissing), c("_non-null record_", "x1", "fac"))
               
 })
+test_that("model_matrix offered missing or negative weights",{
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    w_with_NAs=rep(c(NA, 1), c(3,2)),
+                    w_with_negatives=-2:2,
+                    x=c(1:5),
+                    fac=factor(c(rep(1:2,2), NA))
+                    )
+    datmf_with_NAs <-
+        model.frame(z ~ x + fac, dat, na.action = na.pass,
+                    weights=w_with_NAs)
+datmf_with_negatives  <- 
+        model.frame(z ~ x + fac, dat, na.action = na.pass,
+                    weights=w_with_negatives)
+    expect_error(RItools:::model_matrix(z ~ x + fac,
+                                        data = datmf_with_NAs),
+                 "uweights")
+    expect_error(RItools:::model_matrix(z ~ x + fac,
+                                        data = datmf_with_negatives),
+                 "uweights")
+})
 test_that("lookup tables OK, even w/ complex & multi-column terms",{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
