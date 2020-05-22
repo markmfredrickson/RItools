@@ -855,12 +855,13 @@ test_that("HB08 agreement w/ xBal()", {
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
   xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
-                        x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
                     xb1u$results[,'adj.diff',"unmatched"])
-  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
   expect_equivalent(btis1[['--']][c('Msq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
@@ -947,12 +948,13 @@ test_that("HB08_2016 agreement w/ xBal()", {
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
   xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
-                        x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
                     xb1u$results[,'adj.diff',"unmatched"])
-  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
   expect_equivalent(btis1[['--']][c('Msq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
@@ -960,13 +962,14 @@ test_that("HB08_2016 agreement w/ xBal()", {
 
   wts.scaled <- xy_wted$'(weights)' / mean( mwts )
   xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
-                        x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w= wts.scaled)
+  xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
-                    xb1m$results[,'adj.diff',"matched"])
-  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['m']]$adj.mean.diffs, 
+                    xb1m$results[1:3,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov, 
                     attr(xb1m$overall, 'tcov')$matched)
   expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])

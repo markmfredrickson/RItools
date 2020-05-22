@@ -387,8 +387,9 @@ test_that("balanceTest agrees with other methods where appropriate", {
 
   wts.scaled <- xy.wts$wts / mean(xy.wts$wts)
   xy.wts.u <- data.frame(x1 = xy.wts$x1 * wts.scaled, x2 = xy.wts$x2 * wts.scaled, x3 = xy.wts$x3 * wts.scaled,
+                         w=wts.scaled,
                      idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
-  xb2u <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
+  xb2u <- xBalance(y ~ x1 + x2 + x3 +w, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
   bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts, report = "chisquare.test")
   expect_equivalent(xb2u$overall$chisquare, bt2u$overall['--', "chisquare"])
 

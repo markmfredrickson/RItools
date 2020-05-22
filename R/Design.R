@@ -818,30 +818,24 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 ##'
 alignDesignsByStrata <- function(a_stratification, design, post.align.transform = NULL) {
 
-  stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
+    stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
-  vars   <- colnames(design@Covariates)
-  stratifications <- colnames(design@StrataFrame)
-
-  Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
-                 design@Covariates[, , drop = FALSE], 0)
-  k.Covs <- ncol(Covs)
-  NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
-  Covs <- cbind(Covs, 0+design@NotMissing[,NMcolperm])
-  vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
-  covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
-  origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
-  origvars <- c(design@OriginalVariables, origvars)
     ss <- design@StrataFrame[, a_stratification]
     keep <- !is.na(ss)
     ss <- ss[keep]
     S <- SparseMMFromFactor(ss)
+    Covs <- ifelse(design@NotMissing[keep, pmax(1L,design@NM.Covariates), drop = FALSE],
+                   design@Covariates[keep, , drop = FALSE], 0)
+    k.Covs <- ncol(Covs)
+    NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
+    vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
+    nmcols_Covs <- pmax(1L, design@NM.Covariates)
+    origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
+    origvars <- c(design@OriginalVariables, origvars)
 
-    ewts <- (design@UnitWeights * design@NotMissing)[keep,,drop=FALSE]
-    non_null_record_wts <- ewts[,1L,drop=TRUE]
-    ## MAY NOT NEED `NM`; SEE NOTE BY SINGLE INVOCATION BELOW
+    UW  <- design@UnitWeights[keep]
     NM <- design@NotMissing[keep,,drop=FALSE]
-    covars <- Covs[keep,,drop=FALSE]
+    non_null_record_wts <- UW*NM[,1L,drop=TRUE]
 
     wtratio <- design@Sweights[[a_stratification]]$wtratio
     names(wtratio) <- rownames(design@Sweights[[a_stratification]])
@@ -855,67 +849,47 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
-    ## TO DO: REVISE & REPURPOSE LOOP THAT FOLLOWS, TO CALCULATE
-    ## WEIGHTED MEANS FOR EACH STRATUM, AS 'FITTED VALUES'.
-    ## RENAME AND REPURPOSE THE `covars.Sctr` TABLE TO CARRY THESE
-    ## FITTED VALUES.  THEN CREATE A THIRD TABLE CARRYING
-    ## WEIGHTED AVERAGES OF `covars` AND THE FITTED VALUES, WITH
-    ## WEIGHT 1 ON `covars` FOR CLUSTER-VARIABLE COMBOS WITH NOTHING
-    ## MISSING, WEIGHT 1 ON THE FITTED VALUES FOR CLUSTER-VARIABLE
-    ## COMBOS WITH EVERYTHING MISSING.
-    ##
-    # align weighted observations within stratum by subtracting weighted stratum means
-    covars.Sctr <- covars
-    for (jj in 1L:ncol(covars))
+    ## Figure weighted within-stratum stratum means, in order to 
+    ## use them as imputation values. 
+    Covs_stratmeans <- matrix(0, nrow(Covs), k.Covs)
+    for (jj in 1L:k.Covs)
     {
-        covars.Sctr[,jj] <- if (all(covars[,jj]==covars[1L,jj])) 0 else
-            suppressWarnings( #throws singularity warning if covar is linear in S
+        Covs_stratmeans[,jj] <- if (all(Covs[,jj]==Covs[1L,jj])) 0 else
+            suppressWarnings( #warns if covar is linear in S or weights are all 0 w/in a stratum
                 slm.wfit.csr( # see note in ./utils.R on why we use our own
-                    S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
-                    weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
+                    S, Covs[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
+                    weights=(UW*NM)[, nmcols_Covs[jj], drop = TRUE])$fitted
             )
-        ## A value that was missing might have received an odd residual.
-        ## Although such values don't themselves contribute anything, they'll affect a
-        ## post alignment transformation such as `rank`.  So, per #47 we set them to 0 (the stratum mean).
-        ## TO DO: UPDATE THE BELOW (& ATTENDING INLINE COMMENTS).
-        ## ORDINARILY WE IMPUTE A FITTED VALUE, NOT 0.
-        ## HOWEVER, THERE MAY STILL BE AN EDGE CASE TO ATTEND TO IN CASES
-        ## WHERE `ewts` SUMS TO ZERO ACROSS THE ENTIRE STRATUM.  CHECK
-        ## AND ACCOMODATE AS NECESSARY. 
-        if (jj<= k.Covs)
-            covars.Sctr[ !NM[, covars.nmcols[jj] ], # picks out rows w/ missing observations
-                   jj] <- 0
     }
+    ## Impute missing info to stratum mean
+    Covs_w_touchups  <- Covs*NM[,nmcols_Covs, drop=FALSE] +
+        Covs_stratmeans*(1-NM[,nmcols_Covs, drop=FALSE])
 
     if (!is.null(post.align.transform)) {
-        ## UPDATE COMMENT BELOW
-        ## Transform the columns of ¿¿covars.Sctr?? using the function in post.align.trans
-        ## only do so for actual covariates, however, not missingness weights
-        covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2,
+        ## Transform the columns of Covs_w_touchups using the post.align.trans
+        Covs_aligned <- apply(Covs_w_touchups, 2,
                                  post.align.transform,
                                  non_null_record_wts #2nd arg to p.a.t.
-                                 )
-
-      # Ensure that post.align.trans wasn't something that changes the size of covars.Sctr (e.g. mean).
-      # It would crash later anyway, but this is more informative
-      if (is.null(dim(covars.Sctr.new)) || nrow(covars.Sctr) != nrow(covars.Sctr.new) ||
-          ncol(covars.Sctr.new) != k.Covs) {
+                              )
+        
+    ## Ensure that post.align.trans wasn't something that changes the size of 
+    ## Covs (e.g. mean). It would crash later anyway, but this is more informative
+    if (is.null(dim(Covs_aligned)) || nrow(Covs_aligned) != nrow(Covs_w_touchups) ||
+          ncol(Covs_aligned) != k.Covs) {
         stop("Invalid post.alignment.transform given")
-      }
-        ## TO DO: END p.a.t. BLOCK HERE, NOT FURTHER DOWN. REPURPOSE
-        ## FOLLOWING "RECENTERING" BLOCK AS THE BLOCK THAT DOES CENTERING
-        ## FOR THE FIRST TIME.  REMEMBER TO CENTER ON TOTALS, W/O WEIGHTING
-      ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
-        covars.Sctr[,1L:k.Covs] <- suppressWarnings(
-            slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
-                         weights=non_null_record_wts)$residuals
-        )
+      } else Covs_w_touchups  <- Covs_aligned
     }
-    colnames(covars.Sctr) <- vars
-    covars.Sctr  <- covars.Sctr * non_null_record_wts
+
+    ## Align (recenter) cluster totals around their means within strata.
+    ## Do this for the not-missing indicators as well as for the manifest variables.
+    covars <- cbind(Covs_w_touchups, 0+design@NotMissing[,NMcolperm])    
+    covars <- suppressWarnings(
+        slm.fit.csr.fixed(S, covars*non_null_record_wts)$residuals
+    )
+    colnames(covars) <- vars
 
       new("CovsAlignedToADesign",
-          Covariates        = covars.Sctr,
+          Covariates        = covars,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataWeightRatio = wtr, #as extracted from the design
