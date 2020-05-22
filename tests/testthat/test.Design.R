@@ -807,8 +807,6 @@ test_that("Issue #89: Proper strata weights", {
 
 context("HB08*")
 
-## IN PROCESS: ADJUST `HB08()` TESTS TO DROP
-## REQUIREMENT OF PRIOR STRATUM ALIGNMENT
 ## NEXT: TEST MISSINGNESS HANDLING MECHANISM
 test_that("HB08 agreement w/ xBal()", {
 
@@ -853,20 +851,13 @@ test_that("HB08 agreement w/ xBal()", {
     expect_equivalent(btis0[['m']][c('Msq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
-    ## now with weights.
-  ## TO DO: [] FIRST DROP CENTERING ASSUMPTION. THEN
-  ## [] DROP ASSUMPTION THAT WEIGHTS DON'T VARY WITHIN STRATUM.
-    xy_wted <- xy; mwts <- 0
+  ## now with weights.
+  ## first, an example with weights that don't vary within the strata().
+    xy_wted1 <- xy; mwts <- 0
     while (any(mwts==0)) mwts <- rpois(n/2, lambda=10)
-    ## Comparing adjusted diffs based on totals will only work
-    ## if the weights don't vary by stratum, at least in stratified case.
-    ## centering of variables is needed for unstratified mean diffs comparison.
-    xy_wted <- transform(xy_wted, x1=x1-weighted.mean(x1,unsplit(mwts, xy$m)), 
-                         x2=x2-weighted.mean(x2,unsplit(mwts, xy$m)), 
-                         x3=x3-weighted.mean(x3,unsplit(mwts, xy$m)))
-    xy_wted$'(weights)' <- unsplit(mwts, xy$m)
+    xy_wted1$'(weights)' <- unsplit(mwts, xy$m)
     
-    simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
+    simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted1)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
   asimple1 <- sapply(colnames(simple1@StrataFrame),
@@ -874,12 +865,12 @@ test_that("HB08 agreement w/ xBal()", {
                      simplify=FALSE, USE.NAMES=TRUE)
     btis1 <- lapply(asimple1, HB08)
 
-  wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
+  wts.scaled <- xy_wted1$'(weights)' / mean(xy_wted1$'(weights)')
 
-  xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
+  xy_xbwts1 <- transform(xy_wted1, x1=x1*wts.scaled,
                         x2=x2*wts.scaled, x3=x3*wts.scaled,
                         w=wts.scaled)
-  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts1,
                    strata = list(unmatched = NULL), report = c("all"))
   expect_equivalent(btis1[['--']]$adj.mean.diffs, 
                     xb1u$results[,'adj.diff',"unmatched"])
@@ -889,15 +880,57 @@ test_that("HB08 agreement w/ xBal()", {
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
 
-  wts.scaled <- xy_wted$'(weights)' / mean( mwts )
-  xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
+  wts.scaled <- xy_wted1$'(weights)' / mean( mwts )
+  xy_xbwts1 <- transform(xy_wted1, x1=x1*wts.scaled,
                         x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts1,
                    strata = list(matched = ~ m), report = c("all"))
 
   expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
                     xb1m$results[,'adj.diff',"matched"])
   expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                    attr(xb1m$overall, 'tcov')$matched)
+  expect_equivalent(btis1[['m']][c('Msq', 'DF')],
+                    xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+      ## second and example where weights vary arbitrarily (over positive numbers)
+    xy_wted2 <- xy; wts <- 0
+    while (any(wts==0)) wts <- rpois(n, lambda=10)
+    xy_wted2$'(weights)' <- wts
+    
+    simple2 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted2)
+    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
+    simple2@Sweights <- RItools:::DesignWeights(simple2) # this test
+  asimple2 <- sapply(colnames(simple2@StrataFrame),
+                     RItools:::alignDesignsByStrata, design=simple2,
+                     simplify=FALSE, USE.NAMES=TRUE)
+    btis1 <- lapply(asimple2, HB08)
+
+  wts.scaled  <- xy_wted2$'(weights)' / mean(xy_wted2$'(weights)')
+  xy_xbwts2 <- transform(xy_wted2, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
+                   strata = list(unmatched = NULL), report = c("all"))
+  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
+                    xb1u$results[,'adj.diff',"unmatched"])
+  expect_equivalent(btis1[['--']]$tcov, 
+                    attr(xb1u$overall, 'tcov')$unmatched)
+  expect_equivalent(btis1[['--']][c('Msq', 'DF')],
+                    xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+
+wt2.scaled  <- xy_wted2$'(weights)' /
+    mean( tapply(xy_wted2$'(weights)', xy_wted2$m, mean) )
+  xy_xbwts2 <- transform(xy_wted2, x1=x1*wts.scaled,
+                         x2=x2*wts.scaled, x3=x3*wts.scaled,
+                         w=wts.scaled)
+
+  xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
+                   strata = list(matched = ~ m), report = c("all"))
+
+  expect_equivalent(btis1[['m']]$adj.mean.diffs,
+                    xb1m$results[,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov, 
                     attr(xb1m$overall, 'tcov')$matched)
   expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
