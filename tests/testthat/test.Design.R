@@ -214,8 +214,7 @@ context("DesignOptions objects")
 test_that("Creating DesignOptions objects", {
 
       set.seed(20130801)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   d <- data.frame(
       id          = 1:500,
       x           = rnorm(500),
@@ -257,14 +256,13 @@ test_that("Creating DesignOptions objects", {
   # - strata with extra levels but no observations (which can be safely dropped)
   #   (NB: extra levels tested upstream, in xBalance, as of commit 34861515; 
   #   see ./test.clusters.R ) 
-}
+})
         })
 
 test_that("NotMissing vars correctly generated",
           {
 
-    for(rep_ in nreps_)
-        {              
+    replicate(nreps_,{              
   dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
                     z=c(TRUE, rep(c(TRUE, FALSE), 2)),
@@ -294,7 +292,7 @@ test_that("NotMissing vars correctly generated",
   expect_match(colnames(simple3@NotMissing), "fac", all=FALSE)
   expect_false(any(grepl("TRUE", colnames(simple3@Covariates))))            
   expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))
-           }   
+           })   
           })
 
 test_that("Issue 88: logical Covariates correctly generated",
@@ -326,8 +324,7 @@ test_that("Issue 88: logical Covariates correctly generated",
 
 test_that("DesignOptions to descriptive statistics", {
     set.seed(20130801)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -362,7 +359,7 @@ test_that("DesignOptions to descriptive statistics", {
   # with equal sized strata, the the control/treatment means are the means of the the strata means
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
-}
+})
 })
 
 test_that("designToDescriptives uses provided covariate scales",{
@@ -413,8 +410,7 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   ### Descriptives with missing covariates ###
 
     set.seed(20130801)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -455,14 +451,13 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
   with(d, expect_equal(descriptives.paired["x", "Control", "--"], mean(x[z == 0])))
   with(d, expect_false(identical(descriptives.paired["x", "Control", "s"], mean(x[z == 0]))))
-}
+})
 })
 
 test_that("Aggegating designs by clusters", {
 
       set.seed(20130801)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -498,7 +493,7 @@ test_that("Aggegating designs by clusters", {
   levels(design2@Cluster) <- c(levels(design2@Cluster), letters)
   aggDesign2 <- RItools:::aggregateDesigns(design2) 
   expect_equal(dim(aggDesign2@Covariates), c(100, 4))
-}
+})
 })
 
 test_that("aggregateDesigns treats NA covariates as 0's" ,{
@@ -520,8 +515,7 @@ test_that("aggregateDesigns treats NA covariates as 0's" ,{
 
 test_that("Aggregation of unit weights to cluster level",{
   set.seed(20130801)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   d.short <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -553,7 +547,7 @@ test_that("Aggregation of unit weights to cluster level",{
   expect_equal(2*aggDesign.tall@UnitWeights,aggDesign.d2@UnitWeights)
   expect_equal(aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
   expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
-        }
+        })
   })
 
 
@@ -745,8 +739,7 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
 test_that("Issue #89: Proper strata weights", {
 
     set.seed(20180208)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -802,7 +795,7 @@ test_that("Issue #89: Proper strata weights", {
   dw.wts2 <- RItools:::DesignWeights(design.wts)
   clus_mean_weights <- tapply(xy.wts$"(weights)", xy.wts$m, mean)
   expect_equivalent(dw.wts2$m$sweights, clus_mean_weights/sum(clus_mean_weights))
-}
+})
 })
 
 test_that("In inferentials, NAs imputed to stratum means",{
@@ -856,8 +849,7 @@ context("HB08*")
 test_that("HB08 agreement w/ xBal()", {
 
     set.seed(20180605)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{ 
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -979,7 +971,7 @@ wt2.scaled  <- xy_wted2$'(weights)' /
                     attr(xb1m$overall, 'tcov')$matched)
   expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
-}
+})
 
 } )
 
@@ -987,8 +979,7 @@ wt2.scaled  <- xy_wted2$'(weights)' /
 test_that("HB08_2016 agreement w/ xBal()", {
 
     set.seed(20180605)
-    for(rep_ in nreps_)
-        {
+    replicate(nreps_,{
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -1074,7 +1065,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
                     attr(xb1m$overall, 'tcov')$matched)
   expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
-}
+})
 
 } )
 
