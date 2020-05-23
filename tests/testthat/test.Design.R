@@ -874,14 +874,14 @@ test_that("HB08 agreement w/ xBal()", {
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
-    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
     expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
     expect_equivalent(btis0[['--']][c('Msq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"matched"])
     expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$matched)
@@ -909,7 +909,7 @@ test_that("HB08 agreement w/ xBal()", {
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts1,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
@@ -923,7 +923,7 @@ test_that("HB08 agreement w/ xBal()", {
   xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts1,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                     xb1m$results[,'adj.diff',"matched"])
   expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                     attr(xb1m$overall, 'tcov')$matched)
@@ -948,7 +948,7 @@ test_that("HB08 agreement w/ xBal()", {
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
@@ -965,7 +965,7 @@ wt2.scaled  <- xy_wted2$'(weights)' /
   xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs,
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals,
                     xb1m$results[,'adj.diff',"matched"])
   expect_equivalent(btis1[['m']]$tcov, 
                     attr(xb1m$overall, 'tcov')$matched)
@@ -1005,14 +1005,14 @@ test_that("HB08_2016 agreement w/ xBal()", {
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
-    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
     expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
     expect_equivalent(btis0[['--']][c('Msq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"matched"])
     expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$matched)
@@ -1044,7 +1044,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs, 
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
@@ -1059,7 +1059,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
   xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs, 
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals, 
                     xb1m$results[1:3,'adj.diff',"matched"])
   expect_equivalent(btis1[['m']]$tcov, 
                     attr(xb1m$overall, 'tcov')$matched)

@@ -906,7 +906,7 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
 ##'   \item{p}{Second item}
 ##'   \item{Msq}{Squared Mahalanobis distance of combined differences from origin}
 ##'   \item{DF}{degrees of freedom}
-##'   \item{adj.mean.diffs}{Vector of sum statistics z'x-tilde, where x-tilde is the unit- and stratum-weighted covariate, with stratum centering.  This differs from the adjusted difference vector of Hansen & Bowers (2008) by a constant of proportionality.}
+##'   \item{adj.diff.of.totals}{Vector of sum statistics z't - E(Z't), where t represents cluster totals of the product of the covariate with unit weights.  Hansen & Bowers (2008) refer to this as the adjusted difference vector, or d(z,x). }
 ##'   \item{tcov}{Matrix of null covariances of Z'x-tilde vector, as above.}
 ##' }
 ##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
@@ -985,7 +985,7 @@ HB08 <- function(alignedcovs) {
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-         adj.mean.diffs=ssn, tcov = tcov)
+         adj.diff.of.totals=ssn, tcov = tcov)
 }
 
 ##' @title Hansen & Bowers (2008) inferentials 2016 [81e3ecf] version
@@ -1044,7 +1044,7 @@ HB08_2016 <- function(alignedcovs) {
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-       adj.mean.diffs=ssn, tcov = tcov)
+       adj.diff.of.totals=ssn, tcov = tcov)
 }
 
 ##' Convert Matrix to vector
