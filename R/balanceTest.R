@@ -104,6 +104,7 @@
 ##' @param inferentials.calculator Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
+##'   Should accept a vector of weights as its second argument.
 ##' @return An object of class \code{c("xbal", "list")}.  There are
 ##'   \code{plot}, \code{print}, and \code{xtable} methods for class
 ##'   \code{"xbal"}; the \code{print} method is demonstrated in the
@@ -168,13 +169,18 @@
 ##'
 ##'
 ##'
-##' ##Comparing unstratified to stratified, just one-by-one wilcoxon
-##' #rank sum tests and omnibus test of multivariate differences on
-##' #rank scale.
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+##' ## Variable-by-variable Wilcoxon rank sum tests, with an omnibus test
+##' ## of multivariate differences on rank scale.
+##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"),
-##' 	 post.alignment.transform=rank)
+##' 	 post.alignment.transform=function(x,weights) rank(x))
+##' ## (Note that the post alignment transform is expected to be a function
+##' ## accepting a second argument, even if the argument is not used.
+##' ## The unit weights vector will be provided as this second argument, 
+##' ## enabling use of e.g. `post.alignment.transform=Hmisc::wtd.rank`
+##' ## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
+##' 
 balanceTest <- function(fmla,
                      data,
                      strata = NULL,
@@ -272,7 +278,12 @@ balanceTest <- function(fmla,
   aggDesign@Sweights <-
       DesignWeights(aggDesign, stratum.weights)
 
-  strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)
+  strataAligned <- sapply(colnames(aggDesign@StrataFrame),
+                          alignDesignsByStrata,
+                          design=aggDesign,
+                          post.align.transform=post.alignment.transform,
+                          simplify = FALSE, USE.NAMES = TRUE)
+    
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
 
   tmp <- lapply(strataAligned, inferentials.calculator)

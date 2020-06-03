@@ -39,6 +39,18 @@ test_that("fitter for sparse designs handles intercept only design",
               expect_equal(lm.n$residuals, as.vector(slm.n1$residuals))
           }
           )
+test_that("sparse design strat mean calculator returns 0 for strata w/o non-null wts",
+          {
+              expect_true(require("SparseM"))
+              fac <- factor(rep(c("a", "b"), each=2))
+              wts  <- c(1:2, 0, 0)
+              S_ <- SparseMMFromFactor(fac)
+              expect_warning(theslmfit  <- slm.wfit.csr(S_, matrix(1:4), weights=wts),
+                             "singularity problem")
+              expect_equivalent(theslmfit$fitted,
+                                c(rep((1*1+2*2)/(1+2), 2), 0, 0))
+          }
+)          
 
 test_that("Residuals from weighted regressions w/ sparse designs",
           {

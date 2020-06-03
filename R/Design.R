@@ -766,6 +766,7 @@ setClass("CovsAlignedToADesign",
          )
 # apply this & pass through en route to svd
 #' @method scale DesignOptions
+#' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()} 
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 {
     stopifnot(is(x, "DesignOptions"))
@@ -791,8 +792,12 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
         )
         }
     trans  <- if (is(center, "function")) center else NULL
-    aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
-    aligned_covs  <- aligned[[1]]@Covariates
+    aligned  <-
+        alignDesignsByStrata(colnames(x@StrataFrame)[1],
+                             design=x,
+                             post.align.transform=trans
+                             )
+    aligned_covs  <- aligned@Covariates
     if (scale)
         {
     scales  <- .colSums(aligned_covs^2,
@@ -805,102 +810,92 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 
 ##' Align DesignOptions by Strata
 ##'
+##' @param a_stratification name of a column of `design@strataFrame`/ element of `design@Sweights`
 ##' @param design DesignOptions
-##' @param post.align.transform A post-align transform
-##' @return list List of `CovsAlignedToADesign` objects
+##' @param post.align.transform A post-align transform (cf \code{\link{balanceTest}})
+##' @return CovsAlignedToADesign 
 ##' @keywords internal
 ##'
-alignDesignsByStrata <- function(design, post.align.transform = NULL) {
+alignDesignsByStrata <- function(a_stratification, design, post.align.transform = NULL) {
 
-  stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
+    stopifnot(inherits(design, "StratumWeightedDesignOptions")) # defensive programming
 
-  vars   <- colnames(design@Covariates)
-  stratifications <- colnames(design@StrataFrame)
-
-  Ewts  <- design@UnitWeights * design@NotMissing
-  Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
-                 design@Covariates[, , drop = FALSE], 0)
-  k.Covs <- ncol(Covs)
-  NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
-  Covs <- cbind(Covs, 0+design@NotMissing[,NMcolperm])
-  vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
-  covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
-  origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
-  origvars <- c(design@OriginalVariables, origvars)
-
-  # we can't return an array because different stratifications will have varying numbers
-  # of strata levels. A list is more flexible here, but less structured.
-  f <- function(s){
-    ss <- design@StrataFrame[, s]
+    ss <- design@StrataFrame[, a_stratification]
     keep <- !is.na(ss)
     ss <- ss[keep]
     S <- SparseMMFromFactor(ss)
+    Covs <- ifelse(design@NotMissing[keep, pmax(1L,design@NM.Covariates), drop = FALSE],
+                   design@Covariates[keep, , drop = FALSE], 0)
+    k.Covs <- ncol(Covs)
+    NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
+    vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
+    nmcols_Covs <- pmax(1L, design@NM.Covariates)
+    origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
+    origvars <- c(design@OriginalVariables, origvars)
 
-    ewts <- Ewts[keep,,drop=FALSE]
-    non_null_record_wts <- ewts[,1L,drop=TRUE]
+    UW  <- design@UnitWeights[keep]
     NM <- design@NotMissing[keep,,drop=FALSE]
-    covars <- Covs[keep,,drop=FALSE]
+    non_null_record_wts <- UW*NM[,1L,drop=TRUE]
 
-    wtratio <- design@Sweights[[s]]$wtratio
-    names(wtratio) <- rownames(design@Sweights[[s]])
+    wtratio <- design@Sweights[[a_stratification]]$wtratio
+    names(wtratio) <- rownames(design@Sweights[[a_stratification]])
 
     stopifnot(nlevels(ss)==1 ||
                   all(levels(ss)  %in% names(wtratio) ) )
     wtr.short <- wtratio[match(levels(ss),
-                               names(design@Sweights[[s]]$wtratio),
+                               names(design@Sweights[[a_stratification]]$wtratio),
                                nomatch=1L) # <-- this is to handle
                          ]                 # the unstratified case
     wtr <- wtr.short[ as.integer(ss) ]
     dim(wtr) <- NULL
 
-    # align weighted observations within stratum by subtracting weighted stratum means
-    covars.Sctr <- covars
-    for (jj in 1L:ncol(covars))
+    ## Figure weighted within-stratum stratum means, in order to 
+    ## use them as imputation values. 
+    Covs_stratmeans <- matrix(0, nrow(Covs), k.Covs)
+    for (jj in 1L:k.Covs)
     {
-        covars.Sctr[,jj] <- if (all(covars[,jj]==covars[1L,jj])) 0 else
-            suppressWarnings( #throws singularity warning if covar is linear in S
+        Covs_stratmeans[,jj] <- if (all(Covs[,jj]==Covs[1L,jj])) 0 else
+            suppressWarnings( #warns if covar is linear in S or weights are all 0 w/in a stratum
                 slm.wfit.csr( # see note in ./utils.R on why we use our own
-                    S, covars[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
-                    weights=ewts[, covars.nmcols[jj], drop = TRUE])$residuals
+                    S, Covs[,jj],               #`slm.wfit.csr` instead of `SparseM::slm.wfit`
+                    weights=(UW*NM)[, nmcols_Covs[jj], drop = TRUE])$fitted
             )
-        ## A value that was missing might have received an odd residual.
-        ## Although such values don't themselves contribute anything, they'll affect a
-        ## post alignment transformation such as `rank`.  So, per #47 we set them to 0 (the stratum mean).
-        if (jj<= k.Covs)
-            covars.Sctr[ !NM[, covars.nmcols[jj] ], # picks out rows w/ missing observations
-                   jj] <- 0
     }
+    ## Impute missing info to stratum mean
+    Covs_w_touchups  <- Covs*NM[,nmcols_Covs, drop=FALSE] +
+        Covs_stratmeans*(1-NM[,nmcols_Covs, drop=FALSE])
 
     if (!is.null(post.align.transform)) {
-        ## Transform the columns of covars.Sctr using the function in post.align.trans
-        ## only do so for actual covariates, however, not missingness weights
-      covars.Sctr.new <- apply(covars.Sctr[,1:k.Covs, drop=FALSE], 2, post.align.transform)
-
-      # Ensure that post.align.trans wasn't something that changes the size of covars.Sctr (e.g. mean).
-      # It would crash later anyway, but this is more informative
-      if (is.null(dim(covars.Sctr.new)) || nrow(covars.Sctr) != nrow(covars.Sctr.new) ||
-          ncol(covars.Sctr.new) != k.Covs) {
+        ## Transform the columns of Covs_w_touchups using the post.align.trans
+        Covs_aligned <- apply(Covs_w_touchups, 2,
+                                 post.align.transform,
+                                 non_null_record_wts #2nd arg to p.a.t.
+                              )
+        
+    ## Ensure that post.align.trans wasn't something that changes the size of 
+    ## Covs (e.g. mean). It would crash later anyway, but this is more informative
+    if (is.null(dim(Covs_aligned)) || nrow(Covs_aligned) != nrow(Covs_w_touchups) ||
+          ncol(Covs_aligned) != k.Covs) {
         stop("Invalid post.alignment.transform given")
-      }
-      ## The post alignment transform may have disrupted the stratum alignment.  So, recenter on stratum means
-        covars.Sctr[,1L:k.Covs] <- suppressWarnings(
-            slm.wfit.csr(S, covars.Sctr.new[,1L:k.Covs, drop=FALSE],
-                         weights=non_null_record_wts)$residuals
-        )
+      } else Covs_w_touchups  <- Covs_aligned
     }
-    colnames(covars.Sctr) <- vars
-    covars.Sctr  <- covars.Sctr * non_null_record_wts
+
+    ## Align (recenter) cluster totals around their means within strata.
+    ## Do this for the not-missing indicators as well as for the manifest variables.
+    covars <- cbind(Covs_w_touchups, 0+design@NotMissing[,NMcolperm])    
+    covars <- suppressWarnings(
+        slm.fit.csr.fixed(S, covars*non_null_record_wts)$residuals
+    )
+    colnames(covars) <- vars
 
       new("CovsAlignedToADesign",
-          Covariates        = covars.Sctr,
+          Covariates        = covars,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataWeightRatio = wtr, #as extracted from the design
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
           )
-}
-  sapply(stratifications, f, simplify = FALSE, USE.NAMES = TRUE)
 }
 
 ##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
@@ -911,7 +906,7 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 ##'   \item{p}{Second item}
 ##'   \item{Msq}{Squared Mahalanobis distance of combined differences from origin}
 ##'   \item{DF}{degrees of freedom}
-##'   \item{adj.mean.diffs}{Vector of sum statistics z'x-tilde, where x-tilde is the unit- and stratum-weighted covariate, with stratum centering.  This differs from the adjusted difference vector of Hansen & Bowers (2008) by a constant of proportionality.}
+##'   \item{adj.diff.of.totals}{Vector of sum statistics z't - E(Z't), where t represents cluster totals of the product of the covariate with unit weights.  Hansen & Bowers (2008) refer to this as the adjusted difference vector, or d(z,x). }
 ##'   \item{tcov}{Matrix of null covariances of Z'x-tilde vector, as above.}
 ##' }
 ##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
@@ -990,7 +985,7 @@ HB08 <- function(alignedcovs) {
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-         adj.mean.diffs=ssn, tcov = tcov)
+         adj.diff.of.totals=ssn, tcov = tcov)
 }
 
 ##' @title Hansen & Bowers (2008) inferentials 2016 [81e3ecf] version
@@ -1049,7 +1044,7 @@ HB08_2016 <- function(alignedcovs) {
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-       adj.mean.diffs=ssn, tcov = tcov)
+       adj.diff.of.totals=ssn, tcov = tcov)
 }
 
 ##' Convert Matrix to vector

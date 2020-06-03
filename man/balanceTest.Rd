@@ -44,7 +44,8 @@ measures.}
 as denominators of\code{std.diffs} (optional).}
 
 \item{post.alignment.transform}{Optional transformation applied to
-covariates just after their stratum means are subtracted off.}
+covariates just after their stratum means are subtracted off.
+Should accept a vector of weights as its second argument.}
 
 \item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
@@ -187,13 +188,18 @@ testdata$date[testdata$date<68]<-NA
 
 
 
-##Comparing unstratified to stratified, just one-by-one wilcoxon
-#rank sum tests and omnibus test of multivariate differences on
-#rank scale.
-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+## Variable-by-variable Wilcoxon rank sum tests, with an omnibus test
+## of multivariate differences on rank scale.
+balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"),
-	 post.alignment.transform=rank)
+	 post.alignment.transform=function(x,weights) rank(x))
+## (Note that the post alignment transform is expected to be a function
+## accepting a second argument, even if the argument is not used.
+## The unit weights vector will be provided as this second argument, 
+## enabling use of e.g. `post.alignment.transform=Hmisc::wtd.rank`
+## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
+
 }
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
