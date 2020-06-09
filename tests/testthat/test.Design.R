@@ -707,7 +707,7 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
                       x2=c(1:5),
                       fac=factor(c(rep(1:2,2), NA))
                       )
-    dat$'(weights)' <- 1
+    dat$'(weights)' <- 1:5
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
     scl2_scaleF  <- scale(simple2, center=TRUE, scale=FALSE)
@@ -725,15 +725,19 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
     expect_identical(scl2c_scaleF, asimple2s@Covariates)
     scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
     expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
-    scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
-    expect_identical(dim(scl2_scaleF_centerrank), dim(scl2_scaleF))
-    expect_false(isTRUE(all.equal(scl2_scaleF, scl2_scaleF_centerrank, check.attributes=FALSE)),
-                 "post alignment transform ignored")
     scl2_scaleT  <- scale(simple2, center=TRUE, scale=TRUE)
     expect_equal(length(dim(scl2_scaleT)), 2L)
     expect_equivalent(is.na(scl2_scaleT),
                       matrix(FALSE, nrow(scl2_scaleT), ncol(scl2_scaleT)))
-    
+    scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
+    expect_identical(dim(scl2_scaleF_centerrank), dim(scl2_scaleF))
+    expect_false(isTRUE(all.equal(scl2_scaleF, scl2_scaleF_centerrank, check.attributes=FALSE)),
+                 "post alignment transform ignored")
+    wcent  <- function(x, w) {x[order(x * w)]}
+    expect_silent(scl2_scaleF_wcent  <-
+                      scale(simple2, center=wcent, scale=FALSE)
+                  )
+    expect_identical(dim(scl2_scaleF_wcent), dim(scl2_scaleF))    
 })
 
 test_that("Issue #89: Proper strata weights", {
