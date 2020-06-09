@@ -35,7 +35,8 @@ empirical_euclidean <- function(x, s, sn, sn1) {
     ## strata level probabilities
     p <- sn1 / sn
 
-    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
+    ## J = Z - E(Z)
+    ZtoJ <- function(z) { (z - s %*% p)  }
 
     ## Compute the Mahalanobis distance
     meat <- x %*% t(x)
@@ -63,8 +64,8 @@ empirical_mahalanobis <- function(x, s, sn, sn1) {
 
     ## The E(JJ') matrix
     k <- length(sn)
-    Gamma <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2 , ncol = k, nrow = k)  %*% t(s))
-    diag(Gamma) <- as.vector(s %*% ((1 - p) / p))
+    Gamma <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) , ncol = k, nrow = k)  %*% t(s))
+    diag(Gamma) <- as.vector(s %*% (p * (1 - p) ))
 
     ## meat in the J' a J sandwich
     rotated <- x %*% XtX_pseudoinv_sqrt(t(x) %*% Gamma %*% x, TRUE) 
@@ -86,7 +87,7 @@ empirical_t2 <- function(x, s, sn, sn1) {
     ## strata level probabilities
     p <- sn1 / sn # pi
 
-    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
+    ZtoJ <- function(z) { (z - s %*% p)  }
 
     ## Compute the Mahalanobis distance
     xj <- function(z) {
@@ -123,7 +124,7 @@ empirical_S2 <- function(x, s, sn, sn1) {
     ## strata level probabilities
     p <- sn1 / sn # pi
 
-    ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
+    ZtoJ <- function(z) { (z - s %*% p)  }
 
     tmaker <- function(z) {
         j <- ZtoJ(z)
@@ -148,7 +149,7 @@ empirical_S_by_strata <- function(f, treated,  x) {
         ts <- apply(combn(n, n1), 2, function(idx) {
             z <- numeric(n)
             z[idx] <- 1
-            j <- (z - n1/n )  / (n1/n)
+            j <- (z - n1/n )
             t(sr) %*% j
         })
 

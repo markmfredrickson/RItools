@@ -50,7 +50,7 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
 ## method for stratified designs
 toJ.StratifiedDesign <- function(x, z) {
     pZ <- as.vector(x@Units %*% (x@Treated / x@Count)) ## P(Z = 1)
-    (toZ(z) - pZ) / pZ 
+    (toZ(z) - pZ) 
 }
 
 
@@ -71,9 +71,9 @@ rotate_covariates.StratifiedDesign <- function(design, x) {
     ## but I couldn't quite figure out how to do that. It might not be possible.
 
     ## the matrix E(JJ'), J_i = (Z_i - pi_i) / pi_i = (Z_i - n1/n) / (n1 / n)
-    V <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2) / p^2, ncol = k, nrow = k)  %*% t(s))
+    V <- as.matrix(s %*% diag((p * (sn1 - 1) / (sn - 1) - p^2), ncol = k, nrow = k)  %*% t(s))
 
-    diag(V) <-  as.vector(s %*% ((1 - p) / p))
+    diag(V) <-  as.vector(s %*% ((1 - p) * p))
 
     ## Since t(x) %*% V %*% x is symmetric, it is diagonalizable as Q D Q^T
     ## with inverse Q^T D^{-} Q (with - indicating any 0 entries are still zero, otherwise 1/d)
@@ -167,18 +167,15 @@ euclidean_squared_covariance.StratifiedDesign <- function(design, covariates) {
 ## Name comes from the fact we usually call such matrices \tilde X
 tilde_maker <- function(design, covariates) {
 
-    ## we will be multiplying by J = (Z - P(Z = 1)) / P(Z = 1) 
+    ## we will be multiplying by J = Z - P(Z = 1)
     ## knowing that P(Z = 1) = n1/n (by stratum), rearranging terms
-    ## shows that T = x'J = [(x - \bar x ) / (n1/n)] ' Z, again all by strata
+    ## shows that T = x'J = (x - \bar x ) ' Z, again all by strata
 
     strata_means <- as.matrix(t(design@Units) %*% covariates) / design@Count
     centered <- covariates - design@Units %*% strata_means
 
-    ## now multiply through by n/n1
-    xtilde <- centered * as.vector(design@Units %*% (design@Count / design@Treated))
-    xtilde <- as.matrix(xtilde) ## make sure this is dense
 
-    return(xtilde)
+    return(as.matrix(centered))
 }
 
 ## Compute the first order covariance matrices

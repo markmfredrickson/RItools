@@ -2,6 +2,32 @@ library("testthat")
 
 context("Stratified Designs")
 
+## A copy of this also exists in test.Stratified.R
+## TODO: Move them to own utils.R file
+
+## @param s A n x s stratum membership matrix
+## @param sn A s-vector of units per stratum
+## @param sn1 A s-vector of treated units per stratum
+## @return A matrix of treatment assignments at the unit level
+design_to_zs <- function(s, sn, sn1) {
+
+    ## generate all possible randomizations
+    zs_by_strata <- mapply(sn, sn1, FUN = function(n, n1) {
+        apply(combn(n, n1), 2, function(idx) {
+            zz <- numeric(n)
+            zz[idx] <- 1
+            return(zz)
+        })
+    }, SIMPLIFY = FALSE)
+
+    zj <- sapply(zs_by_strata, ncol)
+    idxes <- as.matrix(do.call(expand.grid, lapply(zj, function(k) { 1:k })))
+    zs <- apply(idxes, 1, function(idx) {
+        unlist(mapply(idx, zs_by_strata, FUN = function(a, b) { b[, a] }))})
+
+    return(zs)
+}
+
 test_that("Rotated covariates", {
     n <- 12 
     x1 <- rnorm(n)
@@ -29,7 +55,8 @@ test_that("Rotated covariates", {
         ## strata level probabilities
         p <- sn1 / sn # pi
 
-        ZtoJ <- function(z) { (z - s %*% p) / (s %*% p) }
+        ## j = Z - E(Z)
+        ZtoJ <- function(z) { (z - s %*% p) }
 
         ## Compute the Mahalanobis distance
         xj <- function(z) {
