@@ -4,20 +4,30 @@
 \alias{balanceTest}
 \title{Standardized Differences for Stratified Comparisons}
 \usage{
-balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
-  "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test", "p.values",
-  "all")[1:2], unit.weights,
-  stratum.weights = harmonic_times_mean_weight, subset,
-  include.NA.flags = TRUE, covariate.scales = setNames(numeric(0),
-  character(0)), post.alignment.transform = NULL,
-  inferentials.calculator = HB08, p.adjust.method = "holm")
+balanceTest(
+  x,
+  data,
+  unit.weights,
+  subset,
+  include.NA.flags = TRUE,
+  p.adjust.method = "holm",
+  ...
+)
 }
 \arguments{
-\item{fmla}{A formula containing an indicator of treatment
-assignment on the left hand side and covariates at right.}
-
 \item{data}{A data frame in which \code{fmla} and \code{strata}
 are to be evaluated.}
+
+\item{unit.weights}{Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.}
+
+\item{subset}{Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.}
+
+\item{include.NA.flags}{Present item missingness comparisons as well as covariates themselves?}
+
+\item{p.adjust.method}{Method of p-value adjustment.}
+
+\item{fmla}{A formula containing an indicator of treatment
+assignment on the left hand side and covariates at right.}
 
 \item{strata}{A list of right-hand-side-only formulas containing
 the factor(s) identifying the strata, with \code{NULL} entries
@@ -32,23 +42,15 @@ stratification; a subset of \code{c("adj.means",
 null-hypothesis of no effect. The option "all" requests all
 measures.}
 
-\item{unit.weights}{Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.}
-
 \item{stratum.weights}{Function returning non-negative weight for each stratum; see details.}
-
-\item{subset}{Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.}
-
-\item{include.NA.flags}{Present item missingness comparisons as well as covariates themselves?}
 
 \item{covariate.scales}{covariate dispersion estimates to use
 as denominators of\code{std.diffs} (optional).}
 
-\item{post.alignment.transform}{Optional transformation applied to
-covariates just after their stratum means are subtracted off.}
-
 \item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
-\item{p.adjust.method}{Method of p-value adjustment.}
+\item{post.alignment.transform}{Optional transformation applied to
+covariates just after their stratum means are subtracted off.}
 }
 \value{
 An object of class \code{c("xbal", "list")}.  There are

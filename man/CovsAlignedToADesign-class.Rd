@@ -29,17 +29,9 @@ be the numeric vector 1, without names, meaning the intended weight ratio is alw
 \describe{
 \item{\code{Covariates}}{Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)}
 
-\item{\code{UnitWeights}}{vector of weights associated w/ rows of Covariates}
-
 \item{\code{Z}}{Logical indicating treatment assignment}
 
-\item{\code{StrataMatrix}}{A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification}
-
-\item{\code{StrataWeightRatio}}{For each unit, ratio of stratum weight to h_b; but see Details.}
-
-\item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
-
-\item{\code{OriginalVariables}}{Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus}
+\item{\code{Design}}{A StratafiedDesign object that captures the stratification and weighting}
 }}
 
 \keyword{internal}

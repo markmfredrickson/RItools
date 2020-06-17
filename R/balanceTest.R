@@ -1,3 +1,15 @@
+#' @include Design.R
+#' @include mahalanobis.R
+NULL
+
+setClass("BalanceTest",
+         contains = "MahalanobisDistance",
+         slots = c(
+             Variables = "matrix",
+             Covariance = "matrix",
+             RotatedCovariates = "DesignRotatedCovariates"
+         ))
+
 ##' Covariate balance, with treatment/covariate association tests
 ##'
 ##' Given a grouping variable (treatment assignment, exposure status, etc)
@@ -175,6 +187,7 @@
 ##'          data=nuclearplants,
 ##'          report=c("adj.means", "chisquare.test"),
 ##' 	 post.alignment.transform=rank)
+#' @export
 balanceTest <- function(x,
                      data,
                      unit.weights,
@@ -186,6 +199,7 @@ balanceTest <- function(x,
     UseMethod("balanceTest")
 }
 
+#' @method balanceTest formula
 balanceTest.formula <- function(x,
                                 data,
                                 unit.weights,
@@ -328,4 +342,34 @@ balanceTest.formula <- function(x,
   class(ans) <- c("xbal", "list")
   ans
 }
+
+
+#' @method balanceTest RandomizedDesign
+balanceTest.RandomizedDesign <- function(x,
+                                         data,
+                                         unit.weights,
+                                         subset,
+                                         include.NA.flags = TRUE,
+                                         p.adjust.method = "holm",
+                                         z = NULL,
+                                         ... ) {
+
+    if (!inherits(data, "matrix")) {
+        stop("Data argument must be a matrix. See model.matrix for turning a data.frame into a matrix.")
+    }
+
+    if (is.null(z) || length(z) != nrow(data)) {
+        stop("You must include a treatment assignment indicator that is the same legnth as the number of rows in the data.")
+    }
+
+    rot <- rotate_covariates(x, data)
+    dist <- mahalanobis_distance(rot, z)
+
+    list(new("BalanceTest", dist,
+         Variables = matrix(0, 1, 1),
+         Covariance = matrix(0, 1, 1),
+         RotatedCovariates = rot))
+}
+
+
 

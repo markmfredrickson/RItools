@@ -4,8 +4,7 @@
 \alias{model_matrix}
 \title{Model matrices along with compact encodings of data availability/missingness}
 \usage{
-model_matrix(object, data = environment(object),
-  remove.intercept = TRUE, ...)
+model_matrix(object, data = environment(object), remove.intercept = TRUE, ...)
 }
 \arguments{
 \item{object}{Model formula or terms object (as in `model.matrix`)}

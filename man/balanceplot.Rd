@@ -4,11 +4,22 @@
 \alias{balanceplot}
 \title{Create a plot of the balance on variables across different stratifications.}
 \usage{
-balanceplot(x, ordered = FALSE, segments = TRUE, colors = "black",
+balanceplot(
+  x,
+  ordered = FALSE,
+  segments = TRUE,
+  colors = "black",
   shapes = c(15, 16, 17, 18, 0, 1, 10, 12, 13, 14),
-  segments.args = list(col = "grey"), points.args = list(cex = 1),
-  xlab = "Balance", xrange = NULL, groups = NULL, tiptext = NULL,
-  include.legend = TRUE, legend.title = NULL, ...)
+  segments.args = list(col = "grey"),
+  points.args = list(cex = 1),
+  xlab = "Balance",
+  xrange = NULL,
+  groups = NULL,
+  tiptext = NULL,
+  include.legend = TRUE,
+  legend.title = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{A matrix of variables (rows) by strata (columns).}

@@ -74,3 +74,48 @@ test_that("Basic stratified designs using either counts or Z", {
     expect_equal(sdn@Treated, c(1, 2))
     expect_equal(sdn@Treated, c(1, 2))
 })
+
+test_that("balanceTest method for Stratified objects", {
+  ## Set up
+  ## Generate some random data
+  set.seed(30303)
+  n <- 12
+  x1 <- rnorm(n)
+  x2 <- x1 + runif(n, -1,  3)
+  x3 <- sample(letters[1:3], n, replace = TRUE )
+  df <- data.frame(x1, x2, x3)
+  df <- df[order(x1), ]
+  df$match <- as.factor(
+      c(1, 1,
+        2, 2,
+        3, 3, 3,
+        4, 4, 4, 4, 4))
+  df$z <- c(1, 0,
+            0, 1,
+            0, 1, 0,
+            0, 1, 0, 1, 1)
+
+  ## end data set up
+  x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+
+  btf <- balanceTest(z ~ x1 + x2 + x3 + strata(match), data = df)
+
+  ## making the stratified object directly
+  strat <- create_stratified_design(strata = df$match, z = df$z)
+
+  bts <- balanceTest(strat, data = x, z = df$z)
+  expect_is(bts, "list")
+  expect_is(bts[[1]], "MahalanobisDistance")
+  expect_is(bts[[1]], "BalanceTest")
+
+  expect_equivalent(bts, btf)
+
+  ## explicit .method names to make sure we are using the right method dispatch in the main function.
+  rot <- rotate_covariates.StratifiedDesign(strat, x)
+  dst <- mahalanobis_distance.DesignRotatedCovariates(rot, df$z)
+  expect_equal(bts[[1]]@.Data, dst@.Data)
+
+  pv <- pvalue.SecondOrderChisquareApproximation(dst@Distribution, dst@.Data)
+  expect_equal(bts[[1]]@Pvalue, pv)
+
+})

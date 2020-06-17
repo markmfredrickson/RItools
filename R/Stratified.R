@@ -163,6 +163,14 @@ euclidean_squared_covariance.StratifiedDesign <- function(design, covariates) {
     return(strata_matrix_sum(second_order) + 4 * tmp)
 }
 
+mahalanobis_distribution.StratifiedDesign <- function(x, rotated) {
+    covariance_matrix <- euclidean_squared_covariance(x, rotated)
+    new("SecondOrderChisquareApproximation",
+        EM = ncol(rotated),
+        VarM = sum(covariance_matrix),
+        CovT2 = covariance_matrix )
+}
+
 ## Helper to preprocess strata cy by centering and scaling.
 ## Name comes from the fact we usually call such matrices \tilde X
 tilde_maker <- function(design, covariates) {
@@ -283,3 +291,4 @@ strata_matrix_sum <- function(a) {
 
     return(tmp)
 }
+

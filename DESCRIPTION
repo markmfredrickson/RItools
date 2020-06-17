@@ -28,5 +28,30 @@ Suggests:
     RSVGTipsDevice
 Enhances: optmatch
 URL: https://CRAN.R-project.org/package=RItools
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Encoding: UTF-8
+Collate: 
+    'Design.R'
+    'Stratified.R'
+    'mahalanobis.R'
+    'balanceTest.R'
+    'balanceTest.make.stratwts.R'
+    'balanceTestEngine.R'
+    'data.R'
+    'flatten.xbalresult.R'
+    'harmonic.R'
+    'ipr.R'
+    'naImpute.R'
+    'plot.xbal.R'
+    'print.xbal.R'
+    'ritools-package.R'
+    'toZ.R'
+    'utils.R'
+    'xBalance.R'
+    'xBalance.find.goodstrats.R'
+    'xBalance.make.stratwts.old.R'
+    'xBalance.makeMM.R'
+    'xBalance.makepooledsd.R'
+    'xBalanceEngine.R'
+    'xbal_tidiers.R'
+    'xtable.xbal.R'

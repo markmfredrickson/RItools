@@ -5,13 +5,20 @@
 \alias{print}
 \title{Printing xBalance Objects}
 \usage{
-\method{print}{xbal}(x, which.strata = dimnames(x$results)[["strata"]],
+\method{print}{xbal}(
+  x,
+  which.strata = dimnames(x$results)[["strata"]],
   which.stats = dimnames(x$results)[["stat"]],
-  which.vars = dimnames(x$results)[["vars"]], print.overall = TRUE,
-  digits = NULL, printme = TRUE,
+  which.vars = dimnames(x$results)[["vars"]],
+  print.overall = TRUE,
+  digits = NULL,
+  printme = TRUE,
   show.signif.stars = getOption("show.signif.stars"),
-  show.pvals = !show.signif.stars, horizontal = TRUE, report = NULL,
-  ...)
+  show.pvals = !show.signif.stars,
+  horizontal = TRUE,
+  report = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class "xbal" which is the result of a call

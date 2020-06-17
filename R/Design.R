@@ -700,8 +700,6 @@ toT <- function(rotated, z) {
 
 
 
-
-
 # apply this & pass through en route to svd
 #' @method scale DesignOptions
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)

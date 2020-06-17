@@ -17,24 +17,12 @@ manifest_variable_sums <- function(design, x, z) { UseMethod("manifest_variable_
 ## @return A k by k matrix of covariances
 manifest_variable_covariance <- function(design, x) { UseMethod("manifest_variable_covariance")}
 
+## Distributions objects for things like p-values, etc.
+setClass("Distribution")
 
-## Virtual class for MahalanobisDistance objects
-setClass("MahalanobisDistance", contains = "numeric")
+## Class for MahalanobisDistance objects
+setClass("MahalanobisDistance", contains = "numeric", slots = c(Distribution = "Distribution", Pvalue = "numeric"))
 
-## First order approximations of Mahalanobis statistics
-##
-## @slot EM The expected value of the statistic
-setClass("ChisquareApproximation",
-         contains = "MahalanobisDistance",
-         slots = c(EM = "numeric"))
-
-## @slot VarM The variance of the Mahalanobis statistic
-## @slot CovT2 Provides the covariance terms Cov(T_i^2 T_j^2) where M = \sum T_k^2
-setClass("SecondOrderChisquareApproximation",
-         contains = "ChisquareApproximation",
-         slots = c(EM = "numeric",
-                   VarM = "numeric",
-                   CovT2 = "matrix"))
 
 ## Compute Mahalanobis distance statistic for two groups
 ##
@@ -58,6 +46,45 @@ mahalanobis_distance.default <- function(x, z) {
 mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
     J <- toJ(x@Design, z)
     JTx <- t(J) %*% x
-    new("ChisquareApproximation", sum(JTx^2),
-        EM  = ncol(x@Rotation))
+
+    d <- sum(JTx^2)
+    dist <- mahalanobis_distribution(x@Design, x@.Data)
+    new("MahalanobisDistance",
+        d,
+        Distribution = dist,
+        Pvalue = pvalue(dist, d) )
+}
+
+## First order approximations of Mahalanobis statistics
+##
+## @slot EM The expected value of the statistic
+setClass("ChisquareApproximation",
+         contains = "Distribution",
+         slots = c(EM = "numeric"))
+
+## @slot VarM The variance of the Mahalanobis statistic
+## @slot CovT2 Provides the covariance terms Cov(T_i^2 T_j^2) where M = \sum T_k^2
+setClass("SecondOrderChisquareApproximation",
+         contains = "ChisquareApproximation",
+         slots = c(VarM = "numeric",
+                   CovT2 = "matrix"))
+
+## @param x The design object that from the design rotated covariates
+## @param rotated The rotated variables
+mahalanobis_distribution <- function(x, rotated) { UseMethod("mahalanobis_distribution") }
+
+# @param x The distribution object (usually some form of chisquared approximation)
+# @param d The distance itself (double)
+# @return A the pvalue: P(X >= d)
+pvalue <- function(x, d) { UseMethod("pvalue") }
+
+pvalue.ChisquareApproximation <- function(x, d) {
+    pchisq(x, df = x@EM, lower.tail = FALSE)
+}
+
+pvalue.SecondOrderChisquareApproximation <- function(x, d) {
+    v <- 2 * x@EM^2 / x@VarM
+    a <- x@EM / v
+
+    pchisq(d / a, df = v, lower.tail = FALSE)
 }
