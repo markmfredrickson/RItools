@@ -19,7 +19,6 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' then there can be fractional values, but that situation should only arise in the
 ##' DesignOptions class extension of this class, so it's documented there.
 ##'
-##' @slot Covariates The numeric matrix that `model.matrix` would have returned.
 ##' @slot OriginalVariables look-up table associating Covariates columns with terms of the originating model formula
 ##' @slot TermLabels labels of terms of the originating model formula
 ##' @slot contrasts Contrasts, a list of contrasts or NULL, as returned by `model.matrix.default`
@@ -29,21 +28,22 @@ setClassUnion("Contrasts", c("list", "NULL"))
 ##' @slot UnitWeights vector of weights associated w/ rows of the ModelMatrixPlus
 ##' @keywords internal
 setClass("ModelMatrixPlus",
-         slots=c(Covariates="matrix",
-                  OriginalVariables="integer",
-                  TermLabels="character",
-                  Contrasts="Contrasts",
-                  NotMissing="matrix",
-                  NM.Covariates="integer",
-                  NM.terms="integer",
-                  UnitWeights = "numeric" )
+         contains = "matrix",
+         slots    = c(
+             OriginalVariables = "integer",
+             TermLabels        = "character",
+             Contrasts         = "list",
+             NotMissing        = "matrix",
+             NM.Covariates     = "integer",
+             NM.terms          = "integer",
+             UnitWeights       = "numeric" )
          )
 
 #' @method as.matrix ModelMatrixPlus
 #' @export
 as.matrix.ModelMatrixPlus <- function(x, ...)
     {
-        ans <- x@Covariates
+        ans <- x@.Data
         attr(ans, "assign") <- x@OriginalVariables
 ###        attr(ans, "term.labels") <- # a model.matrix wouldn't really
 ###            x@TermLabels # have this, although maybe it should
@@ -144,25 +144,29 @@ model_matrix <- function(object, data = environment(object), remove.intercept=TR
       ## down, that describes the relevant missingness pattern.
   } else nm.terms[terms.with.missings] <- 1L:length(nmcols)
 
-    notmissing <- as.data.frame(nmcols[!nmcols.dupes])
-    names(notmissing) <- names(ccs.by.term)[terms.with.missings][!nmcols.dupes]
-    ## Now form the look-up table associating columns of the covariates matrix
-    ## with columns of matrix `notmissing` describing relevant missingness patterns.
-    ## Columns associated with terms on which there was no missingness get a 0 here.
-    nm.terms <- nm.terms[-1L]
-    nm.covs[assign>0] <- nm.terms[assign[assign>0]]
+  notmissing <- as.data.frame(nmcols[!nmcols.dupes])
+  names(notmissing) <- names(ccs.by.term)[terms.with.missings][!nmcols.dupes]
+  ## Now form the look-up table associating columns of the covariates matrix
+  ## with columns of matrix `notmissing` describing relevant missingness patterns.
+  ## Columns associated with terms on which there was no missingness get a 0 here.
+  nm.terms <- nm.terms[-1L]
+  nm.covs[assign>0] <- nm.terms[assign[assign>0]]
 
-    notmissing <- as.matrix(notmissing)
-    
-  new("ModelMatrixPlus",
-      Covariates=covariates,
-      OriginalVariables=assign,
-      TermLabels=term.labels,
-      Contrasts=contrasts,
-      NotMissing=notmissing,
-      NM.Covariates=nm.covs,
-      NM.terms=nm.terms,
-      UnitWeights = uweights )
+  notmissing <- as.matrix(notmissing)
+
+  ## MMF: I'm getting a weird bug that won't let constrasts be "NULL"
+  if (is.null(contrasts)) {
+      contrasts <- list()
+  }
+
+  new("ModelMatrixPlus", covariates,
+      OriginalVariables = assign,
+      TermLabels        = term.labels,
+      Contrasts         = contrasts,
+      NotMissing        = notmissing,
+      NM.Covariates     = nm.covs,
+      NM.terms          = nm.terms,
+      UnitWeights       = uweights )
 }
 
 
@@ -356,19 +360,10 @@ makeDesigns <- function(fmla, data) {
   colnames(tmp) <- gsub(colnames(tmp), pattern = "survival::strata\\((.*)\\)", replacement = "\\1")
   strata.frame <- data.frame(lapply(tmp, factor), check.names = FALSE)
 
-  return(new("DesignOptions",
-             Z                 = as.logical(as.numeric(Z) - 1), #b/c it was built as factor
-             StrataFrame       = strata.frame,
-             Cluster           = factor(Cluster),
-             UnitWeights = desm@UnitWeights,
-             Covariates = desm@Covariates,
-                  OriginalVariables=desm@OriginalVariables,
-                  TermLabels=desm@TermLabels,
-                  Contrasts=desm@Contrasts,
-                  NotMissing=desm@NotMissing,
-                  NM.Covariates=desm@NM.Covariates,
-             NM.terms=desm@NM.terms)
-         )
+  return(new("DesignOptions", desm,
+             Z           = as.logical(as.numeric(Z) - 1), #b/c it was built as factor
+             StrataFrame = strata.frame,
+             Cluster     = factor(Cluster)))
 }
 
 
@@ -406,12 +401,12 @@ makeDesigns <- function(fmla, data) {
 ##'
 designToDescriptives <- function(design, covariate.scales = NULL) {
   stopifnot(inherits(design, "DesignOptions")) # defensive programming
-  covars <- ifelse(is.na(design@Covariates), 0, design@Covariates)
+  covars <- ifelse(is.na(design), 0, design)
 
   ## Tack NM cols onto covars, but with intercept col listed last
   NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
   covars <- cbind(covars, design@NotMissing[, NMcolperm])
-  vars <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
+  vars <- c(colnames(design),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   colnames(covars)   <-  vars
   covars.nmcols <- c(pmax(1L, design@NM.Covariates), rep(1L, k.NM ) )
 
@@ -558,7 +553,7 @@ aggregateDesigns <- function(design) {
 
   Uweights.tall <- design@UnitWeights * design@NotMissing
   Covariates <- as.matrix(C_transp %*% ifelse(Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
-                                          design@Covariates *
+                                          design *
                                               Uweights.tall[,pmax(1L,design@NM.Covariates), drop=FALSE],
                                           0)
                           )
@@ -571,7 +566,7 @@ aggregateDesigns <- function(design) {
   colnames(NotMissing) <- colnames(design@NotMissing)
   
     Covariates <- as.matrix(Covariates)
-    colnames(Covariates)   <- colnames(design@Covariates)
+    colnames(Covariates)   <- colnames(design)
     row.names(Covariates) <- levels(Cluster)
 
   new("DesignOptions",
@@ -711,7 +706,7 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
     wtsum  <- sum(x@UnitWeights[complete.cases(x@StrataFrame)])
     trans  <- if (is(center, "function")) center else NULL
     aligned  <- alignDesignsByStrata(x, post.align.transform=trans)
-    aligned_covs  <- aligned[[1]]@Covariates
+    aligned_covs  <- aligned[[1]]
     if (scale)
         {
     scales  <- .colSums(aligned_covs^2,
@@ -732,16 +727,16 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 
 
-  vars   <- colnames(design@Covariates)
+  vars   <- colnames(design)
   stratifications <- colnames(design@StrataFrame)
 
   Ewts  <- design@UnitWeights * design@NotMissing
   Covs <- ifelse(design@NotMissing[, pmax(1L,design@NM.Covariates), drop = FALSE],
-                 design@Covariates[, , drop = FALSE], 0)
+                 design[, , drop = FALSE], 0)
   k.Covs <- ncol(Covs)
   NMcolperm <- if ( (k.NM <- ncol(design@NotMissing)) >1) c(2L:k.NM, 1L) else 1
   Covs <- cbind(Covs, 0+design@NotMissing[,NMcolperm])
-  vars  <- c(colnames(design@Covariates),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
+  vars  <- c(colnames(design),  paste0("(", colnames(design@NotMissing)[NMcolperm], ")") )
   covars.nmcols <- c(design@NM.Covariates, rep(1L, k.NM ) )
   origvars <- match(colnames(design@NotMissing), design@TermLabels, nomatch=0L)
   origvars <- c(design@OriginalVariables, origvars)
@@ -832,9 +827,9 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 HB08 <- function(alignedcovs) {
 
     ## appropriately weighted sum of each requested variable
-    ssn <- manifest_variable_sums(alignedcovs@Design, alignedcovs@Covariates, alignedcovs@Z)
+    ssn <- manifest_variable_sums(alignedcovs@Design, alignedcovs, alignedcovs@Z)
 
-    tcov <- manifest_variable_covariance(alignedcovs@Design, alignedcovs@Covariates)
+    tcov <- manifest_variable_covariance(alignedcovs@Design, alignedcovs)
 
     ssvar <- diag(tcov)
 
@@ -862,7 +857,7 @@ HB08_2016 <- function(alignedcovs) {
     zz <- as.numeric(alignedcovs@Z)
     S <- alignedcovs@Design@Units
 
-    Covs <- alignedcovs@Covariates
+    Covs <- alignedcovs
 
     n <- t(S) %*% S
     n.inv <- 1 / n

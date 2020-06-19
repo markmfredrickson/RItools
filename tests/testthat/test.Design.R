@@ -195,7 +195,7 @@ test_that("Creating DesignOptions objects", {
   # actually testing that the output is as expected
   simple <- RItools:::makeDesigns(z.good ~ x, data = d)
   expect_equal(dim(simple@StrataFrame)[2], 1)
-  expect_equivalent(simple@Covariates[, "x"], d$x)
+  expect_equivalent(simple[, "x"], d$x)
   expect_equivalent(simple@Z, as.logical(d$z.good))
   expect_equal(nlevels(simple@Cluster), 500) # a cluster per individual
   
@@ -236,22 +236,22 @@ test_that("NotMissing vars correctly generated",
   simple <- RItools:::makeDesigns(z ~ x1 + x2  + strata(strat) + cluster(clus), data = dat)
   expect_match(colnames(simple@NotMissing), "x1", all=FALSE)
   expect_false(any(grepl("x2", colnames(simple@NotMissing))))
-  expect_false(any(grepl("TRUE", colnames(simple@Covariates))))
-  expect_false(any(grepl("FALSE", colnames(simple@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple))))
+  expect_false(any(grepl("FALSE", colnames(simple))))
 
   simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
   expect_match(colnames(simple2@NotMissing), "x1", all=FALSE)
   expect_false(any(grepl("x2", colnames(simple2@NotMissing))))
   expect_match(colnames(simple2@NotMissing), "fac", all=FALSE)
-  expect_false(any(grepl("TRUE", colnames(simple2@Covariates))))            
-  expect_false(any(grepl("FALSE", colnames(simple2@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple2))))            
+  expect_false(any(grepl("FALSE", colnames(simple2))))
 
   simple3 <- RItools:::makeDesigns(z ~ x1 + x3 + fac+ strata(strat) + cluster(clus), data = dat)
   expect_match(colnames(simple3@NotMissing), "x1", all=FALSE)
   expect_match(colnames(simple3@NotMissing), "x3", all=FALSE)
   expect_match(colnames(simple3@NotMissing), "fac", all=FALSE)
-  expect_false(any(grepl("TRUE", colnames(simple3@Covariates))))            
-  expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple3))))            
+  expect_false(any(grepl("FALSE", colnames(simple3))))
               
           })
 
@@ -269,16 +269,16 @@ test_that("Issue 88: logical Covariates correctly generated",
   dat$'(weights)' <- 1
 
   simple1 <- RItools:::makeDesigns(z ~ x1 + x2, data = dat)
-  expect_false(any(grepl("TRUE", colnames(simple1@Covariates))))
-  expect_false(any(grepl("FALSE", colnames(simple1@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple1))))
+  expect_false(any(grepl("FALSE", colnames(simple1))))
               
   simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat), data = dat)
-  expect_false(any(grepl("TRUE", colnames(simple2@Covariates))))
-  expect_false(any(grepl("FALSE", colnames(simple2@Covariates))))
+  expect_false(any(grepl("TRUE", colnames(simple2))))
+  expect_false(any(grepl("FALSE", colnames(simple2))))
 
   simple3 <- RItools:::makeDesigns(z ~ x1 + x2 + strata(strat) - 1, data = dat)
-  expect_false(any(grepl("TRUE", colnames(simple3@Covariates))))            
-  expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))            
+  expect_false(any(grepl("TRUE", colnames(simple3))))            
+  expect_false(any(grepl("FALSE", colnames(simple3))))            
 
           })
 
@@ -351,13 +351,13 @@ test_that("descriptives for NotMissing variables",
               dat$'(weights)' <- 1
 
   simple <- RItools:::makeDesigns(z ~ x1 + x2  + strata(strat) + cluster(clus), data = dat)
-              expect_false(any(grepl("NA", colnames(simple@Covariates))))
+              expect_false(any(grepl("NA", colnames(simple))))
               dsimple <- RItools:::designToDescriptives(simple)
               expect_match(dimnames(dsimple)[[1]], "(x1)", all=FALSE)
               expect_false(any(grepl("(x2)", dimnames(dsimple)[[1]], fixed=TRUE)))
 
   simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
-  expect_false(any(grepl("NA", colnames(simple2@Covariates))))
+  expect_false(any(grepl("NA", colnames(simple2))))
               dsimple2 <- RItools:::designToDescriptives(simple2)
               expect_match(dimnames(dsimple2)[[1]], "(x1)", all=FALSE)
               expect_match(dimnames(dsimple2)[[1]], "(fac)", all=FALSE)              
@@ -440,7 +440,7 @@ test_that("Aggegating designs by clusters", {
   expect_equal(dim(aggDesign@Covariates), c(100, 4))
 
   # now spot check some cluster totals of totals
-  expect_equal(aggDesign@Covariates[1, ], colMeans(design@Covariates[design@Cluster == 1,]))
+  expect_equal(aggDesign@Covariates[1, ], colMeans(design[design@Cluster == 1,]))
   
   # Z's roll up as they should
   Zs <- tapply(design@Z, design@Cluster, mean)
@@ -645,7 +645,7 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
 
     simple2c  <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus) - 1, data = dat)
     scl2c_scaleF  <- scale(simple2c, center=TRUE, scale=FALSE)
-    expect_identical(scl2c_scaleF, asimple2[["strat"]]@Covariates)
+    expect_identical(scl2c_scaleF, asimple2[["strat"]])
     scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
     expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
     scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
