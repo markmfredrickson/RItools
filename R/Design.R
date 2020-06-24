@@ -569,13 +569,12 @@ aggregateDesigns <- function(design) {
     colnames(Covariates)   <- colnames(design)
     row.names(Covariates) <- levels(Cluster)
 
-  new("DesignOptions",
+  new("DesignOptions", Covariates,
       Z = Z,
       StrataFrame = StrataFrame,
       Cluster = Cluster,
       UnitWeights = unit.weights,
       NotMissing = NotMissing,
-      Covariates = Covariates,
       OriginalVariables = design@OriginalVariables,
       TermLabels=design@TermLabels,
       Contrasts=design@Contrasts,
@@ -709,12 +708,12 @@ scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
     aligned_covs  <- aligned[[1]]
     if (scale)
         {
-    scales  <- .colSums(aligned_covs^2,
-                        nrow(aligned_covs), ncol(aligned_covs))
+    scales  <- .colSums(aligned_covs@Covariates^2,
+                        nrow(aligned_covs@Covariates), ncol(aligned_covs@Covariates))
     scales  <- scales/wtsum
     scales[scales<.Machine$double.eps^.5]  <- 1
-    sweep(aligned_covs, 2L, scales, "/", check.margin=FALSE)
-        } else aligned_covs
+    sweep(aligned_covs@Covariates, 2L, scales, "/", check.margin=FALSE)
+        } else aligned_covs@Covariates
     }
 
 ##' Align DesignOptions by Strata
@@ -827,9 +826,9 @@ alignDesignsByStrata <- function(design, post.align.transform = NULL) {
 HB08 <- function(alignedcovs) {
 
     ## appropriately weighted sum of each requested variable
-    ssn <- manifest_variable_sums(alignedcovs@Design, alignedcovs, alignedcovs@Z)
+    ssn <- manifest_variable_sums(alignedcovs@Design, alignedcovs@Covariates, alignedcovs@Z)
 
-    tcov <- manifest_variable_covariance(alignedcovs@Design, alignedcovs)
+    tcov <- manifest_variable_covariance(alignedcovs@Design, alignedcovs@Covariates)
 
     ssvar <- diag(tcov)
 

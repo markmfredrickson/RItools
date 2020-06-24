@@ -280,6 +280,19 @@ balanceTest.formula <- function(x,
 
   design          <- makeDesigns(fmla, data)
   aggDesign       <- aggregateDesigns(design)
+
+  designs <- lapply(aggDesign@StrataFrame, function(s) {
+      create_stratified_design(s, z = aggDesign@Z)
+  })
+
+  tests <- lapply(designs, function(d) {
+      bt <- balanceTest(d, data = aggDesign, z = aggDesign@Z)
+      return(bt[[1]])
+  })
+
+  return(tests)
+
+  ## stuff from old version of balanceTest
   descriptives    <- designToDescriptives(design, covariate.scales)
 
   strataAligned <- alignDesignsByStrata(aggDesign, post.alignment.transform)

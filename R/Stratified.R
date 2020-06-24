@@ -164,7 +164,8 @@ euclidean_squared_covariance.StratifiedDesign <- function(design, covariates) {
 }
 
 mahalanobis_distribution.StratifiedDesign <- function(x, rotated) {
-    covariance_matrix <- euclidean_squared_covariance(x, rotated)
+    covariance_matrix <- as.matrix(euclidean_squared_covariance(x, rotated))
+
     new("SecondOrderChisquareApproximation",
         EM = ncol(rotated),
         VarM = sum(covariance_matrix),

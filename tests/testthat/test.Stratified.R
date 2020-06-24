@@ -108,7 +108,7 @@ test_that("balanceTest method for Stratified objects", {
   expect_is(bts[[1]], "MahalanobisDistance")
   expect_is(bts[[1]], "BalanceTest")
 
-  expect_equivalent(bts, btf)
+  expect_equivalent(bts, btf[1]) ## just pull the first item (as a list) from the formula version
 
   ## explicit .method names to make sure we are using the right method dispatch in the main function.
   rot <- rotate_covariates.StratifiedDesign(strat, x)
@@ -117,5 +117,11 @@ test_that("balanceTest method for Stratified objects", {
 
   pv <- pvalue.SecondOrderChisquareApproximation(dst@Distribution, dst@.Data)
   expect_equal(bts[[1]]@Pvalue, pv)
+
+
+  ## just for completeness
+  unstrat <- create_stratified_design(strata = as.factor(rep(1, n)), z = df$z)
+  btu <- balanceTest(unstrat, data = x, z = df$z)
+  expect_equal(btu[[1]], btf[[2]])
 
 })

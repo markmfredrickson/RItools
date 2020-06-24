@@ -437,10 +437,10 @@ test_that("Aggegating designs by clusters", {
   aggDesign <- RItools:::aggregateDesigns(design) 
 
   # one row per cluster, with columns x, fa, fb, fc
-  expect_equal(dim(aggDesign@Covariates), c(100, 4))
+  expect_equal(dim(aggDesign), c(100, 4))
 
   # now spot check some cluster totals of totals
-  expect_equal(aggDesign@Covariates[1, ], colMeans(design[design@Cluster == 1,]))
+  expect_equal(aggDesign[1, ], colMeans(design[design@Cluster == 1,]))
   
   # Z's roll up as they should
   Zs <- tapply(design@Z, design@Cluster, mean)
@@ -452,7 +452,7 @@ test_that("Aggegating designs by clusters", {
   design2 <- design
   levels(design2@Cluster) <- c(levels(design2@Cluster), letters)
   aggDesign2 <- RItools:::aggregateDesigns(design2) 
-  expect_equal(dim(aggDesign2@Covariates), c(100, 4))
+  expect_equal(dim(aggDesign2), c(100, 4))
 
 })
 
@@ -467,8 +467,8 @@ test_that("aggregateDesigns treats NA covariates as 0's" ,{
 
   design <- RItools:::makeDesigns(z~x+strata(strat)+cluster(clus)-1, dat)
   aggDesign <- RItools:::aggregateDesigns(design)
-    expect_equivalent(aggDesign@Covariates[,'x'], c(0, 0, 1, 1) )
-    nm.column.for.x <- aggDesign@NM.Covariates[match( 'x', colnames(aggDesign@Covariates))]
+    expect_equivalent(aggDesign[,'x'], c(0, 0, 1, 1) )
+    nm.column.for.x <- aggDesign@NM.Covariates[match( 'x', colnames(aggDesign))]
   expect_equal(aggDesign@NotMissing[,nm.column.for.x], c(0,0,1,1) )
 })
 
@@ -504,10 +504,10 @@ test_that("Aggregation of unit weights to cluster level",{
   design.d2 <- RItools:::makeDesigns(z ~ x + f + strata(s) + cluster(c), data = d2)
   aggDesign.d2 <- RItools:::aggregateDesigns(design.d2)
 
-  expect_equal(2*aggDesign.tall@UnitWeights,aggDesign.d2@UnitWeights)
-  expect_equal(aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
-  expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
-          })
+  tmp <- aggDesign.tall
+  tmp@UnitWeights <- 2 * tmp@UnitWeights ## the tall weights should be 1/2 of the d2 weights.
+  expect_equal(tmp, aggDesign.d2) 
+})
 
 
 context("ModelMatrixPlus S4 class enriches model.matrix-value 'class' ")
@@ -645,7 +645,7 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
 
     simple2c  <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus) - 1, data = dat)
     scl2c_scaleF  <- scale(simple2c, center=TRUE, scale=FALSE)
-    expect_identical(scl2c_scaleF, asimple2[["strat"]])
+    expect_identical(scl2c_scaleF, asimple2[["strat"]]@Covariates)
     scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
     expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
     scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
