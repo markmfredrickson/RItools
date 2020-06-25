@@ -31,6 +31,7 @@ URL: https://CRAN.R-project.org/package=RItools
 RoxygenNote: 7.1.0
 Encoding: UTF-8
 Collate: 
+    'ModelMatrixPlus.R'
     'Design.R'
     'Stratified.R'
     'mahalanobis.R'
