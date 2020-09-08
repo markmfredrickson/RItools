@@ -882,7 +882,7 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
 
     ## Align (recenter) cluster totals around their means within strata.
     ## Do this for the not-missing indicators as well as for the manifest variables.
-    covars <- cbind(Covs_w_touchups, 0+design@NotMissing[,NMcolperm])    
+    covars <- cbind(Covs_w_touchups, 0+NM[,NMcolperm])    
     covars <- suppressWarnings(
         slm.fit.csr.fixed(S, covars*non_null_record_wts)$residuals
     )
