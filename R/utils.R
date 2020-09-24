@@ -267,7 +267,7 @@ slm.wfit.csr <- function (x, y, weights, ...)
 ##' @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
 ##' @author Ben Hansen
 ##' @keywords internal
-XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.25)
+XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5)
 {
     pst.svd <- try(svd(mat, nu=0))
 

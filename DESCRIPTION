@@ -1,5 +1,5 @@
 Package: RItools
-Version: 0.2.0.9003
+Version: 0.2.0.9004
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut", "cre")),
 	   person("Joshua", "Errickson", email="jerrick@umich.edu", role=c("ctb")),
