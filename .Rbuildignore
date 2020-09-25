@@ -2,6 +2,7 @@ Makefile
 checkspelling.R
 lexicon.txt
 load.R
+inst/downloaded-packages
 inst/docs
 cran-comments.md
 matrixNotation.Rnw
