@@ -108,24 +108,27 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
     expect_equivalent(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "--"])^2 )
     expect_equivalent(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 )
 
+    expect_equivalent(summary(cl1a)$sctest['test'],(xb1[["--"]]@.Data) )
+    expect_equivalent(summary(cl1b)$sctest['test'],(xb1[["s"]]@.Data) )
+
     xb2 <- balanceTest(z~x1+x2+strata(s), data=dat)
     cl2a <- suppressWarnings( # may warn about non-convergence
         clogit(z~x1+x2, data=dat, iter.max=1) )
      cl2b <- suppressWarnings( clogit(z~x1+x2+strata(s), data=dat, iter.max=1) )
 
-    expect_equivalent(summary(cl2a)$sctest['test'],(xb2$overall["--", "chisquare"]) )
-    expect_equivalent(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) )
+    expect_equivalent(summary(cl2a)$sctest['test'],(xb2[["--"]]@.Data) )
+    expect_equivalent(summary(cl2b)$sctest['test'],(xb2[["s"]]@.Data) )
 
     xb3 <- balanceTest(z~w1+w2+strata(s),
                     data=transform(dat, w1=x2+.1*x1, w2=x2-.1*x1))
-    expect_equivalent(xb2$overall["--", "chisquare"], xb3$overall["--", "chisquare"])
-    expect_equivalent(xb2$overall["s", "chisquare"], xb3$overall["s", "chisquare"])
+
+    expect_equivalent(xb2[["--"]], xb3[["--"]])
+    expect_equivalent(xb2[["s"]], xb3[["s"]])
 
     ## the below documents how the chi-square statistic can be larger than the sum of squared z
     ## statistics.  Unremarkable here, but can be alarming when you see it on the screen (cf #75 ). 
     expect_true(all(colSums(xb3$results[,'z',]^2, na.rm=T) < xb3$overall[,'chisquare']))
-}
-          )
+})
 
 test_that("balT returns covariance of tests", {
   set.seed(20130801)
@@ -212,9 +215,10 @@ test_that("Use of subset argument", {
   n2[nrow(nuclearplants)+1, "pt"] <- 2
 
   expect_warning(xb3 <- balanceTest(pr ~ . - pt + strata(pt) - 1, data = n2, subset=pt<=1),
-                 "did not include both treated and control units") #if we get rid of warning re dropping levels which did not include
+                 "treated or control units") #if we get rid of warning re dropping levels which did not include
                                         #both treated and control, get rid of expect_warning here too
-  expect_equal(xb1, xb3)
+  expect_equal(xb1[[1]]@.Data, xb3[[1]]@.Data)
+  expect_equal(xb1[[1]]@Distribution, xb3[[1]]@Distribution)
 })
 
 test_that("unit.weights: NAs treated as 0, logicals coerced to numeric",{

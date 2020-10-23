@@ -200,6 +200,7 @@ balanceTest <- function(x,
 }
 
 #' @method balanceTest formula
+#' @export
 balanceTest.formula <- function(x,
                                 data,
                                 unit.weights,
@@ -358,6 +359,7 @@ balanceTest.formula <- function(x,
 
 
 #' @method balanceTest RandomizedDesign
+#' @export
 balanceTest.RandomizedDesign <- function(x,
                                          data,
                                          unit.weights,

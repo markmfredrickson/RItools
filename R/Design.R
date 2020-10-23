@@ -425,26 +425,8 @@ aggregateDesigns <- function(design) {
 ### A better solution will use collation to get the right file order.
 
 ## A set of virtual classes to be used with specific kinds of designs
-setClass("RandomizedDesign")
+setClass("RandomizedDesign", slots = c(Weights = "numeric"))
 
-## Stratified design of x units into k strata with fixed numbers of units and
-## treated per strata
-##
-## @slot Unit A n by k (sparse) matrix with a single 1 in each row. Rows
-##   indicated the randomized units (clusters in cluster randomized trials).
-##   Columns indicate stratum membership.
-## @slot Counts A k vector of units in each stratum
-## @slot Treated A k vector of the number treated in each stratum.
-## @slot Weights A k vector of strata weights.
-## @slot JCoefs A n vector of precomputes coefficients to produce J = Z (1 - P(Z = 1)) / (P(Z = 1) P(Z = 0))
-setClass("StratifiedDesign", contains = "RandomizedDesign",
-         slots = c(
-             Units = "matrix.csr",
-             Count = "integer",
-             Treated = "integer",
-             Weights = "numeric",
-             JCoefs = "numeric"
-         ))
 
 #' CovsAlignedToADesign S4 class
 #'

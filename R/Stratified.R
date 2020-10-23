@@ -41,6 +41,14 @@ create_stratified_design <- function(strata, treated = NULL, z = NULL, weights =
        treated <- treated[levels(strata)]
     }
 
+    bad_strata <- treated == count | treated == 0
+    if (any(bad_strata)) {
+        warning("For at least one stratum, no treated or control units.")
+        units <- units[, !bad_strata]
+        count <- count[!bad_strata]
+        treated <- treated[!bad_strata]
+    }
+
     new("StratifiedDesign",
         Units   = units,
         Count   = as.integer(count),
