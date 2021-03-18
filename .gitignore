@@ -1,3 +1,4 @@
+.Rhistory
 *.Rcheck
 *.tar.gz
 .local
@@ -8,3 +9,4 @@ inst/doc
 .Rhistory
 RItools.Rproj
 revdep/checks.rds
+inst/downloaded-packages

@@ -2,6 +2,7 @@ Makefile
 checkspelling.R
 lexicon.txt
 load.R
+inst/downloaded-packages
 inst/docs
 cran-comments.md
 matrixNotation.Rnw
@@ -19,3 +20,7 @@ tests/*.Rout.save
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^CRAN-RELEASE$
+tests/*.R
+tests/*.Rout.save
+^.*\.Rproj$
+^\.Rproj\.user$

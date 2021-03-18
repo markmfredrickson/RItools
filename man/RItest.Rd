@@ -4,9 +4,18 @@
 \alias{RItest}
 \title{Test a sharp hypothesis}
 \usage{
-RItest(y, z, test.stat, moe = NULL, parameters = NULL,
+RItest(
+  y,
+  z,
+  test.stat,
+  moe = NULL,
+  parameters = NULL,
   sampler = simpleRandomSampler(z = z, b = rep(1, length(z))),
-  samples = 5000, type = "exact", pvaluefn = upper.p.value, ...)
+  samples = 5000,
+  type = "exact",
+  pvaluefn = upper.p.value,
+  ...
+)
 }
 \arguments{
 \item{y}{Outcome variable of interest}

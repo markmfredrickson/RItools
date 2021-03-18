@@ -32,7 +32,7 @@ calls for specification of a reference level, with observations in that
 condition receiving weights of 1. State this reference level within your
 \code{type} argument: for example, if your treatment condition corresponds
 to \code{z==1}, and you want inverse odds of treatment weighting, then pass
-a \code{type} argument of \dQuote{odds vs 1} or \dQuote{odds against 1}.
+a \code{type} argument of \dQuote{odds vs 1} or \dQuote{odds against 1}. 
 
 The function assumes complete random assignment, within (optional)
 blocks.  This can be complete random assignment of clusters; in this situation

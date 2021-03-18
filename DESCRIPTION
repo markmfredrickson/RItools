@@ -1,16 +1,16 @@
 Package: RItools
-Version: 3.0.0
+Version: 0.2.0.9004
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut", "cre")),
 	   person("Joshua", "Errickson", email="jerrick@umich.edu", role=c("ctb")),
 	   person("Mark", "Fredrickson", email="mark.m.fredrickson@gmail.com", role=c("aut")),
 	   person("Ben", "Hansen", email="ben.hansen@umich.edu", role=c("aut")) )
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
-Description: Tools for randomization inference.
-License: GPL (>=2)
+Description: Tools for randomization-based inference. Current focus is on the d^2 omnibus test of differences of means following Hansen and Bowers (2008) useful for assessing balance in matched observational studies or for analysis of outcomes in block-randomized experiments.
+License: MIT + file LICENSE
 LazyData: true
 Depends:
-    R (>= 2.2.0),
+    R (>= 3.5.0),
     SparseM,
     dgof
 Imports:
@@ -36,8 +36,6 @@ Suggests:
     knitr,
     rmarkdown
 Enhances: optmatch
-URL: http://CRAN.R-project.org/package=RItools
-    RItools.html
-RoxygenNote: 6.1.1
-VignetteBuilder: knitr
+URL: https://CRAN.R-project.org/package=RItools
+RoxygenNote: 7.1.1
 Encoding: UTF-8

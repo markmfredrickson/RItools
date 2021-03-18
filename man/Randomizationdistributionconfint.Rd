@@ -7,8 +7,7 @@
 \alias{plot.RandomizationDistributionConfInt}
 \title{functions for RandomizationDistribution}
 \usage{
-\method{confint}{RandomizationDistribution}(object, parm, level = 0.95,
-  ...)
+\method{confint}{RandomizationDistribution}(object, parm, level = 0.95, ...)
 
 summary.RandomizationDistributionConfInt(object, ...)
 

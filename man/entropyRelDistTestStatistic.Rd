@@ -4,8 +4,7 @@
 \alias{entropyRelDistTestStatistic}
 \title{entropy relative distance}
 \usage{
-entropyRelDistTestStatistic(smooth = 0.01, binn = 100,
-  location = "median")
+entropyRelDistTestStatistic(smooth = 0.01, binn = 100, location = "median")
 }
 \arguments{
 \item{smooth}{smooth}

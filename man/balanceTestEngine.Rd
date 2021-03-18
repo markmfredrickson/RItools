@@ -4,8 +4,18 @@
 \alias{balanceTestEngine}
 \title{xBalance helper function}
 \usage{
-balanceTestEngine(ss, zz, mm, report, swt, s.p, normalize.weights, zzname,
-  post.align.trans, p.adjust.method)
+balanceTestEngine(
+  ss,
+  zz,
+  mm,
+  report,
+  swt,
+  s.p,
+  normalize.weights,
+  zzname,
+  post.align.trans,
+  p.adjust.method
+)
 }
 \arguments{
 \item{ss}{ss}

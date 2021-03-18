@@ -1,10 +1,10 @@
 ################################################################################
 # Tests for DesignOptions objects
 ################################################################################
-
+if (!exists('nreps_')) nreps_  <- 10L
 library("testthat")
 
-context("DesignMatrix S4 class carries per-covariate missingness info")
+context("ModelMatrixPlus S4 class carries per-covariate missingness info")
 
 test_that("If no missing data, then NotMissing is a matrix w n rows and 0 cols",{
 
@@ -17,7 +17,7 @@ test_that("If no missing data, then NotMissing is a matrix w n rows and 0 cols",
       z.good      = rep(c(0,1), 250),
       z.bad       = sample(c(0,1), size = 500, replace = T))
   d$'(weights)' = 1 # meet expectation of a weights column
-  simple <- RItools:::design_matrix(z.good ~ x, data = d)
+  simple <- RItools:::model_matrix(z.good ~ x, data = d)
   expect_equivalent(dim(simple@NotMissing), c(500,1))
 
 })
@@ -30,12 +30,34 @@ test_that("Missingness gets passed through in Covariates, recorded in NotMissing
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-              dat$'(weights)' <- 1
               datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass) 
-              simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data = datmf)
+              datmf$'(weights)' <- 1
+              simple2 <- RItools:::model_matrix(z ~ x1 + x2 + fac, data = datmf)
               expect_equivalent(ncol(simple2@NotMissing), 3)
               expect_equivalent(colnames(simple2@NotMissing), c("_non-null record_", "x1", "fac"))
               
+})
+test_that("model_matrix offered missing or negative weights",{
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                    clus=factor(c(1,1,2:4)),
+                    z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                    w_with_NAs=rep(c(NA, 1), c(3,2)),
+                    w_with_negatives=-2:2,
+                    x=c(1:5),
+                    fac=factor(c(rep(1:2,2), NA))
+                    )
+    datmf_with_NAs <-
+        model.frame(z ~ x + fac, dat, na.action = na.pass,
+                    weights=w_with_NAs)
+datmf_with_negatives  <- 
+        model.frame(z ~ x + fac, dat, na.action = na.pass,
+                    weights=w_with_negatives)
+    expect_error(RItools:::model_matrix(z ~ x + fac,
+                                        data = datmf_with_NAs),
+                 "uweights")
+    expect_error(RItools:::model_matrix(z ~ x + fac,
+                                        data = datmf_with_negatives),
+                 "uweights")
 })
 test_that("lookup tables OK, even w/ complex & multi-column terms",{
 
@@ -46,9 +68,9 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-    dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + x2 + fac, dat, na.action = na.pass)
-    simple2 <- RItools:::design_matrix(z ~ x1 + x2 + fac, data=datmf)
+    datmf$'(weights)' <- 1
+    simple2 <- RItools:::model_matrix(z ~ x1 + x2 + fac, data=datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c( "x1", "x2", "fac"))
     expect_equal(simple2@NM.Covariates, c(2,0,3))
@@ -57,7 +79,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## check that complex term don't spell trouble in themselves
     datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple3 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf)
+    datmf$'(weights)' <- 1    
+    simple3 <- RItools:::model_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf)
     expect_equal(simple3@OriginalVariables, 1:3)
     expect_equal(simple3@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
     expect_equal(simple3@NM.Covariates, c(2,0,3))
@@ -66,7 +89,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## now try a complex term that actually expands to multiple columns
     datmf <- model.frame(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple4 <- RItools:::design_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf,
+    datmf$'(weights)' <- 1
+    simple4 <- RItools:::model_matrix(z ~ x1 + cut(x2, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x2, c(0, 3, 6))"=diag(2)))
     expect_equal(simple4@OriginalVariables, c(1,2,2,3))
     expect_equal(simple4@TermLabels, c("x1", "cut(x2, c(0, 3, 6))", "fac"))
@@ -76,7 +100,8 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
     ## now put NAs in the multi-column complex term
     datmf <- model.frame(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = dat,
                          na.action = na.pass)
-    simple5 <- RItools:::design_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = datmf,
+    datmf$'(weights)' <- 1
+    simple5 <- RItools:::model_matrix(z ~ x2 + cut(x1, c(0,3,6)) + fac, data = datmf,
                                        contrasts=list("cut(x1, c(0, 3, 6))"=diag(2)))
     expect_equal(simple5@OriginalVariables, c(1,2,2,3))
     expect_equal(simple5@TermLabels, c("x2", "cut(x1, c(0, 3, 6))", "fac"))
@@ -86,10 +111,27 @@ test_that("lookup tables OK, even w/ complex & multi-column terms",{
 })
 
 test_that("Issue #76: Using I() in formulas", {
-  x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
+  x <- data.frame(z=c(1,1))  # have to exclude 
+  while (all(x$z==x[1L,'z'])) # degenerate case
+    x <- data.frame(x = rnorm(10), y = rnorm(10), z = rbinom(10, size = 1, p = 1/3))
+
   x$"(weights)" <- 1
   d <- makeDesigns(z ~ I(x * sin(y)), data = x)
   expect_s4_class(d, "DesignOptions")
+  ## While we're at it, confirm that the non-stratification
+  ## encoded in this DesignOptions bears the column name "--".
+  
+})
+
+test_that("Null stratification is encoded by '--'",{
+    data(nuclearplants)
+    nuclearplants$"(weights)" <- 1
+    d0  <- makeDesigns(pr ~ cost, data=nuclearplants)
+    expect_equal(colnames(d0@StrataFrame), "--")
+    foo <- nuclearplants$pt
+    d1 <- makeDesigns(pr ~ cost + strata(foo), data=nuclearplants)
+    expect_true("--" %in% colnames(d1@StrataFrame))
 })
 
 test_that("Issue #86: makeDesigns finds variables outside data arg",{
@@ -109,9 +151,9 @@ test_that("Duplicated missingness patterns handled appropriately",{
                     x2=c(1:5),
                     fac=factor(c(rep(1:2,2), NA))
                     )
-    dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
-    simple2 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
+    datmf$'(weights)' <- 1
+    simple2 <- RItools:::model_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple2@OriginalVariables, 1:3)
     expect_equal(simple2@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(simple2@NM.Covariates, 1+c(1,1,2))
@@ -120,7 +162,8 @@ test_that("Duplicated missingness patterns handled appropriately",{
     ## If exactly two terms have missing data but in the same pattern, then
     ## NotMissing is a matrix w/ n rows and 1 col.
     datmf <- model.frame(z ~ x1 + I(x1^2), data=dat, na.action = na.pass)
-    simple3 <- RItools:::design_matrix(z ~ x1 + I(x1^2), data = datmf)
+    datmf$'(weights)' <- 1
+    simple3 <- RItools:::model_matrix(z ~ x1 + I(x1^2), data = datmf)
     expect_equal(simple3@OriginalVariables, 1:2)
     expect_equal(simple3@TermLabels, c("x1", "I(x1^2)"))
     expect_equal(ncol(simple3@NotMissing), 1)
@@ -140,7 +183,8 @@ test_that("All-fields missingness |-> NotMissing col '_non-null record_'",{
                     )
     dat$'(weights)' <- 1
     datmf <- model.frame(z ~ x1 + I(x1^2) + fac, data=dat, na.action = na.pass)
-    simple6 <- RItools:::design_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
+    datmf$'(weights)' <- 1
+    simple6 <- RItools:::model_matrix(z ~ x1 + I(x1^2) + fac, data = datmf)
     expect_equal(simple6@OriginalVariables, 1:3)
     expect_equal(simple6@TermLabels, c("x1", "I(x1^2)", "fac"))
     expect_equal(colnames(simple6@NotMissing)[1], "_non-null record_")
@@ -169,7 +213,8 @@ context("DesignOptions objects")
 
 test_that("Creating DesignOptions objects", {
 
-    set.seed(20130801)
+      set.seed(20130801)
+    replicate(nreps_,{
   d <- data.frame(
       id          = 1:500,
       x           = rnorm(500),
@@ -212,10 +257,12 @@ test_that("Creating DesignOptions objects", {
   #   (NB: extra levels tested upstream, in xBalance, as of commit 34861515; 
   #   see ./test.clusters.R ) 
 })
+        })
 
 test_that("NotMissing vars correctly generated",
           {
 
+    replicate(nreps_,{              
   dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
                     clus=factor(c(1,1,2:4)),
                     z=c(TRUE, rep(c(TRUE, FALSE), 2)),
@@ -245,7 +292,7 @@ test_that("NotMissing vars correctly generated",
   expect_match(colnames(simple3@NotMissing), "fac", all=FALSE)
   expect_false(any(grepl("TRUE", colnames(simple3@Covariates))))            
   expect_false(any(grepl("FALSE", colnames(simple3@Covariates))))
-              
+           })   
           })
 
 test_that("Issue 88: logical Covariates correctly generated",
@@ -275,10 +322,9 @@ test_that("Issue 88: logical Covariates correctly generated",
 
           })
 
-
 test_that("DesignOptions to descriptive statistics", {
-  set.seed(20130801)
-
+    set.seed(20130801)
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -302,7 +348,10 @@ test_that("DesignOptions to descriptive statistics", {
   
   # the strata should imply different stats
   expect_false(identical(descriptives[,,1], descriptives[,,2]))
-  
+
+  # however, the pooled s.d.s should be the same.
+  expect_identical(descriptives[,"pooled.sd","--"], descriptives[,"pooled.sd","s"])
+
   # ok, now checking that values are correct.
   expect_equal(mean(d$x[d$z == 1]), descriptives["x", "Treatment", "--"])
   expect_equal(mean(d$x[d$z == 0]), descriptives["x", "Control", "--"])
@@ -310,7 +359,23 @@ test_that("DesignOptions to descriptive statistics", {
   # with equal sized strata, the the control/treatment means are the means of the the strata means
   expect_equal(mean(tapply(d$x[d$z == 1], d$s[d$z == 1], mean)), descriptives["x", "Treatment", "s"])
   expect_equal(mean(tapply(d$x[d$z == 0], d$s[d$z == 0], mean)), descriptives["x", "Control", "s"])
+})
+})
 
+test_that("designToDescriptives uses provided covariate scales",{
+    d  <- data.frame(x=rnorm(50), z=rep(c(0,1), 25))
+    d$'(weights)'  <- 1
+    simple <- RItools:::makeDesigns(z ~ x, data=d)
+    sd_x  <- sd(resid(lm(x ~z, data=d)))
+    descriptives <- designToDescriptives(simple, covariate.scales=c(x=sd_x*10))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    descriptives <- designToDescriptives(simple,
+                                         covariate.scales=c(x=sd_x*10, y=Inf))
+    expect_equal(descriptives["x","pooled.sd","--"], sd_x*10)
+    expect_warning(designToDescriptives(simple, covariate.scales=sd_x),
+                   "name")
+    expect_warning(designToDescriptives(simple, covariate.scales=c(x="foo")),
+                   "numeric")
 })
 
 test_that("descriptives for NotMissing variables", 
@@ -344,8 +409,8 @@ test_that("descriptives for NotMissing variables",
 test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   ### Descriptives with missing covariates ###
 
-  set.seed(20130801)
-
+    set.seed(20130801)
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -386,13 +451,13 @@ test_that("Issue 36: Descriptives with NAs, appropriate weighting", {
   with(d, expect_equal(descriptives.paired["x", "Control", "paired"], mean(x[z == 0])))
   with(d, expect_equal(descriptives.paired["x", "Control", "--"], mean(x[z == 0])))
   with(d, expect_false(identical(descriptives.paired["x", "Control", "s"], mean(x[z == 0]))))
-
+})
 })
 
 test_that("Aggegating designs by clusters", {
 
-    set.seed(20130801)
-
+      set.seed(20130801)
+    replicate(nreps_,{
   d <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -428,7 +493,7 @@ test_that("Aggegating designs by clusters", {
   levels(design2@Cluster) <- c(levels(design2@Cluster), letters)
   aggDesign2 <- RItools:::aggregateDesigns(design2) 
   expect_equal(dim(aggDesign2@Covariates), c(100, 4))
-
+})
 })
 
 test_that("aggregateDesigns treats NA covariates as 0's" ,{
@@ -449,8 +514,8 @@ test_that("aggregateDesigns treats NA covariates as 0's" ,{
 
 
 test_that("Aggregation of unit weights to cluster level",{
-  ##set.seed(20130801)
-
+  set.seed(20130801)
+    replicate(nreps_,{
   d.short <- data.frame(
       x = rnorm(500),
       f = factor(sample(c("A", "B", "C"), size = 500, replace = T)),
@@ -482,10 +547,11 @@ test_that("Aggregation of unit weights to cluster level",{
   expect_equal(2*aggDesign.tall@UnitWeights,aggDesign.d2@UnitWeights)
   expect_equal(aggDesign.tall@NotMissing, aggDesign.d2@NotMissing)
   expect_equal(aggDesign.tall@Covariates, aggDesign.d2@Covariates) 
-          })
+        })
+  })
 
 
-context("DesignMatrix S4 class enriches model.matrix-value 'class' ")
+context("ModelMatrixPlus S4 class enriches model.matrix-value 'class' ")
 
 test_that("R core hasn't revised conventions we may depend on",
           {
@@ -504,33 +570,39 @@ test_that("Model matrix material is properly formed",
           {
               
      ff <- log(Volume) ~ log(Height) + log(Girth)
-     DM0 <- design_matrix(ff, trees, remove.intercept=FALSE)
-     expect_is(DM0, "DesignMatrix")
+     trees1 <- trees
+     trees1$'(weights)' <- 1
+     DM0 <- model_matrix(ff, trees1, remove.intercept=FALSE)
+     expect_is(DM0, "ModelMatrixPlus")
      m <- model.frame(ff, trees)
      expect_equivalent(model.matrix(ff, m), as.matrix(DM0))
      fff <- update(ff, .~.-1)
      trees2 <- trees
      trees2[1, "Volume"] <- NA # LHS variable, shouldn't affect anything
-     expect_equivalent(model.matrix(fff, m), as.matrix(design_matrix(fff, model.frame(fff, trees2, na.action = na.pass))))
+     m2a <- model.frame(fff, trees2, na.action = na.pass)
+     m2a$'(weights)' <- 1
+     expect_equivalent(model.matrix(fff, m), as.matrix(model_matrix(fff, m2a)))
      trees2[1, "Height"] <- NA # RHS variable, but still shouldn't cause rows to be dropped
-     expect_equal(dim(model.matrix(fff, m)), dim(as.matrix(design_matrix(fff,
-model.frame(fff, trees2, na.action = na.pass)
-                                                                                ))))
-
+     m2b <- model.frame(fff, trees2, na.action = na.pass)
+     m2b$'(weights)' <- 1
+     expect_equal(dim(model.matrix(fff, m)), 
+                  dim(as.matrix(model_matrix(fff,m2b) ) )
+                  )
 
      ## specified contrasts
      dd <- data.frame(a = gl(3,4), b = gl(4,1,12)) # balanced 2-way
+     dd$'(weights)' <- 1
      expect_equal(model.matrix(~ a + b, dd),
-                  as.matrix(design_matrix(~ a + b, dd, remove.intercept=FALSE)))
+                  as.matrix(model_matrix(~ a + b, dd, remove.intercept=FALSE)))
      expect_equal(model.matrix(~ a + b-1, dd),
-                  as.matrix(design_matrix(~ a + b-1, dd)))
+                  as.matrix(model_matrix(~ a + b-1, dd)))
      expect_equal(model.matrix(~ a + b, dd, contrasts = list(a = "contr.sum")),
-                  as.matrix(design_matrix(~ a + b, dd,
+                  as.matrix(model_matrix(~ a + b, dd,
                                           contrasts = list(a = "contr.sum"), remove.intercept=FALSE))
                   )
      expect_equal(model.matrix(~ a + b, dd,
                                contrasts = list(a = "contr.sum", b = "contr.poly")),
-                  as.matrix(design_matrix(~ a + b, dd,
+                  as.matrix(model_matrix(~ a + b, dd,
                                           contrasts =
                                               list(a = "contr.sum", b = "contr.poly"),
                                           remove.intercept=FALSE))
@@ -552,15 +624,16 @@ test_that("alignDesigns, designToDescriptives output alignment", {
     dat$'(weights)' <- 1
 
     simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    expect_equal(colnames(simple2@StrataFrame), c("strat", "--"))
     simple2 <-   as(simple2, "StratumWeightedDesignOptions")
     simple2@Sweights <- RItools:::DesignWeights(simple2, # Have to aggregate 1st to figure stratum weights
                                                 RItools:::effectOfTreatmentOnTreated)
     expect_true(setequal(names(simple2@Sweights), c("strat", "--")))
     dsimple2 <- RItools:::designToDescriptives(simple2)
-    asimple2 <- RItools:::alignDesignsByStrata(simple2)
-    expect_true(setequal(names(asimple2), c("strat", "--")))
-    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2[["--"]]@Covariates))
-
+    asimple2a <- RItools:::alignDesignsByStrata("--", simple2)
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2a@Covariates))
+    asimple2b <- RItools:::alignDesignsByStrata("strat", simple2)
+    expect_equivalent(dimnames(dsimple2)[[1]], colnames(asimple2b@Covariates))
 })
 
 
@@ -580,13 +653,14 @@ test_that("alignDesigns centers covars by stratum", {
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
-    asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    expect_equivalent(colSums(asimple0[["--"]]@Covariates),
-                      rep(0,ncol(asimple0[["--"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="a",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
-    expect_equivalent(colSums(asimple0[["strat"]]@Covariates[asimple0[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple0[["strat"]]@Covariates)))
+    asimple0u <- RItools:::alignDesignsByStrata("--",simple0)
+    expect_equivalent(colSums(asimple0u@Covariates),
+                      rep(0,ncol(asimple0u@Covariates)))
+    asimple0s <- RItools:::alignDesignsByStrata("strat",simple0)
+    expect_equivalent(colSums(asimple0s@Covariates[simple0@StrataFrame[["strat"]]=="a",]),
+                      rep(0,ncol(asimple0s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple0s@StrataMatrix) %*% asimple0s@Covariates),
+                      matrix(0,2,ncol(asimple0s@Covariates)))
 
     ## now with weights
     dat1 <- dat
@@ -597,36 +671,79 @@ test_that("alignDesigns centers covars by stratum", {
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1, # Placeholder strat weights, shouldn't affect 
                                                 RItools:::effectOfTreatmentOnTreated) # this test
-    asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    expect_equivalent(colSums(asimple1[["--"]]@Covariates *
-                              asimple1[["--"]]@UnitWeights ),
-                      rep(0,ncol(asimple1[["--"]]@Covariates)))
+    asimple1u <- RItools:::alignDesignsByStrata("--",simple1)
+    expect_equivalent(colSums(asimple1u@Covariates),
+                      rep(0,ncol(asimple1u@Covariates)))
 
-    tmp1 <- asimple1[["strat"]]@Covariates * asimple1[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="a",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp1[asimple1[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple1[["strat"]]@Covariates)))
+    asimple1s <- RItools:::alignDesignsByStrata("strat",simple1)   
+    tmp1 <- asimple1s@Covariates 
+    expect_equivalent(colSums(tmp1[simple1@StrataFrame[["strat"]]=="a",]),
+                      rep(0,ncol(asimple1s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple1s@StrataMatrix) %*% tmp1),
+                      matrix(0,2, ncol(asimple1s@Covariates)))
 
     ## now with weights, post alignment transform
-    asimple2 <- RItools:::alignDesignsByStrata(simple1, post.align.transform = rank)
-    expect_equivalent(colSums(asimple2[["--"]]@Covariates *
-                              asimple2[["--"]]@UnitWeights ),
-                      rep(0,ncol(asimple2[["--"]]@Covariates)))
+    asimple2u <- RItools:::alignDesignsByStrata("--", simple1,
+                                               post.align.transform = rank)
+    expect_equivalent(colSums(asimple2u@Covariates  ),
+                      rep(0,ncol(asimple2u@Covariates)))
 
-    tmp2 <- asimple2[["strat"]]@Covariates * asimple2[["strat"]]@UnitWeights 
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="a",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
-    expect_equivalent(colSums(tmp2[asimple2[["strat"]]@StrataFactor=="b",]),
-                      rep(0,ncol(asimple2[["strat"]]@Covariates)))
+    asimple2s <- RItools:::alignDesignsByStrata("strat", simple1,
+                                               post.align.transform = rank)
+    tmp2 <- asimple2s@Covariates 
+    expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
+                      rep(0,ncol(asimple2s@Covariates)))
+    expect_equivalent(as.matrix(t(asimple2s@StrataMatrix) %*% tmp2),
+                      matrix(0,2, ncol(asimple2s@Covariates)))
 
 } )
 
+test_that("scale() method wrapping to alignDesignsByStrata()",{
+    # at first pass, we're testing form but not content here.
+    dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
+                      clus=factor(c(1,1,2:4)),
+                      z=c(TRUE, rep(c(TRUE, FALSE), 2)),
+                      x1=rep(c(NA, 1), c(3,2)),
+                      x2=c(1:5),
+                      fac=factor(c(rep(1:2,2), NA))
+                      )
+    dat$'(weights)' <- 1:5
+
+    simple2 <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus), data = dat)
+    scl2_scaleF  <- scale(simple2, center=TRUE, scale=FALSE)
+    simple2b  <- as(simple2, "StratumWeightedDesignOptions")
+    simple2b@Sweights <- RItools:::DesignWeights(simple2b, # need stratum weights to be present, even if ignored
+                                        RItools:::effectOfTreatmentOnTreated)
+    asimple2u  <- RItools:::alignDesignsByStrata("--", simple2b,
+                                                post.align.transform = NULL)
+    expect_identical(scl2_scaleF, asimple2u@Covariates)
+
+    asimple2s  <- RItools:::alignDesignsByStrata("strat", simple2b,
+                                                post.align.transform = NULL)
+    simple2c  <- RItools:::makeDesigns(z ~ x1 + x2 + fac+ strata(strat) + cluster(clus) - 1, data = dat)
+    scl2c_scaleF  <- scale(simple2c, center=TRUE, scale=FALSE)
+    expect_identical(scl2c_scaleF, asimple2s@Covariates)
+    scl2_scaleF_centerF  <- scale(simple2, center=FALSE, scale=FALSE) # if it's a logical, 
+    expect_identical(scl2_scaleF, scl2_scaleF_centerF)                # `center` param is ignored
+    scl2_scaleT  <- scale(simple2, center=TRUE, scale=TRUE)
+    expect_equal(length(dim(scl2_scaleT)), 2L)
+    expect_equivalent(is.na(scl2_scaleT),
+                      matrix(FALSE, nrow(scl2_scaleT), ncol(scl2_scaleT)))
+    scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
+    expect_identical(dim(scl2_scaleF_centerrank), dim(scl2_scaleF))
+    expect_false(isTRUE(all.equal(scl2_scaleF, scl2_scaleF_centerrank, check.attributes=FALSE)),
+                 "post alignment transform ignored")
+    wcent  <- function(x, w) {x[order(x * w)]}
+    expect_silent(scl2_scaleF_wcent  <-
+                      scale(simple2, center=wcent, scale=FALSE)
+                  )
+    expect_identical(dim(scl2_scaleF_wcent), dim(scl2_scaleF))    
+})
 
 test_that("Issue #89: Proper strata weights", {
 
-  set.seed(20180208)
-
+    set.seed(20180208)
+    replicate(nreps_,{
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -682,15 +799,61 @@ test_that("Issue #89: Proper strata weights", {
   dw.wts2 <- RItools:::DesignWeights(design.wts)
   clus_mean_weights <- tapply(xy.wts$"(weights)", xy.wts$m, mean)
   expect_equivalent(dw.wts2$m$sweights, clus_mean_weights/sum(clus_mean_weights))
+})
+})
+
+test_that("In inferentials, NAs imputed to stratum means",{
+    dat  <- data.frame(z=rep(0:1, 2), x=c(0, NA, 2, 10),
+                       x_median_imputed=c(0,2,2,10),
+                       x_grandmean_imputed=c(0,4,2,10),
+                       m=factor(rep(c("a", "b"), each=2)),
+                       clus=factor(c("a", "b", "c", "b")),
+                       w=1)
+    mf  <- model.frame(z~x+x_median_imputed+x_grandmean_imputed+
+                           m+clus, dat, weights=w, na.action=na.pass)
+
+    simple1 <- RItools:::makeDesigns(z ~ x+x_median_imputed+x_grandmean_imputed +
+                                         strata(m), data = mf)
+    simple1 <-   as(simple1, "StratumWeightedDesignOptions")
+    simple1@Sweights <- RItools:::DesignWeights(simple1) 
+    asimple1 <- sapply(colnames(simple1@StrataFrame),
+                       RItools:::alignDesignsByStrata, design=simple1,
+                       simplify=FALSE, USE.NAMES=TRUE)
+    expect_equivalent(asimple1[['--']]@Covariates[2,"x"],
+                      mean(asimple1[['--']]@Covariates[c(1,3,4),"x"])
+                      )
+    expect_lt(var(asimple1[['--']]@Covariates[,"x"]),
+              var(asimple1[['--']]@Covariates[,"x_median_imputed"])
+              )
+    expect_equivalent(var(asimple1[['--']]@Covariates[,"x"]),
+              var(asimple1[['--']]@Covariates[,"x_grandmean_imputed"])
+              )
+    expect_lt(var(asimple1[['m']]@Covariates[,"x"]),
+              var(asimple1[['m']]@Covariates[,"x_median_imputed"])
+              )
+    expect_lt(var(asimple1[['m']]@Covariates[,"x"]),
+              var(asimple1[['m']]@Covariates[,"x_grandmean_imputed"])
+              )
+    expect_equivalent(asimple1[['m']]@Covariates[2,"x"],
+                      asimple1[['m']]@Covariates[1,"x"])
+
+    simple2 <- RItools:::makeDesigns(z ~ x+x_median_imputed+x_grandmean_imputed + cluster(clus), data = mf)
+    simple2  <- aggregateDesigns(simple2)
+    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
+    simple2@Sweights <- RItools:::DesignWeights(simple2) 
+    asimple2  <- alignDesignsByStrata("--", design=simple2)
+    expect_equivalent(var(asimple2@Covariates[,"x"]),
+              var(asimple2@Covariates[,"x_grandmean_imputed"])
+              )
 
 })
 
-context("alignedToInferentials")
+context("HB08*")
 
+test_that("HB08 agreement w/ xBal()", {
 
-test_that("alignedToInferentials agreement w/ xBal()", {
-
-  set.seed(20180605)
+    set.seed(20180605)
+    replicate(nreps_,{ 
   n <- 100
   x1 <- rnorm(n)
   x2 <- rnorm(n)
@@ -709,23 +872,155 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     simple0 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy)
     simple0 <-   as(simple0, "StratumWeightedDesignOptions")
     simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
-    asimple0 <- RItools:::alignDesignsByStrata(simple0)
-    btis0 <- lapply(asimple0, alignedToInferentials)
+    asimple0 <- sapply(colnames(simple0@StrataFrame), RItools:::alignDesignsByStrata,
+                     design=simple0, simplify=FALSE, USE.NAMES=TRUE)
+    btis0 <- lapply(asimple0, HB08)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
                     strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
 
-    expect_equivalent(btis0[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
     expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$unmatched)
-    expect_equivalent(btis0[['--']][c('csq', 'DF')],
+    expect_equivalent(btis0[['--']][c('Msq', 'DF')],
                       xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
-    expect_equivalent(btis0[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+    expect_equivalent(btis0[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"matched"])
     expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
                       attr(xb0$overall, 'tcov')$matched)
-    expect_equivalent(btis0[['m']][c('csq', 'DF')],
+    expect_equivalent(btis0[['m']][c('Msq', 'DF')],
+                      xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+
+  ## now with weights.
+  ## first, an example with weights that don't vary within the strata().
+    xy_wted1 <- xy; mwts <- 0
+    while (any(mwts==0)) mwts <- rpois(n/2, lambda=10)
+    xy_wted1$'(weights)' <- unsplit(mwts, xy$m)
+    
+    simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted1)
+    simple1 <-   as(simple1, "StratumWeightedDesignOptions")
+    simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
+  asimple1 <- sapply(colnames(simple1@StrataFrame),
+                     RItools:::alignDesignsByStrata, design=simple1,
+                     simplify=FALSE, USE.NAMES=TRUE)
+    btis1 <- lapply(asimple1, HB08)
+
+  wts.scaled <- xy_wted1$'(weights)' / mean(xy_wted1$'(weights)')
+
+  xy_xbwts1 <- transform(xy_wted1, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts1,
+                   strata = list(unmatched = NULL), report = c("all"))
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
+                    xb1u$results[,'adj.diff',"unmatched"])
+  expect_equivalent(btis1[['--']]$tcov, 
+                    attr(xb1u$overall, 'tcov')$unmatched)
+  expect_equivalent(btis1[['--']][c('Msq', 'DF')],
+                    xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+
+  wts.scaled <- xy_wted1$'(weights)' / mean( mwts )
+  xy_xbwts1 <- transform(xy_wted1, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled)
+  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts1,
+                   strata = list(matched = ~ m), report = c("all"))
+
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
+                    xb1m$results[,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                    attr(xb1m$overall, 'tcov')$matched)
+  expect_equivalent(btis1[['m']][c('Msq', 'DF')],
+                    xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+      ## second and example where weights vary arbitrarily (over positive numbers)
+    xy_wted2 <- xy; wts <- 0
+    while (any(wts==0)) wts <- rpois(n, lambda=10)
+    xy_wted2$'(weights)' <- wts
+    
+    simple2 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted2)
+    simple2 <-   as(simple2, "StratumWeightedDesignOptions")
+    simple2@Sweights <- RItools:::DesignWeights(simple2) # this test
+  asimple2 <- sapply(colnames(simple2@StrataFrame),
+                     RItools:::alignDesignsByStrata, design=simple2,
+                     simplify=FALSE, USE.NAMES=TRUE)
+    btis1 <- lapply(asimple2, HB08)
+
+  wts.scaled  <- xy_wted2$'(weights)' / mean(xy_wted2$'(weights)')
+  xy_xbwts2 <- transform(xy_wted2, x1=x1*wts.scaled,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
+                   strata = list(unmatched = NULL), report = c("all"))
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
+                    xb1u$results[,'adj.diff',"unmatched"])
+  expect_equivalent(btis1[['--']]$tcov, 
+                    attr(xb1u$overall, 'tcov')$unmatched)
+  expect_equivalent(btis1[['--']][c('Msq', 'DF')],
+                    xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+
+wt2.scaled  <- xy_wted2$'(weights)' /
+    mean( tapply(xy_wted2$'(weights)', xy_wted2$m, mean) )
+  xy_xbwts2 <- transform(xy_wted2, x1=x1*wts.scaled,
+                         x2=x2*wts.scaled, x3=x3*wts.scaled,
+                         w=wts.scaled)
+
+  xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
+                   strata = list(matched = ~ m), report = c("all"))
+
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals,
+                    xb1m$results[,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov, 
+                    attr(xb1m$overall, 'tcov')$matched)
+  expect_equivalent(btis1[['m']][c('Msq', 'DF')],
+                    xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
+})
+
+} )
+
+
+test_that("HB08_2016 agreement w/ xBal()", {
+
+    set.seed(20180605)
+    replicate(nreps_,{
+  n <- 100
+  x1 <- rnorm(n)
+  x2 <- rnorm(n)
+  x3 <- 0.5 + 0.25 * x1 - 0.25 * x2 + rnorm(n)
+  idx <- 0.25 + 0.1 * x1 + 0.2 * x2 - 0.5 * x3 + rnorm(n)
+  y <- sample(rep(c(1,0), n/2), prob = exp(idx) / (1 + exp(idx)))
+
+  xy <- data.frame(x1, x2, x3, idx, y)
+  xy$m[y == 1] <- order(idx[y == 1])
+  xy$m[y == 0] <- order(idx[y == 0])
+  ## this mimics matched pairs:
+  expect_true(all(table(xy$y, xy$m)==1))
+  xy$'(weights)' <- rep(1L, n) 
+
+    ## first unweighted case
+    simple0 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy)
+    simple0 <-   as(simple0, "StratumWeightedDesignOptions")
+    simple0@Sweights <- RItools:::DesignWeights(simple0) # this test
+  asimple0 <- sapply(colnames(simple0@StrataFrame),
+                     RItools:::alignDesignsByStrata, simple0,
+                     simplify=TRUE, USE.NAMES=TRUE)
+    btis0 <- lapply(asimple0, HB08_2016)
+    xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
+                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+
+    expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
+                      xb0$results[,'adj.diff',"unmatched"])
+    expect_equivalent(btis0[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                      attr(xb0$overall, 'tcov')$unmatched)
+    expect_equivalent(btis0[['--']][c('Msq', 'DF')],
+                      xb0[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
+
+    expect_equivalent(btis0[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
+                      xb0$results[,'adj.diff',"matched"])
+    expect_equivalent(btis0[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+                      attr(xb0$overall, 'tcov')$matched)
+    expect_equivalent(btis0[['m']][c('Msq', 'DF')],
                       xb0[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
 
     ## now with weights.  Comparing adjusted diffs based on totals will only work
@@ -741,36 +1036,40 @@ test_that("alignedToInferentials agreement w/ xBal()", {
     simple1 <- RItools:::makeDesigns(y ~ x1 + x2 + x3 + strata(m), data = xy_wted)
     simple1 <-   as(simple1, "StratumWeightedDesignOptions")
     simple1@Sweights <- RItools:::DesignWeights(simple1) # this test
-    asimple1 <- RItools:::alignDesignsByStrata(simple1)
-    btis1 <- lapply(asimple1, alignedToInferentials)
+  asimple1 <- sapply(colnames(simple1@StrataFrame),
+                     RItools:::alignDesignsByStrata, simple1,
+                     simplify=TRUE, USE.NAMES=TRUE)
+    btis1 <- lapply(asimple1, HB08_2016)
 
   wts.scaled <- xy_wted$'(weights)' / mean(xy_wted$'(weights)')
 
   xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
-                        x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1u <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w=wts.scaled)
+  xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(unmatched = NULL), report = c("all"))
-  expect_equivalent(btis1[['--']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
+  expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
-  expect_equivalent(btis1[['--']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['--']]$tcov, 
                     attr(xb1u$overall, 'tcov')$unmatched)
-  expect_equivalent(btis1[['--']][c('csq', 'DF')],
+  expect_equivalent(btis1[['--']][c('Msq', 'DF')],
                     xb1u[['overall']]["unmatched",c('chisquare', 'df'), drop=TRUE])
 
 
   wts.scaled <- xy_wted$'(weights)' / mean( mwts )
   xy_xbwts <- transform(xy_wted, x1=x1*wts.scaled,
-                        x2=x2*wts.scaled, x3=x3*wts.scaled)
-  xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts,
+                        x2=x2*wts.scaled, x3=x3*wts.scaled,
+                        w= wts.scaled)
+  xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
                    strata = list(matched = ~ m), report = c("all"))
 
-  expect_equivalent(btis1[['m']]$adj.mean.diffs[-4], # remove '(_non-null record_)' entry
-                    xb1m$results[,'adj.diff',"matched"])
-  expect_equivalent(btis1[['m']]$tcov[1:3,1:3], # remove '(_non-null record_)' entries
+  expect_equivalent(btis1[['m']]$adj.diff.of.totals, 
+                    xb1m$results[1:3,'adj.diff',"matched"])
+  expect_equivalent(btis1[['m']]$tcov, 
                     attr(xb1m$overall, 'tcov')$matched)
-  expect_equivalent(btis1[['m']][c('csq', 'DF')],
+  expect_equivalent(btis1[['m']][c('Msq', 'DF')],
                     xb1m[['overall']]["matched",c('chisquare', 'df'), drop=TRUE])
-
+})
 
 } )
 

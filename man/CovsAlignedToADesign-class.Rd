@@ -18,15 +18,16 @@ within each stratum.  In lieu of a NotMissing slot there will be Covariates colu
 centered within a stratum, recording
 non-missingness of the original data.
 
-The StrataWeightRatio slot has an entry for each unit, representing ratio of
+Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
 specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
 n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
-(the arithmetic mean of aggregated cluster weights within that stratum).
+(the arithmetic mean of aggregated cluster weights within that stratum). It can also
+be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{Covariates}}{Numeric matrix, as in DesignMatrix, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)}
+\item{\code{Covariates}}{Numeric matrix, as in ModelMatrixPlus, except: will include NM columns; all columns presumed to have been stratum-centered (aligned)}
 
 \item{\code{UnitWeights}}{vector of weights associated w/ rows of Covariates}
 
@@ -34,13 +35,11 @@ n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
 
 \item{\code{StrataMatrix}}{A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification}
 
-\item{\code{StrataFactor}}{Factor indicating strata}
-
 \item{\code{StrataWeightRatio}}{For each unit, ratio of stratum weight to h_b; but see Details.}
 
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
 
-\item{\code{OriginalVariables}}{Look up table associating Covariates cols to terms in the calling formula, as in DesignMatrix}
+\item{\code{OriginalVariables}}{Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus}
 }}
 
 \keyword{internal}

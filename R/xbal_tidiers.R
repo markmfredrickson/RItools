@@ -1,7 +1,9 @@
 #' [broom::tidy()/glance()] methods for [RItools::balanceTest()/xBalance()] results
 #'
 #' Portion out the value of a [RItools::balanceTest()] call in a manner consistent
-#' with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
+#' with assumptions of the broom package.  
+#' 
+#' [RItools::tidy.xbal()] gives per-variable
 #' statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 #' calculations. In both cases one has to specify which stratification one wants
 #' statistics about, as xbal objects can store info about several stratifications.
@@ -20,7 +22,7 @@
 #'     \item{std.diff}{adj.diff/pooled.sd}
 #'     \item{pooled.sd}{pooled SD}
 #'     \item{statistic}{`z` column from the xbal object}
-#'     \item{p.value}{`p` column from the xbal object
+#'     \item{p.value}{`p` column from the xbal object}
 #' }
 #' Additional parameters beyond those listed here are ignored (at this time).
 #'
@@ -34,37 +36,35 @@
 #'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing
 #'         a combined differences test, if found, and otherwise `NULL`.
 #' @export
-tidy.xbal <- function(x, strata = dimnames(x[["results"]])[["strata"]][1],
-                      varnames_crosswalk = c("z" = "statistic", "p" = "p.value"),
-                      ...) {
-  ans <- x[["results"]][, , strata, drop = FALSE]
-  dim(ans) <- dim(ans)[1:2]
-  ans <- as.data.frame(ans)
-  colnames(ans) <- dimnames(x[["results"]])[["stat"]]
-  ans <- data.frame(vars = dimnames(x[["results"]])[["vars"]], ans)
-  row.names(ans) <- 1L:nrow(ans)
-  xbalvars <- c(
-    "vars", "Control", "Treatment",
-    "adj.diff", "std.diff", "pooled.sd",
-    "z", "p"
-  )
-  names(xbalvars) <- xbalvars
-  vars <- c(
-    xbalvars[setdiff(names(xbalvars), names(varnames_crosswalk))],
-    varnames_crosswalk
-  )
-  reportme <- intersect(
-    names(vars),
-    c("vars", dimnames(x[["results"]])[["stat"]])
-  ) # to adjust order of columns
-  ans <- ans[reportme]
-  colnames(ans) <- vars[colnames(ans)]
-  ans
+tidy.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1],
+                      varnames_crosswalk=c("z"="statistic", "p"="p.value"),
+                      ...
+                      )
+{
+    ans <- x[['results']][,,strata, drop=FALSE]
+    dim(ans) <- dim(ans)[1:2]
+    ans <- as.data.frame(ans)
+    colnames(ans) <- dimnames(x[['results']])[['stat']]
+    ans <- data.frame(vars=dimnames(x[['results']])[['vars']], ans)
+    row.names(ans) <- 1L:nrow(ans)
+    xbalvars <- c("vars", "Control", "Treatment",
+                  "adj.diff", "std.diff", "pooled.sd",
+                  "z", "p")
+    names(xbalvars) <- xbalvars
+    vars <- c(xbalvars[setdiff(names(xbalvars), names(varnames_crosswalk))],
+              varnames_crosswalk)
+    reportme <- intersect(names(vars),
+                      c('vars', dimnames(x[['results']])[['stat']])
+                      )#to adjust order of columns
+    ans <- ans[reportme]
+    colnames(ans) <- vars[colnames(ans)]
+    ans
 }
 #' @rdname tidy.xbal
 #' @export
-glance.xbal <- function(x, strata = dimnames(x[["results"]])[["strata"]][1], ...) {
-  ans <- x[["overall"]][strata, , drop = FALSE]
-  ans <- as.data.frame(ans)
-  ans
-}
+glance.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1], ...)
+{
+    ans <- x[['overall']][strata,,drop=FALSE]
+    ans <- as.data.frame(ans)
+    ans
+    }

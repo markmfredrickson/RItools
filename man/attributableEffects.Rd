@@ -4,9 +4,15 @@
 \alias{attributableEffects}
 \title{Attributed Effects}
 \usage{
-attributableEffects(data, treatment, test.stat, samples = 5000,
+attributableEffects(
+  data,
+  treatment,
+  test.stat,
+  samples = 5000,
   min.a = min.attributable.effects(data, treatment),
-  max.a = max.attributable.effects(data, treatment), step = 1)
+  max.a = max.attributable.effects(data, treatment),
+  step = 1
+)
 }
 \arguments{
 \item{data}{data}
