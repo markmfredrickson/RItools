@@ -1,6 +1,6 @@
 Package: RItools
 Version: 0.2.0.9004
-Title: Randomization Inference Tools
+Title: proj1-balT branch of Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", email="jwbowers@illinois.edu", role=c("aut", "cre")),
 	   person("Joshua", "Errickson", email="jerrick@umich.edu", role=c("ctb")),
 	   person("Mark", "Fredrickson", email="mark.m.fredrickson@gmail.com", role=c("aut")),
