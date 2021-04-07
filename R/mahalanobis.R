@@ -43,11 +43,20 @@ mahalanobis_distance.default <- function(x, z) {
     mahalanobis_distance(rotate_covariates(x), z)
 }
 
-mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
-    J <- toJ(x@Design, z)
-    JTx <- t(J) %*% x
+## @param design A standard design object that implements the "toJ" method
+## @param covariates A matrix of dimensions (n, p)
+## @param z A treatment assignment vector of length n
+euclidean_distance <- function(design, covariates, z) {
 
-    d <- sum(JTx^2)
+  J <- toJ(design, z)
+  JTx <- t(J) %*% covariates
+
+  sum(JTx^2)
+}
+
+mahalanobis_distance.DesignRotatedCovariates <- function(x, z) {
+
+    d <- euclidean_distance(x@Design, x, z) 
     dist <- mahalanobis_distribution(x@Design, x@.Data)
     new("MahalanobisDistance",
         d,
