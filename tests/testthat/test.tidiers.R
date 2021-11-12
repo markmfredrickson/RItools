@@ -20,9 +20,9 @@ test_that("tidy.xbal assumptions haven't changed",{
       expect_equal(dimnames(xb[['results']])[['strata']][1],'s') # "s" comes before, 
       expect_equal(dimnames(xb[['overall']])[[1]][1],'s') # not after, "--"
       expect_true(all( attr(xb[['results']], "NMpatterns") %in%
-                       c("", dimnames(xb[['results']])[['vars']])
-                      ) #usually all of the NM patterns should be names of vars,
-                  )     #w/ exception of "", which indicates nothing is missing...
+                       c("(_any Xs recorded_)", "", dimnames(xb[['results']])[['vars']])
+                      ) #usually all of the NM patterns should be names of vars, w/ exceptions
+                  )     #of "(_any Xs recorded_)" and  "", which indicates nothing is missing.
       ##...that is unless there are rows with all Xs being NA.
       xb2 <- balanceTest(z~x2,data=dat)
       expect_equal(attr(xb2[['results']], "NMpatterns"), c("(_any Xs recorded_)", ""))
