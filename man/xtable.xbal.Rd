@@ -4,9 +4,16 @@
 \alias{xtable.xbal}
 \title{An \code{xtable} method for \code{xbal} objects}
 \usage{
-\method{xtable}{xbal}(x, caption = NULL, label = NULL, align = c("l",
-  rep("r", ncol(xvardf))), digits = 2, display = NULL,
-  col.labels = NULL, ...)
+\method{xtable}{xbal}(
+  x,
+  caption = NULL,
+  label = NULL,
+  align = c("l", rep("r", ncol(xvardf))),
+  digits = 2,
+  display = NULL,
+  col.labels = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object resulting from a call to

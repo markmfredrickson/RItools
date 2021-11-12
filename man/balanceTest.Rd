@@ -4,13 +4,21 @@
 \alias{balanceTest}
 \title{Standardized Differences for Stratified Comparisons}
 \usage{
-balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
-  "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test", "p.values",
-  "all")[1:2], unit.weights,
-  stratum.weights = harmonic_times_mean_weight, subset,
-  include.NA.flags = TRUE, covariate.scales = setNames(numeric(0),
-  character(0)), post.alignment.transform = NULL,
-  inferentials.calculator = HB08, p.adjust.method = "holm")
+balanceTest(
+  fmla,
+  data,
+  strata = NULL,
+  report = c("std.diffs", "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test",
+    "p.values", "all")[1:2],
+  unit.weights,
+  stratum.weights = harmonic_times_mean_weight,
+  subset,
+  include.NA.flags = TRUE,
+  covariate.scales = setNames(numeric(0), character(0)),
+  post.alignment.transform = NULL,
+  inferentials.calculator = HB08,
+  p.adjust.method = "holm"
+)
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment

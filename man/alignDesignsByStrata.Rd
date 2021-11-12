@@ -4,8 +4,7 @@
 \alias{alignDesignsByStrata}
 \title{Align DesignOptions by Strata}
 \usage{
-alignDesignsByStrata(a_stratification, design,
-  post.align.transform = NULL)
+alignDesignsByStrata(a_stratification, design, post.align.transform = NULL)
 }
 \arguments{
 \item{a_stratification}{name of a column of `design@strataFrame`/ element of `design@Sweights`}

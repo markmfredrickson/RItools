@@ -28,5 +28,5 @@ Suggests:
     RSVGTipsDevice
 Enhances: optmatch
 URL: https://CRAN.R-project.org/package=RItools
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.2
 Encoding: UTF-8
