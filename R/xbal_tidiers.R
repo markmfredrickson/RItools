@@ -1,4 +1,4 @@
-#' `broom::tidy()`/`glance()` methods for [balanceTest()] results
+#' `broom::tidy()`/`glance()` methods for `balanceTest()` results
 #'
 #' Portion out the value of a [RItools::balanceTest()] call in a manner consistent
 #' with assumptions of the broom package.  
@@ -26,7 +26,7 @@
 #' }
 #' Additional parameters beyond those listed here are ignored (at this time).
 #'
-#' @param x object of class `"xbal"`, result of [RItools::balancetest()]
+#' @param x object of class `"xbal"`, result of [RItools::balanceTest()]
 #'    or [RItools::xBalance()]
 #' @param strata which stratification to return info about? Defaults
 #'    to last one specified in originating function call (which appears first in the xbal array).

@@ -3,9 +3,9 @@
 \name{tidy.xbal}
 \alias{tidy.xbal}
 \alias{glance.xbal}
-\title{\code{broom::tidy()}/\code{glance()} methods for \code{\link[=balanceTest]{balanceTest()}} results}
+\title{\code{broom::tidy()}/\code{glance()} methods for \code{balanceTest()} results}
 \usage{
-\method{tidy}{xbal}(
+tidy.xbal(
   x,
   strata = dimnames(x[["results"]])[["strata"]][1],
   varnames_crosswalk = c(z = "statistic", p = "p.value"),
@@ -14,10 +14,10 @@
   ...
 )
 
-\method{glance}{xbal}(x, strata = dimnames(x[["results"]])[["strata"]][1], ...)
+glance.xbal(x, strata = dimnames(x[["results"]])[["strata"]][1], ...)
 }
 \arguments{
-\item{x}{object of class \code{"xbal"}, result of \code{\link[=balancetest]{balancetest()}}
+\item{x}{object of class \code{"xbal"}, result of \code{\link[=balanceTest]{balanceTest()}}
 or \code{\link[=xBalance]{xBalance()}}}
 
 \item{strata}{which stratification to return info about? Defaults
