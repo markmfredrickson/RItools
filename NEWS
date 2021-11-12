@@ -1,5 +1,7 @@
 CHANGES IN next RITOOLS VERSION
 
+* Exporting `broom::glance()` and `broom::tidy()` methods for balance test objects,
+  a work in progress (#90).
 * Addressed error relating to setting of pseudo-inversion tolerances (#103).
   xBalance() stops short of correcting the error, to maintain back-compatibility;
   but it gains a new argument, pseudoinversion_tol, with which it can readily
