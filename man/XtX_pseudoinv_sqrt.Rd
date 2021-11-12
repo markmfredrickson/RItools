@@ -4,8 +4,7 @@
 \alias{XtX_pseudoinv_sqrt}
 \title{Matrix square root of XtX's pseudoinverse}
 \usage{
-XtX_pseudoinv_sqrt(mat, mat.is.XtX = FALSE,
-  tol = .Machine$double.eps^0.25)
+XtX_pseudoinv_sqrt(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5)
 }
 \arguments{
 \item{mat}{double-precision matrix}
