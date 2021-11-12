@@ -60,7 +60,10 @@ tidy.xbal <- function(x,
         }
     
     ans <- data.frame(vars=dimnames(x[['results']])[['vars']], ans)
-    ans$NA.info <- attr(x[['results']], "NMpatterns")
+    ans$NA.info <- if (is.null(attr(x[['results']], "NMpatterns")))
+                   {
+                       NA_real_
+                   } else attr(x[['results']], "NMpatterns")
     row.names(ans) <- 1L:nrow(ans)
     xbalvars <- c("vars", "Control", "Treatment",
                   "adj.diff", "std.diff", "pooled.sd",

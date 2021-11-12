@@ -69,14 +69,14 @@ test_that("basic functionality of tidy.xbal as applied to value of a call to xBa
       expect_s3_class(tidy.xbal(xb), 'data.frame')
       expect_true(setequal(colnames(tidy.xbal(xb)),
                       c("vars","Control", "Treatment","std.diff",
-                        "adj.diff", "pooled.sd", "statistic", "p.value")))
+                        "adj.diff", "NA.info", "statistic", "p.value")))
 
       expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=NULL)),
                       c("vars","Control", "Treatment","std.diff",
-                        "adj.diff", "pooled.sd","z", "p")))
+                        "adj.diff",  "NA.info", "z", "p")))
                   expect_true(setequal(colnames(tidy.xbal(xb, varnames_crosswalk=c('z'='Z', 'p'='P'))),
                       c("vars","Control", "Treatment","std.diff",
-                        "adj.diff", "pooled.sd","Z", "P")))
+                        "adj.diff",  "NA.info", "Z", "P")))
 
 })
 
