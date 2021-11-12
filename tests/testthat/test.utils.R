@@ -168,8 +168,8 @@ test_that("Formatting w/ appropriate sigfigs values",{
                  )
   ## Confirm that the by-row rounder rounds to requested sigfigs, potentially
   ## w/ more rounding for Control and Treatment columns:
-  ca1 <- original_units_var_formatter(xb2$results[,c("Control", "Treatment", "adj.diff"),, drop=F], 2)
-  expect_equal(ca1[1,,1], c("Control"="-0.048",  "Treatment"="-0.042",  "adj.diff"=" 0.0054"))
+  ca1 <- original_units_var_formatter(xb2$results[,c("Control", "Treatment", "adj.diff"),, drop=F], 3)
+  expect_equal(ca1[1,,1], c("Control"="-0.0474",  "Treatment"="-0.0425",  "adj.diff"=" 0.00495"))
   
   pt2 <- print(xb2, digits=2, printme=FALSE)
 
