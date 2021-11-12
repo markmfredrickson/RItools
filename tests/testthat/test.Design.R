@@ -220,7 +220,7 @@ test_that("All-Xes missingness noted in descriptives", {
     dat$'(weights)' <- 1
 
     simple5 <- makeDesigns(z ~ x1 + I(x1^2) + fac + cluster(clus), dat)
-    descr <- RItools::designToDescriptives(simple5)
+    descr <- RItools:::designToDescriptives(simple5)
     expect_equivalent(descr['(_any Xs recorded_)' ,1:2,1], c(1, 1/3)) # not just 1s all around
 })
 
