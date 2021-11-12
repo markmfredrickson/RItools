@@ -1,4 +1,4 @@
-Stable version: [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](http://cran.r-project.org/package=RItools)
+Stable version: [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/RItools)](https://CRAN.R-project.org/package=RItools)
 
 [![Travis-CI Build Status](https://travis-ci.org/markmfredrickson/ritools.svg?branch=master)](https://travis-ci.org/markmfredrickson/ritools)
 
@@ -20,7 +20,7 @@ trials (or matched observational studies) based on user defined models and
 test statistics. See the online documentation of
 `parameterizedRandomizationDistribution` for more details.
 
-`RItools` is available on [CRAN](http://cran.r-project.org):
+`RItools` is available on [CRAN](https://CRAN.R-project.org):
 
     > install.packages("RItools")
     > library("RItools")

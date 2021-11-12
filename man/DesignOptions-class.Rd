@@ -5,29 +5,29 @@
 \alias{DesignOptions-class}
 \title{DesignOptions S4 class}
 \description{
-Extends the DesignMatrix class
+Extends the ModelMatrixPlus class
 }
 \details{
 If the DesignOptions represents clusters of elements, as when it was created
-by aggregating another DesignOptions or DesignMatrix object, then its Covariates
+by aggregating another DesignOptions or ModelMatrixPlus object, then its Covariates
 and NotMissing slots are populated with (weighted) averages, not totals.  E.g.,
 NotMissing columns consist of weighted averages of element-wise non-missingness indicators
 over clusters, with weights given by (the element-level precursor to) the UnitWeights
 vector.  As otherwise, columns of the NotMissing matrix represent terms
 from a model formula, rather than columns the terms may have expanded to.
+
+If present, the null stratification (all units in same stratum) in indicated
+by the corresponding column of the \code{StrataFrame} slot bearing the name
+\sQuote{\code{--}}.
 }
 \section{Slots}{
 
 \describe{
 \item{\code{Z}}{Logical indicating treatment assignment}
 
-\item{\code{StrataMatrices}}{This is a list of sparse matrices, each with n rows and s columns, with 1 if the unit is in that stratification}
-
-\item{\code{StrataFrame}}{Factors indicating strata (not the sparse matrices, as we use them in the weighting function)}
+\item{\code{StrataFrame}}{Factors indicating strata}
 
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
-
-\item{\code{UnitWeights}}{vector of weights associated w/ rows of the DesignMatrix}
 }}
 
 \keyword{internal}

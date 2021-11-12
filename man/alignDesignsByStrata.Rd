@@ -4,15 +4,17 @@
 \alias{alignDesignsByStrata}
 \title{Align DesignOptions by Strata}
 \usage{
-alignDesignsByStrata(design, post.align.transform = NULL)
+alignDesignsByStrata(a_stratification, design, post.align.transform = NULL)
 }
 \arguments{
+\item{a_stratification}{name of a column of `design@strataFrame`/ element of `design@Sweights`}
+
 \item{design}{DesignOptions}
 
-\item{post.align.transform}{A post-align transform}
+\item{post.align.transform}{A post-align transform (cf \code{\link{balanceTest}})}
 }
 \value{
-list List of `CovsAlignedToADesign` objects
+CovsAlignedToADesign
 }
 \description{
 Align DesignOptions by Strata

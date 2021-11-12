@@ -4,12 +4,21 @@
 \alias{balanceTest}
 \title{Standardized Differences for Stratified Comparisons}
 \usage{
-balanceTest(fmla, data, strata = NULL, report = c("std.diffs",
-  "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test", "p.values",
-  "all")[1:2], unit.weights,
-  stratum.weights = harmonic_times_mean_weight, subset,
-  include.NA.flags = TRUE, covariate.scaling = NULL,
-  post.alignment.transform = NULL, p.adjust.method = "holm")
+balanceTest(
+  fmla,
+  data,
+  strata = NULL,
+  report = c("std.diffs", "z.scores", "adj.means", "adj.mean.diffs", "chisquare.test",
+    "p.values", "all")[1:2],
+  unit.weights,
+  stratum.weights = harmonic_times_mean_weight,
+  subset,
+  include.NA.flags = TRUE,
+  covariate.scales = setNames(numeric(0), character(0)),
+  post.alignment.transform = NULL,
+  inferentials.calculator = HB08,
+  p.adjust.method = "holm"
+)
 }
 \arguments{
 \item{fmla}{A formula containing an indicator of treatment
@@ -39,11 +48,14 @@ measures.}
 
 \item{include.NA.flags}{Present item missingness comparisons as well as covariates themselves?}
 
-\item{covariate.scaling}{A scale factor to apply to covariates in
-calculating \code{std.diffs} (currently ignored).}
+\item{covariate.scales}{covariate dispersion estimates to use
+as denominators of\code{std.diffs} (optional).}
 
 \item{post.alignment.transform}{Optional transformation applied to
-covariates just after their stratum means are subtracted off.}
+covariates just after their stratum means are subtracted off.
+Should accept a vector of weights as its second argument.}
+
+\item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
 \item{p.adjust.method}{Method of p-value adjustment.}
 }
@@ -69,14 +81,22 @@ stratification variables can be provided, and are addressed by the tests.
 The function assembles various univariate descriptive statistics
 for the groups to be compared: (weighted) means of treatment and
 control groups; differences of these (adjusted differences); and
-adjusted differences as multiples of a pooled S.D. of the variable
-in the treatment and control groups (standard differences). This
-is done separately for each provided stratifying factor and, by
-default, for the unstratified comparison, in each case reflecting
-a standardization appropriate to the designated (post-)
+adjusted differences as multiples of a pooled s.d. of the variable
+in the treatment and control groups (standard differences). Pooled
+s.d.s are calculated with weights but without attention to clustering, 
+and ordinarily without attention to stratification.  (If the user does 
+not request unstratified comparisons, overriding the default setting,
+then pooled s.d.s are calculated with weights corresponding to the first
+stratification for which comparison is requested.  In this case as
+in the default setting, the same pooled s.d.s are used for standardization
+under each stratification considered. This facilitates comparison of
+standard differences across stratification schemes.)  Means
+are contrasted separately for each provided stratifying factor and, by
+default, for the unstratified comparison, in each case with weights
+reflecting a standardization appropriate to the designated (post-)
 stratification of the sample.  In the case without stratification
 or clustering, the only weighting used to calculate treatment and
-control group means is that provided by the user as 
+control group means is that provided by the user as
 \code{unit.weights}; in the absence of such an argument, these
 means are unweighted.  When there are strata, within-stratum means
 of treatment or of control observations are calculated using
@@ -97,10 +117,10 @@ The function also calculates univariate and multivariate inferential
 statistics, targeting the hypothesis that assignment was random within strata. These
 calculations also pool \code{unit.weights}-weighted, within-stratum group means across strata,
 but the default weighting of strata differs from that of the descriptive calculations.
-With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum 
-is weighted in proportion to the product of the stratum mean of \code{unit.weights} 
-and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of 
-treated units (a) and control units (b) in the stratum; this weighting is optimal 
+With \code{stratum.weights=harmonic_times_mean_weight} (the default), each stratum
+is weighted in proportion to the product of the stratum mean of \code{unit.weights}
+and the harmonic mean \eqn{1/[(1/a + 1/b)/2]=2*a*b/(a+b)} of the number of
+treated units (a) and control units (b) in the stratum; this weighting is optimal
 under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 distance that combines each of the univariate mean differences while accounting
@@ -112,14 +132,14 @@ In contrast to the earlier function \code{xBalance} that it is intended to repla
 
 \code{stratum.weights} must be a function of a single argument,
 a data frame containing the variables in \code{data} and
-additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights}, 
+additionally \code{Tx.grp}, \code{stratum.code}, and \code{unit.weights},
 returning a named numeric vector of non-negative weights identified by stratum.
 (For an example, enter \code{getFromNamespace("harmonic", "RItools")}.)
 the data  \code{stratum.weights} function.
 
 If the stratifying factor has NAs, these cases are dropped.  On the other
 hand, if NAs in a covariate are found then those observations are dropped for descriptive
-calculations and "imputed" to the stratum mean of the variable for inferential calculations. 
+calculations and "imputed" to the stratum mean of the variable for inferential calculations.
 When covariate values are dropped due to missingness, proportions of observations not missing on
 that variable are recorded and returned.  The printed output presents non-missing proportions alongside of
 the variables themselves, distinguishing the former by placing them at the bottom of the list and enclosing the
@@ -137,7 +157,7 @@ Evidence pertaining to the hypothesis that a treatment
   assignments of clusters are freely permuted.  For
   stratified comparisons, the reference distributions describes re-randomizations of
   this type performed separately in each stratum. Significance
-  assessments are based on the large-sample Normal approximation
+  assessments are based on large-sample approximations
   to these reference distributions.
 }
 \examples{
@@ -176,13 +196,18 @@ testdata$date[testdata$date<68]<-NA
 
 
 
-##Comparing unstratified to stratified, just one-by-one wilcoxon
-#rank sum tests and omnibus test of multivariate differences on
-#rank scale.
-balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+## Variable-by-variable Wilcoxon rank sum tests, with an omnibus test
+## of multivariate differences on rank scale.
+balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
          data=nuclearplants,
          report=c("adj.means", "chisquare.test"),
-	 post.alignment.transform=rank)
+	 post.alignment.transform=function(x,weights) rank(x))
+## (Note that the post alignment transform is expected to be a function
+## accepting a second argument, even if the argument is not used.
+## The unit weights vector will be provided as this second argument, 
+## enabling use of e.g. `post.alignment.transform=Hmisc::wtd.rank`
+## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
+
 }
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
@@ -192,6 +217,9 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Kalton, G. (1968), ``Standardization: A technique to control for
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
+}
+\seealso{
+\code{\link{HB08}}
 }
 \author{
 Ben Hansen and Jake Bowers and Mark Fredrickson

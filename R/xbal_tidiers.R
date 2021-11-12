@@ -1,17 +1,19 @@
 #' `broom::tidy()`/`glance()` methods for [balanceTest()] results
 #'
 #' Portion out the value of a [RItools::balanceTest()] call in a manner consistent
-#' with assumptions of the broom package.  [RItools::tidy.xbal()] gives per-variable
+#' with assumptions of the broom package.  
+#' 
+#' [RItools::tidy.xbal()] gives per-variable
 #' statistics whereas [RItools::glance.xbal()] extracts combined-difference related
 #' calculations. In both cases one has to specify which stratification one wants
 #' statistics about, as xbal objects can store info about several stratifications.
-#' [RItools::tidy.xbal()] has a parameter `varnames_crosswalk` not shared with 
+#' [RItools::tidy.xbal()] has a parameter `varnames_crosswalk` not shared with
 #' [RItools::glance.xbal()]. It should be a named character vector, the elements
 #' of which give names of columns to be returned and the names of which correspond
 #' to columns of xbal objects' \sQuote{results} entry.  Its ordering dictates the order
 #' of the result. The default value translates between conventional xbal
 #' column names and broom package conventional names.
-#' 
+#'
 #' \describe{
 #'     \item{vars}{variable name}
 #'     \item{Control}{mean of LHS variable = 0 group}
@@ -23,7 +25,7 @@
 #'     \item{p.value}{`p` column from the xbal object}
 #' }
 #' Additional parameters beyond those listed here are ignored (at this time).
-#' 
+#'
 #' @param x object of class `"xbal"`, result of [RItools::balancetest()]
 #'    or [RItools::xBalance()]
 #' @param strata which stratification to return info about? Defaults

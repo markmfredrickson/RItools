@@ -4,12 +4,12 @@
 \alias{designToDescriptives}
 \title{Generate Descriptives}
 \usage{
-designToDescriptives(design, covariate.scaling = NULL)
+designToDescriptives(design, covariate.scales = NULL)
 }
 \arguments{
 \item{design}{A DesignOptions object}
 
-\item{covariate.scaling}{Scale estimates for covs, to use instead of internally calculated pooled SDs}
+\item{covariate.scales}{Scale estimates for covariates, a named numeric vector}
 }
 \value{
 Descriptives
@@ -24,5 +24,21 @@ weighted by unit weights), each stratum receives a weight equal to
 the product of the stratum sum of unit weights with the fraction
 of clusters within the stratum that were assigned to the treatment
 condition.
+}
+\details{
+By default, covariates are scaled by their pooled s.d.s, square roots
+of half of their treatment group variances plus half of their control
+group variances.  If weights are provided, these are weighted variances.
+If descriptives are requested for an unstratified setup, i.e. a 
+stratification named \sQuote{\code{--}}, then covariate s.d.s
+are calculated against it; otherwise the variances reflect stratification,
+and are calculated against the first stratification found.  Either way,
+if descriptives are calculated for multiple stratifications, only one
+set of covariate s.d.s will have been calculated, and these underlie
+standard difference calculations for each of the stratifications.
+
+If a named numeric \code{covariate.scales} argument is provided, any
+covariates named in the vector will have their pooled s.d.s taken from
+it, rather than from the internal calculation.
 }
 \keyword{internal}
