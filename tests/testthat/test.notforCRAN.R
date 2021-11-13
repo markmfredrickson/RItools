@@ -52,10 +52,58 @@ test_that("answers match MASS::ginv() under near rank deficiency",{
 })
 
 
+## Our plotfun that aims to use RSVGTipsDevice
+plotfun_RSVGTD <- function(x, segments, shapes, colors, segments.args, points.args, offset, tiptext) {
+  n <- dim(x)[1]
+  nstrat <- dim(x)[2]
+  ypos <- n:1 + offset
+
+  tts <- "devSVG" == names(dev.cur())[1] && requireNamespace("RSVGTipsDevice")
+
+  if (segments && dim(x)[2] > 1) {
+    bnds <- t(apply(x, 1, range))
+    do.call(graphics::segments,
+            append(list(x0 = bnds[,1],
+                        y0 = ypos,
+                        x1 = bnds[,2],
+                        y1 = ypos),
+                   segments.args))
+  }
+
+  for(i in 1:nstrat) {
+
+    for (j in seq_along(ypos)) {
+
+      if (tts) {
+        # note that these indices are reversed versus convention [i, j, k] notation
+        # i is strata (the columns of our tiptext object)
+        # j is the variable (the rows of the tips)
+        if (dim(tiptext)[3] == 2) {
+          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
+        }
+        if (dim(tiptext)[3] == 1) {
+          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1])
+        }
+      }
+
+      do.call(graphics::points,
+              append(list(x[j, i],
+                          ypos[j],
+                          pch = shapes[j, i],
+                          col = colors[j, i]),
+                     points.args))
+    }
+  }
+
+
+  axis(2, labels = rownames(x), at = ypos, las = 2, tick = FALSE)
+
+  return(offset + n + 1)
+}
 
 test_that("Plotting using RSVGTips", {
 
-  # this is just an existance proof: it should go through without errors
+  # this is just an existence proof: it should go through without errors
   set.seed(20140137)
   
   if(.Platform[['OS.type']]!='windows' && # #71: As of now there are errors in Windows build of
@@ -76,7 +124,7 @@ test_that("Plotting using RSVGTips", {
 
     devSVGTips(paste0(f, "1.svg"), height = 8, width = 8)
 
-    plot(xb)
+    plot(xb, plotfun=plotfun_RSVGTD)
 
     dev.off()
 
@@ -85,7 +133,7 @@ test_that("Plotting using RSVGTips", {
 
     devSVGTips(paste0(f, "2.svg"), height = 8, width = 8)
 
-    plot(xb2)
+    plot(xb2, plotfun=plotfun_RSVGTD)
 
     dev.off()
 
@@ -94,7 +142,7 @@ test_that("Plotting using RSVGTips", {
     xb3$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 4
 
     devSVGTips(paste0(f, "3.svg"), height = 8, width = 8)
-    plot(xb3)
+    plot(xb3, plotfun=plotfun_RSVGTD)
     dev.off()
   }
 

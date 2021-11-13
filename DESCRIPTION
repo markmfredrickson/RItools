@@ -24,8 +24,7 @@ Imports:
 Suggests:
     testthat,
     roxygen2,
-    MASS,
-    RSVGTipsDevice
+    MASS
 Enhances: optmatch
 URL: https://CRAN.R-project.org/package=RItools
 RoxygenNote: 7.1.2

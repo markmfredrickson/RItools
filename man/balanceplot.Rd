@@ -18,6 +18,7 @@ balanceplot(
   tiptext = NULL,
   include.legend = TRUE,
   legend.title = NULL,
+  plotfun = .balanceplot,
   ...
 )
 }
@@ -41,8 +42,9 @@ suitable to use as a \code{pch} argument to the
 \code{\link{points}} function. If the argument is a vector, the
 length should be the same as the number of columns in \code{x}. If
 the argument is a matrix, it should have the same dims as
-\code{x}. The suggested vector has been selected to work with
-RSVGTipsDevice tool tips.}
+\code{x}.
+<!-- The suggested vector has been selected to work with
+RSVGTipsDevice tool tips.-->}
 
 \item{segments.args}{A list of arguments to pass to the
 \code{\link{segments}} function.}
@@ -56,17 +58,20 @@ RSVGTipsDevice tool tips.}
 \item{groups}{A factor that indicates the group of each row in
 \code{x}. Groups are printed under a common header.}
 
-\item{tiptext}{If you are using the \code{RSVGTipsDevice} library for
+\item{tiptext}{ignored (legacy argument retained for internal reasons)
+<!-- If you are using the \code{RSVGTipsDevice} library for
 rendering, you can include an array of the dimensions of x
 with another dimension of length 2. For example, if there are 4
 observations and 2 strata, the array should be 4 by 2 by 2. The
 \code{tiptext[i, j, 1]} entry will be the first line of the tool
 tip for the data in \code{x[i, j]}. Likewise for the second row of
-the tool tip.}
+the tool tip. -->}
 
 \item{include.legend}{Should a legend be included?}
 
 \item{legend.title}{An optional title to attach to the legend.}
+
+\item{plotfun}{Function to do the plotting; defaults to [RItools:::.balanceplot]}
 
 \item{...}{Additional arguments to pass to \code{\link{plot.default}}.}
 }
