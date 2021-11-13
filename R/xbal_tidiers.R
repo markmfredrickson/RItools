@@ -73,9 +73,7 @@ tidy.xbal <- function(x,
     names(xbalvars) <- xbalvars
     vars <- c(xbalvars[setdiff(names(xbalvars), names(varnames_crosswalk))],
               varnames_crosswalk)
-    reportme <- intersect(names(vars),
-                      c('vars', dimnames(x[['results']])[['stat']], 'NA.info')
-                      )#to adjust order of columns
+    reportme <- colnames(ans) %in% names(vars)
     ans <- ans[reportme]
     colnames(ans) <- vars[colnames(ans)]
     ans
