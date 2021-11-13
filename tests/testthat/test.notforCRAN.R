@@ -50,3 +50,52 @@ test_that("answers match MASS::ginv() under near rank deficiency",{
                                          tol=.Machine$double.eps^0.25)
     expect_equivalent(pinv_XtX, tcrossprod(pinv_sqrt_XtX))
 })
+
+
+
+test_that("Plotting using RSVGTips", {
+
+  # this is just an existance proof: it should go through without errors
+  set.seed(20140137)
+  
+  if(.Platform[['OS.type']]!='windows' && # #71: As of now there are errors in Windows build of
+     require('RSVGTipsDevice') #the RSVGTipsDevice package; only consider running this on other platforms
+     ) {
+    f <- tempfile()
+
+    x <- data.frame(z  = rep(c(TRUE, FALSE), 50),
+                    x1 = rnorm(100),
+                    x2 = sample(c("A", "B", "C"), 100, replace = T),
+                    x3 = sample(c("X", "Y", "Z"), 100, replace = T),
+                    x4 = sample(c(T,F), 100, replace = T),
+                    x5 = sample(c("A", "B", "C"), 100, replace = T),
+                    x6 = sample(c("X", "Y", "Z", "W"), 100, replace = T))
+
+    xb <- balanceTest(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
+    xb$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 2
+
+    devSVGTips(paste0(f, "1.svg"), height = 8, width = 8)
+
+    plot(xb)
+
+    dev.off()
+
+
+    xb2 <- balanceTest(z ~ x1 * x2 * x3 + strata(x5), data = x, report = 'all')
+
+    devSVGTips(paste0(f, "2.svg"), height = 8, width = 8)
+
+    plot(xb2)
+
+    dev.off()
+
+    xb3 <- balanceTest(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
+    xb3$results[, "std.diff", 1] <- xb$results[, "std.diff", 1] * 2
+    xb3$results[, "std.diff", 2] <- xb$results[, "std.diff", 2] * 4
+
+    devSVGTips(paste0(f, "3.svg"), height = 8, width = 8)
+    plot(xb3)
+    dev.off()
+  }
+
+})
