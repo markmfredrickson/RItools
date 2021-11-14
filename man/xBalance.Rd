@@ -201,5 +201,6 @@ xBalance(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 
 
 }
-\keyword{design, nonparametric}% at least one, from doc/KEYWORDS
+\keyword{design}
+\keyword{nonparametric}% at least one, from doc/KEYWORDS
 
