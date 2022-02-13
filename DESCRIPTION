@@ -1,8 +1,9 @@
 Package: RItools
-Version: 0.1-17
+Version: 0.1-18
 Title: Randomization Inference Tools
 Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson
-    <mark.m.fredrickson@gmail.com>, and Ben Hansen <ben.hansen@umich.edu>
+    <mark.m.fredrickson@gmail.com>, Ben Hansen <ben.hansen@umich.edu>, and Josh
+    Errickson <jerrick@umich.edu>.
 Maintainer: Jake Bowers <jwbowers@illinois.edu>
 Description: Tools for randomization-based inference. Current focus is on the d^2 omnibus test of differences of means following Hansen and Bowers (2008) useful for assessing balance in matched observational studies or for analysis of outcomes in block-randomized experiments.
 License: GPL (>=2)
@@ -26,4 +27,4 @@ Suggests:
     RSVGTipsDevice
 Enhances: optmatch
 URL: https://cran.r-project.org/package=RItools
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.2

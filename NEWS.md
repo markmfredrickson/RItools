@@ -1,3 +1,9 @@
+CHANGES IN RITOOLS VERSION 0.1-18
+
+This is a maintenance release.
+
+* Ensured that the package was compatible with R 4.1.2
+
 CHANGES IN RITOOLS VERSION 0.1-17
 
 This is a maintenance release.

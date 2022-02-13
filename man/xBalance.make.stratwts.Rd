@@ -4,8 +4,14 @@
 \alias{xBalance.make.stratwts}
 \title{xBalance helper function}
 \usage{
-xBalance.make.stratwts(stratum.weights, ss.df, goodstrat.df, zz, data,
-  normalize.weights)
+xBalance.make.stratwts(
+  stratum.weights,
+  ss.df,
+  goodstrat.df,
+  zz,
+  data,
+  normalize.weights
+)
 }
 \arguments{
 \item{stratum.weights}{Weights}

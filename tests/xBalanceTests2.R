@@ -93,7 +93,8 @@ test2.fn<-function(zz,mm,ss){
   myz3<-myadjdiff/mynullsd1
   myz1<-myssn/sqrt(myssvar)
 
-  stopifnot(all.equal(myz1,myz2,myz3,check.attributes=FALSE))
+  stopifnot(all.equal(myz1,myz2,check.attributes=FALSE))
+  stopifnot(all.equal(myz2,myz3,check.attributes=FALSE))
 
   return(cbind(adj.diff=myadjdiff,adj.diff.null.sd=mynullsd2,z=myz2))
 }

@@ -4,8 +4,17 @@
 \alias{xBalanceEngine}
 \title{xBalance helper function}
 \usage{
-xBalanceEngine(ss, zz, mm, report, swt, s.p, normalize.weights, zzname,
-  post.align.trans)
+xBalanceEngine(
+  ss,
+  zz,
+  mm,
+  report,
+  swt,
+  s.p,
+  normalize.weights,
+  zzname,
+  post.align.trans
+)
 }
 \arguments{
 \item{ss}{ss}
