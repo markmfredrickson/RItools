@@ -214,13 +214,7 @@ prepareXbalForPlot <- function(x,
 #' @param xrange The range of x-axis. By default, it is 1.25 times the range of \code{x}.
 #' @param groups A factor that indicates the group of each row in
 #' \code{x}. Groups are printed under a common header.
-#' @param tiptext If you are using the \code{RSVGTipsDevice} library for
-#' rendering, you can include an array of the dimensions of x
-#' with another dimension of length 2. For example, if there are 4
-#' observations and 2 strata, the array should be 4 by 2 by 2. The
-#' \code{tiptext[i, j, 1]} entry will be the first line of the tool
-#' tip for the data in \code{x[i, j]}. Likewise for the second row of
-#' the tool tip.
+#' @param tiptext (Ignored.)
 #' @param include.legend Should a legend be included?
 #' @param legend.title An optional title to attach to the legend.
 #' @param ... Additional arguments to pass to \code{\link{plot.default}}.
@@ -386,8 +380,6 @@ balanceplot <- function(x,
   nstrat <- dim(x)[2]
   ypos <- n:1 + offset
 
-  tts <- "devSVG" == names(dev.cur())[1] && requireNamespace("RSVGTipsDevice")
-
   if (segments && dim(x)[2] > 1) {
     bnds <- t(apply(x, 1, range))
     do.call(graphics::segments,
@@ -401,18 +393,6 @@ balanceplot <- function(x,
   for(i in 1:nstrat) {
 
     for (j in seq_along(ypos)) {
-
-      if (tts) {
-        # note that these indices are reversed versus convention [i, j, k] notation
-        # i is strata (the columns of our tiptext object)
-        # j is the variable (the rows of the tips)
-        if (dim(tiptext)[3] == 2) {
-          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1], tiptext[j, i, 2])
-        }
-        if (dim(tiptext)[3] == 1) {
-          RSVGTipsDevice::setSVGShapeToolTip(tiptext[j, i, 1])
-        }
-      }
 
       do.call(graphics::points,
               append(list(x[j, i],

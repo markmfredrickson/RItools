@@ -56,13 +56,7 @@ RSVGTipsDevice tool tips.}
 \item{groups}{A factor that indicates the group of each row in
 \code{x}. Groups are printed under a common header.}
 
-\item{tiptext}{If you are using the \code{RSVGTipsDevice} library for
-rendering, you can include an array of the dimensions of x
-with another dimension of length 2. For example, if there are 4
-observations and 2 strata, the array should be 4 by 2 by 2. The
-\code{tiptext[i, j, 1]} entry will be the first line of the tool
-tip for the data in \code{x[i, j]}. Likewise for the second row of
-the tool tip.}
+\item{tiptext}{(Ignored.)}
 
 \item{include.legend}{Should a legend be included?}
 
