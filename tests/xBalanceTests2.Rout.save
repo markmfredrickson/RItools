@@ -1,7 +1,7 @@
 
-R version 3.3.0 (2016-05-03) -- "Supposedly Educational"
-Copyright (C) 2016 The R Foundation for Statistical Computing
-Platform: x86_64-apple-darwin13.4.0 (64-bit)
+R version 4.0.5 (2021-03-31) -- "Shake and Throw"
+Copyright (C) 2021 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
 
 R is free software and comes with ABSOLUTELY NO WARRANTY.
 You are welcome to redistribute it under certain conditions.
@@ -120,7 +120,8 @@ The following object is masked from 'package:base':
 +   myz3<-myadjdiff/mynullsd1
 +   myz1<-myssn/sqrt(myssvar)
 + 
-+   stopifnot(all.equal(myz1,myz2,myz3,check.attributes=FALSE))
++   stopifnot(all.equal(myz1,myz2,check.attributes=FALSE))
++   stopifnot(all.equal(myz2,myz3,check.attributes=FALSE))
 + 
 +   return(cbind(adj.diff=myadjdiff,adj.diff.null.sd=mynullsd2,z=myz2))
 + }
@@ -144,4 +145,4 @@ cum.n -0.81976744        2.4129633 -0.3397347
 > 
 > proc.time()
    user  system elapsed 
-  1.357   0.097   1.501 
+  0.992   0.093   1.070 
