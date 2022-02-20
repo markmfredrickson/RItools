@@ -18,3 +18,4 @@ tests/*.Rout.save
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^CRAN-RELEASE$
+^CRAN-SUBMISSION$
