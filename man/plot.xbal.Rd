@@ -38,6 +38,9 @@ grouped.}
 
 \item{...}{additional arguments to pass to \code{\link{balanceplot}}}
 }
+\value{
+Returns NULL, displays plot
+}
 \description{
 The plot allows a quick visual comparison of the effect of different
 stratification designs on the comparability of different

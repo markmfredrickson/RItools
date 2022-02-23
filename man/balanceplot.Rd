@@ -64,6 +64,9 @@ RSVGTipsDevice tool tips.}
 
 \item{...}{Additional arguments to pass to \code{\link{plot.default}}.}
 }
+\value{
+Returns NULL, displays plot
+}
 \description{
 This plotting function summarizes variable by stratification matrices. For
 each variable (a row in the \code{x} argument), the values are under each
