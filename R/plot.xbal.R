@@ -37,6 +37,7 @@
 #' @seealso \code{\link{xBalance}}, \code{\link{subset.xbal}}, \code{\link{balanceplot}}
 #' @example inst/examples/plot.xbal.R
 #' @import abind
+#' @return Returns NULL, displays plot
 #' @export
 plot.xbal <- function(x,
                       xlab = "Standardized Differences",
@@ -222,6 +223,7 @@ prepareXbalForPlot <- function(x,
 #' \code{\link{segments}}, \code{\link{points}}
 #' @example inst/examples/balanceplot.R
 #' @export
+#' @return Returns NULL, displays plot
 #' @import grDevices
 balanceplot <- function(x,
                         ordered = FALSE,
@@ -372,7 +374,7 @@ balanceplot <- function(x,
            title = legend.title,
            bty = "n")
   }
-
+  return(NULL)
 }
 
 .balanceplot <- function(x, segments, shapes, colors, segments.args, points.args, offset, tiptext) {
