@@ -1,10 +1,10 @@
 Package: RItools
 Version: 0.1-18
 Title: Randomization Inference Tools
-Author: Jake Bowers <jwbowers@illinois.edu>, Mark Fredrickson
-    <mark.m.fredrickson@gmail.com>, Ben Hansen <ben.hansen@umich.edu>, and Josh
-    Errickson <jerrick@umich.edu>.
-Maintainer: Jake Bowers <jwbowers@illinois.edu>
+Authors@R: c(person("Jake", "Bowers", role = c("aut", "cre"), email = "jwbowers@illinois.edu"),
+             person("Mark", "Fredrickson", role = "aut", email = "mark.m.fredrickson@gmail.com"),
+             person("Ben", "Hansen", role = "aut", email = "ben.hansen@umich.edu"),
+             person("Josh", "Errickson", role = "ctb", email = "jerrick@umich.edu"))
 Description: Tools for randomization-based inference. Current focus is on the d^2 omnibus test of differences of means following Hansen and Bowers (2008) useful for assessing balance in matched observational studies or for analysis of outcomes in block-randomized experiments.
 License: GPL (>=2)
 LazyData: true
