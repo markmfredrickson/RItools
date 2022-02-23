@@ -25,6 +25,7 @@ formula.xbal<-function(x,...){
 ##' @return Result of \code{fun}.
 withOptions <- function(optionsToChange, fun) {
   oldOpts <- options()
+  on.exit(options(oldOpts))
   options(optionsToChange)
   tryCatch(fun(), finally = options(oldOpts))
 }

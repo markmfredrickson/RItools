@@ -307,6 +307,10 @@ balanceplot <- function(x,
                           ifelse(is.na(groups), "", "    "))
   }
 
+  # Ensuring graceful reset of user `par` if error
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+
   if (names(dev.cur()) != "svg") {
     mai <- par('mai')
     mai[2] <- max(strwidth(rownames(x), units = "inches")) + mai[2]
