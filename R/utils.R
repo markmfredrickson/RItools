@@ -107,7 +107,6 @@ subset.xbal <- function(x,
                         ...) {
 
   res.dmns <- dimnames(x$results)
-  ov.dmns <- dimnames(x$overall)
 
   if (is.null(strata)) {
     strata <- res.dmns$strata
@@ -122,16 +121,177 @@ subset.xbal <- function(x,
   }
 
   if (is.null(tests)) {
-    tests <- ov.dmns$tests
+    tests <- colnames(x$overall)
   }
 
   res <- x$results[vars, stats, strata, drop = F]
   ovr <- x$overall[strata, tests, drop = F]
 
-  attr(res, "originals") <- attr(x$results, "originals")[res.dmns$vars %in% vars]
+  if (!is.null(ovr))
+      attr(ovr, "tcov") <- attr(x$overall, "tcov")[strata]
 
+  keep_this_var <- res.dmns$vars %in% vars
+  attr(res, "NMpatterns") <- attr(x$res, "NMpatterns")[keep_this_var]
+  attr(res, "originals") <- attr(x$results, "originals")[keep_this_var]
+  attr(res, "term.labels") <- attr(x$results, "term.labels")
+  attr(res, "include.NA.flags") <-  attr(x$results, "include.NA.flags")
+
+  
   tmp <- list(results = res, overall = ovr)
   class(tmp) <- c("xbal", "list")
+  attr(tmp, "fmla") <- attr(x, "fmla")
+  attr(tmp, "report") <-  attr(x, "report") 
 
   return(tmp)
+}
+
+
+## SparseM-related
+
+##' Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
+##' has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
+##'
+##' NA's give rise to rows with no 1s.
+##' As the result is only meaningful in the context of the SparseM package,
+##' function requires that SparseM be loaded.
+##' @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
+##' @param thefactor Factor variable, or object inheriting from class factor
+##' @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
+##' @export
+##' @author Ben Hansen
+##' @examples
+##' sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
+##' mod_matrix <- model.matrix(~Species-1, iris)
+##' all.equal(as.matrix(sparse_mod_matrix),
+##'           mod_matrix, check.attributes=FALSE)
+SparseMMFromFactor <- function(thefactor) {
+  stopifnot(inherits(thefactor, "factor"))
+  theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
+    is.na(thefactor)
+
+  if (all(theNA)) stop("No non-NA's in thefactor") 
+
+  nlev <- nlevels(thefactor)
+  nobs <- length(thefactor)
+  theint <- as.integer(thefactor)
+  if (any(theNA)) theint[theNA] <- 1L# odd; but note how we compensate in def of ra slot below
+  new("matrix.csr",
+      ja=theint,
+      ia=1L:(nobs+1L),
+      ra=(1L-theNA),
+      dimension = c(nobs, nlev) #+sum(theNA)
+      )
+}
+
+
+##' slm.fit.csr with a fix
+##'
+##' SparseM's slm.fit.csr has a bug for intercept only models
+##' (admittedly, these are generally a little silly to be done as a
+##' sparse matrix), but in order to avoid duplicate code, if
+##' everything is in a single strata, we use the intercept only model.
+##' @param x As slm.fit.csr
+##' @param y As slm.fit.csr
+##' @param ... As slm.fit.csr
+##' @return As slm.fit.csr
+##' @importFrom SparseM chol backsolve
+slm.fit.csr.fixed <- function (x, y, ...)
+{
+    if (is.matrix(y))
+        {
+            n <- nrow(y)
+            ycol <- ncol(y)
+        } else {
+            n <- length(y)
+            ycol <- 1
+        }
+    p <- x@dimension[2]
+    if (n != x@dimension[1])
+        stop("x and y don't match n")
+    chol <- SparseM::chol(t(x) %*% x, ...)
+    xy <- t(x) %*% y
+    coef <- SparseM::backsolve(chol, xy)
+
+    if (is.vector(coef)) {
+      coef <- matrix(coef, ncol = ycol, nrow = p)
+  }
+
+    fitted <- as.matrix(x %*% coef)
+    resid <- y - fitted
+    df <- n - p
+    list(coefficients = coef, chol = chol, residuals = resid,
+        fitted = fitted, df.residual = df)
+}
+
+##' slm.wfit with two fixes
+##'
+##' slm.wfit shares the intercept-only issue with slm.fit,
+##' and in addition has an issue where it carries forward
+##' incorrect residuals and fitted values.
+##'
+##' @param x As slm.wfit
+##' @param y As slm.wfit
+##' @param weights As slm.wfit
+##' @param ... As slm.wfit
+##' @return As slm.wfit
+##' @importFrom SparseM is.matrix.csr
+
+
+slm.wfit.csr <- function (x, y, weights, ...) 
+{
+
+    if (!is.matrix.csr(x)) 
+        stop("model matrix must be in sparse csr mode")
+    if (!is.numeric(y)) 
+        stop("response must be numeric")
+    if (any(weights < 0)) 
+        stop("negative weights not allowed")
+    contr <- attr(x, "contrasts")
+    w <- sqrt(weights)
+    wx <- as(w, "matrix.diag.csr") %*% x
+    wy <- y * w
+    fit <- slm.fit.csr.fixed(wx, wy, ...)
+
+    fit$fitted <- as.matrix(x %*% fit$coef)
+    fit$residuals <- y - fit$fitted
+
+    fit$contrasts <- attr(x, "contrasts")
+    fit
+}
+
+### Other linear algebra
+##' Modeled on MASS's \code{ginv}
+##'
+##' 
+##' @title Matrix square root of XtX's pseudoinverse
+##' @param mat double-precision matrix
+##' @param mat.is.XtX is mat a crossproduct of an X matrix, or X itself?
+##' @param tol tolerance
+##' @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
+##' @author Ben Hansen
+##' @keywords internal
+XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5)
+{
+    pst.svd <- try(svd(mat, nu=0))
+
+  if (inherits(pst.svd, 'try-error')) {
+    pst.svd <- propack.svd(mat)
+  }
+
+    d  <-  if (mat.is.XtX) sqrt(pst.svd$d) else pst.svd$d
+    v  <- pst.svd$v
+
+    Positive <- d > max(tol * d[1], 0)
+    Positive[is.na(Positive)] <- FALSE
+
+  if (all(Positive)) { 
+    ytl <- v *
+      matrix(1/d, nrow = ncol(mat), ncol = length(d), byrow = T)
+  } else if (!any(Positive)) {
+    ytl <- array(0, c(ncol(mat), 0) )
+  } else  {
+    ytl <- v[, Positive, drop = FALSE] *
+      matrix(1/d[Positive], ncol = sum(Positive), nrow = ncol(mat), byrow = TRUE)
+  }
+ytl
 }

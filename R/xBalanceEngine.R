@@ -1,22 +1,9 @@
-##' xBalance helper function
-##'
-##' Make engine
-##' @param ss ss
-##' @param zz zz
-##' @param mm mm
-##' @param report report
-##' @param swt swt
-##' @param s.p s.p
-##' @param normalize.weights normalize.weights
-##' @param zzname zzname
-##' @param post.align.trans post.align.trans
-##' @return List
-xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans) {
+xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname, post.align.trans, pseudoinversion_tol) {
   ##ss is strata, zz is treatment, mm is the model matrix defined by the formula and data input to xBalance, swt is stratum weights, s.p. is the pooled sd, normalize.weights is logical (for creation of stratum weights)
 
   cnms <-
     c(
-      if ('adj.means'%in%report) c(paste(zzname,"0",sep="="),paste(zzname,"1",sep="=")) else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
+      if ('adj.means'%in%report) c("Control", "Treatment") else character(0), ##c("Tx.eq.0","Tx.eq.1") else character(0),
       if ('adj.mean.diffs'%in%report) 'adj.diff' else character(0),
       if ('adj.mean.diffs.null.sd'%in%report) 'adj.diff.null.sd' else character(0),
       if ('std.diffs'%in%report) 'std.diff' else character(0),
@@ -57,8 +44,8 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
   if ("adj.means"%in%report) 	{
     postwt0 <- unsplit(swt$sweights/tapply(zz<=0, ss, sum),
 		       ss[zz<=0], drop=TRUE)
-    ans[[paste(zzname,"0",sep="=")]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
-    ans[[paste(zzname,"1",sep="=")]] <- ans[[paste(zzname,"0",sep="=")]] + post.diff
+    ans[["Control"]] <- apply(mm[zz<=0,,drop=FALSE]*postwt0, 2,sum)
+    ans[["Treatment"]] <- ans[["Control"]] + post.diff
   }
 
 
@@ -92,7 +79,7 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
     # (NB: since tmat has just been recentered,
     # crossprod(zz,tmat) is the same as crossprod(zz-ZtH,tmat))
     ssn <- drop(crossprod(zz, tmat))
-    ssvar <- apply(dv*tmat*tmat, 2, sum)
+    ssvar <- apply(dv*tmat*tmat, 2, sum) 
   } else {
       tmat <- tmat *swt$wtratio
   }
@@ -107,29 +94,16 @@ xBalanceEngine <- function(ss,zz,mm,report, swt, s.p, normalize.weights, zzname,
 		       2*pnorm(abs(ssn/sqrt(ssvar)),lower.tail=FALSE))
   }
 
-  if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
-    # nu=0 stops calculation of the U matrix, which is not used.
-    pst.svd <- try ( svd(tmat*sqrt(dv), nu=0) )
-    if (inherits(pst.svd,'try-error')) {
-      pst.svd<-propack.svd(tmat*sqrt(dv))
-    }
-    ##	pst.svd <- svd(tmat*sqrt(dv))
-    Positive <- pst.svd$d > max(sqrt(.Machine$double.eps)*pst.svd$d[1], 0)
-    Positive[is.na(Positive)]<-FALSE # JB Note: Can we imagine a situation in which we dont want to do this?
-    if (all(Positive)) { ## is this faster? { ytl <- sweep(pst.svd$v,2,1/pst.svd$d,"*") }
-      ytl <- pst.svd$v *
-      matrix(1/pst.svd$d, nrow=dim(mm)[2],ncol=length(pst.svd$d), byrow=T)
-    } else if (!any(Positive)) {
-      ytl <- array(0, dim(mm)[2:1] )
-    } else  {
-      ytl <- pst.svd$v[, Positive, drop = FALSE] *
-      matrix(1/pst.svd$d[Positive],ncol=sum(Positive),nrow=dim(mm)[2],byrow=TRUE)
-    }
-
-    mvz <- drop(crossprod(zz, tmat)%*%ytl)
+    if ("chisquare.test" %in% report && any(ssvar > .Machine$double.eps)) {
+    ## Cholesky factor of covariance matrix's pseudo-inverse
+    cov_minus_.5 <-
+        XtX_pseudoinv_sqrt(tmat*sqrt(dv),
+                           tol = sqrt(pseudoinversion_tol) # not correct
+                           ) # for recovering pseudoinv, but back-compatible
+    mvz <- drop(crossprod(zz, tmat)%*% cov_minus_.5)
 
     csq <- drop(crossprod(mvz))
-    DF <- sum(Positive)
+    DF <- ncol(cov_minus_.5)
     tcov <- crossprod(sqrt(dv) * tmat * (1 / wtsum))
 
   } else {

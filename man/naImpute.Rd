@@ -4,7 +4,7 @@
 \alias{naImpute}
 \title{Impute NA's}
 \usage{
-naImpute(FMLA, DATA, impfn = median, na.rm = TRUE)
+naImpute(FMLA, DATA, impfn = median, na.rm = TRUE, include.NA.flags = TRUE)
 }
 \arguments{
 \item{FMLA}{Formula}
@@ -14,10 +14,12 @@ naImpute(FMLA, DATA, impfn = median, na.rm = TRUE)
 \item{impfn}{Function for imputing.}
 
 \item{na.rm}{What to do with NA's}
+
+\item{include.NA.flags}{Should NA flags be included}
 }
 \value{
 Structure
 }
 \description{
-Does this by doing something...
+Function used to fill NAs with imputation values, while adding NA flags to the data.
 }

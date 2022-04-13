@@ -1,14 +1,13 @@
-##' xBalance helper function
+##' balanceTest helper function
 ##'
 ##' Makes strata weights
 ##' @param stratum.weights Weights
 ##' @param ss.df df.
-##' @param goodstrat.df df.
 ##' @param zz treatment
 ##' @param data data
 ##' @param normalize.weights weights
 ##' @return list
-xBalance.make.stratwts <- function(stratum.weights,ss.df,goodstrat.df,zz,data,normalize.weights) {
+balanceTest.make.stratwts <- function(stratum.weights,ss.df,zz,data,normalize.weights) {
   if (is.function(stratum.weights)) {
     swt.ls <- rep(list(stratum.weights), length(ss.df))
     names(swt.ls) <- names(ss.df)
@@ -40,9 +39,9 @@ xBalance.make.stratwts <- function(stratum.weights,ss.df,goodstrat.df,zz,data,no
     if (is.function(swt.ls[[nn]])) {
       sweights <-
         do.call(swt.ls[[nn]],
-                args=list(data=data.frame(Tx.grp=zz[goodstrat.df[[nn]]],
-                              stratum.code=factor(ss.df[goodstrat.df[[nn]],nn]),
-                              data[goodstrat.df[[nn]],,drop=FALSE])),
+                args=list(data=data.frame(Tx.grp=zz,
+                              stratum.code=factor(ss.df[[nn]]),
+                              data)),
                 envir=parent.frame())
     } else {
       if (!is.numeric(swt.ls[[nn]]))
@@ -72,13 +71,13 @@ xBalance.make.stratwts <- function(stratum.weights,ss.df,goodstrat.df,zz,data,no
     if (identical(harmonic, swt.ls[[nn]])) {
       hwts <- sweights
     } else {
-      hwts <- harmonic(data.frame(Tx.grp=zz[goodstrat.df[[nn]]],
-                                  stratum.code=factor(ss.df[goodstrat.df[[nn]],nn]),
-                                  data[goodstrat.df[[nn]],,drop=FALSE]))
+      hwts <- harmonic(data.frame(Tx.grp=zz,
+                                  stratum.code=factor(ss.df),
+                                  data))
     }
     hwts <- hwts/sum(hwts, na.rm=TRUE)
 
-    wtratio <- unsplit(sweights/hwts, ss.df[[nn]], drop=TRUE)[goodstrat.df[[nn]]]
+    wtratio <- unsplit(sweights/hwts, ss.df[[nn]], drop=TRUE)
     wtlist[[nn]] <- list(sweights=sweights,wtratio=wtratio)
     NULL
   }

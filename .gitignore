@@ -1,5 +1,8 @@
+.Rhistory
 *.Rcheck
 *.tar.gz
 .local
 RItools_*
 RITOOLS_TIMESTAMP
+revdep/checks.rds
+inst/downloaded-packages

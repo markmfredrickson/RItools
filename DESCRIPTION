@@ -9,7 +9,7 @@ Description: Tools for randomization-based inference. Current focus is on the d^
 License: GPL (>=2)
 LazyData: true
 Depends:
-    R (>= 2.2.0),
+    R (>= 3.5.0),
     SparseM
 Imports:
     grDevices,

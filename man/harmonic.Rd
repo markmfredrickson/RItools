@@ -10,8 +10,9 @@ harmonic(data)
 \item{data}{Data.}
 }
 \value{
-Harmonic mean.
+numeric vector of length \code{nlevels(data$stratum.code)}
 }
 \description{
 Calculate harmonic mean
 }
+\keyword{internal}

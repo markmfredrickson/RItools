@@ -7,6 +7,40 @@ library("testthat")
 
 context("xBalance Functions")
 
+test_that("xBal univariate desriptive means agree w/ lm",{
+    set.seed(20160406)
+    n <- 7 
+     dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+     dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+
+     lm1 <- lm(x1~z, data=dat)
+     xb1 <- xBalance(z~x1, strata = list(`Unstrat` = NULL, s = ~s), data=dat, report=c("adj.mean.diffs"))
+     expect_equal(xb1$results["x1", "adj.diff", "Unstrat"], coef(lm1)["z"], check.attributes=F)
+
+     lm2a <- lm(x1~z+s, data=dat) 
+     expect_equivalent(xb1$results["x1", "adj.diff", "s"], coef(lm2a)[["z"]])
+})
+
+test_that("xBal univariate inferentials agree w/ conditional logistic Rao score test",{
+    library(survival)
+    set.seed(20160406)
+    n <- 7 
+     dat <- data.frame(x1=rnorm(n), x2=rnorm(n),
+                        s=rep(c("a", "b"), c(floor(n/2), ceiling(n/2)))
+                        )
+     dat = transform(dat, z=as.numeric( (x1+x2+rnorm(n))>0 ) )
+    xb1b <- xBalance(z~x1, strata = list(`Unstrat` = NULL, s = ~s), data=dat, report=c("z.scores"))
+     cl1 <- clogit(z~x1, data=dat)
+     cl2 <- clogit(z~x1+strata(s), data=dat)
+
+
+    expect_equal(summary(cl1)$sctest['test'],(xb1b$results["x1", "z", "Unstrat"])^2 , check.attributes=F)
+    expect_equal(summary(cl2)$sctest['test'],(xb1b$results["x1", "z", "s"])^2 , check.attributes=F)
+}
+          )
+
 test_that("xBalance returns covariance of tests", {
   set.seed(20130801)
   n <- 500
@@ -29,7 +63,7 @@ test_that("xBalance returns covariance of tests", {
                   data = as.data.frame(dat),
                   report = 'all',
                   strata = list("Unadj" = NULL,
-                                "s"   = ~ s))
+                      "Adj"   = ~ s))
 
   tcov <- attr(res$overall, "tcov")
 
@@ -41,57 +75,6 @@ test_that("xBalance returns covariance of tests", {
   # variance should be the squares of the reported null SDs
   expect_equal(sqrt(diag(tcov[[1]])), res$results[, "adj.diff.null.sd", 1])
   expect_equal(sqrt(diag(tcov[[2]])), res$results[, "adj.diff.null.sd", 2])
-
-})
-
-test_that("strata in formula", {
-  set.seed(20130801)
-  n <- 500
-
-  library(MASS)
-  xs <- mvrnorm(n,
-                mu = c(1,2,3),
-                Sigma = matrix(c(1, 0.5, 0.2,
-                                 0.5, 1, 0,
-                                 0.2, 0, 1), nrow = 3, byrow = T))
-  colnames(xs) <- c("X1", "X2", "X3")
-
-  p <- plogis(xs[,1]- 0.25 * xs[,2] - 1)
-  z <- rbinom(n, p = p, size = 1)
-  s <- rep(c(0,1), each = n/2)
-  s2 <- rep(rep(c(0,1), each=n/4), 2)
-
-  dat <- cbind(z, xs, s, s2)
-
-
-  res <- xBalance(z ~ . - s - s2,
-                  data = as.data.frame(dat),
-                  report = 'all',
-                  strata = list("Unadj" = NULL,
-                                "s"     = ~ s))
-
-  res2 <- xBalance(z ~ . - s - s2 + strata(s),
-                   data = as.data.frame(dat),
-                   report = 'all')
-
-  expect_true(all.equal(res, res2, check.attributes=FALSE))
-
-
-
-  res3 <- xBalance(z ~ . - s - s2,
-                   data = as.data.frame(dat),
-                   report = 'all',
-                   strata = list("Unadj" = NULL,
-                                 "s"     = ~ s,
-                                 "s2"    = ~ s2))
-
-  res4 <- xBalance(z ~ . - s - s2 + strata(s) + strata(s2),
-                   data = as.data.frame(dat),
-                   report = 'all')
-
-  expect_true(all.equal(res3, res4, check.attributes=FALSE))
-
-
 })
 
 test_that("partial arguments to report", {
@@ -149,8 +132,8 @@ test_that("partial arguments to report", {
   expect_true(all(colnames(res.a.m.d.n1$results) == c("adj.diff.null.sd", "p")))
   expect_true(all(colnames(res.a.m.d.n2$results) == c("adj.diff.null.sd", "p")))
 
-  expect_true(all(colnames(res.mult1$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
-  expect_true(all(colnames(res.mult2$results) == c("pr=0", "pr=1", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult1$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
+  expect_true(all(colnames(res.mult2$results) == c("Control", "Treatment", "adj.diff", "adj.diff.null.sd", "z", "p")))
   expect_true(!is.null(colnames(res.chi1$overall)))
   expect_true(!is.null(colnames(res.chi2$overall)))
 
@@ -188,5 +171,5 @@ test_that("Passing post.alignment.transform, #26", {
                res6$overall["unstrat","p.value"])
 
   # to dos: test combo of a transform with non-default stratum weights.
-
+  
 })

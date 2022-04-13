@@ -15,7 +15,8 @@ xBalance(
   covariate.scaling = NULL,
   normalize.weights = TRUE,
   impfn = median,
-  post.alignment.transform = NULL
+  post.alignment.transform = NULL,
+  pseudoinversion_tol = .Machine$double.eps
 )
 }
 \arguments{
