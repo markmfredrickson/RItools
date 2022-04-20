@@ -148,22 +148,21 @@ subset.xbal <- function(x,
 
 ## SparseM-related
 
-##' Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
-##' has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
-##'
-##' NA's give rise to rows with no 1s.
-##' As the result is only meaningful in the context of the SparseM package,
-##' function requires that SparseM be loaded.
-##' @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
-##' @param thefactor Factor variable, or object inheriting from class factor
-##' @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
-##' @export
-##' @author Ben Hansen
-##' @examples
-##' sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
-##' mod_matrix <- model.matrix(~Species-1, iris)
-##' all.equal(as.matrix(sparse_mod_matrix),
-##'           mod_matrix, check.attributes=FALSE)
+## Turn a factor variable into a sparse matrix of 0's and 1's, such that if observation i
+## has the jth level then there is a 1 at position (i,j) (but nowhere else in row i).
+##
+## NA's give rise to rows with no 1s.
+## As the result is only meaningful in the context of the SparseM package,
+## function requires that SparseM be loaded.
+## @title Sparse matrix dummy coding of a factor variable (omitting the intercept)
+## @param thefactor Factor variable, or object inheriting from class factor
+## @return Sparse csr matrix the columns of which are dummy variables for levels of thefactor
+## @author Ben Hansen
+## @examples
+## sparse_mod_matrix <-  SparseMMFromFactor(iris$Species)
+## mod_matrix <- model.matrix(~Species-1, iris)
+## all.equal(as.matrix(sparse_mod_matrix),
+##           mod_matrix, check.attributes=FALSE)
 SparseMMFromFactor <- function(thefactor) {
   stopifnot(inherits(thefactor, "factor"))
   theNA <- ##if (inherits(thefactor, "optmatch")) !matched(thefactor) else
@@ -184,16 +183,16 @@ SparseMMFromFactor <- function(thefactor) {
 }
 
 
-##' slm.fit.csr with a fix
-##'
-##' SparseM's slm.fit.csr has a bug for intercept only models
-##' (admittedly, these are generally a little silly to be done as a
-##' sparse matrix), but in order to avoid duplicate code, if
-##' everything is in a single strata, we use the intercept only model.
-##' @param x As slm.fit.csr
-##' @param y As slm.fit.csr
-##' @param ... As slm.fit.csr
-##' @return As slm.fit.csr
+## slm.fit.csr with a fix
+##
+## SparseM's slm.fit.csr has a bug for intercept only models
+## (admittedly, these are generally a little silly to be done as a
+## sparse matrix), but in order to avoid duplicate code, if
+## everything is in a single strata, we use the intercept only model.
+## @param x As slm.fit.csr
+## @param y As slm.fit.csr
+## @param ... As slm.fit.csr
+## @return As slm.fit.csr
 ##' @importFrom SparseM chol backsolve
 slm.fit.csr.fixed <- function (x, y, ...)
 {
@@ -223,20 +222,18 @@ slm.fit.csr.fixed <- function (x, y, ...)
         fitted = fitted, df.residual = df)
 }
 
-##' slm.wfit with two fixes
-##'
-##' slm.wfit shares the intercept-only issue with slm.fit,
-##' and in addition has an issue where it carries forward
-##' incorrect residuals and fitted values.
-##'
-##' @param x As slm.wfit
-##' @param y As slm.wfit
-##' @param weights As slm.wfit
-##' @param ... As slm.wfit
-##' @return As slm.wfit
+## slm.wfit with two fixes
+##
+## slm.wfit shares the intercept-only issue with slm.fit,
+## and in addition has an issue where it carries forward
+## incorrect residuals and fitted values.
+##
+## @param x As slm.wfit
+## @param y As slm.wfit
+## @param weights As slm.wfit
+## @param ... As slm.wfit
+## @return As slm.wfit
 ##' @importFrom SparseM is.matrix.csr
-
-
 slm.wfit.csr <- function (x, y, weights, ...) 
 {
 
@@ -260,16 +257,16 @@ slm.wfit.csr <- function (x, y, weights, ...)
 }
 
 ### Other linear algebra
-##' Modeled on MASS's \code{ginv}
-##'
-##' 
-##' @title Matrix square root of XtX's pseudoinverse
-##' @param mat double-precision matrix
-##' @param mat.is.XtX is mat a crossproduct of an X matrix, or X itself?
-##' @param tol tolerance
-##' @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
-##' @author Ben Hansen
-##' @keywords internal
+## Modeled on MASS's \code{ginv}
+##
+## 
+## @title Matrix square root of XtX's pseudoinverse
+## @param mat double-precision matrix
+## @param mat.is.XtX is mat a crossproduct of an X matrix, or X itself?
+## @param tol tolerance
+## @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
+## @author Ben Hansen
+## @keywords internal
 XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5)
 {
     pst.svd <- try(svd(mat, nu=0))

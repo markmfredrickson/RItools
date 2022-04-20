@@ -131,7 +131,6 @@
 ##'   118--136.
 ##' @author Ben Hansen and Jake Bowers and Mark Fredrickson
 ##' @keywords design nonparametric
-##' @import SparseM svd
 ##' @examples
 ##' data(nuclearplants)
 ##' ##No strata, default output

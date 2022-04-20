@@ -9,8 +9,7 @@ Description: Tools for randomization-based inference. Current focus is on the d^
 License: GPL (>=2)
 LazyData: true
 Depends:
-    R (>= 3.5.0),
-    SparseM
+    R (>= 3.5.0)
 Imports:
     grDevices,
     abind,
@@ -19,7 +18,8 @@ Imports:
     stats,
     graphics,
     methods,
-    survival
+    survival,
+    SparseM
 Suggests:
     testthat,
     roxygen2,
