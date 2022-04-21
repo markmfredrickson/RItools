@@ -6,3 +6,6 @@ RItools_*
 RITOOLS_TIMESTAMP
 revdep/checks.rds
 inst/downloaded-packages
+doc
+Meta
+vignettes/*.R

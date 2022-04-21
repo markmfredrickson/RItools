@@ -21,3 +21,6 @@ tests/*.Rout.save
 ^CRAN-RELEASE$
 ^CRAN-SUBMISSION$
 ^LICENSE\.md$
+^doc$
+^Meta$
+nonbuild

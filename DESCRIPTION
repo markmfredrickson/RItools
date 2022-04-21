@@ -19,8 +19,13 @@ Imports:
     graphics,
     methods,
     survival,
-    SparseM
+    SparseM,
+    ggplot2,
+    tidyr,
+    tibble,
+    dplyr
 Suggests:
+    knitr, rmarkdown,
     testthat,
     roxygen2,
     MASS
