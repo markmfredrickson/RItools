@@ -102,6 +102,9 @@
 ##'   means use \code{\link{mean.default}}.
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
+##' @param pseudoinversion_tol The function uses a singular value decomposition
+##'   to invert a covariance matrix. Singular values less than this tolerance
+##'   will be treated as zero.
 ##' @return An object of class \code{c("xbal", "list")}.  There are
 ##'   \code{plot}, \code{print}, and \code{xtable} methods for class
 ##'   \code{"xbal"}; the \code{print} method is demonstrated in the

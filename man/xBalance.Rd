@@ -75,6 +75,10 @@ means use \code{\link{mean.default}}.}
 
 \item{post.alignment.transform}{Optional transformation applied to
 covariates just after their stratum means are subtracted off.}
+
+\item{pseudoinversion_tol}{The function uses a singular value decomposition
+to invert a covariance matrix. Singular values less than this tolerance
+will be treated as zero.}
 }
 \value{
 An object of class \code{c("xbal", "list")}.  There are
