@@ -1,6 +1,7 @@
 data(nuclearplants)
 
-xb <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+xb <- xBalance(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+               strata = list(none = NULL, pt = ~pt),
                data = nuclearplants)
 
 # Using the default grouping:
