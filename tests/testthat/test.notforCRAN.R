@@ -1,10 +1,11 @@
 ### Tests we don't want to have run on CRAN   ###
 ### (ordinarily because the test will throw   ###
 ### a warning or error during CRAN-checking)  ###
+context("Not for CRAN")
 
 ###    tests relocated from test.utils.R      ###
 
-context("Utilities, external dependencies etc")
+## context("Utilities, external dependencies etc")
 
 test_that("data.table options issue #69", {
 
@@ -24,7 +25,7 @@ test_that("survival::strata() still conforms to our expectations",
     expect_equal(6, nlevels(facC))
 })
 
-context("Pseudoinversion via XtX_pseudoinv_sqrt()")
+## context("Pseudoinversion via XtX_pseudoinv_sqrt()")
 
 test_that("proper inversion in full rank case",{
     basis <- cbind(1/sqrt(3), poly(rnorm(3), degree=2))
