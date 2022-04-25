@@ -220,3 +220,19 @@ test_that("Var names in print.xbal(,horiz=F)",{
   pt2 <- print(xb, horiz=F, printme=F)
   expect_true('std.diff' %in% colnames(pt2$vartable[['S']])) # not 'std.diff.S'
 })
+
+test_that("Matrix pseudoinversion also returns rank", {
+  m1 <- diag(c(1,1,0))
+  a1 <- RItools:::XtX_pseudoinv_sqrt(m1)
+  expect_equal(attr(a1, "r"), 2)
+
+
+  x <- rnorm(100)
+  xx <- matrix(c(x, x, x), ncol = 3)
+  xtx <- t(xx) %*% xx
+  a2 <- RItools:::XtX_pseudoinv_sqrt(xtx)
+  expect_equal(attr(a2, "r"), 1)
+
+
+  
+})

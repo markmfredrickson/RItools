@@ -290,5 +290,8 @@ XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.ep
     ytl <- v[, Positive, drop = FALSE] *
       matrix(1/d[Positive], ncol = sum(Positive), nrow = ncol(mat), byrow = TRUE)
   }
-ytl
+  r <- sum(Positive)
+  attr(ytl, "r") = r
+
+  return(ytl)
 }

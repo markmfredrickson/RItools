@@ -1088,6 +1088,50 @@ test_that("HB08_2016 agreement w/ xBal()", {
 
 } )
 
+test_that("HB08 and HB08_2016 flag degenerate statistics", {
+
+  set.seed(0303022134)
+
+  # pairs
+  s <- 20
+  n <- 2 * s
+  z <- rep(c(0,1), s)
+  b <- rep(1:s, each = 2)
+
+  ## theory indicates that the statistic will be degenerate when r - (n - s) = 0
+  ## where r is the rank of the matrix in the quadratic form of the test statistic
+
+  x <- replicate(n - s, runif(n, 0, 100))
+
+  colnames(x) <- paste0("x", 1:(n-s))
+
+
+  df_good <- data.frame(z = z, x = x[, -1], b = b, '(weights)' = 1, check.names = FALSE)
+  designs_good <- RItools:::makeDesigns(z ~ . + strata(b) - 1, data = df_good)
+  designs_good <- as(designs_good, "StratumWeightedDesignOptions")
+  designs_good@Sweights <- RItools:::DesignWeights(designs_good)
+  aligned_good <- RItools:::alignDesignsByStrata("b", designs_good)
+
+  expect_silent(HB08(aligned_good))
+  expect_silent(HB08_2016(aligned_good))
+  
+  df_bad <- data.frame(z = z, x = x, b = b, '(weights)' = 1, check.names = FALSE)
+  designs_bad <- RItools:::makeDesigns(z ~ . + strata(b) - 1, data = df_bad)
+  designs_bad <- as(designs_bad, "StratumWeightedDesignOptions")
+  designs_bad@Sweights <- RItools:::DesignWeights(designs_bad)
+  aligned_bad <- RItools:::alignDesignsByStrata("b", designs_bad)
+
+  expect_warning(HB08(aligned_bad), "degenerate")
+  expect_warning(HB08_2016(aligned_bad), "degenerate")
+
+  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08, report = 'all'))
+  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016, report = 'all'))
+
+  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08, report = 'all'), "degenerate")
+  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08_2016, report = 'all'), "degenerate")
+
+})
+
 ### Tests to write...
 ##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})
 ##test_that("",{})

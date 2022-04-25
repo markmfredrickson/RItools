@@ -898,6 +898,17 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
           )
 }
 
+# a helper function used by HB08 and HB08_2016 to see if problem is degenerate
+# due to too many covariates
+check_for_degenerate <- function(mat, n, s) {
+
+   mat_rank <- attr(mat, "r")
+
+  if (mat_rank >= (n - s)) {
+    warning("Degrees of freedom exceeds units less number of strata, which can lead to a degenerate statistic. Try decreasing number of covariates tested.")
+  }
+}
+
 ##' @title Adjusted & combined differences as in Hansen & Bowers (2008)
 ##' @param alignedcovs A CovsAlignedToADesign object
 ##' @return list with components:
@@ -980,6 +991,9 @@ HB08 <- function(alignedcovs) {
     cov_minus_.5 <-
         XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance, drop=FALSE],
                            mat.is.XtX = TRUE)
+
+    check_for_degenerate(cov_minus_.5, n_, s_)
+
     mvz <- drop(crossprod(ssn[!zero_variance], cov_minus_.5))
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
@@ -1039,6 +1053,8 @@ HB08_2016 <- function(alignedcovs) {
     ssn  <- ssn[ssvar > .Machine$double.eps]
 
     cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde)
+    check_for_degenerate(cov_minus_.5, length(zz), ncol(S))
+    
     mvz <- drop(crossprod(ssn, cov_minus_.5))
     csq <- drop(crossprod(mvz))
     DF <- ncol(cov_minus_.5)
