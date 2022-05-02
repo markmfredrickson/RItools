@@ -115,8 +115,7 @@ test_that("Select a subset of xbal results (for printing, etc)", {
   # the data are will be grouped as (X, XY) and (all levels W by all levels
   # K), Y is not in an explicit group
   xb <- balanceTest(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
-                 data = df,
-                 report = 'all')
+                 data = df)
 
   # strata based subsetion is the easiest as it common across groups and
   # variables
@@ -170,14 +169,10 @@ test_that("Formatting w/ appropriate sigfigs values",{
                    K = as.factor(letters[sample.int(3, n, replace = T)]),
                    U = rnorm(n) )
   xb1 <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
-                 data = df,
-                 report = 'all')
+                 data = df)
   pt1 <- print(xb1, digits=2, printme=FALSE)
   xb2 <- balanceTest(Z ~ X * Y + W * K + strata(cut(U, 3)),
-                 data = df,
-                 report = c("std.diffs",  # descriptives only: invokes different
-                            "adj.means", "adj.mean.diffs") #print.xbal() logic
-                 )
+                 data = df)
   ## Confirm that the by-row rounder rounds to requested sigfigs, potentially
   ## w/ more rounding for Control and Treatment columns:
   ca1 <- original_units_var_formatter(xb2$results[,c("Control", "Treatment", "adj.diff"),, drop=F], 3)
@@ -214,8 +209,7 @@ test_that("Var names in print.xbal(,horiz=F)",{
   # the data are will be grouped as (X, XY) and (all levels W by all levels
   # K), Y is not in an explicit group
   xb <- balanceTest(Z ~ X * Y + W * K + strata(S) + strata(cut(U, 3)),
-                 data = df,
-                 report = 'all')
+                 data = df)
 
   pt2 <- print(xb, horiz=F, printme=F)
   expect_true('std.diff' %in% colnames(pt2$vartable[['S']])) # not 'std.diff.S'

@@ -88,12 +88,6 @@
 ##'   interpreted as no stratification; or a factor with length equal
 ##'   to the number of rows in data; or a data frame of such
 ##'   factors. See below for examples.
-##' @param report Character vector listing measures to report for each
-##'   stratification; a subset of \code{c("adj.means",
-##'   "adj.mean.diffs", "chisquare.test", "std.diffs", "z.scores",
-##'   "p.values", "all")}. P-values reported are two-sided for the
-##'   null-hypothesis of no effect. The option "all" requests all
-##'   measures.
 ##' @param p.adjust.method Method of p-value adjustment.
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
@@ -135,46 +129,27 @@
 ##' @import svd stats abind
 ##' @examples
 ##' data(nuclearplants)
-##' ##No strata, default output
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##' ## No strata
+##' balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ##'          data=nuclearplants)
 ##'
-##' ##No strata, all output
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-##'          data=nuclearplants,
-##'          report=c("all"))
-##'
-##' ##Stratified, all output
-##' balanceTest(pr~.-cost-pt + strata(pt),
-##'          data=nuclearplants,
-##'          report=c("adj.means", "adj.mean.diffs",
-##'                   "chisquare.test", "std.diffs",
-##'                   "z.scores", "p.values"))
-##'
-##' ##Comparing unstratified to stratified, just adjusted means and
-##' #omnibus test
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
-##'          data=nuclearplants,
-##'          report=c("adj.means", "chisquare.test"))
-##'
-##' ##Comparing unstratified to stratified, just adjusted means and
-##' #omnibus test
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
-##'          data=nuclearplants,
-##'          report=c("adj.means", "chisquare.test"))
+##' ## Stratified
+##' ## Note use of the `. - cost` to use all columns except `cost` 
+##' balanceTest(pr ~ . - cost + strata(pt),
+##'          data=nuclearplants)
 ##'
 ##' ##Missing data handling.
-##' testdata<-nuclearplants
-##' testdata$date[testdata$date<68]<-NA
-##'
-##'
+##' testdata <- nuclearplants
+##' testdata$date[testdata$date < 68] <- NA
+##' balanceTest(pr ~ . - cost + strata(pt),
+##'             data = testdata)
 ##'
 ##' ## Variable-by-variable Wilcoxon rank sum tests, with an omnibus test
 ##' ## of multivariate differences on rank scale.
-##' balanceTest(pr~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
-##'          data=nuclearplants,
-##'          report=c("adj.means", "chisquare.test"),
-##' 	 post.alignment.transform=function(x,weights) rank(x))
+##' balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+##'          data = nuclearplants,
+##' 	       post.alignment.transform = function(x, weights) rank(x))
+##'
 ##' ## (Note that the post alignment transform is expected to be a function
 ##' ## accepting a second argument, even if the argument is not used.
 ##' ## The unit weights vector will be provided as this second argument, 
@@ -184,9 +159,6 @@
 balanceTest <- function(fmla,
                      data,
                      strata = NULL,
-                     report=c("std.diffs","z.scores","adj.means","adj.mean.diffs",
-                         "chisquare.test","p.values", "all")[1:2],
-                     #                     include.means=FALSE, chisquare.test=FALSE,
                      unit.weights,
                      stratum.weights = harmonic_times_mean_weight,
                      subset,
@@ -247,22 +219,10 @@ balanceTest <- function(fmla,
 
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
-  valid.for.report <- c("adj.means","adj.mean.diffs","chisquare.test",
-                                     "std.diffs","z.scores","p.values","all")
-  report.good <- charmatch(report, valid.for.report, -1)
 
-  if (any(report.good == -1)) {
-    stop(paste("Invalid option(s) for report:", paste(report[report.good == -1], collapse=", ")))
-  }
-  if (any(report.good == 0)) {
-    stop(paste("Option(s) for report match multiple possible values:", paste(report[report.good == 0], collapse=", ")))
-  }
 
-  # Now that we've found the partial matches, get their proper names
-  report <- valid.for.report[report.good]
-
-  if("all" %in% report)
-    report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
+  ## we used to allow select report options, not any more.
+  report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
 
   design          <- makeDesigns(fmla, data)
   ## Which of the NM cols to look at for a given variable's NM info

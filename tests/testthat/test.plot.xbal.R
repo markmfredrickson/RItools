@@ -207,7 +207,7 @@ test_that("preparing xbalance objects for plotting, includes groups", {
                   x4 = sample(c(T,F), 100, replace = T),
                   x5 = sample(c("A", "B", "C"), 100, replace = T))
 
-  xb <- balanceTest(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x, report = 'all')
+  xb <- balanceTest(z ~ x1 * x2 * x3 + strata(x4) + strata(x5), data = x)
 
   xbp <- RItools:::prepareXbalForPlot(xb)
 

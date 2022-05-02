@@ -891,7 +891,7 @@ test_that("HB08 agreement w/ xBal()", {
                      design=simple0, simplify=FALSE, USE.NAMES=TRUE)
     btis0 <- lapply(asimple0, HB08)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
-                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+                    strata = list(unmatched = NULL, matched = ~ m), report = 'all')
 
     expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
@@ -927,7 +927,7 @@ test_that("HB08 agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled,
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts1,
-                   strata = list(unmatched = NULL), report = c("all"))
+                   strata = list(unmatched = NULL), report = 'all')
   expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, 
@@ -940,7 +940,7 @@ test_that("HB08 agreement w/ xBal()", {
   xy_xbwts1 <- transform(xy_wted1, x1=x1*wts.scaled,
                         x2=x2*wts.scaled, x3=x3*wts.scaled)
   xb1m <- xBalance(y ~ x1 + x2 + x3, data = xy_xbwts1,
-                   strata = list(matched = ~ m), report = c("all"))
+                   strata = list(matched = ~ m), report = 'all')
 
   expect_equivalent(btis1[['m']]$adj.diff.of.totals[-4], # remove '(_non-null record_)' entry
                     xb1m$results[,'adj.diff',"matched"])
@@ -966,7 +966,7 @@ test_that("HB08 agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled,
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
-                   strata = list(unmatched = NULL), report = c("all"))
+                   strata = list(unmatched = NULL), report = 'all')
   expect_equivalent(btis1[['--']]$adj.diff.of.totals, 
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, 
@@ -982,7 +982,7 @@ wt2.scaled  <- xy_wted2$'(weights)' /
                          w=wts.scaled)
 
   xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts2,
-                   strata = list(matched = ~ m), report = c("all"))
+                   strata = list(matched = ~ m), report = 'all')
 
   expect_equivalent(btis1[['m']]$adj.diff.of.totals,
                     xb1m$results[,'adj.diff',"matched"])
@@ -1022,7 +1022,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
                      simplify=TRUE, USE.NAMES=TRUE)
     btis0 <- lapply(asimple0, HB08_2016)
     xb0 <- xBalance(y ~ x1 + x2 + x3, data = xy,
-                    strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
+                    strata = list(unmatched = NULL, matched = ~ m), report = 'all')
 
     expect_equivalent(btis0[['--']]$adj.diff.of.totals[-4], # remove '(_any Xs recorded_)' entry
                       xb0$results[,'adj.diff',"unmatched"])
@@ -1062,7 +1062,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled,
                         w=wts.scaled)
   xb1u <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
-                   strata = list(unmatched = NULL), report = c("all"))
+                   strata = list(unmatched = NULL), report = 'all')
   expect_equivalent(btis1[['--']]$adj.diff.of.totals, # remove '(_any Xs recorded_)' entry
                     xb1u$results[,'adj.diff',"unmatched"])
   expect_equivalent(btis1[['--']]$tcov, # remove '(_any Xs recorded_)' entries
@@ -1076,7 +1076,7 @@ test_that("HB08_2016 agreement w/ xBal()", {
                         x2=x2*wts.scaled, x3=x3*wts.scaled,
                         w= wts.scaled)
   xb1m <- xBalance(y ~ x1 + x2 + x3 + w, data = xy_xbwts,
-                   strata = list(matched = ~ m), report = c("all"))
+                   strata = list(matched = ~ m), report = 'all')
 
   expect_equivalent(btis1[['m']]$adj.diff.of.totals, # remove '(_any Xs recorded_)' entry
                     xb1m$results[1:3,'adj.diff',"matched"])
@@ -1124,11 +1124,11 @@ test_that("HB08 and HB08_2016 flag degenerate statistics", {
   expect_warning(HB08(aligned_bad), "degenerate")
   expect_warning(HB08_2016(aligned_bad), "degenerate")
 
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08, report = 'all'))
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016, report = 'all'))
+  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08))
+  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016))
 
-  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08, report = 'all'), "degenerate")
-  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08_2016, report = 'all'), "degenerate")
+  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08), "degenerate")
+  expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08_2016), "degenerate")
 
 })
 

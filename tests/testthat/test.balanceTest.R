@@ -17,7 +17,7 @@ test_that("balT univariate descriptive means agree w/ reference calculations",{
 
 
     lm1 <- lm(x1~z, data=dat)
-     xb1 <- balanceTest(z~x1+strata(s), data=dat, report=c("adj.mean.diffs"))
+     xb1 <- balanceTest(z~x1+strata(s), data=dat)
      expect_equal(xb1$results["x1", "adj.diff", "--"], coef(lm1)["z"], check.attributes=F)
 
      ## try to match default ETT weighting    
@@ -49,23 +49,19 @@ test_that("Consistency between lm() and balTest()", {
 
     bt.all <- balanceTest(z ~ x1 + strata(blk) - 1,
                       data = dta.all,
-                      unit.weights = size, # weighted by cluster size
-                      report = c("std.diffs", "z.scores",
-                                 "adj.means", "adj.mean.diffs"))
+                      unit.weights = size) # weighted by cluster size
+                      
 
     ## we don't further test these values, but we should handle this situation
     expect_warning(bt.lost <- balanceTest(z ~ x1 + strata(blk) - 1,
                           data = dta.lost,
-                          unit.weights = size, # weighted by cluster size
-                          report = c("std.diffs", "z.scores",
-                                     "adj.means", "adj.mean.diffs")))
+                          unit.weights = size)) # weighted by cluster size
 
     dta.all$zerosize <- c(0,0, dta.all$size[3:n])
     bt.zeroed <- balanceTest(z ~ x1 + strata(blk) - 1,
                              data = dta.all,
-                             unit.weights = zerosize, # weighted by cluster size
-                             report = c("std.diffs", "z.scores",
-                                        "adj.means", "adj.mean.diffs"))
+                             unit.weights = zerosize) # weighted by cluster size
+                             
 
 
     ## everyone has prob 1/2 of assignment, so inv. prob. is 2
@@ -105,7 +101,7 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
     while (with(dat, any(tapply(z, s, var)==0)))
      dat  <-  transform(dat, z=as.numeric( (x1+rnorm(n))>0 ) )
     
-    xb1 <- balanceTest(z~x1+strata(s), data=dat, report=c("z.scores"))
+    xb1 <- balanceTest(z~x1+strata(s), data=dat)
     cl1a <- suppressWarnings( # may warn about non-convergence
         clogit(z~x1, data=dat, iter.max=1) )
      cl1b <- suppressWarnings( clogit(z~x1+strata(s), data=dat, iter.max=1) )
@@ -113,7 +109,7 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
     expect_equivalent(summary(cl1a)$sctest['test'],(xb1$results["x1", "z", "--"])^2 )
     expect_equivalent(summary(cl1b)$sctest['test'],(xb1$results["x1", "z", "s"])^2 )
 
-    xb2 <- balanceTest(z~x1+x2+strata(s), data=dat, report=c("chisq"))
+    xb2 <- balanceTest(z~x1+x2+strata(s), data=dat)
     cl2a <- suppressWarnings( # may warn about non-convergence
         clogit(z~x1+x2, data=dat, iter.max=1) )
      cl2b <- suppressWarnings( clogit(z~x1+x2+strata(s), data=dat, iter.max=1) )
@@ -122,8 +118,7 @@ test_that("balT inferentials, incl. agreement w/ Rao score test for cond'l logis
     expect_equivalent(summary(cl2b)$sctest['test'],(xb2$overall["s", "chisquare"]) )
 
     xb3 <- balanceTest(z~w1+w2+strata(s),
-                    data=transform(dat, w1=x2+.1*x1, w2=x2-.1*x1),
-                    report=c("z.scores", "chisq"))
+                    data=transform(dat, w1=x2+.1*x1, w2=x2-.1*x1))
     expect_equivalent(xb2$overall["--", "chisquare"], xb3$overall["--", "chisquare"])
     expect_equivalent(xb2$overall["s", "chisquare"], xb3$overall["s", "chisquare"])
 
@@ -156,8 +151,7 @@ test_that("balT returns covariance of tests", {
   # in the descriptives section
   res <- balanceTest(z ~ . + strata(s),
                   data = as.data.frame(dat),
-                  stratum.weights = RItools:::effectOfTreatmentOnTreated,
-                  report = 'all')
+                  stratum.weights = RItools:::effectOfTreatmentOnTreated)
 
   tcov <- attr(res$overall, "tcov")
 
@@ -191,14 +185,14 @@ test_that("Passing post.alignment.transform, #26", {
   expect_error(balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = mean_),
                "Invalid post.alignment.transform given")
 
-  res4 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank_, report="all")
-  res5 <- balanceTest(pr ~ ., data=nuclearplants, report="all")
+  res4 <- balanceTest(pr ~ ., data=nuclearplants, post.alignment.transform = rank_)
+  res5 <- balanceTest(pr ~ ., data=nuclearplants)
 
   expect_false(isTRUE(all.equal(res4,res5)))
 
   # a wilcoxon rank sum test, asymptotic and w/o continuity correction
   res6 <- balanceTest(pr ~ cost, data=nuclearplants, post.alignment.transform = rank_,
-                   report="all", p.adjust.method='none')
+                      p.adjust.method='none')
 
   expect_equal(res6$results["cost", "p", "--"],
                wilcox.test(cost~pr, data=nuclearplants, exact=FALSE, correct=FALSE)$p.value)
@@ -272,13 +266,12 @@ test_that("p.adjust.method argument", {
 
   res.none <- balanceTest(pr ~ . + strata(pt),
                        data = nuclearplants,
-                       report = c("p.value", "chisquare"),
                        p.adjust.method = "none")
   
   # the default argument (holm) should cause the p-values to increase
   res.holm <- balanceTest(pr ~ . + strata(pt),
-                       data = nuclearplants,
-                       report = c("p.value", "chisquare"))
+                       data = nuclearplants)
+                       
   T_or_NA <- function(vec) {ans <- as.logical(vec) ; ans[is.na(ans)] <- TRUE; ans}
   
   expect_true(all(T_or_NA(res.holm$result[, "p", ] >= res.none$result[, "p", ])))
@@ -288,12 +281,10 @@ test_that("p.adjust.method argument", {
 
     res1.none <- balanceTest(pr ~ cost + strata(pt),
                        data = nuclearplants,
-                       report = c("p.value", "chisquare"),
                        p.adjust.method = "none")
   
   res1.holm <- balanceTest(pr ~ cost + strata(pt),
-                       data = nuclearplants,
-                       report = c("p.value", "chisquare"))
+                       data = nuclearplants)
 
   expect_equal(res1.holm$result[, "p", ], res1.none$result[, "p", ])
   expect_equal(res1.holm$overall[, "p.value"], res1.none$overall[, "p.value"])
@@ -366,8 +357,8 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_true(all(table(xy$y, xy$m)==1))
   
 
-  xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy, strata = list(unmatched = NULL, matched = ~ m), report = c("all"))
-  bt1 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy, report = "all",)
+  xb1 <- xBalance(y ~ x1 + x2 + x3, data = xy, strata = list(unmatched = NULL, matched = ~ m), report = 'all')
+  bt1 <- balanceTest(y ~ x1 + x2 + x3 + strata(m), data = xy)
   cr1 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy)
 
   expect_equivalent(xb1$overall$chisquare, bt1$overall[2:1, "chisquare"])
@@ -383,8 +374,8 @@ test_that("balanceTest agrees with other methods where appropriate", {
   xy.wts.u <- data.frame(x1 = xy.wts$x1 * wts.scaled, x2 = xy.wts$x2 * wts.scaled, x3 = xy.wts$x3 * wts.scaled,
                          w=wts.scaled,
                      idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
-  xb2u <- xBalance(y ~ x1 + x2 + x3 +w, data = xy.wts.u, strata = list(unmatched = NULL), report = "chisquare.test")
-  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts, report = "chisquare.test")
+  xb2u <- xBalance(y ~ x1 + x2 + x3 +w, data = xy.wts.u, strata = list(unmatched = NULL), report = 'all')
+  bt2u <- balanceTest(y ~ x1 + x2 + x3, data = xy.wts, unit.weights = wts)
   expect_equivalent(xb2u$overall$chisquare, bt2u$overall['--', "chisquare"])
 
   ## in stratified case, weighted/totals correspondence requires that weights don't vary within strata.
@@ -393,10 +384,10 @@ test_that("balanceTest agrees with other methods where appropriate", {
   wts2.scaled <- xy.wts$wts2/mean(wtmeans)
   xy.wts.m <- data.frame(x1 = xy.wts$x1 * wts2.scaled, x2 = xy.wts$x2 * wts2.scaled, x3 = xy.wts$x3 * wts2.scaled,
                      idx = xy.wts$idx, y = xy.wts$y, m = xy.wts$m)
-  xb2m <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.m, strata = list(matched = ~ m), report = "chisquare.test")
+  xb2m <- xBalance(y ~ x1 + x2 + x3, data = xy.wts.m, strata = list(matched = ~ m), report = 'all')
 
   
-  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy.wts, unit.weights = wts2, report = "chisquare.test")
+  bt2m <- balanceTest(y ~ 0 + x1 + x2 + x3 + strata(m), data = xy.wts, unit.weights = wts2)
   cr2 <- clogit(y ~ x1 + x2 + x3 + strata(m), data = xy.wts.m)
 
   expect_equivalent(xb2m$overall$chisquare, bt2m$overall['m', "chisquare"])
