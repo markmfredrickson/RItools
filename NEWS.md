@@ -1,12 +1,19 @@
+CHANGES IN RITOOLS VERSION 0.2-0
 
-CHANGES IN RITOOLS VERSION 0.1-19
-
-* Exporting `broom::glance()` and `broom::tidy()` methods for balance test objects,
-  a work in progress (#90).
+* Exporting `broom::glance()` and `broom::tidy()` methods for balance test
+  objects, a work in progress (#90).
 * Addressed error relating to setting of pseudo-inversion tolerances (#103).
-  xBalance() stops short of correcting the error, to maintain back-compatibility;
-  but it gains a new argument, pseudoinversion_tol, with which it can readily
-  be fixed.
+  xBalance(** stops short of correcting the error, to maintain
+  back-compatibility; but it gains a new argument, pseudoinversion_tol, with
+  which it can readily be fixed.
+* New balanceTest function extends functionality of xBalance:
+  * Support for clustered designs
+  * More use of formula interface
+  * Multiple comparison adjustments for individual covariate tests
+  * Support for unit level weighting
+* Introduced ggplot2 based plotting. Optional for xBalance objects; default for
+  new balanceTest objects.
+
 
 CHANGES IN RITOOLS VERSION 0.1-18
 
