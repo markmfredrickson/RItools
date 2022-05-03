@@ -3,10 +3,10 @@
 on:
   push:
     branches:
-      - v0.1-18
+      - v0.1-18, v0.1-19
   pull_request:
     branches:
-      - v0.1-18
+      - v0.1-18, v0.1-19
 
 name: R-build-check
 
