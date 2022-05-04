@@ -56,7 +56,7 @@
 ##' Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 ##' distance that combines each of the univariate mean differences while accounting
 ##' for correlations among them. It's similar to the Hotelling's T-squared statistic,
-##' except standarized using a permutation covariance.  See Hansen and Bowers (2008).
+##' except standardized using a permutation covariance.  See Hansen and Bowers (2008).
 ##'
 ##' In contrast to the earlier function \code{xBalance} that it is intended to replace,
 ##' \code{balanceTest} accepts only binary assignment variables (for now).
@@ -88,7 +88,7 @@
 ##'   interpreted as no stratification; or a factor with length equal
 ##'   to the number of rows in data; or a data frame of such
 ##'   factors. See below for examples.
-##' @param p.adjust.method Method of p-value adjustment.
+##' @param p.adjust.method Method of p-value adjustment for the univariate tests. See the \code{\link{p.adjust}} function for available methods. By default the "holm" method is used.
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
@@ -99,10 +99,9 @@
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
 ##'   Should accept a vector of weights as its second argument.
-##' @return An object of class \code{c("xbal", "list")}.  There are
-##'   \code{plot}, \code{print}, and \code{xtable} methods for class
-##'   \code{"xbal"}; the \code{print} method is demonstrated in the
-##'   examples.
+##' @return An object of class \code{c("balancetest", "xbal", "list")}. Several
+##'   methods are inherited from the "xbal" class returned by
+##'   \code{\link{xBalance}} function.
 ##' @note Evidence pertaining to the hypothesis that a treatment
 ##'   variable is not associated with differences in covariate values
 ##'   is assessed by comparing the differences of means, without standardization, to their distributions
@@ -175,6 +174,10 @@ balanceTest <- function(fmla,
 
   if (!is.null(strata)) {
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?balanceTest, examples.")
+  }
+  
+  if (is.null(p.adjust.method)) {
+    p.adjust.method <- "none"
   }
 
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))

@@ -48,13 +48,12 @@ Should accept a vector of weights as its second argument.}
 
 \item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
-\item{p.adjust.method}{Method of p-value adjustment.}
+\item{p.adjust.method}{Method of p-value adjustment for the univariate tests. See the \code{\link{p.adjust}} function for available methods. By default the "holm" method is used.}
 }
 \value{
-An object of class \code{c("xbal", "list")}.  There are
-  \code{plot}, \code{print}, and \code{xtable} methods for class
-  \code{"xbal"}; the \code{print} method is demonstrated in the
-  examples.
+An object of class \code{c("balancetest", "xbal", "list")}. Several
+  methods are inherited from the "xbal" class returned by
+  \code{\link{xBalance}} function.
 }
 \description{
 Covariate balance, with treatment/covariate association tests
@@ -116,7 +115,7 @@ under certain modeling assumptions (discussed in Kalton 1968 and Hansen and
 Bowers 2008, Sections 3.2 and 5).  The multivariate assessment is based on a Mahalanobis-type
 distance that combines each of the univariate mean differences while accounting
 for correlations among them. It's similar to the Hotelling's T-squared statistic,
-except standarized using a permutation covariance.  See Hansen and Bowers (2008).
+except standardized using a permutation covariance.  See Hansen and Bowers (2008).
 
 In contrast to the earlier function \code{xBalance} that it is intended to replace,
 \code{balanceTest} accepts only binary assignment variables (for now).

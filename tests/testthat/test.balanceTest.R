@@ -288,7 +288,13 @@ test_that("p.adjust.method argument", {
 
   expect_equal(res1.holm$result[, "p", ], res1.none$result[, "p", ])
   expect_equal(res1.holm$overall[, "p.value"], res1.none$overall[, "p.value"])
+  
+  ## "none" and null should do the same thing.
+  res.null <- balanceTest(pr ~ . + strata(pt),
+                          data = nuclearplants,
+                          p.adjust.method = NULL)
 
+  expect_equal(res.none$result[, "p", ], res.null$result[, "p", ])
 })
 
 test_that("NAs properly handled", {

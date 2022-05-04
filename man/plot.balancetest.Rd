@@ -12,7 +12,6 @@
   strata.labels = NULL,
   variable.labels = NULL,
   groups = NULL,
-  ggplot = FALSE,
   ...
 )
 }
@@ -36,8 +35,6 @@ that maps the variables to textual labels.}
 \item{groups}{A vector of group names for each variable in
 \code{x$results}. By default, factor level variables will be
 grouped.}
-
-\item{ggplot}{Use ggplot2 to create figure. By default, uses base R graphics.}
 
 \item{...}{additional arguments to pass to \code{\link{balanceplot}}}
 }
