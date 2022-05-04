@@ -2,13 +2,14 @@
 % Please edit documentation in R/utils.R
 \name{subset.xbal}
 \alias{subset.xbal}
-\title{Select variables, strata, and statistics from a \code{xbal} object}
+\alias{subset.balancetest}
+\title{Select variables, strata, and statistics from a \code{xbal} or \code{balancetest} object}
 \usage{
 \method{subset}{xbal}(x, vars = NULL, strata = NULL, stats = NULL, tests = NULL, ...)
 }
 \arguments{
 \item{x}{The \code{xbal} object, the result of a call to
-\code{\link{xBalance}}}
+\code{\link{xBalance}} or \code{\link{balanceTest}}}
 
 \item{vars}{The variable names to select.}
 

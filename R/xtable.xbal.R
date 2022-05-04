@@ -16,9 +16,9 @@
 ##' lines \code{\\usepackage\{dcolumn\}} and
 ##' \code{\\newcolumntype\{.\}\{D\{.\}\{.\}\{2.2\}\}} to your LaTeX
 ##' document's preamble.
-##' @title An \code{xtable} method for \code{xbal} objects
+##' @title An \code{xtable} method for \code{xbal} and \code{balancetest} objects
 ##' @param x An object resulting from a call to
-##'   \code{\link{balanceTest}}.
+##'   \code{\link{balanceTest}} or \code{\link{xBalance}}.
 ##' @param caption See \code{\link[xtable]{xtable}}.
 ##' @param label See \code{\link[xtable]{xtable}}.
 ##' @param align See \code{\link[xtable]{xtable}}. Our default (as of
@@ -35,6 +35,7 @@
 ##'   \code{\link[xtable]{print.xtable}}).
 ##' @export
 ##' @import xtable
+##' @aliases xtable.balancetest
 ##' @examples
 ##' data(nuclearplants)
 ##' require(xtable)

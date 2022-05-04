@@ -13,6 +13,7 @@ makePval<-function(zs) {
 ##' @param x An \code{xbal} object.
 ##' @param ... Ignored.
 ##' @return The formula corresponding to \code{xbal}.
+##' @aliases formula.balancetest
 ##' @export
 formula.xbal<-function(x,...){
   attr(x,"fmla")
@@ -82,13 +83,13 @@ withOptions <- function(optionsToChange, fun) {
 ###        2, format, justify = justify.data))
 ###}
 
-##' Select variables, strata, and statistics from a \code{xbal} object
+##' Select variables, strata, and statistics from a \code{xbal} or \code{balancetest} object
 ##'
 ##' If any of the arguments are not specified, all the of relevant
 ##' items are included.
 ##'
 ##' @param x The \code{xbal} object, the result of a call to
-##'   \code{\link{xBalance}}
+##'   \code{\link{xBalance}} or \code{\link{balanceTest}}
 ##' @param vars The variable names to select.
 ##' @param strata The strata names to select.
 ##' @param stats The names of the variable level statistics to select.
@@ -97,6 +98,7 @@ withOptions <- function(optionsToChange, fun) {
 ##'
 ##' @return A \code{xbal} object with just the appropriate items
 ##'   selected.
+##' @aliases subset.balancetest
 ##'
 ##' @export
 subset.xbal <- function(x,

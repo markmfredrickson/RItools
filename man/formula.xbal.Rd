@@ -2,6 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{formula.xbal}
 \alias{formula.xbal}
+\alias{formula.balancetest}
 \title{Returns \code{formula} attribute of an \code{xbal} object.}
 \usage{
 \method{formula}{xbal}(x, ...)

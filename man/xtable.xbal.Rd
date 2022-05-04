@@ -2,7 +2,8 @@
 % Please edit documentation in R/xtable.xbal.R
 \name{xtable.xbal}
 \alias{xtable.xbal}
-\title{An \code{xtable} method for \code{xbal} objects}
+\alias{xtable.balancetest}
+\title{An \code{xtable} method for \code{xbal} and \code{balancetest} objects}
 \usage{
 \method{xtable}{xbal}(
   x,
@@ -17,7 +18,7 @@
 }
 \arguments{
 \item{x}{An object resulting from a call to
-\code{\link{balanceTest}}.}
+\code{\link{balanceTest}} or \code{\link{xBalance}}.}
 
 \item{caption}{See \code{\link[xtable]{xtable}}.}
 
