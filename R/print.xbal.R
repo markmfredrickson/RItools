@@ -1,6 +1,6 @@
-##' A \code{print} method for \code{xBalance} objects.
+##' A \code{print} method for balance test objects produced by \code{xBalance} and \code{balanceTest}.
 ##'
-##' @title Printing xBalance Objects
+##' @title Printing xBalance and balanceTest Objects
 ##' @param x An object of class "xbal" which is the result of a call
 ##'   to \code{xBalance}.
 ##' @param which.strata The stratification candidates to include in
@@ -30,9 +30,9 @@
 ##' \item{overalltable}{If the overall Chi-squared statistic is
 ##'   requested, a formatted version of that table is returned.}
 ##' }
-##' @seealso xBalance
+##' @seealso \code{\link{xBalance}}, \code{\link{balanceTest}}
 ##' @export
-##' @aliases print
+##' @aliases print print.balancetest
 ##' @keywords print
 ##' @examples
 ##' data(nuclearplants)
