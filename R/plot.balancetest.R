@@ -43,7 +43,6 @@
 #' @param groups A vector of group names for each variable in
 #' \code{x$results}. By default, factor level variables will be
 #' grouped.
-#' @param ggplot Use ggplot2 to create figure. By default, uses base R graphics.
 #' @param ... additional arguments to pass to \code{\link{balanceplot}}
 #' @return A \code{ggplot2} object that can be further manipulated (e.g., to set the colors or text).
 #' @seealso \code{\link{balanceTest}}, \code{\link{ggplot}}
@@ -59,7 +58,6 @@ plot.balancetest <- function(x,
                              strata.labels = NULL,
                              variable.labels = NULL,
                              groups = NULL,
-                             ggplot = FALSE,
                              ...) {
   ## this next line is for compatability with Josh's version of the function
   ## while I make it work with the usual plot signature
@@ -130,6 +128,7 @@ balanceTest_ggplot <- function(x,
 
   x$group <- groups[as.character(x$rowname)]
   x$group[is.na(x$group)] <- ""
+  x$group <- as.factor(x$group)
 
   if (!is.null(strata.labels)) {
     x$strata <- factor(x$strata, levels = strata.labels)
@@ -141,7 +140,7 @@ balanceTest_ggplot <- function(x,
                                        x = "value",
                                        color = "strata",
                                        shape = "strata")) +
-    ggplot2::geom_point() +
+    ggplot2::geom_point(size = 2) +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::labs(color = legend.title,
                   shape = legend.title,
@@ -149,7 +148,7 @@ balanceTest_ggplot <- function(x,
                   y = ggplot2::element_blank())
 
     if (!is.null(x$group) && nlevels(x$group) > 0 ) {
-        plot <- plot + ggplot2::facet_grid(group ~ ., scales = "free_y")
+      plot <- plot + ggplot2::facet_grid(group ~ ., scales = "free_y", space = "free_y")
     }
   
   
