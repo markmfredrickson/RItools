@@ -9,3 +9,4 @@ inst/downloaded-packages
 doc
 Meta
 vignettes/*.R
+.Rproj.user
