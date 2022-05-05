@@ -9,7 +9,8 @@ Description: Tools for randomization-based inference. Current focus is on the d^
 License: GPL (>=2)
 LazyData: true
 Depends:
-    R (>= 3.5.0)
+    R (>= 3.5.0),
+    ggplot2
 Imports:
     grDevices,
     abind,
@@ -20,7 +21,6 @@ Imports:
     methods,
     survival,
     SparseM,
-    ggplot2,
     tidyr,
     tibble,
     dplyr

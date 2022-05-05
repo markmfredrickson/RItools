@@ -66,7 +66,7 @@ plot.balancetest <- function(x,
   stopifnot(is.null(var.order) | is.null(var.grouping))
 
   tmp <- prepareXbalForPlot(x, statistic, absolute,
-                            strata.labels, variable.labels) #square matrix, each row is row in plot, columns are horixzontal locations
+                            strata.labels, variable.labels) #square matrix, each row is row in plot, columns are horizontal locations
   #plot(tmp)
   autogroup <- attr(tmp, "term.labels")[attr(tmp, "groups")]
   autogroup[is.na(autogroup)] <- ""
@@ -88,10 +88,7 @@ balanceTest_ggplot <- function(x,
                        var.grouping = NULL,
                        ...){
   
-  if (!requireNamespace("ggplot2")) {
-      stop("must have ggplot2 installed to use ggplot = TRUE plotting option")
-  }
-  # Tidyverse doesn't like rownames
+  # Tidyvers doesn't like rownames
   x <- tibble::as_tibble(x, rownames = "rowname", .name_repair = "unique")
 
   # Restructure data long
