@@ -189,8 +189,7 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       {
         Signif <- signifier(results_array[,"p",,drop=FALSE])
         dimnames(Signif)[['stat']] <- 'sig.'
-        Signif <- format(Signif)
-        results_array_char <- abind(results_array_char, Signif,
+        results_array_char <- abind(results_array_char, format(Signif),
                                     along=2, use.first.dimnames=TRUE)
         names(dimnames(results_array_char)) <- names(dimnames(results_array))
 
