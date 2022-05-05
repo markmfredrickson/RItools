@@ -212,7 +212,6 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
                                 dim(tmpdata) <- dim(tmpdata)[1:2]
                                 dimnames(tmpdata) <- tmpdn
                                 tmpdata <- as.data.frame(tmpdata)
-                              cbind(tmpdata," " = format(Signif[,,s]))
                             },
                             simplify=FALSE, USE.NAMES=TRUE
                             )
