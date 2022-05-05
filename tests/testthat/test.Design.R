@@ -697,14 +697,15 @@ test_that("alignDesigns centers covars by stratum", {
     expect_equivalent(as.matrix(t(asimple1s@StrataMatrix) %*% tmp1),
                       matrix(0,2, ncol(asimple1s@Covariates)))
 
+    myrank <-  function(x, weights) rank(x) 
     ## now with weights, post alignment transform
     asimple2u <- RItools:::alignDesignsByStrata("--", simple1,
-                                               post.align.transform = rank)
+                                               post.align.transform = myrank)
     expect_equivalent(colSums(asimple2u@Covariates  ),
                       rep(0,ncol(asimple2u@Covariates)))
 
     asimple2s <- RItools:::alignDesignsByStrata("strat", simple1,
-                                               post.align.transform = rank)
+                                               post.align.transform = myrank)
     tmp2 <- asimple2s@Covariates 
     expect_equivalent(colSums(tmp2[simple1@StrataFrame[["strat"]]=="a",]),
                       rep(0,ncol(asimple2s@Covariates)))
@@ -744,7 +745,9 @@ test_that("scale() method wrapping to alignDesignsByStrata()",{
     expect_equal(length(dim(scl2_scaleT)), 2L)
     expect_equivalent(is.na(scl2_scaleT),
                       matrix(FALSE, nrow(scl2_scaleT), ncol(scl2_scaleT)))
-    scl2_scaleF_centerrank  <- scale(simple2, center=rank, scale=FALSE)
+    
+    myrank <-  function(x, weights) rank(x) 
+    scl2_scaleF_centerrank  <- scale(simple2, center = myrank, scale=FALSE)
     expect_identical(dim(scl2_scaleF_centerrank), dim(scl2_scaleF))
     expect_false(isTRUE(all.equal(scl2_scaleF, scl2_scaleF_centerrank, check.attributes=FALSE)),
                  "post alignment transform ignored")
