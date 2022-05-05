@@ -289,7 +289,7 @@ balanceTest <- function(fmla,
   }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
-    c(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
+    data.frame(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
   }))
   colnames(inferentials) <- c("chisquare", "df", "p.value")
 
