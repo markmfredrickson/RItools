@@ -1,9 +1,9 @@
-CHANGES IN RITOOLS VERSION 0.2-0
+CHANGES IN RITOOLS VERSION 0.3-0
 
 * Exporting `broom::glance()` and `broom::tidy()` methods for balance test
   objects, a work in progress (#90).
 * Addressed error relating to setting of pseudo-inversion tolerances (#103).
-  xBalance(** stops short of correcting the error, to maintain
+  xBalance stops short of correcting the error, to maintain
   back-compatibility; but it gains a new argument, pseudoinversion_tol, with
   which it can readily be fixed.
 * New balanceTest function extends functionality of xBalance:
@@ -14,6 +14,9 @@ CHANGES IN RITOOLS VERSION 0.2-0
 * Introduced ggplot2 based plotting. Optional for xBalance objects; default for
   new balanceTest objects.
 
+CHANGES IN RITOOLS ERSION 0.2
+
+This was an internal release not placed on CRAN.
 
 CHANGES IN RITOOLS VERSION 0.1-18
 
