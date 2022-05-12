@@ -94,6 +94,11 @@ independence of the treatment variable and the covariates within
 strata.
 }
 \details{
+Note: the newer \code{\link{balanceTest}} function provides the same
+functionality as \code{xBalance} with additional support for clustered
+designs. While there are no plans to deprecate \code{xBalance}, users are
+encouraged to use \code{balanceTest} going forward.
+
 In the unstratified case, the standardized difference of covariate
 means is the mean in the treatment group minus the mean in the
 control group, divided by the S.D. (standard deviation) in the
@@ -229,6 +234,9 @@ Hansen, B.B. and Bowers, J. (2008), ``Covariate
   Kalton, G. (1968), ``Standardization: A technique to control for
   extraneous variables,'' \emph{Applied Statistics} \bold{17},
   118--136.
+}
+\seealso{
+\code{\link{balanceTest}}
 }
 \author{
 Ben Hansen and Jake Bowers and Mark Fredrickson
