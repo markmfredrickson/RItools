@@ -14,8 +14,8 @@
 ##' control groups; differences of these (adjusted differences); and
 ##' adjusted differences as multiples of a pooled s.d. of the variable
 ##' in the treatment and control groups (standard differences). Pooled
-##' s.d.s are calculated with weights but without attention to clustering, 
-##' and ordinarily without attention to stratification.  (If the user does 
+##' s.d.s are calculated with weights but without attention to clustering,
+##' and ordinarily without attention to stratification.  (If the user does
 ##' not request unstratified comparisons, overriding the default setting,
 ##' then pooled s.d.s are calculated with weights corresponding to the first
 ##' stratification for which comparison is requested.  In this case as
@@ -133,7 +133,7 @@
 ##'          data=nuclearplants)
 ##'
 ##' ## Stratified
-##' ## Note use of the `. - cost` to use all columns except `cost` 
+##' ## Note use of the `. - cost` to use all columns except `cost`
 ##' balanceTest(pr ~ . - cost + strata(pt),
 ##'          data=nuclearplants)
 ##'
@@ -151,21 +151,27 @@
 ##'
 ##' ## (Note that the post alignment transform is expected to be a function
 ##' ## accepting a second argument, even if the argument is not used.
-##' ## The unit weights vector will be provided as this second argument, 
+##' ## The unit weights vector will be provided as this second argument,
 ##' ## enabling use of e.g. `post.alignment.transform=Hmisc::wtd.rank`
 ##' ## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
-##' 
+##'
+##' ## An experiment where clusters of individuals are assigned to treatment within strata
+##' data(ym_long)
+##'
+##' balanceTest(trt~n_practice+assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(Practice),
+##'    data=ym_long)
+
 balanceTest <- function(fmla,
-                     data,
-                     strata = NULL,
-                     unit.weights,
-                     stratum.weights = harmonic_times_mean_weight,
-                     subset,
-                     include.NA.flags = TRUE,
-                     covariate.scales = setNames(numeric(0), character(0)),
-                     post.alignment.transform = NULL,
-                     inferentials.calculator = HB08, 
-                     p.adjust.method = "holm") {
+                        data,
+                        strata = NULL,
+                        unit.weights,
+                        stratum.weights = harmonic_times_mean_weight,
+                        subset,
+                        include.NA.flags = TRUE,
+                        covariate.scales = setNames(numeric(0), character(0)),
+                        post.alignment.transform = NULL,
+                        inferentials.calculator = HB08, 
+                        p.adjust.method = "holm") {
 ### API Assumptions:
 ### - no ... in the xBal formula
 ### (if this assumption ceases to be met then we have to add an explicit check that
@@ -175,7 +181,7 @@ balanceTest <- function(fmla,
   if (!is.null(strata)) {
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?balanceTest, examples.")
   }
-  
+
   if (is.null(p.adjust.method)) {
     p.adjust.method <- "none"
   }
@@ -231,7 +237,7 @@ balanceTest <- function(fmla,
   ## Which of the NM cols to look at for a given variable's NM info
   NMpatterns <-   c("_any Xs recorded_", colnames(design@NotMissing))[1L+design@NM.Covariates]
   NMpatterns <- paste0("(",NMpatterns,")")
-    
+
   aggDesign       <- aggregateDesigns(design)
   ## (Creation of stratum weightings for use in
   ##  descriptives calculations would go here, if
@@ -251,7 +257,7 @@ balanceTest <- function(fmla,
                           design=aggDesign,
                           post.align.transform=post.alignment.transform,
                           simplify = FALSE, USE.NAMES = TRUE)
-    
+
   origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
 
   tmp <- lapply(strataAligned, inferentials.calculator)
@@ -283,8 +289,8 @@ balanceTest <- function(fmla,
 		  descriptives <- descriptives[-toremove,,,drop=FALSE]
 		  origvars <- origvars[-toremove]
                   strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
-                  NMpatterns <- NMpatterns[-toremove]  # names of vars that 
-                  NMpatterns[ NMpatterns%in% strings_to_remove] <- "" 
+                  NMpatterns <- NMpatterns[-toremove]  # names of vars that
+                  NMpatterns[ NMpatterns%in% strings_to_remove] <- ""
 	  }
   }
 
