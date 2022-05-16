@@ -73,8 +73,8 @@ for the groups to be compared: (weighted) means of treatment and
 control groups; differences of these (adjusted differences); and
 adjusted differences as multiples of a pooled s.d. of the variable
 in the treatment and control groups (standard differences). Pooled
-s.d.s are calculated with weights but without attention to clustering, 
-and ordinarily without attention to stratification.  (If the user does 
+s.d.s are calculated with weights but without attention to clustering,
+and ordinarily without attention to stratification.  (If the user does
 not request unstratified comparisons, overriding the default setting,
 then pooled s.d.s are calculated with weights corresponding to the first
 stratification for which comparison is requested.  In this case as
@@ -157,7 +157,7 @@ balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
          data=nuclearplants)
 
 ## Stratified
-## Note use of the `. - cost` to use all columns except `cost` 
+## Note use of the `. - cost` to use all columns except `cost`
 balanceTest(pr ~ . - cost + strata(pt),
          data=nuclearplants)
 
@@ -175,10 +175,15 @@ balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 
 ## (Note that the post alignment transform is expected to be a function
 ## accepting a second argument, even if the argument is not used.
-## The unit weights vector will be provided as this second argument, 
+## The unit weights vector will be provided as this second argument,
 ## enabling use of e.g. `post.alignment.transform=Hmisc::wtd.rank`
 ## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
 
+## An experiment where clusters of individuals are assigned to treatment within strata
+data(ym_long)
+
+balanceTest(trt~n_practice+assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(Practice),
+   data=ym_long)
 }
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
