@@ -10,10 +10,11 @@
 #'
 #' @title ASSIST Trial Data from Yudkin and Moher 2001
 #'
-#' @format A data frame with  21 rows and 6 columns
+#' @format A data frame with  2142 rows and 9 columns
 #'
 #' \itemize{
-#'   \item Practice: Identifier for the practice
+#'   \item practice: Identifier for the practice
+#'   \item id: Identifier for patients
 #'   \item n_practice: Number of patients with CHD in the practice
 #'   \item assessed: Whether a patient was coded as "adequately assessed" (the
 #'        outcome of the study, measured here at baseline).
