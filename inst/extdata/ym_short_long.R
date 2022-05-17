@@ -58,16 +58,23 @@ ym_long$aspirin <- NULL
 ym_long$hypo <- NULL
 ym_long$lipid <- NULL
 
-ym_long <- rename(ym_long,n_practice = n, assessed = assessed_bin
-,aspirin = aspirin_bin,hypo = hypo_bin,lipid = lipid_bin)
+ym_long <- rename(ym_long,n_practice=n,practice=Practice, assessed = assessed_bin
+,aspirin = aspirin_bin,hypo = hypo_bin,lipid = lipid_bin,id=ids)
 
 head(ym_long)
 
-balanceTest(trt~n_practice+assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(Practice),
+balanceTest(trt~assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(practice),
     data=ym_long)
 
 
+teriles <- quantile(ym_long$n_practice, seq(1/3,1,by=1/3))
+teriles <- c(0, teriles)
+balanceTest(trt ~ cut(n_practice, teriles)+assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(practice), data=ym_long)
+
+ym_short <- rename(ym,practice=Practice,n_practice=n)
+
 save(ym_long,file="ym_long.rda")
+save(ym_short,file="ym_short.rda")
 
 
 
