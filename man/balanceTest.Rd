@@ -180,10 +180,16 @@ balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
 ## to furnish a version of the Wilcoxon test even when there are clusters and/or weights.)
 
 ## An experiment where clusters of individuals are assigned to treatment within strata
+## assessing balance of cluster level treatment on both cluster
+## and individual level baseline attributes
 data(ym_long)
+## Look at balance on teriles of cluster size as well as other variables
+teriles <- quantile(ym_long$n_practice, seq(1/3,1,by=1/3))
+teriles <- c(0, teriles)
 
-balanceTest(trt~n_practice+assessed+hypo+lipid+aspirin+strata(assess_strata)+cluster(Practice),
-   data=ym_long)
+balanceTest(trt ~ cut(n_practice, teriles)+assessed+hypo+lipid+
+            aspirin+strata(assess_strata)+cluster(practice),
+            data=ym_long)
 }
 \references{
 Hansen, B.B. and Bowers, J. (2008), ``Covariate
