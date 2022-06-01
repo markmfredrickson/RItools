@@ -275,20 +275,25 @@ pairwise_products <- function(x) {
   array(t(v), dim = c(n, k, k))
 }
 
-## Returns strata level means of \sum_i x_{ij} x_{ik}
+## Returns strata level means of x_{ij} * x_{ik}
 ## @param d A Stratified Design object
 ## @param x An array of n by k
 ## @return An array of s by k by k indicating strata level means of x_i * x_j
 strata_pairwise_means <- function(d, x) {
-    xx <- pairwise_products(x)
-    sx <- apply(xx, 2:3, function(xi) { t(d@Units) %*% xi / d@Count })
-    return(sx)
+  k <- ncol(x)
+  n <- nrow(x)
+  xx <- pairwise_products(x) #n by k by k
+  xx <- matrix(xx, nrow = n) # TODO: this is just undoing the array(...) call from pairwise_products
+  sx <- as.matrix(t(d@Units) %*% xx) / d@Count # the as.matrix is for the benefit of SparseM
+  return(array(sx, dim = c(nrow(sx), k, k)))
 }
 
 ## Sum matrices over strata
 ## @param a s by j by k matrix
 ## @return A j by k matrix produced by summing the other component matrices
 strata_matrix_sum <- function(a) {
+  #return(rowSums(a, dims = 2))
+  
     s <- dim(a)[1]
     tmp <- a[1,,]
     if (s > 1) {

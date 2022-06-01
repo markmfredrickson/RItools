@@ -142,6 +142,40 @@ test_that("Pairwise products and strata means", {
                          0, 4, 10, 9, 16, 25), dim = c(3, 2, 2))
   
   expect_equal(aa, expected_aa)
+  
+  ## Set up
+  ## Generate some random data
+  set.seed(30303)
+  n <- 12
+  x1 <- rnorm(n)
+  x2 <- x1 + runif(n, -1,  3)
+  x3 <- sample(letters[1:3], n, replace = TRUE )
+  df <- data.frame(x1, x2, x3)
+  df <- df[order(x1), ]
+  df$match <- as.factor(
+    c(1, 1,
+      2, 2,
+      3, 3, 3,
+      4, 4, 4, 4, 4))
+  df$z <- c(1, 0,
+            0, 1,
+            0, 1, 0,
+            0, 1, 0, 1, 1)
+  
+  ## end data set up
+  x <- model.matrix(~ x1 + x2 + x3 - 1, data = df)
+  strat <- create_stratified_design(strata = df$match, z = df$z)
+  
+  spm <- strata_pairwise_means(strat, x)
+  
+  means_by_strata <- tapply(1:n, df$match, function(idx) { 
+    xs <- x[idx,]
+    n <- nrow(xs)
+    t(xs) %*% xs / n
+  })
+  
+  means_by_strata <- array(unlist(means_by_strata), dim = c(5, 5, 4))
+  expect_equal(spm, aperm(means_by_strata, c(3, 1, 2)))
                        
 })
 
