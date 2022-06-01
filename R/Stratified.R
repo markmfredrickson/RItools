@@ -266,14 +266,13 @@ strata_t2_covariance_matrices <- function(design, covariates) {
 
 ## @param x A matrix of n by k
 ## @return An array of n by k by k, with each [i, j, l] entry being x[i, j] * x[i, l]
+#' @importFrom Matrix KhatriRao
 pairwise_products <- function(x) {
-    n <- dim(x)[1]
-    k <- dim(x)[2]
-
-    ## the apply will get all the column wise products, but the ordering isn't quite what we want
-    aperm(perm = c(1, 3, 2),
-          array(apply(x, 2, function(xx) { as.vector(x * xx)}),
-                dim = c(n, k, k)))
+  n <- nrow(x)
+  k <- ncol(x)
+  tx <- t(x)
+  v <- KhatriRao(tx, tx) ## see Matrix:::KhatriRao for details on this function
+  array(t(v), dim = c(n, k, k))
 }
 
 ## Returns strata level means of \sum_i x_{ij} x_{ik}
@@ -301,3 +300,11 @@ strata_matrix_sum <- function(a) {
     return(tmp)
 }
 
+## A new version of SparseMMFromFactor to use the Matrix package
+## @param fac A factor of length n with s levels
+## @return A n by s factor with only one "1" value per row, indicating stratum membership
+MatrixFromFactor <- function(fac) {
+  n <- length(fac)
+  s <- nlevels(fac)
+  sparseMatrix(1:n, as.numeric(fac), x = 1, dims = c(n, s))
+}

@@ -88,7 +88,7 @@ empirical_t2 <- function(x, s, sn, sn1) {
     ## Compute the Mahalanobis distance
     xj <- function(z) {
         j <- ZtoJ(z)
-        t(x) %*% j
+        as.matrix(t(x) %*% j)
     }
 
     xjs <- apply(zs, 2, xj)
@@ -99,7 +99,7 @@ empirical_t2 <- function(x, s, sn, sn1) {
 
     tmaker <- function(z) {
         j <- ZtoJ(z)
-        t(x %*% cov_xj_inv_sq) %*% j
+        as.matrix(t(x %*% cov_xj_inv_sq) %*% j)
     }
 
     ts <- apply(zs, 2, tmaker)
@@ -124,7 +124,7 @@ empirical_S2 <- function(x, s, sn, sn1) {
 
     tmaker <- function(z) {
         j <- ZtoJ(z)
-        t(x) %*% j
+        as.matrix(t(x) %*% j)
     }
 
     ts <- apply(zs, 2, tmaker)
@@ -169,7 +169,7 @@ empirical_cov <- function(x, s, sn, sn1) {
     ## Compute the Mahalanobis distance
     xj <- function(z) {
         j <- ZtoJ(z)
-        t(x) %*% j
+        as.matrix(t(x) %*% j)
     }
 
     xjs <- apply(zs, 2, xj)

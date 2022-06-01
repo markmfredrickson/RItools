@@ -65,8 +65,8 @@ test_that("Basic stratified designs using either counts or Z", {
     sm <- matrix(c(1, 0, 1, 0, 0,
                    0, 1, 0, 1, 1), ncol = 2)
 
-    expect_equal(as.matrix(sdz@Units), sm)
-    expect_equal(as.matrix(sdn@Units), sm)
+    expect_equivalent(as.matrix(sdz@Units), sm)
+    expect_equivalent(as.matrix(sdn@Units), sm)
 
     expect_equal(sdz@Count, c(2, 3))
     expect_equal(sdn@Count, c(2, 3))
@@ -124,4 +124,41 @@ test_that("balanceTest method for Stratified objects", {
   btu <- balanceTest(unstrat, data = x, z = df$z)
   expect_equal(btu[[1]], btf[[2]])
 
+})
+
+test_that("Pairwise products and strata means", {
+  ## tests for internal functions 
+  ## Stratified.R/pairwise_products
+  ## Stratified.R/strata_pairwise_means
+  
+  # n = 3, k = 2
+  a <- matrix(0:5, ncol = 2)
+  aa <- RItools:::pairwise_products(a)
+  
+  # expect dim of (n, k, k)
+  expect_equal(dim(aa), c(3, 2, 2))
+  
+  expected_aa <- array(c(0, 1, 4, 0, 4, 10,
+                         0, 4, 10, 9, 16, 25), dim = c(3, 2, 2))
+  
+  expect_equal(aa, expected_aa)
+                       
+})
+
+test_that("Switching to Matrix class", {
+  
+  ## Tests to verify that our matrix operations survive a change to the Matrix class
+  v <- factor(c("c", "a", "a", "c", "b", "a"))
+  xx <- MatrixFromFactor(v)
+  
+  expect_equal(dim(xx), c(6, 3))
+  
+  u <- matrix(c(0, 0, 1,
+                1, 0, 0,
+                1, 0, 0,
+                0, 0, 1,
+                0, 1, 0,
+                1, 0, 0), byrow = TRUE, ncol = 3)
+  
+  expect_equivalent(as.matrix(xx), u)
 })
