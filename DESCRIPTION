@@ -31,5 +31,5 @@ Suggests:
     MASS
 Enhances: optmatch
 URL: https://cran.r-project.org/package=RItools
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0
 Encoding: UTF-8
