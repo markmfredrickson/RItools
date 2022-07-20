@@ -1,4 +1,6 @@
-## CHANGES IN RITOOLS VERSION 0.3-0
+# RItools
+
+# RItools 0.3-0
 
 * Exporting `broom::glance()` and `broom::tidy()` methods for balance test
   objects, a work in progress (#90).
@@ -14,30 +16,30 @@
 * Introduced ggplot2 based plotting. Optional for xBalance objects; default for
   new balanceTest objects.
 
-## CHANGES IN RITOOLS VERSION 0.2
+# RItools 0.2
 
 This was an internal release not placed on CRAN.
 
-## CHANGES IN RITOOLS VERSION 0.1-18
+# RItools 0.1-18
 
 This is a maintenance release.
 
 * Ensured that the package was compatible with R 4.1.2
 
-## CHANGES IN RITOOLS VERSION 0.1-17
+# RItools 0.1-17
 
 This is a maintenance release.
 
 * Ensured that the package was compatible with R 3.6.0
 
-## CHANGES IN RITOOLS VERSION 0.1-16
+# RItools 0.1-16
 
 This is a maintenance release.
 
 * Fixed a problem where the test suite was calling an external package that was
   not a formal dependency of the core functionality of the package.
 
-## CHANGES IN RITOOLS VERSION 0.1-15
+# RItools 0.1-15
 
 This is a maintenance release.
 
@@ -47,17 +49,17 @@ This is a maintenance release.
   where (as of this writing) RSVGTipsDevice does not build and check reliably
   and is not distributed in binary through CRAN (#71)
 
-## CHANGES IN RITOOLS VERSION 0.1-14
+# RItools 0.1-14
 
 This version was submitted to CRAN prematurely and ultimately was not released.
 
-## CHANGES IN RITOOLS VERSION 0.1-13
+# RItools 0.1-13
 
 * With `xBalance()`, you can now specify strata "foo" and "bar" by including "+
   strata(foo) + strata(bar)" in the `fmla` argument, without need to give a
   separate `strata` argument (eg `strata=list(foo=~foo, bar=~bar)`).
 
-## CHANGES IN RITOOLS VERSION 0.1-12
+# RItools 0.1-12
 
 * Switched to base graphics instead of the lattice package for balance
   plots.
@@ -73,22 +75,22 @@ This version was submitted to CRAN prematurely and ultimately was not released.
   after per-stratum centering.
 * `subset` method for `xbal` objects.
 
-## CHANGES in RItools v. 0.1-11
+# CHANGES in RItools v. 0.1-11
 
-### NEW FEATURES
+## NEW FEATURES
 * the null SD of the difference in adjusted means is now reportable as
   "adj.means.diffs.sd"
 * `report="all"` provides all relevant statistics
 * Entering `args(xBalance)` is now useful as a reminder of report= options.
 
-### DEPRECATED & DEFUNCT
+## DEPRECATED & DEFUNCT
 * The default imputation method for missing data is the median. Before 0.1-9 it
   was the mean. To use the mean, use `impfn=mean.default`.
 * Passing `strata=NULL` to `xBalance()` is depracated, as it can be easy to do
   inadvertently, with a misspelling of a non-null intended argument. For no
   stratification, use `list(unstrat=NULL)`, as is now the default.
 
-###  BUG FIXES
+##  BUG FIXES
 * `display`, `align`, etc arguments to `xtable.xbal()` have been enabled.
 * In `xBalance()`, when specifying a stratification using a formula with several
   variables, as in `~x+y`, the stratification you get is now interaction(x,y)
