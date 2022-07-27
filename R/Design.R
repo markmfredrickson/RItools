@@ -632,11 +632,16 @@ designToDescriptives <- function(design, covariate.scales = NULL) {
     ## only perform pooled s.d. calculation the first time.
       if (s==stratifications[1L])
           {
+    ## the use of pmax is to correct rounding errors that lead to variances of -1.0e-16
+    ## which causes sqrt() to throw a warning.
     var.1 <- (t(X2.use *tx.wts) %*% Z - wtsum.tx * treated.avg^2) / wtsum.tx
     var.1 <- var.1 * ifelse(n1>1, n1/(n1 - 1), 0)
     var.0 <- (t(X2.use * ctl.wts) %*% (1 - Z) - wtsum.ctl * control.avg^2) / wtsum.ctl
-    var.0 <- var.0* ifelse(n0>1, n0/(n0 - 1), 0)
-
+    var.0 <- var.0 * ifelse(n0>1, n0/(n0 - 1), 0)
+    
+    var.1[var.1 < 0] <- 0
+    var.0[var.0 < 0] <- 0
+    
     pooled <- sqrt((var.1 + var.0) / 2)
     ## if covariate scales were provided, they override what
     ## was just calculated
