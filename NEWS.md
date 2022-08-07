@@ -1,5 +1,10 @@
 # RItools
 
+# RItools 0.3-1
+
+* Skipped tests that cause problems with systems using the ATLAS linear algebra
+  library.
+
 # RItools 0.3-0
 
 * Exporting `broom::glance()` and `broom::tidy()` methods for balance test
