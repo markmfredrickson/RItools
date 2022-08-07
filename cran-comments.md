@@ -1,10 +1,13 @@
 ## Submission
 
-This is the 0.3-0 release of RItools.
+This is the 0.3-1 release of RItools.
 
 Some platforms do not like the doi formatting in DESCRIPTION although the
 Checklist for R Package submissions tells us to format it exactly as we have
 done: <https://cran.r-project.org/web/packages/submission_checklist.html>.
+
+Our testing suite is now prepared for systems using the ATLAS linear algebra
+library.
 
 ## Test environments
 
