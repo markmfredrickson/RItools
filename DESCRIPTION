@@ -1,5 +1,5 @@
 Package: RItools
-Version: 0.3-0
+Version: 0.3-1
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", role = c("aut", "cre"), email = "jwbowers@illinois.edu"),
              person("Mark", "Fredrickson", role = "aut", email = "mark.m.fredrickson@gmail.com"),
@@ -31,5 +31,5 @@ Suggests:
     MASS
 Enhances: optmatch
 URL: https://cran.r-project.org/package=RItools
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 Encoding: UTF-8
