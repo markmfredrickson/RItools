@@ -98,6 +98,9 @@ balanceTest_ggplot <- function(x,
 
   if (isTRUE(absolute)) {
     x <- dplyr::mutate(x, values = "abs(value)")
+    if (xlab == "Standardized Differences") {
+      xlab <- "Absolute Standardized Differences"
+    }
   }
 
   if (!is.null(var.order)) {
