@@ -1,5 +1,12 @@
 # RItools
 
+# RItools 0.3-1.9999
+
+* Adjusted terminology on `balanceplot()` plots when using `absolute=TRUE`.
+  (#129)
+* Updated some **tidyverse**/**ggplot2** code to deal with deprecations.
+
+
 # RItools 0.3-1
 
 * Skipped tests that cause problems with systems using the ATLAS linear algebra
