@@ -1,6 +1,6 @@
 # RItools
 
-# RItools 0.3-1.9999
+# RItools 0.3-2
 
 * Adjusted terminology on `balanceplot()` plots when using `absolute=TRUE`.
   (#129)

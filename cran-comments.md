@@ -1,6 +1,6 @@
 ## Submission
 
-This is the 0.3-1.9999 release of RItools.  This is a maintenance release.
+This is the 0.3-2 release of RItools.  This is a maintenance release.
 We updated some **tidyverse**/**ggplot2** code to deal with deprecations.
 
 Some platforms do not like the doi formatting in DESCRIPTION although the
@@ -15,7 +15,7 @@ done: <https://cran.r-project.org/web/packages/submission_checklist.html>.
 
 ## R CMD check results on local OS X
 
-── R CMD check results ─────────────────────────────────────────────────────────────────── RItools 0.3-1.9999 ────
+── R CMD check results ─────────────────────────────────────────────────────────────────── RItools 0.3-2 ────
 
 0 errors ✔ | 0 warnings ✔ | 0 notes ✔
 
@@ -23,4 +23,3 @@ done: <https://cran.r-project.org/web/packages/submission_checklist.html>.
 
 We have also run R CMD check on downstream dependencies of RItools using
 `revdepcheck::revdep_check()`:
-
