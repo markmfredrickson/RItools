@@ -5,6 +5,7 @@
 * Adjusted terminology on `balanceplot()` plots when using `absolute=TRUE`.
   (#129)
 * Updated some **tidyverse**/**ggplot2** code to deal with deprecations.
+* Using `bibentry()` in citation to address deprecation.
 
 
 # RItools 0.3-1

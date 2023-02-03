@@ -24,3 +24,4 @@ tests/*.Rout.save
 ^doc$
 ^Meta$
 nonbuild
+vignettes
