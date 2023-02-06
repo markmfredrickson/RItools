@@ -146,6 +146,7 @@ test_that("Plotting using RSVGTips", {
     plot(xb3, plotfun=plotfun_RSVGTD)
     dev.off()
   }
+  expect_true(TRUE)
 
 })
 
