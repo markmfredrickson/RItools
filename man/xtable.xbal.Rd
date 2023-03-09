@@ -12,6 +12,7 @@
   align = c("l", rep("r", ncol(xvardf))),
   digits = 2,
   display = NULL,
+  auto = FALSE,
   col.labels = NULL,
   ...
 )
@@ -31,6 +32,8 @@ columns, see details, below.}
 \item{digits}{See \code{\link[xtable]{xtable}}. Default is 2.}
 
 \item{display}{See \code{\link[xtable]{xtable}}.}
+
+\item{auto}{See \code{\link[xtable]{xtable}}.}
 
 \item{col.labels}{Labels for the columns (the test
 statistics). Default are come from the call to
