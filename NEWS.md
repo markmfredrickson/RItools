@@ -1,4 +1,6 @@
-# RItools
+# RItools 0.3-3
+
+* Adjusted arguments to `xtable.xbal()` to match the generic. (#131)
 
 # RItools 0.3-2
 
