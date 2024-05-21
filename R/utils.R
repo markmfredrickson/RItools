@@ -28,11 +28,8 @@ withOptions <- function(optionsToChange, fun) {
   oldOpts <- options()
   options(optionsToChange)
   # store the old values of the options, just for the options that were changed
-  old.opt.values <- list()
-  for (i in 1:length(optionsToChange)) {
-    old.opt.values[[names(optionsToChange)[i]]] <- oldOpts[[names(optionsToChange)[i]]]
-  }
-  tryCatch(fun(), finally = options(old.opt.values))
+  oldOptValues <- oldOpts[names(optionsToChange)]
+  tryCatch(fun(), finally = options(oldOptValues))
 }
 
 ##Our own version of these to handle the signif stars.
