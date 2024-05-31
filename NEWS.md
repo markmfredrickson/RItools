@@ -1,3 +1,7 @@
+# RItools 0.3-4
+
+* Using `.lm.fit()` within `slm.fit.csr.fixed` given breaking changes in `SparseM::chol()` (#134)
+
 # RItools 0.3-3
 
 * Adjusted arguments to `xtable.xbal()` to match the generic. (#131)

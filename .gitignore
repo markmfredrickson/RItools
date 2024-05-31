@@ -10,3 +10,7 @@ doc
 Meta
 vignettes/*.R
 .Rproj.user
+.Rprofile
+renv.lock
+.vscode
+renv/*
