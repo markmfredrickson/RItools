@@ -185,12 +185,15 @@ SparseMMFromFactor <- function(thefactor) {
 }
 
 
-## slm.fit.csr with a fix
+## slm.fit.csr with a fix and using lm.fit backend
 ##
 ## SparseM's slm.fit.csr has a bug for intercept only models
 ## (admittedly, these are generally a little silly to be done as a
 ## sparse matrix), but in order to avoid duplicate code, if
 ## everything is in a single strata, we use the intercept only model.
+##
+## In this maintenance release, this function takes SparseM csr matrix x and
+## then converts it to a dense base R matrix for use with lm.fit
 ## @param x As slm.fit.csr
 ## @param y As slm.fit.csr
 ## @param ... As slm.fit.csr
@@ -207,11 +210,16 @@ slm.fit.csr.fixed <- function (x, y, ...)
             ycol <- 1
         }
     p <- x@dimension[2]
-    if (n != x@dimension[1])
+    if (n != x@dimension[1]){
         stop("x and y don't match n")
-    chol <- SparseM::chol(t(x) %*% x, ...)
-    xy <- t(x) %*% y
-    coef <- SparseM::backsolve(chol, xy)
+    }
+
+   fit <-  .lm.fit(as.matrix(x),as.matrix(y))
+    coef <- fit$coefficients
+
+    #chol <- SparseM::chol(t(x) %*% x, ...)
+    #xy <- t(x) %*% y
+    #coef <- SparseM::backsolve(chol, xy)
 
     if (is.vector(coef)) {
       coef <- matrix(coef, ncol = ycol, nrow = p)
@@ -220,7 +228,9 @@ slm.fit.csr.fixed <- function (x, y, ...)
     fitted <- as.matrix(x %*% coef)
     resid <- y - fitted
     df <- n - p
-    list(coefficients = coef, chol = chol, residuals = resid,
+    list(coefficients = coef, 
+    # chol = chol, 
+    residuals = resid,
         fitted = fitted, df.residual = df)
 }
 
