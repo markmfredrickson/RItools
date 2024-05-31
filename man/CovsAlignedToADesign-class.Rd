@@ -19,7 +19,7 @@ centered within a stratum, recording
 non-missingness of the original data.
 
 Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
-specified stratum weight to the product of \eqn{h_b} (the harmonic mean of \eqn{n_{tb}} and
+specified stratum weight to the product of \eqn{h_b} (the harmonic mean of \eqn{n_\{tb\}} and
 \eqn{n_{cb}}, the counts of treatment and control clusters in stratum \eqn{b}) with \eqn{bar-w_b},
 (the arithmetic mean of aggregated cluster weights within that stratum). It can also
 be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
