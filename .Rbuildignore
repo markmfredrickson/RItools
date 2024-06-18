@@ -1,3 +1,5 @@
+^renv$
+^renv\.lock$
 Makefile
 checkspelling.R
 lexicon.txt
@@ -25,3 +27,5 @@ tests/*.Rout.save
 ^Meta$
 nonbuild
 vignettes
+.vscode
+
