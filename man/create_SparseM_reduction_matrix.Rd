@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{create_SparseM_reduction_matrix}
 \alias{create_SparseM_reduction_matrix}
-\title{Helper function to slm.fit.csr.fixed}
+\title{Helper function to slm_fit_csr}
 \usage{
 create_SparseM_reduction_matrix(zeroes)
 }

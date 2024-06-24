@@ -33,7 +33,7 @@ test_that("fitter for sparse designs handles intercept only design",
                                         # we get to revert to SparseM:slm.fit.csr
               lm.n <- lm.fit(matrix(1,4,1), quickY)
 
-              slm.n1 <- slm.fit.csr.fixed(nullfac.csr, quickY)
+              slm.n1 <- slm_fit_csr(nullfac.csr, quickY)
 
               expect_equal(lm.n$fitted, as.vector(slm.n1$fitted))
               expect_equal(lm.n$residuals, as.vector(slm.n1$residuals))

@@ -198,7 +198,7 @@ SparseMMFromFactor <- function(thefactor) {
 #' @param y As slm.fit.csr
 #' @param ... As slm.fit.csr
 #' @return As slm.fit.csr
-slm.fit.csr.fixed <- function(x, y, ...) {
+slm_fit_csr <- function(x, y, ...) {
   if (is.matrix(y)) {
     n <- nrow(y)
     ycol <- ncol(y)
@@ -230,7 +230,7 @@ slm.fit.csr.fixed <- function(x, y, ...) {
 }
 
 
-#' Helper function to slm.fit.csr.fixed
+#' Helper function to slm_fit_csr
 #' 
 #' This function generates a matrix that can be used to reduce
 #' the dimensions of x'x and xy such that positive definiteness is
@@ -268,7 +268,7 @@ create_SparseM_reduction_matrix <- function(zeroes)
 }
 
 
-#' Helper function to slm.fit.csr.fixed
+#' Helper function to slm_fit_csr
 #' 
 #' This function performs some checks and takes action to 
 #' ensure positive definiteness of matrices passed to SparseM functions.
@@ -330,7 +330,7 @@ slm.wfit.csr <- function(x, y, weights, ...) {
   w <- sqrt(weights)
   wx <- as(w, "matrix.diag.csr") %*% x
   wy <- y * w
-  fit <- slm.fit.csr.fixed(wx, wy, ...)
+  fit <- slm_fit_csr(wx, wy, ...)
 
   fit$fitted <- as.matrix(x %*% fit$coef)
   fit$residuals <- y - fit$fitted

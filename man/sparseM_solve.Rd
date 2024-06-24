@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{sparseM_solve}
 \alias{sparseM_solve}
-\title{Helper function to slm.fit.csr.fixed}
+\title{Helper function to slm_fit_csr}
 \usage{
 sparseM_solve(x, y, ...)
 }
