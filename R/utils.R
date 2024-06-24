@@ -241,6 +241,11 @@ slm.fit.csr.fixed <- function(x, y, ...) {
 #' @importFrom SparseM chol backsolve
 create_SparseM_reduction_matrix <- function(zeroes)
 {
+  if (all(zeroes))
+  {
+    stop("Diagonal of X'X is all zeroes. Unable to proceed.")
+  }
+  
   num_rows <- length(zeroes)
   num_cols <- sum(!zeroes)
   non_zero_indices <- which(!zeroes)
