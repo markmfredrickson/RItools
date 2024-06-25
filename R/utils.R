@@ -211,7 +211,7 @@ slm_fit_csr <- function(x, y, ...) {
     stop("x and y don't match n")
   }
 
-  temp_sol <- sparseM_solve(x, y, ...)
+  temp_sol <- SparseM_solve(x, y, ...)
   coef <- temp_sol[["coef"]]
   chol <- temp_sol[["chol"]]
 
@@ -278,7 +278,7 @@ create_SparseM_reduction_matrix <- function(zeroes)
 #' @param ... A slm.fit.csr
 #' @return list containing coefficients (vector or matrix) and Cholesky decomposition (of class matrix.csr.chol)
 #' @importFrom SparseM chol backsolve
-sparseM_solve <- function(x, y, ...)
+SparseM_solve <- function(x, y, ...)
 {
   xy <- t(x) %*% y
   xprimex <- t(x) %*% x
