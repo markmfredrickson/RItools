@@ -236,7 +236,7 @@ slm_fit_csr <- function(x, y, ...) {
 #' the dimensions of x'x and xy such that positive definiteness is
 #' ensured and more practically, that SparseM::chol will work
 #' 
-#' @param x logical vector indicating which entries of x'x are zeroes.
+#' @param zeroes logical vector indicating which entries of x'x are zeroes.
 #' @return SparseM matrix that will reduce the dimension of x'x and xy 
 #' @importFrom SparseM chol backsolve
 create_SparseM_reduction_matrix <- function(zeroes)
