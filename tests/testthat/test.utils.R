@@ -54,7 +54,7 @@ test_that("sparse design strat mean calculator returns 0 for strata w/o non-null
           }
 )
 
-test_that("create_SparseM_reduction_matrix works as expected",
+test_that("gramian_reduction works as expected",
           {
             expect_true(require("SparseM"))
             #let tl stand in for xprimex
@@ -63,7 +63,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -72,7 +72,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -82,7 +82,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -92,7 +92,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -101,7 +101,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -110,7 +110,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             zeroes <- diag(tl) == 0
             not.zeroes <- !zeroes
             stl <- tl[, not.zeroes, drop = FALSE]
-            sparse_matrix <- create_SparseM_reduction_matrix(zeroes)
+            sparse_matrix <- gramian_reduction(zeroes)
             
             expect_identical(stl, as.matrix(sparse_matrix))
             
@@ -118,7 +118,7 @@ test_that("create_SparseM_reduction_matrix works as expected",
             diag(tl)[c(1, 2)] <- 0
             zeroes <- diag(tl) == 0
             
-            expect_error(create_SparseM_reduction_matrix(zeroes)) 
+            expect_error(gramian_reduction(zeroes)) 
             
           }
 )

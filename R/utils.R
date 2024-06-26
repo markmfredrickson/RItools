@@ -241,7 +241,7 @@ slm_fit_csr <- function(x, y, ...) {
 #' @param zeroes logical vector indicating which entries of the diagonal of x'x are zeroes.
 #' @return SparseM matrix that will reduce the dimension of x'x and xy 
 #' @importFrom SparseM chol backsolve
-create_SparseM_reduction_matrix <- function(zeroes)
+gramian_reduction <- function(zeroes)
 {
   if (all(zeroes))
   {
@@ -288,7 +288,7 @@ SparseM_solve <- function(x, y, ...)
   zeroes <- diag.xx == 0
   if (any(zeroes)) #check explicitly for zeroes here so we don't do matrix math without needing to
   { # this branch deals with issue 134
-    reducing_matrix <- create_SparseM_reduction_matrix(zeroes)
+    reducing_matrix <- gramian_reduction(zeroes)
     xpx.sub <- t(reducing_matrix) %*% xprimex %*% reducing_matrix
     xy.sub <- t(reducing_matrix) %*% xy
     chol.result <- SparseM::chol(xpx.sub, ...)
