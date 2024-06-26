@@ -14,7 +14,7 @@ SparseM_solve(x, y, ...)
 \item{...}{A slm.fit.csr}
 }
 \value{
-list containing coefficients (vector or matrix) and Cholesky decomposition (of class matrix.csr.chol)
+list containing coefficients (vector or matrix), the Cholesky decomposition (of class matrix.csr.chol), and a vector specifying the indicies of which values on the diagonal of x'x are nonzero. These are named "coef", "chol" and "gramian_reduction_index", respectively.
 }
 \description{
 This function performs some checks and takes action to 

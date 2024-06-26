@@ -225,7 +225,9 @@ slm_fit_csr <- function(x, y, ...) {
     coefficients = coef,
     chol = chol,
     residuals = resid,
-    fitted = fitted, df.residual = df
+    fitted = fitted, 
+    df.residual = df,
+    gramian_reduction_index = temp_sol[["gramian_reduction_index"]]
   )
 }
 
@@ -236,7 +238,7 @@ slm_fit_csr <- function(x, y, ...) {
 #' the dimensions of x'x and xy such that positive definiteness is
 #' ensured and more practically, that SparseM::chol will work
 #' 
-#' @param zeroes logical vector indicating which entries of x'x are zeroes.
+#' @param zeroes logical vector indicating which entries of the diagonal of x'x are zeroes.
 #' @return SparseM matrix that will reduce the dimension of x'x and xy 
 #' @importFrom SparseM chol backsolve
 create_SparseM_reduction_matrix <- function(zeroes)
@@ -276,7 +278,7 @@ create_SparseM_reduction_matrix <- function(zeroes)
 #' @param x A slm.fit.csr
 #' @param y A slm.fit.csr
 #' @param ... A slm.fit.csr
-#' @return list containing coefficients (vector or matrix) and Cholesky decomposition (of class matrix.csr.chol)
+#' @return list containing coefficients (vector or matrix), the Cholesky decomposition (of class matrix.csr.chol), and a vector specifying the indicies of which values on the diagonal of x'x are nonzero. These are named "coef", "chol" and "gramian_reduction_index", respectively.
 #' @importFrom SparseM chol backsolve
 SparseM_solve <- function(x, y, ...)
 {
@@ -301,7 +303,8 @@ SparseM_solve <- function(x, y, ...)
   }
   
   return(list("coef" = coef.all, 
-              "chol" = chol.result))
+              "chol" = chol.result, 
+              "gramian_reduction_index" = which(!zeroes)))
 }
 
 ## slm.wfit with two fixes

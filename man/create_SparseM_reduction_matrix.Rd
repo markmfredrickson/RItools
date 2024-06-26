@@ -7,7 +7,7 @@
 create_SparseM_reduction_matrix(zeroes)
 }
 \arguments{
-\item{zeroes}{logical vector indicating which entries of x'x are zeroes.}
+\item{zeroes}{logical vector indicating which entries of the diagonal of x'x are zeroes.}
 }
 \value{
 SparseM matrix that will reduce the dimension of x'x and xy
