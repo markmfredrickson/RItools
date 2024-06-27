@@ -326,6 +326,12 @@ makeDesigns <- function(fmla, data) {
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
   data.data$'(weights)' <- data$'(weights)'
   
+  # Convert remaining character columns to factors so make behavior consistent (issue #127)
+  chrs <- colnames(data.data)[sapply(data.data, is.character)]
+  for (f in chrs) {
+    data.data[, f] <- as.factor(data.data[, f])
+  }
+  
   # knock out any levels that are not used
   fcts <- colnames(data.data)[sapply(data.data, is.factor)]
   for (f in fcts) {
