@@ -892,7 +892,7 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
     ## Do this for the not-missing indicators as well as for the manifest variables.
     covars <- cbind(Covs_w_touchups, 0+NM[,NMcolperm])    
     covars <- suppressWarnings(
-        slm.fit.csr.fixed(S, covars*non_null_record_wts)$residuals
+        slm_fit_csr(S, covars*non_null_record_wts)$residuals
     )
     colnames(covars) <- vars
 

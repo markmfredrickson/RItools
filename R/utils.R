@@ -26,9 +26,10 @@ formula.xbal <- function(x, ...) {
 ##' @return Result of \code{fun}.
 withOptions <- function(optionsToChange, fun) {
   oldOpts <- options()
-  on.exit(options(oldOpts))
   options(optionsToChange)
-  tryCatch(fun(), finally = options(oldOpts))
+  # store the old values of the options, just for the options that were changed
+  oldOptValues <- oldOpts[names(optionsToChange)]
+  tryCatch(fun(), finally = options(oldOptValues))
 }
 
 ## Our own version of these to handle the signif stars.
@@ -184,20 +185,20 @@ SparseMMFromFactor <- function(thefactor) {
   )
 }
 
-
-## Variant of slm.fit.csr
-##
-## SparseM's slm.fit.csr has a bug for intercept only models
-## (admittedly, these are generally a little silly to be done as a
-## sparse matrix), but in order to avoid duplicate code, if
-## everything is in a single strata, we use the intercept only model.
-##
-## @param x As slm.fit.csr
-## @param y As slm.fit.csr
-## @param ... As slm.fit.csr
-## @return As slm.fit.csr
-## @importFrom SparseM chol backsolve
-slm.fit.csr.fixed <- function(x, y, ...) {
+#' new version of slm.fit.csr
+#' 
+#' SparseM's slm.fit.csr has a bug for intercept only models
+#' (admittedly, these are generally a little silly to be done as a
+#' sparse matrix), but in order to avoid duplicate code, if
+#' everything is in a single strata, we use the intercept only model. 
+#' This implementation contains some workarounds to ensure that only
+#' positive definite matrices are handed off to SparseM::chol()
+#' 
+#' @param x As slm.fit.csr
+#' @param y As slm.fit.csr
+#' @param ... As slm.fit.csr
+#' @return As slm.fit.csr
+slm_fit_csr <- function(x, y, ...) {
   if (is.matrix(y)) {
     n <- nrow(y)
     ycol <- ncol(y)
@@ -210,27 +211,100 @@ slm.fit.csr.fixed <- function(x, y, ...) {
     stop("x and y don't match n")
   }
 
-  fit <- .lm.fit(as.matrix(x), as.matrix(y))
-  coef <- fit$coefficients
-
-  ## Note above: we no longer import chol or backsolve from SparseM in this function
-  # chol <- SparseM::chol(t(x) %*% x, ...)
-  # xy <- t(x) %*% y
-  # coef <- SparseM::backsolve(chol, xy)
+  temp_sol <- SparseM_solve(x, y, ...)
+  coef <- temp_sol[["coef"]]
+  chol <- temp_sol[["chol"]]
 
   if (is.vector(coef)) {
     coef <- matrix(coef, ncol = ycol, nrow = p)
   }
-
   fitted <- as.matrix(x %*% coef)
   resid <- y - fitted
   df <- n - p
   list(
     coefficients = coef,
-    # chol = chol,
+    chol = chol,
     residuals = resid,
-    fitted = fitted, df.residual = df
+    fitted = fitted, 
+    df.residual = df,
+    gramian_reduction_index = temp_sol[["gramian_reduction_index"]]
   )
+}
+
+
+#' Helper function to slm_fit_csr
+#' 
+#' This function generates a matrix that can be used to reduce
+#' the dimensions of x'x and xy such that positive definiteness is
+#' ensured and more practically, that SparseM::chol will work
+#' 
+#' @param zeroes logical vector indicating which entries of the diagonal of x'x are zeroes.
+#' @return SparseM matrix that will reduce the dimension of x'x and xy 
+#' @importFrom SparseM chol backsolve
+gramian_reduction <- function(zeroes)
+{
+  if (all(zeroes))
+  {
+    stop("Diagonal of X'X is all zeroes. Unable to proceed.")
+  }
+  
+  num_rows <- length(zeroes)
+  num_cols <- sum(!zeroes)
+  non_zero_indices <- which(!zeroes)
+  
+  # Calculate the column indices for non-zero values
+  col_indices <- sapply(non_zero_indices, 
+                        function(i) i - sum(zeroes[1:i]))
+  values <- rep(1, num_cols)
+  
+  # Define the row pointer array 
+  ia <- cumsum(c(1, !zeroes))
+  
+  dimension <- as.integer(c(num_rows, num_cols))
+  reducing_matrix <- new("matrix.csr", ra = values, 
+                         ja = as.integer(col_indices), 
+                         ia = as.integer(ia), 
+                         dimension = dimension)
+  
+  return(reducing_matrix)
+}
+
+
+#' Helper function to slm_fit_csr
+#' 
+#' This function performs some checks and takes action to 
+#' ensure positive definiteness of matrices passed to SparseM functions.
+#' 
+#' @param x A slm.fit.csr
+#' @param y A slm.fit.csr
+#' @param ... A slm.fit.csr
+#' @return list containing coefficients (vector or matrix), the Cholesky decomposition (of class matrix.csr.chol), and a vector specifying the indicies of which values on the diagonal of x'x are nonzero. These are named "coef", "chol" and "gramian_reduction_index", respectively.
+#' @importFrom SparseM chol backsolve
+SparseM_solve <- function(x, y, ...)
+{
+  xy <- t(x) %*% y
+  xprimex <- t(x) %*% x
+  diag.xx <- diag(xprimex)
+  zeroes <- diag.xx == 0
+  if (any(zeroes)) #check explicitly for zeroes here so we don't do matrix math without needing to
+  { # this branch deals with issue 134
+    reducing_matrix <- gramian_reduction(zeroes)
+    xpx.sub <- t(reducing_matrix) %*% xprimex %*% reducing_matrix
+    xy.sub <- t(reducing_matrix) %*% xy
+    chol.result <- SparseM::chol(xpx.sub, ...)
+    coef.nonzero <- SparseM::backsolve(chol.result, xy.sub)
+    num_rows <- length(zeroes)
+    coef.all <- numeric(num_rows)
+    coef.all[!zeroes] <- coef.nonzero
+  } else
+  {
+    chol.result <- SparseM::chol(xprimex, ...)
+    coef.all <- SparseM::backsolve(chol.result, xy)
+  }
+  
+  return(list("coef" = coef.all, 
+              "chol" = chol.result, 
+              "gramian_reduction_index" = which(!zeroes)))
 }
 
 ## slm.wfit with two fixes
@@ -259,7 +333,7 @@ slm.wfit.csr <- function(x, y, weights, ...) {
   w <- sqrt(weights)
   wx <- as(w, "matrix.diag.csr") %*% x
   wy <- y * w
-  fit <- slm.fit.csr.fixed(wx, wy, ...)
+  fit <- slm_fit_csr(wx, wy, ...)
 
   fit$fitted <- as.matrix(x %*% fit$coef)
   fit$residuals <- y - fit$fitted

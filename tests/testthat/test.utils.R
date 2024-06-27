@@ -33,7 +33,7 @@ test_that("fitter for sparse designs handles intercept only design",
                                         # we get to revert to SparseM:slm.fit.csr
               lm.n <- lm.fit(matrix(1,4,1), quickY)
 
-              slm.n1 <- slm.fit.csr.fixed(nullfac.csr, quickY)
+              slm.n1 <- slm_fit_csr(nullfac.csr, quickY)
 
               expect_equal(lm.n$fitted, as.vector(slm.n1$fitted))
               expect_equal(lm.n$residuals, as.vector(slm.n1$residuals))
@@ -51,6 +51,75 @@ test_that("sparse design strat mean calculator returns 0 for strata w/o non-null
               theslmfit  <- slm.wfit.csr(S_, matrix(1:4), weights=wts)
               expect_equivalent(theslmfit$fitted,
                                 c(rep((1*1+2*2)/(1+2), 2), 0, 0))
+          }
+)
+
+test_that("gramian_reduction works as expected",
+          {
+            expect_true(require("SparseM"))
+            #let tl stand in for xprimex
+            tl <- diag(1, 5)
+            diag(tl)[c(1,2,4)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(2,4)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(2)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(5)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(1, 5)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 2)
+            diag(tl)[c(1)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes, drop = FALSE]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 2)
+            diag(tl)[c(1, 2)] <- 0
+            zeroes <- diag(tl) == 0
+            
+            expect_error(gramian_reduction(zeroes)) 
+            
           }
 )
 
