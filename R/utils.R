@@ -185,19 +185,36 @@ SparseMMFromFactor <- function(thefactor) {
   )
 }
 
-#' new version of slm.fit.csr
+#' SparseM::slm.fit.csr, made tolerant to faults that recur in RItools
 #' 
-#' SparseM's slm.fit.csr has a bug for intercept only models
+#' [SparseM's slm.fit.csr()] expects a full-rank x that's not just
+#' a column of 1s. This variant somewhat relaxes these expectations.
+#'
+#' `slm.fit.csr` has a bug for intercept only models
 #' (admittedly, these are generally a little silly to be done as a
 #' sparse matrix), but in order to avoid duplicate code, if
-#' everything is in a single strata, we use the intercept only model. 
-#' This implementation contains some workarounds to ensure that only
-#' positive definite matrices are handed off to SparseM::chol()
+#' everything is in a single strata, we use the intercept only model.
+#' 
+#' This function's expectation of x is that either it has full column
+#' rank, or the reduced submatrix of x that excludes all-zero columns
+#' has full column rank. (When this expectation is not met, it's
+#' likely that [SparseM::chol()] will fail, causing this function to
+#' error; the error messages won't necessarily suggest this.) The
+#' positions of nonzero x-columns (ie columns with nonzero entries)
+#' are returns as the value of `gramian_reduction_index`, while `chol`
+#' is the Cholesky decomposition of that submatrix's Gramian.
 #' 
 #' @param x As slm.fit.csr
 #' @param y As slm.fit.csr
 #' @param ... As slm.fit.csr
-#' @return As slm.fit.csr
+#' @return A list consisting of:
+#'   \item{coefficients}{coefficients}
+#'   \item{chol}{Cholesky factor of Gramian matrix \eqn{x'x}}
+#'   \item{residuals}{residuals}
+#'   \item{fitted}{fitted values}
+#'   \item{df.residual}{degrees of freedom}
+#'   \item{gramian_reduction_index}{Column indices identifying reduction of x matrix of which Gramian is taken; see Details}
+
 slm_fit_csr <- function(x, y, ...) {
   if (is.matrix(y)) {
     n <- nrow(y)
@@ -278,7 +295,7 @@ gramian_reduction <- function(zeroes)
 #' @param x A slm.fit.csr
 #' @param y A slm.fit.csr
 #' @param ... A slm.fit.csr
-#' @return list containing coefficients (vector or matrix), the Cholesky decomposition (of class matrix.csr.chol), and a vector specifying the indicies of which values on the diagonal of x'x are nonzero. These are named "coef", "chol" and "gramian_reduction_index", respectively.
+#' @return list containing coefficients (vector or matrix), the Cholesky decomposition (of class matrix.csr.chol), and a vector specifying the indices of which values on the diagonal of x'x are nonzero. These are named "coef", "chol" and "gramian_reduction_index", respectively.
 #' @importFrom SparseM chol backsolve
 SparseM_solve <- function(x, y, ...)
 {

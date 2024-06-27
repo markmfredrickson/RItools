@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{slm_fit_csr}
 \alias{slm_fit_csr}
-\title{new version of slm.fit.csr}
+\title{SparseM::slm.fit.csr, made tolerant to faults that recur in RItools}
 \usage{
 slm_fit_csr(x, y, ...)
 }
@@ -14,13 +14,30 @@ slm_fit_csr(x, y, ...)
 \item{...}{As slm.fit.csr}
 }
 \value{
-As slm.fit.csr
+A list consisting of:
+  \item{coefficients}{coefficients}
+  \item{chol}{Cholesky factor of Gramian matrix \eqn{x'x}}
+  \item{residuals}{residuals}
+  \item{fitted}{fitted values}
+  \item{df.residual}{degrees of freedom}
+  \item{gramian_reduction_index}{Column indices identifying reduction of x matrix of which Gramian is taken; see Details}
 }
 \description{
-SparseM's slm.fit.csr has a bug for intercept only models
+[SparseM's slm.fit.csr()] expects a full-rank x that's not just
+a column of 1s. This variant somewhat relaxes these expectations.
+}
+\details{
+`slm.fit.csr` has a bug for intercept only models
 (admittedly, these are generally a little silly to be done as a
 sparse matrix), but in order to avoid duplicate code, if
-everything is in a single strata, we use the intercept only model. 
-This implementation contains some workarounds to ensure that only
-positive definite matrices are handed off to SparseM::chol()
+everything is in a single strata, we use the intercept only model.
+
+This function's expectation of x is that either it has full column
+rank, or the reduced submatrix of x that excludes all-zero columns
+has full column rank. (When this expectation is not met, it's
+likely that [SparseM::chol()] will fail, causing this function to
+error; the error messages won't necessarily suggest this.) The
+positions of nonzero x-columns (ie columns with nonzero entries)
+are returns as the value of `gramian_reduction_index`, while `chol`
+is the Cholesky decomposition of that submatrix's Gramian.
 }
