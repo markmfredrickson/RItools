@@ -1,4 +1,23 @@
-# RItools
+# RItools 0.3-4
+
+* Using `.lm.fit()` within `slm.fit.csr.fixed` given breaking changes in `SparseM::chol()` (#134)
+
+# RItools 0.3-3
+
+* Adjusted arguments to `xtable.xbal()` to match the generic. (#131)
+
+# RItools 0.3-2
+
+* Adjusted terminology on `balanceplot()` plots when using `absolute=TRUE`.
+  (#129)
+* Updated some **tidyverse**/**ggplot2** code to deal with deprecations.
+* Using `bibentry()` in citation to address deprecation.
+
+
+# RItools 0.3-1
+
+* Skipped tests that cause problems with systems using the ATLAS linear algebra
+  library.
 
 # RItools 0.3-0
 

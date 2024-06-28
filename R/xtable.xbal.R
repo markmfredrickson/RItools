@@ -26,6 +26,7 @@
 ##'   columns, see details, below.
 ##' @param digits See \code{\link[xtable]{xtable}}. Default is 2.
 ##' @param display See \code{\link[xtable]{xtable}}.
+##' @param auto See \code{\link[xtable]{xtable}}.
 ##' @param col.labels Labels for the columns (the test
 ##'   statistics). Default are come from the call to
 ##'   \code{\link{print.xbal}}.
@@ -65,6 +66,7 @@ xtable.xbal <- function(x,
                         align = c("l",rep("r",ncol(xvardf))),
                         digits = 2,
                         display = NULL,
+                        auto = FALSE,
                         col.labels=NULL,
                         ...) {
   ##By default use decimal alignment, which will require the dcolumn package in latex and an appropriate column definition like:

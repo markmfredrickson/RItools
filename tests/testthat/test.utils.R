@@ -33,7 +33,7 @@ test_that("fitter for sparse designs handles intercept only design",
                                         # we get to revert to SparseM:slm.fit.csr
               lm.n <- lm.fit(matrix(1,4,1), quickY)
 
-              slm.n1 <- slm.fit.csr.fixed(nullfac.csr, quickY)
+              slm.n1 <- slm_fit_csr(nullfac.csr, quickY)
 
               expect_equal(lm.n$fitted, as.vector(slm.n1$fitted))
               expect_equal(lm.n$residuals, as.vector(slm.n1$residuals))
@@ -45,12 +45,83 @@ test_that("sparse design strat mean calculator returns 0 for strata w/o non-null
               fac <- factor(rep(c("a", "b"), each=2))
               wts  <- c(1:2, 0, 0)
               S_ <- SparseMMFromFactor(fac)
-              expect_warning(theslmfit  <- slm.wfit.csr(S_, matrix(1:4), weights=wts),
-                             "singularity problem")
+              # .lm.fit() handles singular fits without warnings
+              #expect_warning(theslmfit  <- slm.wfit.csr(S_, matrix(1:4), weights=wts),
+              #               "singularity problem")
+              theslmfit  <- slm.wfit.csr(S_, matrix(1:4), weights=wts)
               expect_equivalent(theslmfit$fitted,
                                 c(rep((1*1+2*2)/(1+2), 2), 0, 0))
           }
-)          
+)
+
+test_that("gramian_reduction works as expected",
+          {
+            expect_true(require("SparseM"))
+            #let tl stand in for xprimex
+            tl <- diag(1, 5)
+            diag(tl)[c(1,2,4)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(2,4)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(2)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(5)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 5)
+            diag(tl)[c(1, 5)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 2)
+            diag(tl)[c(1)] <- 0
+            zeroes <- diag(tl) == 0
+            not.zeroes <- !zeroes
+            stl <- tl[, not.zeroes, drop = FALSE]
+            sparse_matrix <- gramian_reduction(zeroes)
+            
+            expect_identical(stl, as.matrix(sparse_matrix))
+            
+            tl <- diag(1, 2)
+            diag(tl)[c(1, 2)] <- 0
+            zeroes <- diag(tl) == 0
+            
+            expect_error(gramian_reduction(zeroes)) 
+            
+          }
+)
 
 test_that("Residuals from weighted regressions w/ sparse designs",
           {
@@ -66,7 +137,7 @@ test_that("Residuals from weighted regressions w/ sparse designs",
               slm.w <- SparseM:::slm.wfit(quickfac.csr, quickY,
                                          weights=rep(1:2, each=2)
                                          )
-              expect_equal(coef(slm.u), # this 
+              expect_equal(coef(slm.u), # this
                            coef(slm.w)) # is OK...
 
               ## but since SparseM:::slm.wfit() doesn't compensate for weighting of design matrix:
@@ -76,12 +147,12 @@ test_that("Residuals from weighted regressions w/ sparse designs",
               ## Now for the fix
               ## First, example from `lm.wfit`:
               set.seed(129)
-              
+
               n <- 7 ; p <- 2
               X <- matrix(rnorm(n * p), n, p) # no intercept!
               y <- rnorm(n)
               w <- rnorm(n)^2
-     
+
               lmw <- lm.wfit(x = X, y = y, w = w)
 
               X.csr <- as(X, "matrix.csr")
@@ -90,7 +161,7 @@ test_that("Residuals from weighted regressions w/ sparse designs",
 
               expect_equal(coef(lmw), as.vector(coef(slmw)), check.attributes=FALSE) # OK here...
 
-              expect_equal(lmw$fitted, as.vector(slmw$fitted)) # OK here 
+              expect_equal(lmw$fitted, as.vector(slmw$fitted)) # OK here
               expect_equal(lmw$residuals, as.vector(slmw$residuals)) # also
 
           })
@@ -177,10 +248,10 @@ test_that("Formatting w/ appropriate sigfigs values",{
   ## w/ more rounding for Control and Treatment columns:
   ca1 <- original_units_var_formatter(xb2$results[,c("Control", "Treatment", "adj.diff"),, drop=F], 3)
   expect_equal(ca1[1,,1], c("Control"="-0.0474",  "Treatment"="-0.0425",  "adj.diff"=" 0.00495"))
-  
+
   pt2 <- print(xb2, digits=2, printme=FALSE)
 
-  
+
   ## Brittle test: with settings as above, I'm pretty sure 2 sigfigs
   ## should translate to the thousandths place for the z-stats.
   expect_equivalent(round(as.numeric(pt1[[1]][,4]), 4), as.numeric(pt1[[1]][,4]))
@@ -228,5 +299,6 @@ test_that("Matrix pseudoinversion also returns rank", {
   expect_equal(attr(a2, "r"), 1)
 
 
-  
+
 })
+

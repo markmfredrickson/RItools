@@ -408,8 +408,8 @@ setClass("StratumWeightedDesignOptions",
 ##' stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
 ##' weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
 ##' \code{sweights} to the product of half the harmonic
-##' mean of n_{tb} and n_{cb}, the number of treatment and control
-##' clusters in stratum b, with the mean of the weights associated with
+##' mean of \eqn{n_{tb}} and \eqn{n_{cb}}, the number of treatment and control
+##' clusters in stratum \eqn{b}, with the mean of the weights associated with
 ##' each of these clusters.  In the notation of Hansen & Bowers
 ##' (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
 ##' \sQuote{\code{wtratio}}, this ratio's denominator is not a weight
@@ -752,8 +752,8 @@ aggregateDesigns <- function(design) {
 #' non-missingness of the original data.
 #'
 #' Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
-#' specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
-#' n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
+#' specified stratum weight to the product of \eqn{h_b} (the harmonic mean of \eqn{n_\{tb\}} and
+#' \eqn{n_{cb}}, the counts of treatment and control clusters in stratum \eqn{b}) with \eqn{bar-w_b},
 #' (the arithmetic mean of aggregated cluster weights within that stratum). It can also
 #' be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 #' 
@@ -761,7 +761,7 @@ aggregateDesigns <- function(design) {
 #' @slot UnitWeights vector of weights associated w/ rows of Covariates
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
-#' @slot StrataWeightRatio For each unit, ratio of stratum weight to h_b; but see Details.
+#' @slot StrataWeightRatio For each unit, ratio of stratum weight to \eqn{h_b}; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
@@ -776,8 +776,11 @@ setClass("CovsAlignedToADesign",
              )
          )
 # apply this & pass through en route to svd
+#' Scale DesignOptions
 #' @method scale DesignOptions
-#' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()} 
+##' @param x DesignOptions object
+##' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()}
+##' @param scale logical, whether to scale
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 {
     stopifnot(is(x, "DesignOptions"))
@@ -895,7 +898,7 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
     ## Do this for the not-missing indicators as well as for the manifest variables.
     covars <- cbind(Covs_w_touchups, 0+NM[,NMcolperm])    
     covars <- suppressWarnings(
-        slm.fit.csr.fixed(S, covars*non_null_record_wts)$residuals
+        slm_fit_csr(S, covars*non_null_record_wts)$residuals
     )
     colnames(covars) <- vars
 

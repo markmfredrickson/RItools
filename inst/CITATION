@@ -1,42 +1,38 @@
-citHeader("To cite RItools in publications use:")
-
 if(!exists("meta") || is.null(meta)) meta <- packageDescription("RItools")
 year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date)
 vers <- paste("R package version", meta$Version)
 
 
-citEntry(entry="article",
-         Author = personList(as.person("Ben B. Hansen"),
-           as.person("Jake Bowers")),
-	Journal = "Statistical Science",
-	Number = "2",
-	Pages = "219--236",
-	Title = "Covariate balance in simple, stratified and clustered  comparative studies",
-	Volume = "23",
-	Year = "2008",
+bibentry(bibtype = "Article",
+         Author = c(as.person("Ben B. Hansen"),
+                    as.person("Jake Bowers")),
+         Journal = "Statistical Science",
+         Number = "2",
+         Pages = "219--236",
+         Title = "Covariate balance in simple, stratified and clustered  comparative studies",
+         Volume = "23",
+         Year = "2008",
          textVersion=paste("Ben B. Hansen and Jake Bowers (",2008,
-           "). Covariate balance in simple, stratified and clustered comparative studies. Statistical Science. 23(2):219--236.",
-           sep="")
+                           "). Covariate balance in simple, stratified and clustered comparative studies. Statistical Science. 23(2):219--236.",
+                           sep=""),
+         mheader = "To cite RItools in publications use:",
+         mfooter = paste("Please cite our article and package when using it for data analysis. If you would like BibTeX formated citations type",
+                         sQuote("toBibtex(citation(\"RItools\"))"),
+                         ". See also", sQuote("citation(\"pkgname\")"),
+                         "for citing R packages.")
          )
 
-citEntry(entry="Manual",
-	Title = "RItools: Randomization Inference Tools",
-	Author = personList(as.person("Jake Bowers"),
-          as.person("Mark Fredrickson"),
-          as.person("Ben Hansen")),
-	Note = vers,
-	##Month = "SomeMonth",
-	Year = year ,
-        url = "http://www.jakebowers.org/RItools.html",
-        textVersion = paste("Jake Bowers, Mark Fredrickson, and Ben Hansen (",
-                    year,
-                    "). RItools:Randomization Inference Tools. ",
-                    vers, ".", sep="")
-)
-
-
-citFooter("Please cite our article and package when using it for data analysis. If you would like BibTeX formated citations type", sQuote("toBibtex(citation(\"RItools\"))"),
-          ". See also", sQuote("citation(\"pkgname\")"),
-          "for citing R packages.")
-
-
+bibentry(bibtype = "Manual",
+         Title = "RItools: Randomization Inference Tools",
+         Author = c(as.person("Jake Bowers"),
+                    as.person("Mark Fredrickson"),
+                    as.person("Ben Hansen")),
+         Note = vers,
+         ##Month = "SomeMonth",
+         Year = year ,
+         url = "http://www.jakebowers.org/RItools.html",
+         textVersion = paste("Jake Bowers, Mark Fredrickson, and Ben Hansen (",
+                             year,
+                             "). RItools:Randomization Inference Tools. ",
+                             vers, ".", sep="")
+         )

@@ -75,6 +75,7 @@ test_that("Basic plot", {
     expect_error(plot(xb, variable.labels = c("foo")), "labels")
     expect_error(plot(xb, strata.labels = c("foo")), "labels")
   }
+  expect_true(TRUE)
 })
 
 test_that("Generic balance plots", {
@@ -146,7 +147,7 @@ test_that("Generic balance plots", {
 
     expect_true(identical(p1, p.twoshapes.mat))
   }
-
+  expect_true(TRUE)
 })
 
 
@@ -172,6 +173,7 @@ test_that("Issue 21: Cairo/pango errors when running plot.xbal", {
     dev.off()
     file.remove(tmpf)
   }
+  expect_true(TRUE)
 })
 
 test_that("balanceplot can group variables", {
@@ -196,6 +198,7 @@ test_that("balanceplot can group variables", {
     expect_false(identical(p1, p2))
 
   }
+  expect_true(TRUE)
 })
 
 test_that("preparing xbalance objects for plotting, includes groups", {

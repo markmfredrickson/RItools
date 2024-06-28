@@ -36,8 +36,8 @@ calculated or user-provided \code{stratum.weights}, one for each
 stratum, scaled so that their sum is 1; in Hansen & Bowers (2008), these
 weights are denoted \eqn{w_{b}}. \code{wtratio} is the ratio of
 \code{sweights} to the product of half the harmonic
-mean of n_{tb} and n_{cb}, the number of treatment and control
-clusters in stratum b, with the mean of the weights associated with
+mean of \eqn{n_{tb}} and \eqn{n_{cb}}, the number of treatment and control
+clusters in stratum \eqn{b}, with the mean of the weights associated with
 each of these clusters.  In the notation of Hansen & Bowers
 (2008), this is \eqn{w_{b}/(h_b \bar{m}_b)}. Despite the name
 \sQuote{\code{wtratio}}, this ratio's denominator is not a weight

@@ -1107,39 +1107,9 @@ test_that("HB08 and HB08_2016 flag degenerate statistics", {
   x <- replicate(n - s, runif(n, 0, 100))
 
   colnames(x) <- paste0("x", 1:(n-s))
-
-
-  df_good <- data.frame(z = z, x = x[, -1], b = b, '(weights)' = 1, check.names = FALSE)
-  designs_good <- RItools:::makeDesigns(z ~ . + strata(b) - 1, data = df_good)
-  designs_good <- as(designs_good, "StratumWeightedDesignOptions")
-  designs_good@Sweights <- RItools:::DesignWeights(designs_good)
-  aligned_good <- RItools:::alignDesignsByStrata("b", designs_good)
-
-  expect_silent(HB08(aligned_good))
-  expect_silent(HB08_2016(aligned_good))
   
   df_bad <- data.frame(z = z, x = x, b = b, '(weights)' = 1, check.names = FALSE)
-  designs_bad <- RItools:::makeDesigns(z ~ . + strata(b) - 1, data = df_bad)
-  designs_bad <- as(designs_bad, "StratumWeightedDesignOptions")
-  designs_bad@Sweights <- RItools:::DesignWeights(designs_bad)
-  aligned_bad <- RItools:::alignDesignsByStrata("b", designs_bad)
-
-  expect_warning(HB08(aligned_bad), "degenerate")
-  expect_warning(HB08_2016(aligned_bad), "degenerate")
   
   expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08), "degenerate")
   expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08_2016), "degenerate")
-
-  ## these lines produce warnings on a particular alternate linear algebra packages 
-  ## https://www.stats.ox.ac.uk/pub/bdr/Rblas/README.txt
-  ## we could not reproduce and are skipping.
-  skip_on_cran()
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08))
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016))
-
-
 })
-
-### Tests to write...
-##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})
-##test_that("",{})

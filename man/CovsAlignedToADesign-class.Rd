@@ -19,8 +19,8 @@ centered within a stratum, recording
 non-missingness of the original data.
 
 Ordinarily the StrataWeightRatio slot has an entry for each unit, representing ratio of
-specified stratum weight to the product of h_b (the harmonic mean of n_{tb} and
-n_{cb}, the counts of treatment and control clusters in stratum b) with bar-w_b,
+specified stratum weight to the product of \eqn{h_b} (the harmonic mean of \eqn{n_\{tb\}} and
+\eqn{n_{cb}}, the counts of treatment and control clusters in stratum \eqn{b}) with \eqn{bar-w_b},
 (the arithmetic mean of aggregated cluster weights within that stratum). It can also
 be the numeric vector 1, without names, meaning the intended weight ratio is always 1.
 }
@@ -35,7 +35,7 @@ be the numeric vector 1, without names, meaning the intended weight ratio is alw
 
 \item{\code{StrataMatrix}}{A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification}
 
-\item{\code{StrataWeightRatio}}{For each unit, ratio of stratum weight to h_b; but see Details.}
+\item{\code{StrataWeightRatio}}{For each unit, ratio of stratum weight to \eqn{h_b}; but see Details.}
 
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
 

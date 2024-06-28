@@ -86,18 +86,19 @@ balanceTest_ggplot <- function(x,
                        groups = NULL,
                        var.order = NULL,
                        var.grouping = NULL,
-                       ...){
-  
+                       ...) {
+
   # Tidyvers doesn't like rownames
   x <- tibble::as_tibble(x, rownames = "rowname", .name_repair = "unique")
 
   # Restructure data long
-  tmp <- colnames(x)
-  tmp <- tmp[tmp != "rowname"]
-  x <- tidyr::pivot_longer(x, tmp, "strata")
+  x <- tidyr::pivot_longer(x, !"rowname", names_to = "strata")
 
   if (isTRUE(absolute)) {
     x <- dplyr::mutate(x, values = "abs(value)")
+    if (xlab == "Standardized Differences") {
+      xlab <- "Absolute Standardized Differences"
+    }
   }
 
   if (!is.null(var.order)) {
@@ -133,10 +134,10 @@ balanceTest_ggplot <- function(x,
 
   legend.title <- "Stratification" # just giving us some text for now
   plot <- ggplot2::ggplot(x,
-                          ggplot2::aes_string(y = "rowname",
-                                       x = "value",
-                                       color = "strata",
-                                       shape = "strata")) +
+                          ggplot2::aes(y = .data[["rowname"]],
+                                       x = .data[["value"]],
+                                       color = .data[["strata"]],
+                                       shape = .data[["strata"]])) +
     ggplot2::geom_point(size = 2) +
     ggplot2::geom_vline(xintercept = 0) +
     ggplot2::labs(color = legend.title,
@@ -152,8 +153,8 @@ balanceTest_ggplot <- function(x,
   # Only draw connectors if there are multiple strata (avoids warning
   # from geom_path)
   if (length(unique(x$strata)) > 1) {
-    plot <- plot + 
-      ggplot2::geom_line(ggplot2::aes_string(group = "rowname"), color = "black")
+    plot <- plot +
+      ggplot2::geom_line(ggplot2::aes(group = .data[["rowname"]]), color = "black")
   }
     
   return(plot)
