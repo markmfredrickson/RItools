@@ -414,10 +414,12 @@ test_that("Constant variables", {
   bt <- balanceTest(z ~ xv + xc, data = d)
   
   ## but this gives problems
-  bt <- balanceTest(z ~ xc, data = d)
+  expect_error(balanceTest(z ~ xc, data = d),
+               "Cannot calculate pseudoinverse")
   
   ## this too
-  bt <- balanceTest(z ~ s + strata(s), data = d)
+  expect_error(balanceTest(z ~ s + strata(s), data = d),
+               "Cannot calculate pseudoinverse")
 })
 
 
