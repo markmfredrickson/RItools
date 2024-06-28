@@ -370,8 +370,15 @@ slm.wfit.csr <- function(x, y, weights, ...) {
 ## @return matrix of \code{ncol(mat)} rows and col rank (mat) columns
 ## @author Ben Hansen
 ## @keywords internal
-XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5) {
-  pst.svd <- try(svd(mat, nu = 0))
+XtX_pseudoinv_sqrt <- function(mat, mat.is.XtX = FALSE, tol = .Machine$double.eps^0.5)
+{
+  
+  if (nrow(mat) == 0 && ncol(mat) == 0)
+  {
+    stop("Cannot calculate pseudoinverse: perhaps all covariates are constant (within strata)?")
+  }
+  
+  pst.svd <- try(svd(mat, nu=0))
 
   if (inherits(pst.svd, "try-error")) {
     pst.svd <- propack.svd(mat)

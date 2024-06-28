@@ -401,3 +401,42 @@ test_that("balanceTest agrees with other methods where appropriate", {
   expect_equivalent(bt2m$overall[1, "p.value"], summary(cr2)$sctest[["pvalue"]])
   })
 })
+
+test_that("Constant variables", {
+  
+  set.seed(393911)
+  d <- data.frame(xc = rep(1, 100),
+                  xv = runif(n = 100),
+                  s = as.factor(sample(letters[1:3], 100, replace = TRUE)),
+                  z = rep(c(1,0), 50))
+  
+  ## this should be ok, no error
+  bt <- balanceTest(z ~ xv + xc, data = d)
+  
+  ## but this gives problems
+  expect_error(balanceTest(z ~ xc, data = d),
+               "Cannot calculate pseudoinverse")
+  
+  ## this too
+  expect_error(balanceTest(z ~ s + strata(s), data = d),
+               "Cannot calculate pseudoinverse")
+})
+
+
+test_that("Characters and factors", {
+  
+  ## generally we expect characters and factors to behave the same.
+  
+  set.seed(393911)
+  tmp <- sample(letters[1:3], 100, replace = TRUE)
+  d <- data.frame(char = tmp,
+                  fact = as.factor(tmp),
+                  z = rep(c(1,0), 50),
+                  stringsAsFactors = FALSE)
+  
+  btc <- balanceTest(z ~ char, data = d)
+  btf <- balanceTest(z ~ fact, data = d)
+  
+  expect_equal(dim(btc$results), dim(btf$results))
+  expect_equal(btc$overall, btf$overall)
+})
