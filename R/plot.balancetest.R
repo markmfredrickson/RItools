@@ -20,15 +20,15 @@
 #' choice as all variables are on the same scale. Other statistics can be
 #' selected using the \code{statistic} argument.
 #'
-#' The result of this function is a \code{\link{ggplot}} object. Most display of
-#' the plot can be manipulated using additional commands appended to the plot
-#' option. For example, the entire theme of the plot can be changed to black and
-#' white using \code{plot(b) + theme_bw()}, where \code{b} is the result of a
-#' call to \code{\link{balanceTest}}. The points on the plot are known as
-#' "values", so colors or symbols used for each strata can be updated using the
-#' \code{\link{scale_color_manual}} function. For example, \code{plot(b) +
-#' scale_color_manaual(values = c('red', 'green', 'blue'))} for a balance test
-#' of three stratification variables.
+#' The result of this function is a \code{\link[ggplot2]{ggplot}} object. Most
+#' display of the plot can be manipulated using additional commands appended to
+#' the plot option. For example, the entire theme of the plot can be changed to
+#' black and white using \code{plot(b) + theme_bw()}, where \code{b} is the
+#' result of a call to \code{\link{balanceTest}}. The points on the plot are
+#' known as "values", so colors or symbols used for each strata can be updated
+#' using the \code{\link[ggplot2]{scale_color_manual}} function. For example,
+#' \code{plot(b) + scale_color_manaual(values = c('red', 'green', 'blue'))} for
+#' a balance test of three stratification variables.
 #'
 #' @param x An object returned by \code{\link{xBalance}}
 #' @param xlab The label for the x-axis of the plot
