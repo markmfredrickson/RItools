@@ -511,6 +511,29 @@ test_that("Aggegating designs by clusters", {
 })
 })
 
+test_that("aggregateDesigns's cluster alignment (issue 138)",
+{
+    data(ym_long)
+    agg_ym <- ym_long[!duplicated(ym_long$"practice"),]
+    ctab0 <- with(agg_ym, table(trt, assess_strata))
+    des_ym <-
+        RItools:::makeDesigns(trt ~ assessed + strata(assess_strata) +
+                                  cluster(practice),
+                              data=cbind(ym_long, `(weights)`=1))
+    ctab1 <-
+        data.frame(trt=as.numeric(des_ym@Z),
+                   assess_strata=des_ym@StrataFrame$"assess_strata"
+                   )[!duplicated(des_ym@Cluster),] |>
+        table()
+    expect_identical(ctab0, ctab1)
+    aggd_ym <- RItools:::aggregateDesigns(des_ym)
+    ctab2 <- data.frame(trt=as.numeric(aggd_ym@Z),
+                   assess_strata=aggd_ym@StrataFrame$"assess_strata"
+                   )[!duplicated(aggd_ym@Cluster),] |>
+        table()
+    expect_identical(ctab2, ctab0)
+})
+
 test_that("aggregateDesigns treats NA covariates as 0's" ,{
 
     dat <- data.frame(strat=rep(letters[1:2], c(3,2)),
