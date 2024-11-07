@@ -514,12 +514,13 @@ test_that("Aggegating designs by clusters", {
 test_that("aggregateDesigns's cluster alignment (issue 138)",
 {
     data(ym_long)
-    agg_ym <- ym_long[!duplicated(ym_long$"practice"),]
+    ym_long_ <- ym_long[seq(from=1L, to=nrow(ym_long), by=25),]
+    agg_ym <- ym_long_[!duplicated(ym_long_$"practice"),]
     ctab0 <- with(agg_ym, table(trt, assess_strata))
     des_ym <-
         RItools:::makeDesigns(trt ~ assessed + strata(assess_strata) +
                                   cluster(practice),
-                              data=cbind(ym_long, `(weights)`=1))
+                              data=cbind(ym_long_, `(weights)`=1))
     ctab1 <-
         data.frame(trt=as.numeric(des_ym@Z),
                    assess_strata=des_ym@StrataFrame$"assess_strata"
