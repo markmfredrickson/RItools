@@ -694,10 +694,10 @@ aggregateDesigns <- function(design) {
   # To align w/ this `C_transp`, everything to be returned 
   # needs to align w/ `levels(Cluster)`, not with 
   # `Cluster` itself. So,
-  Z <- Z[levels(Cluster)]
-  StrataFrame  <-
-      StrataFrame[match(levels(Cluster), as.character(Cluster)),
-                  , drop=FALSE]
+  cperm <- match(levels(Cluster), as.character(Cluster))
+  Z <- Z[cperm]
+  StrataFrame  <- StrataFrame[cperm, , drop=FALSE]
+  Cluster <- Cluster[cperm]
   
   unit.weights <- as.matrix(C_transp %*% as.matrix(design@UnitWeights))
 
