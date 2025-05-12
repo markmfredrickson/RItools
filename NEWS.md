@@ -1,3 +1,8 @@
+# RItools 0.3-5
+
+* Now "Depends" on the `survival` package to bring in the `strata` and `cluster`
+functions (#141).
+
 # RItools 0.3-4
 
 * Using `.lm.fit()` within `slm.fit.csr.fixed` given breaking changes in `SparseM::chol()` (#134)

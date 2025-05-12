@@ -1,5 +1,5 @@
 Package: RItools
-Version: 0.3-4
+Version: 0.3-5
 Title: Randomization Inference Tools
 Authors@R: c(person("Jake", "Bowers", role = c("aut", "cre"), email = "jwbowers@illinois.edu"),
              person("Mark", "Fredrickson", role = "aut", email = "mark.m.fredrickson@gmail.com"),
@@ -10,7 +10,8 @@ License: GPL (>=2)
 LazyData: true
 Depends:
     R (>= 3.5.0),
-    ggplot2
+    ggplot2,
+    survival
 Imports:
     grDevices,
     abind,
@@ -19,7 +20,6 @@ Imports:
     stats,
     graphics,
     methods,
-    survival,
     SparseM,
     tidyr,
     tibble,
