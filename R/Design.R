@@ -217,7 +217,7 @@ setClass("DesignOptions",
 ##' @param fmla Formula
 ##' @param data Data
 ##' @return DesignOptions
-##' @import stats
+##' @import stats survival
 ##' @keywords internal
 ##'
 makeDesigns <- function(fmla, data) {

@@ -74,5 +74,5 @@ using the \code{\link[ggplot2]{scale_color_manual}} function. For example,
 a balance test of three stratification variables.
 }
 \seealso{
-\code{\link{balanceTest}}, \code{\link{ggplot}}
+\code{\link{balanceTest}}, \code{\link[ggplot2]{ggplot}}
 }
