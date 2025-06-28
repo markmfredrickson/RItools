@@ -178,11 +178,11 @@ balanceTest <- function(fmla,
                         post.alignment.transform = NULL,
                         inferentials.calculator = HB08,
                         p.adjust.method = "holm") {
-### API Assumptions:
-### - no ... in the xBal formula
-### (if this assumption ceases to be met then we have to add an explicit check that
-### the user hasn't tried to specify an offset, given that we're repurposing that
-### model.frame option)
+  ### API Assumptions:
+  ### - no ... in the xBal formula
+  ### (if this assumption ceases to be met then we have to add an explicit check that
+  ### the user hasn't tried to specify an offset, given that we're repurposing that
+  ### model.frame option)
 
   if (!is.null(strata)) {
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?balanceTest, examples.")
@@ -194,77 +194,80 @@ balanceTest <- function(fmla,
 
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
 
-  if (missing(data))
-     data <- environment(formula)
+  if (missing(data)) {
+    data <- environment(formula)
+  }
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "unit.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
-  if (cwpos <- match("unit.weights", names(mf), nomatch=0L))
-      names(mf)[cwpos] <- "weights"
+  if (cwpos <- match("unit.weights", names(mf), nomatch = 0L)) {
+    names(mf)[cwpos] <- "weights"
+  }
   ## Here's where we rely on assumption of no ... in the xBal formula
   ## it helps us avoid adding a second offset argument to the model frame call
-  if (sspos <- match("subset", names(mf), nomatch=0L))
-      names(mf)[sspos] <- "offset"
+  if (sspos <- match("subset", names(mf), nomatch = 0L)) {
+    names(mf)[sspos] <- "offset"
+  }
   mf$drop.unused.levels <- TRUE
   mf[[1L]] <- quote(stats::model.frame)
   mf$na.action <- quote(stats::na.pass)
   data <- eval(mf, parent.frame())
-  if (!cwpos)
-      data$'(weights)' <- 1
-  if (cwpos && !is.numeric(data$'(weights)'))
-      data$'(weights)' <- as.numeric(data$'(weights)')
-  if (sspos)
-      {
-          ss <- data$'(offset)'
-          ss <- as.logical(ss)
-          if (any(is.na(ss)))
-              {
-                  ss[is.na(ss)] <- FALSE
-                  warning("subset specification gave NAs; interpreting these as FALSE")
-              }
-          data$'(weights)' <- ifelse(ss, data$'(weights)', 0)
-          data$'(offset)' <- NULL
-      }
+  if (!cwpos) {
+    data$"(weights)" <- 1
+  }
+  if (cwpos && !is.numeric(data$"(weights)")) {
+    data$"(weights)" <- as.numeric(data$"(weights)")
+  }
+  if (sspos) {
+    ss <- data$"(offset)"
+    ss <- as.logical(ss)
+    if (any(is.na(ss))) {
+      ss[is.na(ss)] <- FALSE
+      warning("subset specification gave NAs; interpreting these as FALSE")
+    }
+    data$"(weights)" <- ifelse(ss, data$"(weights)", 0)
+    data$"(offset)" <- NULL
+  }
 
-    if (any(NAwts <- is.na(data$'(weights)')))
-    {
-        data[NAwts, '(weights)'] <- 0
-        warning("NA unit.weights detected; treating as 0s")
-        }
+  if (any(NAwts <- is.na(data$"(weights)"))) {
+    data[NAwts, "(weights)"] <- 0
+    warning("NA unit.weights detected; treating as 0s")
+  }
 
   # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
   # -1 for no match, and 0 for ambiguous (multiple) matches.
 
 
   ## we used to allow select report options, not any more.
-  report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
+  report <- c("adj.means", "adj.mean.diffs", "chisquare.test", "std.diffs", "z.scores", "p.values")
 
-  design          <- makeDesigns(fmla, data)
+  design <- makeDesigns(fmla, data)
   ## Which of the NM cols to look at for a given variable's NM info
-  NMpatterns <-   c("_any Xs recorded_", colnames(design@NotMissing))[1L+design@NM.Covariates]
-  NMpatterns <- paste0("(",NMpatterns,")")
+  NMpatterns <- c("_any Xs recorded_", colnames(design@NotMissing))[1L + design@NM.Covariates]
+  NMpatterns <- paste0("(", NMpatterns, ")")
 
-  aggDesign       <- aggregateDesigns(design)
+  aggDesign <- aggregateDesigns(design)
   ## (Creation of stratum weightings for use in
   ##  descriptives calculations would go here, if
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
-  descriptives    <- designToDescriptives(design, covariate.scales)
-  NMpatterns <- c(NMpatterns, rep("", dim(descriptives)[1]-length(NMpatterns)))
+  descriptives <- designToDescriptives(design, covariate.scales)
+  NMpatterns <- c(NMpatterns, rep("", dim(descriptives)[1] - length(NMpatterns)))
 
   # these weights govern inferential but not descriptive calculations
 
   aggDesign <- as(aggDesign, "StratumWeightedDesignOptions")
   aggDesign@Sweights <-
-      DesignWeights(aggDesign, stratum.weights)
+    DesignWeights(aggDesign, stratum.weights)
 
   strataAligned <- sapply(colnames(aggDesign@StrataFrame),
-                          alignDesignsByStrata,
-                          design=aggDesign,
-                          post.align.transform=post.alignment.transform,
-                          simplify = FALSE, USE.NAMES = TRUE)
+    alignDesignsByStrata,
+    design = aggDesign,
+    post.align.transform = post.alignment.transform,
+    simplify = FALSE, USE.NAMES = TRUE
+  )
 
-  origvars <- strataAligned[[1]]@OriginalVariables #to include NotMissing columns
+  origvars <- strataAligned[[1]]@OriginalVariables # to include NotMissing columns
 
   tmp <- lapply(strataAligned, inferentials.calculator)
   names(tmp) <- colnames(aggDesign@StrataFrame)
@@ -272,8 +275,12 @@ balanceTest <- function(fmla,
   ans <- list()
 
   # append the z and p to the "descriptives" array (making it somewhat misnamed)
-  tmp.z <- as.data.frame(lapply(tmp, function(tt) { tt$z }))
-  tmp.p <- as.data.frame(lapply(tmp, function(tt) { tt$p }))
+  tmp.z <- as.data.frame(lapply(tmp, function(tt) {
+    tt$z
+  }))
+  tmp.p <- as.data.frame(lapply(tmp, function(tt) {
+    tt$p
+  }))
   nstats.previous <- dim(descriptives)[2]
   descriptives <- abind(descriptives, along = 2, tmp.z, tmp.p, use.first.dimnames = TRUE)
   names(dimnames(descriptives)) <- c("vars", "stat", "strata")
@@ -284,35 +291,67 @@ balanceTest <- function(fmla,
   nmvars <- identify_NM_vars(dimnames(descriptives)[["vars"]])
   # next line assumes every "stat" not in the given list is a mean
   # over a group assigned to some treatment condition.
-  group_mean_labs <- setdiff(dimnames(descriptives)[["stat"]],
-                             c("std.diff", "adj.diff", "pooled.sd", "z", "p"))
-  if (length(nmvars) & length(group_mean_labs)) #cf #111
-  {
-	  groupmeans <- descriptives[nmvars, group_mean_labs,,drop=FALSE]
-	  bad <- apply(abs(groupmeans - 1) < sqrt(.Machine$double.eps), 1, all)
-	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
-	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
-		  descriptives <- descriptives[-toremove,,,drop=FALSE]
-		  origvars <- origvars[-toremove]
-                  strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
-                  NMpatterns <- NMpatterns[-toremove]  # names of vars that
-                  NMpatterns[ NMpatterns%in% strings_to_remove] <- ""
-	  }
+  group_mean_labs <- setdiff(
+    dimnames(descriptives)[["stat"]],
+    c("std.diff", "adj.diff", "pooled.sd", "z", "p")
+  )
+  if (length(nmvars) & length(group_mean_labs)) # cf #111
+    {
+      groupmeans <- descriptives[nmvars, group_mean_labs, , drop = FALSE]
+      bad <- apply(abs(groupmeans - 1) < sqrt(.Machine$double.eps), 1, all)
+      toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
+      if (length(toremove) > 0) { ## if toremove=integer(0) then it drops all vars from descriptives
+        descriptives <- descriptives[-toremove, , , drop = FALSE]
+        origvars <- origvars[-toremove]
+        strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
+        NMpatterns <- NMpatterns[-toremove] # names of vars that
+        NMpatterns[NMpatterns %in% strings_to_remove] <- ""
+      }
+    }
+
+  ## Now we will calculate separate p-values and combine them using the Cauchy
+  ## combination method (Liu and Xie 2019) Cauchy Combination Test: A Powerful
+  ## Test With Analytic p-Value Calculation Under Arbitrary Dependency
+  ## Structures
+
+  acat_pvalue <- function(p_values) {
+    ## This function goes kind of crazy at 0 and 1 so add or substract a tiny
+    ## amount from either side if needed
+    if (any(p_values == 0 | p_values == 1, na.rm = TRUE)) {
+      p_values[p_values == 0] <- p_values[p_values == 0] + .Machine$double.eps
+      p_values[p_values == 1] <- p_values[p_values == 1] - .Machine$double.eps
+    }
+    ## pi is pi FYI
+    ## Since this procedure creates weird results when p is very near 1 or p very near 0, we create
+    ## the two sided p-values using one-sided tests and then double the minimum.
+    p_1 <- p_values / 2
+    t_stat <- mean(tan((0.5 - p_1) * pi)) # equal weights
+    upper_p <- 0.5 - atan(t_stat) / pi # final ACAT p-value
+    ## We want a 2 sided test
+    return(2 * min(c(upper_p, 1 - upper_p)))
+  }
+
+  cauchy_comb_p <- vector(length = dim(descriptives)[3])
+  ## The last row of descriptives is not covariate per se and so we exclude it
+  ## from the combination
+  for (s in seq_len(dim(descriptives)[3])) {
+    tmp[[s]][["cauchy_comb_p"]] <- acat_pvalue(descriptives[-dim(descriptives)[1], "p", s])
   }
 
   inferentials <- do.call(rbind, lapply(tmp, function(s) {
-    data.frame(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
+    data.frame(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE), s$cauchy_comb_p)
   }))
-  colnames(inferentials) <- c("chisquare", "df", "p.value")
+  colnames(inferentials) <- c("chisquare", "df", "p.value", "cauchy_comb_p")
 
   # the meat of our xbal object
   ans$overall <- inferentials
   ans$results <- descriptives
 
   ## do p.value adjustment
-  for (s in 1L:dim(descriptives)[3])
-  ans$results[, "p", s] <- p.adjust(ans$results[, "p", s], method = p.adjust.method)
-##  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
+  for (s in 1L:dim(descriptives)[3]) {
+    ans$results[, "p", s] <- p.adjust(ans$results[, "p", s], method = p.adjust.method)
+  }
+  ##  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
 
   attr(ans$results, "NMpatterns") <- NMpatterns
   attr(ans$results, "originals") <- origvars
