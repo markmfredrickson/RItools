@@ -1,3 +1,8 @@
+# RItools {NEXTVERSION}
+
+* Bug fix (base R plot method svg export)
+* More graceful handling in balanceTest() of the edge case of balance testing for all-constant variables, with messages not errors and p-values of NA not 1
+
 # RItools 0.3-5
 
 * Now "Depends" on the `survival` package to bring in the `strata` and `cluster`

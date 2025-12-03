@@ -999,8 +999,11 @@ HB08 <- function(alignedcovs) {
 
     check_for_degenerate(cov_minus_.5, n_, s_)
 
+  if (!all(zero_variance))
+    {
     mvz <- drop(crossprod(ssn[!zero_variance], cov_minus_.5))
     csq <- drop(crossprod(mvz))
+    } else csq <- NA_real_
     DF <- ncol(cov_minus_.5)
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
