@@ -99,6 +99,30 @@
 ##' @param post.alignment.transform Optional transformation applied to
 ##'   covariates just after their stratum means are subtracted off.
 ##'   Should accept a vector of weights as its second argument.
+##' @param sigma_x_test Logical, default \code{FALSE}.  When \code{TRUE},
+##'   the result table \code{$overall} is augmented with three columns
+##'   (\code{sigma_x}, \code{sigma_x.df}, \code{sigma_x.p.value}) reporting
+##'   an alternative omnibus statistic \eqn{T = d' \Sigma_x^{-1} d} that
+##'   standardizes the adjusted differences vector by a covariance of the
+##'   covariates rather than by the permutation covariance \eqn{\mathrm{Cov}(d)}
+##'   used by the existing Hansen-Bowers \eqn{d^2} test.  See Details
+##'   below; both stats are reported side by side, and the \eqn{d^2} columns
+##'   are unchanged.
+##' @param sigma_x Optional \eqn{p \times p} covariance-of-covariates matrix
+##'   used as the metric for the new omnibus stat.  When \code{NULL} (the
+##'   default), the within-stratum-pooled sample covariance computed from
+##'   the data is used.  Only consulted when \code{sigma_x_test = TRUE}.
+##' @param null Null-distribution backend for the new omnibus stat: one of
+##'   \code{"satterthwaite_finite"} (default; matches the exact randomization
+##'   moments via Satterthwaite, honest at finite \eqn{n}),
+##'   \code{"satterthwaite_asymptotic"} (the same match using the Gaussian
+##'   identities, conservative at small \eqn{n}), \code{"imhof"} or
+##'   \code{"davies"} (analytic CDF inversion via the \pkg{CompQuadForm}
+##'   package), or \code{"simulate"} (Monte Carlo over the within-stratum
+##'   randomization distribution).  Only consulted when
+##'   \code{sigma_x_test = TRUE}.
+##' @param n_simulate Number of Monte Carlo draws when \code{null = "simulate"}.
+##'   Default 1000.
 ##' @return An object of class \code{c("balancetest", "xbal", "list")}. Several
 ##'   methods are inherited from the "xbal" class returned by
 ##'   \code{\link{xBalance}} function.
@@ -177,7 +201,19 @@ balanceTest <- function(fmla,
                         covariate.scales = setNames(numeric(0), character(0)),
                         post.alignment.transform = NULL,
                         inferentials.calculator = HB08,
-                        p.adjust.method = "holm") {
+                        p.adjust.method = "holm",
+                        sigma_x_test = FALSE,
+                        sigma_x = NULL,
+                        null = c("satterthwaite_finite",
+                                 "satterthwaite_asymptotic",
+                                 "imhof", "davies", "simulate"),
+                        n_simulate = 1000) {
+  ## sigma_x_test (alternative omnibus): if TRUE, after running HB08 we also
+  ## compute T = d' Sigma_x^{-1} d for each stratification and append three
+  ## columns (sigma_x, sigma_x.df, sigma_x.p.value) to ans$overall.  See
+  ## ?sigma_x_test (internal) for the math.  Argument `null` selects the null
+  ## backend; only consulted when sigma_x_test is TRUE.
+  null <- match.arg(null)
 ### API Assumptions:
 ### - no ... in the xBal formula
 ### (if this assumption ceases to be met then we have to add an explicit check that
@@ -305,6 +341,26 @@ balanceTest <- function(fmla,
   }))
   colnames(inferentials) <- c("chisquare", "df", "p.value")
 
+  ## sigma_x test (alternative omnibus): for each stratification, run the new
+  ## test stat T = d' Sigma_x^{-1} d on the cluster-aggregated raw covariates,
+  ## and append three columns to `inferentials`.  See R/sigma_x_test.R.
+  if (sigma_x_test) {
+    sigma_x_results <- lapply(colnames(aggDesign@StrataFrame),
+                              function(strat_name) {
+      sigma_x_inferentials(aggDesign, strat_name,
+                           sigma_x = sigma_x,
+                           null = null,
+                           n_simulate = n_simulate)
+    })
+    names(sigma_x_results) <- colnames(aggDesign@StrataFrame)
+    sx_cols <- do.call(rbind, lapply(sigma_x_results, function(r) {
+      data.frame(sigma_x         = r$statistic,
+                 sigma_x.df      = r$df_eff,
+                 sigma_x.p.value = r$p.value)
+    }))
+    inferentials <- cbind(inferentials, sx_cols)
+  }
+
   # the meat of our xbal object
   ans$overall <- inferentials
   ans$results <- descriptives
@@ -322,6 +378,9 @@ balanceTest <- function(fmla,
   attr(ans$overall, "tcov") <- lapply(tmp, function(r) {
     r$tcov
   })
+  if (sigma_x_test) {
+    attr(ans$overall, "sigma_x_info") <- sigma_x_results
+  }
   attr(ans, "fmla") <- formula(fmla)
   attr(ans, "report") <- report # hinting to our summary method later
   class(ans) <- c("balancetest", "xbal", "list")

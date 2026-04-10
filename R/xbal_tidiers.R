@@ -34,9 +34,12 @@
 #' @param format if true, apply `[RItools:::original_units_var_formatter()]` to suitable sub-array en route
 #' @param digits passed to `[RItools:::original_units_var_formatter()]`
 #' @param ... Additional arguments passed to `[RItools:::original_units_var_formatter()]`
-#' @return data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and 
-#'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing 
-#'         a combined differences test, if found, and otherwise `NULL`.
+#' @return data frame composed of: for `[RItools::tidy()]`, a column of variable labels (`vars`) and
+#'         additional columns of balance-related stats; for `[RItools::glance()]`, scalars describing
+#'         a combined differences test, if found, and otherwise `NULL`.  When [RItools::balanceTest()]
+#'         was called with `sigma_x_test = TRUE`, [RItools::glance.xbal()] will also include the
+#'         columns `sigma_x` (the alternative omnibus statistic), `sigma_x.df` (its effective degrees
+#'         of freedom under the chosen null backend), and `sigma_x.p.value`.
 #' @export
 #' @md
 tidy.xbal <- function(x,

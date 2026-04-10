@@ -131,6 +131,9 @@ subset.xbal <- function(x,
 
   if (!is.null(ovr)) {
     attr(ovr, "tcov") <- attr(x$overall, "tcov")[strata]
+    if (!is.null(attr(x$overall, "sigma_x_info"))) {
+      attr(ovr, "sigma_x_info") <- attr(x$overall, "sigma_x_info")[strata]
+    }
   }
 
   keep_this_var <- res.dmns$vars %in% vars

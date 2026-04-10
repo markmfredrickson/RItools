@@ -15,7 +15,12 @@ balanceTest(
   covariate.scales = setNames(numeric(0), character(0)),
   post.alignment.transform = NULL,
   inferentials.calculator = HB08,
-  p.adjust.method = "holm"
+  p.adjust.method = "holm",
+  sigma_x_test = FALSE,
+  sigma_x = NULL,
+  null = c("satterthwaite_finite", "satterthwaite_asymptotic", "imhof", "davies",
+    "simulate"),
+  n_simulate = 1000
 )
 }
 \arguments{
@@ -49,6 +54,34 @@ Should accept a vector of weights as its second argument.}
 \item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
 \item{p.adjust.method}{Method of p-value adjustment for the univariate tests. See the \code{\link{p.adjust}} function for available methods. By default the "holm" method is used.}
+
+\item{sigma_x_test}{Logical, default \code{FALSE}.  When \code{TRUE},
+the result table \code{$overall} is augmented with three columns
+(\code{sigma_x}, \code{sigma_x.df}, \code{sigma_x.p.value}) reporting
+an alternative omnibus statistic \eqn{T = d' \Sigma_x^{-1} d} that
+standardizes the adjusted differences vector by a covariance of the
+covariates rather than by the permutation covariance \eqn{\mathrm{Cov}(d)}
+used by the existing Hansen-Bowers \eqn{d^2} test.  See Details
+below; both stats are reported side by side, and the \eqn{d^2} columns
+are unchanged.}
+
+\item{sigma_x}{Optional \eqn{p \times p} covariance-of-covariates matrix
+used as the metric for the new omnibus stat.  When \code{NULL} (the
+default), the within-stratum-pooled sample covariance computed from
+the data is used.  Only consulted when \code{sigma_x_test = TRUE}.}
+
+\item{null}{Null-distribution backend for the new omnibus stat: one of
+\code{"satterthwaite_finite"} (default; matches the exact randomization
+moments via Satterthwaite, honest at finite \eqn{n}),
+\code{"satterthwaite_asymptotic"} (the same match using the Gaussian
+identities, conservative at small \eqn{n}), \code{"imhof"} or
+\code{"davies"} (analytic CDF inversion via the \pkg{CompQuadForm}
+package), or \code{"simulate"} (Monte Carlo over the within-stratum
+randomization distribution).  Only consulted when
+\code{sigma_x_test = TRUE}.}
+
+\item{n_simulate}{Number of Monte Carlo draws when \code{null = "simulate"}.
+Default 1000.}
 }
 \value{
 An object of class \code{c("balancetest", "xbal", "list")}. Several

@@ -1,3 +1,35 @@
+# RItools 0.3-5.9000 (devel branch: sigma_x omnibus)
+
+This is a development version on the `devel-sigma-x-omnibus` branch.  It is
+not intended to replace the released version on `main`.
+
+* New optional alternative omnibus test in `balanceTest()`: when called with
+  `sigma_x_test = TRUE`, the result table `$overall` is augmented with three
+  columns (`sigma_x`, `sigma_x.df`, `sigma_x.p.value`) reporting
+  `T = d' Sigma_x^{-1} d` --- a Mahalanobis-type statistic that standardizes
+  the adjusted differences vector by the within-stratum-pooled sample
+  covariance of the covariates rather than by the permutation covariance
+  used by the existing Hansen-Bowers d^2 test.  Both stats are reported
+  side-by-side; the d^2 columns are unchanged.
+* Four null-distribution backends are exposed via the new `null` argument
+  to `balanceTest()`:
+    * `"satterthwaite_finite"` (default): Satterthwaite a*chi^2_v match using
+      the *exact* moments of T under the within-stratum randomization
+      distribution.  Honest at finite n.  The second-order moment machinery
+      is ported from work by Mark Fredrickson on the `i113-highermoments`
+      branch.
+    * `"satterthwaite_asymptotic"`: same Satterthwaite match using the
+      Gaussian identities `sum lambda_k` and `2 sum lambda_k^2`.  Conservative
+      at small n; collapses to the finite-sample backend in the large-n limit.
+    * `"imhof"` and `"davies"`: analytic CDF inversion via the `CompQuadForm`
+      package (now in Suggests:).
+    * `"simulate"`: direct Monte Carlo over the within-stratum randomization
+      distribution; configurable via the `n_simulate` argument.
+* New helper `default_sigma_x()` (internal) computes the default
+  within-stratum-pooled sample covariance.  Users may also supply their own
+  `sigma_x` matrix via the new argument; the test stat and its null
+  distribution are invariant under positive rescaling of `sigma_x`.
+
 # RItools 0.3-5
 
 * Now "Depends" on the `survival` package to bring in the `strata` and `cluster`

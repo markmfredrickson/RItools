@@ -34,7 +34,10 @@ to last one specified in originating function call (which appears first in the x
 \value{
 data frame composed of: for \verb{[RItools::tidy()]}, a column of variable labels (\code{vars}) and
 additional columns of balance-related stats; for \verb{[RItools::glance()]}, scalars describing
-a combined differences test, if found, and otherwise \code{NULL}.
+a combined differences test, if found, and otherwise \code{NULL}.  When \code{\link[=balanceTest]{balanceTest()}}
+was called with \code{sigma_x_test = TRUE}, \code{\link[=glance.xbal]{glance.xbal()}} will also include the
+columns \code{sigma_x} (the alternative omnibus statistic), \code{sigma_x.df} (its effective degrees
+of freedom under the chosen null backend), and \code{sigma_x.p.value}.
 }
 \description{
 Portion out the value of a \code{\link[=balanceTest]{balanceTest()}} call in a manner consistent

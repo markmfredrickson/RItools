@@ -1,6 +1,6 @@
 Package: RItools
-Version: 0.3-5
-Title: Randomization Inference Tools
+Version: 0.3-5.9000
+Title: Randomization Inference Tools (devel branch: sigma_x omnibus)
 Authors@R: c(person("Jake", "Bowers", role = c("aut", "cre"), email = "jwbowers@illinois.edu"),
              person("Mark", "Fredrickson", role = "aut", email = "mark.m.fredrickson@gmail.com"),
              person("Ben", "Hansen", role = "aut", email = "ben.hansen@umich.edu"),
@@ -28,8 +28,9 @@ Suggests:
     knitr, rmarkdown,
     testthat,
     roxygen2,
-    MASS
+    MASS,
+    CompQuadForm
 Enhances: optmatch
 URL: https://cran.r-project.org/package=RItools
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Encoding: UTF-8

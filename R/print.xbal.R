@@ -259,7 +259,15 @@ print.xbal <- function (x, which.strata=dimnames(x$results)[["strata"]],
       ## RItools:::print.ftable(thevartab,justify.labels="center",justify.data="right") ##doesn't seem to help the alignment problem
       if (!is.null(results_array)){ print(thevartab) }
       if (!is.null(theoverall) && print.overall) {
-        cat("---Overall Test---\n")
+        ## When the sigma_x_test option of balanceTest() is on, theoverall has
+        ## three extra columns ("sigma_x", "sigma_x.df", "sigma_x.p.value")
+        ## printed side-by-side with the d^2 chi-square columns.  Use a
+        ## slightly different header to flag that two omnibus tests are shown.
+        if (any(grepl("^sigma_x", colnames(theoverall)))) {
+          cat("---Overall Tests (chi-square and sigma_x)---\n")
+        } else {
+          cat("---Overall Test---\n")
+        }
         print(theoveralltab, quote=FALSE)
         if (show.signif.stars && !show.pvals && hasP) {
           if (!is.null(results_array)) {

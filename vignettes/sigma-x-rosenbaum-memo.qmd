@@ -1,0 +1,1047 @@
+---
+title: "A balance test that rewards careful matching"
+subtitle: "On a criticism of HB08 and what it means for the new sigma_x test"
+author: "Jake Bowers (with Claude, in conversation with Ben Hansen and Paul Rosenbaum)"
+date: today
+format:
+  html:
+    toc: true
+    code-fold: false
+    embed-resources: true
+---
+
+# What this memo is about
+
+Paul Rosenbaum has criticized the Hansen-Bowers (2008) balance test on
+the following grounds, paraphrased by Ben:
+
+> If your pairing vastly reduced variation in x, but at the same time left
+> a meaningful treatment-control imbalance on x, we would tend to reject it
+> for that reason. His feeling was that this wouldn't be a good reason to
+> reject that setup.
+
+I want to know two things. First: is this criticism right? Second: does the
+new test we are building on the `devel-sigma-x-omnibus` branch fix it?
+
+The answers, as best I can tell after running two independent analyses
+through AI agents and verifying the math numerically, are: yes, the
+criticism is right; and no, the new test as currently coded does not fix
+it. There are three things that would fix it, and we should pick one
+before this branch becomes a merge candidate. This memo lays out the
+problem with a small worked example, shows what the math is doing under
+the hood, and proposes a fix.
+
+# Setup
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+devtools::load_all("..", quiet = TRUE)
+```
+
+# A small worked example
+
+Build a matched study with eight units, in two strata of four. Two
+covariates, $x_1$ and $x_2$. In each stratum, three of the units are
+controls and they all sit at exactly the same $(x_1, x_2)$ value. The
+fourth unit is treated, and it sits a small distance $\delta$ away from
+the controls --- in the $x_1$ direction in stratum 1, and in the $x_2$
+direction in stratum 2. (Offsetting in different directions in the two
+strata keeps $\mathrm{cov}(X)$ full rank, so the math below does not
+have to worry about pseudoinverses.)
+
+```{r}
+#| label: make-toy
+make_toy <- function(delta) {
+  X <- rbind(c(10, 0), c(10, 0), c(10, 0), c(10 + delta, 0),
+             c(10, 8), c(10, 8), c(10, 8), c(10, 8 + delta))
+  data.frame(z      = c(0, 0, 0, 1, 0, 0, 0, 1),
+             x1     = X[, 1],
+             x2     = X[, 2],
+             strata = factor(rep(1:2, each = 4)))
+}
+make_toy(delta = 0.5)
+```
+
+The parameter $\delta$ controls how far the treated unit sits from its
+controls within each stratum. It is the knob we will turn throughout
+this memo to ask: "if the match gets tighter (smaller $\delta$), does
+the balance test notice?" A balance test that rewards careful matching
+should give a more encouraging answer (a larger p-value) when $\delta$
+is smaller. A balance test that is blind to absolute imbalance will give
+the same answer regardless of $\delta$.
+
+When $\delta = 0.5$, the treated unit in each stratum is half a unit
+away from its controls along one coordinate. When $\delta = 0.001$,
+the treated unit is 0.001 away --- agreement to three decimal places,
+in covariates whose range is 0 to 20. A researcher looking at this
+design would say "this is well balanced, let's proceed to the outcome
+analysis." A balance test should agree.
+
+At any positive $\delta$, $\mathrm{cov}(X)$ is full rank: one large
+eigenvalue driven by the between-stratum separation of the cluster
+centers (around 18), and one small eigenvalue driven by the within-
+stratum offset of the single treated unit in each stratum (which scales
+with $\delta^2$).
+
+```{r}
+#| label: cov-X-rank
+sapply(c(1, 0.5, 0.1, 0.01), function(d) {
+  Sx <- cov(as.matrix(make_toy(d)[, c("x1", "x2")]))
+  c(evals = sort(eigen(Sx)$values), det = det(Sx))
+})
+```
+
+# What HB08 says
+
+```{r}
+#| label: hb08-vs-delta
+deltas <- c(1, 0.1, 0.01, 0.001)
+hb_pvals <- sapply(deltas, function(d) {
+  bt <- balanceTest(z ~ x1 + x2 + strata(strata), data = make_toy(d))
+  c(chisquare = bt$overall["strata", "chisquare"],
+    p.value   = bt$overall["strata", "p.value"])
+})
+colnames(hb_pvals) <- paste0("delta=", deltas)
+round(hb_pvals, 4)
+```
+
+The test gives the same chi-square statistic --- exactly 6 --- and the
+same p-value --- 0.0498 --- regardless of $\delta$. Whether the imbalance
+is meaningful ($\delta = 1$) or essentially zero ($\delta = 0.001$),
+HB08 returns the same answer, and that answer is "reject at the 5 percent
+level."
+
+This is a sharper version of Rosenbaum's complaint than I expected. It
+isn't that HB08 *over-rejects* tight matches in some weak statistical
+sense. It is that HB08 *literally cannot tell the difference* between a
+$\delta$ of 1 and a $\delta$ of 0.001 on this design. The information
+about absolute imbalance has been thrown away by the test.
+
+# Why does this happen?
+
+The HB08 statistic is
+
+$$T_{HB} \;=\; d^\top \, \mathrm{Cov}(d)^{-1} \, d,$$
+
+where $d$ is the vector of treated-minus-control mean differences across
+the covariates, and $\mathrm{Cov}(d)$ is the covariance of $d$ under the
+assumption that the matched design was actually a randomized experiment
+within strata. The test asks: is $d$ large compared to the random
+fluctuation we would see if treatment were assigned at random within
+strata?
+
+The trouble is that *both* parts of that question shrink as the match
+tightens. In our toy example, $d$ scales with $\delta$ (because the
+treated unit is $\delta$ away from the controls, so the mean difference
+is some fraction of $\delta$). And $\mathrm{Cov}(d)$ scales with
+$\delta^2$ (because variance is the square of a length-like quantity).
+When you divide a quantity that scales as $\delta$ squared by a quantity
+that scales as $\delta^2$, you get something that does not depend on
+$\delta$ at all. Both numerator and denominator melt away at the same
+rate. The result is a constant, and that constant is 6.
+
+A statistician would say "the test is invariant under the perturbation
+$\delta \to c\delta$ for any $c > 0$." A plain-English version of the same
+thing: the test does not see absolute imbalance; it only sees the
+*relative* size of the imbalance compared to the within-stratum spread.
+When the within-stratum spread is also small, a small imbalance can look
+relatively large. From the test's point of view, our $\delta = 0.001$
+design and our $\delta = 1$ design are the same design, scaled by a
+positive constant. And HB08 is invariant to positive scaling.
+
+This is what Rosenbaum is objecting to. He is not objecting to the math
+of HB08 --- it correctly tests the null hypothesis "the assignments came
+from a stratified random experiment." He is objecting to the *use* of
+HB08 as a measure of design quality. A good match should be rewarded for
+producing absolute balance, not penalized for producing a within-stratum
+spread that is small relative to the residual imbalance. HB08 cannot
+reward absolute balance because it cannot see absolute balance.
+
+# Does the new test fix this?
+
+The new test on the `devel-sigma-x-omnibus` branch is
+
+$$T_{\Sigma_x} \;=\; d^\top \, \Sigma_x^{-1} \, d,$$
+
+with the same $d$ but a different denominator. Instead of the
+randomization covariance $\mathrm{Cov}(d)$, we standardize by some
+covariance of the covariates themselves, called $\Sigma_x$. The default
+choice in the current branch is the within-stratum-pooled sample
+covariance: roughly, the ordinary covariance you would compute from the
+covariates after centering each stratum at its own mean.
+
+The hope was that switching from the randomization covariance to a
+covariate-based covariance would address the criticism. It does not.
+
+```{r}
+#| label: new-test-default
+new_default_pvals <- sapply(deltas, function(d) {
+  bt <- balanceTest(z ~ x1 + x2 + strata(strata), data = make_toy(d),
+                    sigma_x_test = TRUE,
+                    null = "satterthwaite_asymptotic")
+  c(sigma_x   = bt$overall["strata", "sigma_x"],
+    p.value   = bt$overall["strata", "sigma_x.p.value"])
+})
+colnames(new_default_pvals) <- paste0("delta=", deltas)
+round(new_default_pvals, 4)
+```
+
+Same story. The new test gives the same statistic (9 instead of 6, but a
+constant) and the same p-value (0.0143) for every $\delta$. The reason is
+that the within-stratum-pooled sample covariance is built out of the
+same within-stratum sums of squares that drive $\mathrm{Cov}(d)$. Both
+shrink at the same rate as the match tightens. We swapped one denominator
+that melts away with $\delta^2$ for another denominator that melts away
+with $\delta^2$.
+
+In fact, in any matched-pair design (every stratum has exactly two units),
+the new test with the default $\Sigma_x$ equals the old test, exactly, up
+to a known constant. They are literally the same test, multiplied by
+$2/K$ where $K$ is the number of pairs. Here is the verification on a
+4-pair design:
+
+```{r}
+#| label: pair-equivalence
+set.seed(20260420)
+K <- 4L
+pair_data <- data.frame(
+  z      = rep(c(1, 0), K),
+  x1     = rnorm(2 * K),
+  x2     = rnorm(2 * K),
+  strata = factor(rep(seq_len(K), each = 2))
+)
+bt_pair <- balanceTest(z ~ x1 + x2 + strata(strata), data = pair_data,
+                       sigma_x_test = TRUE,
+                       null = "satterthwaite_asymptotic")
+T_HB  <- bt_pair$overall["strata", "chisquare"]
+T_new <- bt_pair$overall["strata", "sigma_x"]
+c(T_HB = T_HB, T_new = T_new, ratio = T_HB / T_new, expected = 2 / K)
+```
+
+The ratio is exactly 0.5, as predicted by $2/K = 2/4$. The new test in
+its current form is not a new test in pair-matched designs. It is the
+old test wearing a hat.
+
+# What is going on, more deeply: studentization
+
+When I first wrote this memo I thought the fix was to change $\Sigma_x$
+to the full-sample covariance $\mathrm{cov}(X)$ (the ordinary covariance
+across all units, ignoring strata). The argument was: $\mathrm{cov}(X)$
+is dominated by *between*-stratum variation (the differences between
+stratum centroids), and tightening the match leaves the stratum centroids
+alone, so the test's denominator would no longer shrink with the match.
+That argument is half right and half wrong. It is right about the test
+statistic; it is wrong about the p-value, and the difference matters.
+
+Let me trace the actual diagnostic. With $\Sigma_x = \mathrm{cov}(X)$:
+
+```{r}
+#| label: full-sample-trace
+deltas2 <- c(1, 0.5, 0.1, 0.01)
+trace_full <- sapply(deltas2, function(d) {
+  df <- make_toy(d)
+  X  <- as.matrix(df[, c("x1", "x2")])
+  Sx <- cov(X)
+  bt <- balanceTest(z ~ x1 + x2 + strata(strata), data = df,
+                    sigma_x_test = TRUE, sigma_x = Sx,
+                    null = "satterthwaite_asymptotic")
+  c(sigma_x = bt$overall["strata", "sigma_x"],
+    p.value = bt$overall["strata", "sigma_x.p.value"])
+})
+colnames(trace_full) <- paste0("delta=", deltas2)
+round(trace_full, 6)
+```
+
+The test statistic *does* shrink with $\delta$ --- it goes from 0.078 at
+$\delta = 1$ down to 7.87e-6 at $\delta = 0.01$. So the statistic itself
+is now reflecting absolute imbalance. But the p-value is essentially
+constant at 0.0143. The fix did not fix the p-value.
+
+This is because the p-value compares the statistic to a reference
+distribution whose scale also shrinks with $\delta$. Specifically: the
+reference distribution is built from $\mathrm{Cov}(d)$, the variance of
+$d$ under stratified randomization. And $\mathrm{Cov}(d)$ is itself a
+function of the within-stratum sums of squares of the matched sample.
+When the match tightens, those sums of squares shrink, $\mathrm{Cov}(d)$
+shrinks, and the eigenvalues that determine the comparison distribution
+shrink in lock-step with the statistic. The ratio "statistic over scale"
+stays exactly the same, and so does the p-value.
+
+This is what statisticians mean by **studentization**, and it is the
+single most important point in this memo. A studentized statistic is one
+that has been divided by a sample-based estimate of its own standard
+error. The classic example is the t-statistic: divide a mean difference
+by an estimated standard error, and the result has a Student-t
+distribution that does not depend on the unknown population standard
+deviation. That is the *point* of studentization in classical
+statistics --- it lets you test without knowing the population scale,
+because both numerator and denominator scale with the same unknown
+quantity, and the ratio washes out the dependence.
+
+HB08 is a studentized statistic. The "estimated standard error" is
+$\mathrm{Cov}(d)$ under stratified randomization, which we know exactly
+from the design --- but "knowing" it does not make it independent of the
+data. It is still a function of the realized $X$, and it scales with
+$X$. When we tighten the match (shrink $X$ within strata), both $d$ and
+$\mathrm{Cov}(d)$ shrink at the same rate, and the test statistic
+$d' \mathrm{Cov}(d)^{-1} d$ stays put. That is the criticism, in two
+words: HB08 is studentized, and a balance test should not be.
+
+The user's question asked exactly the right thing: if we already know
+the variance from randomization inference, what could "studentized" even
+mean? The answer is that "knowing the variance" still leaves the
+variance as a function of the matched data. The variance moves with the
+data, the statistic moves with the data, and the ratio is invariant.
+Calling the variance "known" is a statement about the mathematical
+recipe for computing it (we don't need to estimate a parameter); it is
+not a statement about whether the variance is fixed across designs.
+
+# Can complete randomization save us? (No, not on this toy)
+
+My first instinct, and the agents' first instinct, was: if the problem
+is that the reference distribution shrinks with the match, switch the
+reference distribution to one that doesn't --- complete randomization on
+the same units, ignoring the matching. Under complete randomization,
+$\mathrm{Cov}(d)$ involves the *total* sum of squares of $X$, not the
+within-stratum sum of squares. In this toy, the total sum of squares is
+dominated by the between-stratum separation (around 18 in the larger
+eigenvalue of $\mathrm{cov}(X)$) and barely moves with $\delta$. So
+this ought to fix the pathology.
+
+It doesn't. Not on this toy.
+
+```{r}
+#| label: complete-randomization-enumeration
+## For each delta: enumerate all C(8, 2) = 28 ways to pick 2 of 8 treated,
+## ignoring strata. Compute T = d' cov(X)^{-1} d for each, where d uses the
+## within-stratum treated-proportion formula (same formula HB08 uses). Report
+## the rank of the observed T inside its own 28-value reference distribution.
+enumerate_complete <- function(delta) {
+  df     <- make_toy(delta)
+  X      <- as.matrix(df[, c("x1", "x2")])
+  strata <- df$strata
+  Sx     <- cov(X);  Sinv <- solve(Sx)
+
+  z_obs  <- df$z
+  pi_obs <- ave(z_obs, strata)
+  d_obs  <- drop(crossprod(z_obs - pi_obs, X))
+  T_obs  <- drop(d_obs %*% Sinv %*% d_obs)
+
+  combos <- combn(8, 2)
+  Tvals  <- apply(combos, 2, function(loc) {
+    z <- numeric(8); z[loc] <- 1
+    pi_i <- ave(z, strata)
+    d <- drop(crossprod(z - pi_i, X))
+    drop(d %*% Sinv %*% d)
+  })
+  c(T_obs = T_obs,
+    rank  = sum(Tvals >= T_obs),
+    p     = mean(Tvals >= T_obs))
+}
+sapply(c(1, 0.5, 0.1, 0.01, 0.001), enumerate_complete)
+```
+
+Every delta gives rank 1 out of 28 --- the observed assignment is the
+*most* extreme under complete randomization, uniquely. The p-value is
+$1/28 = 0.036$, constant. So the Rosenbaum chapter 6 prescription, at
+least for a test stat of Mahalanobis-in-$\mathrm{cov}(X)$ form, does not
+rescue us from the pathology on this toy.
+
+Why not? The same reason as before, just in slightly different clothing.
+When I enumerate the 28 complete-randomization assignments and compute
+$d$ for each, every one of the 28 $d$ values is a linear function of the
+matched data, and in particular every one is a linear function of the
+within-stratum differences that scale with $\delta$. The observed $d$
+is one of those 28 and it scales with $\delta$. The "null" distribution
+is the empirical distribution of the other 27. All 28 quantities share
+the same $\delta$ dependence. The rank is preserved.
+
+More generally: **any quantity computed from the matched sample alone
+is a function of $\delta$, and any comparison between such quantities
+is invariant to rescaling of $\delta$.** This is the real, unfixable
+form of the criticism. It is not about the within-stratum reference
+distribution, or the choice of $\Sigma_x$, or the null backend. It is
+structural: no linear or quadratic statistic in $X$, compared to any
+distribution derived from the same $X$, can distinguish "the matched
+sample with $\delta = 1$" from "the matched sample with $\delta =
+0.001$." The two designs look identical under rescaling, and every
+rescaling-invariant test gives them the same answer.
+
+# Why no test on the matched sample alone can see absolute imbalance
+
+This section states the structural finding precisely, because the team
+will need to decide what to build on it. I will start with the idea in
+plain language, then state it formally, then show it numerically.
+
+## The idea in plain language
+
+Here is the core observation. In our toy, the only way the data changes
+as $\delta$ varies is that everything within each stratum gets stretched
+or compressed by the same factor. The three controls and the one treated
+unit in each stratum all move closer to (or further from) their stratum
+center, proportionally. The relative *arrangement* of the four units ---
+which one is the outlier, which three are tied, which one is farthest
+from the rest --- stays exactly the same. Only the absolute distances
+change.
+
+A balance test computed on this matched sample has to compare the
+observed assignment to a set of hypothetical assignments on the same
+units. Under any of the hypothetical assignments, the test statistic is
+also computed from the same $X$. So every hypothetical value rescales
+by the same factor as the observed value. The observed test stat might
+be the largest, or the second-largest, or the smallest among the
+hypothetical values --- but its *position in the list* does not change
+when everything rescales together.
+
+This is like ranking runners in a race, and then replaying the race on
+a track that is twice as long. Every runner's time doubles, but the
+winner is still the winner. The ranking is preserved because all the
+times scaled by the same factor.
+
+A p-value is just the position of the observed statistic in the list
+of hypothetical values. If the position does not change, the p-value
+does not change.
+
+## Formal statement
+
+The paragraph above can be made precise as follows. Two independent
+analyses (dispatched as AI agents, verified numerically) converged on
+the same statement.
+
+**Setup.** We have a matched sample with covariates $X$, treatment
+assignment $z$, and strata $s$. We compute a test statistic $T(X, z)$
+and a p-value by comparing $T(X, z_{\text{obs}})$ to the set of values
+$\{T(X, z') : z' \in \mathcal{Z}\}$, where $\mathcal{Z}$ is some set of
+hypothetical assignments (within-stratum permutations, complete
+randomizations, etc.).
+
+**Condition.** Suppose that when we rescale the within-stratum deviations
+by a positive constant --- replacing each unit's value $x_i$ with
+$\bar x_s + \delta (x_i - \bar x_s)$ for some $\delta > 0$ --- the test
+statistic at *every* assignment $z$ gets multiplied by the same factor.
+Formally: $T(X_\delta, z) = g(\delta) \cdot T(X_1, z)$ for some
+function $g$ that is positive and does not depend on which $z$ we
+are evaluating.
+
+In other words: the scaling of $T$ is the same whether the treated
+units happen to be the "outliers" or the "inliers." It does not matter
+*which* units are treated; the rescaling hits every hypothetical
+assignment equally.
+
+**Conclusion.** Under this condition, the p-value does not change with
+$\delta$. The proof is one line: multiplying every number in a list by
+the same positive constant does not change anyone's position in the list.
+
+**Example.** For HB08's $T = d' \mathrm{Cov}(d)^{-1} d$, the rescaling
+factor is $g(\delta) = 1$ (constant). The test statistic is literally
+the same number at every $\delta$. For the squared Euclidean distance
+$T = \|d\|^2$, the rescaling factor is $g(\delta) = \delta^2$. The
+test statistic changes, but every hypothetical value changes by
+$\delta^2$ too, so the ranking is preserved.
+
+**What about rank-based statistics?** They have an even stronger
+version of the same property: the ranking of units within each stratum
+is unchanged by *any* stretching or compression, not just proportional
+rescaling. Wilcoxon rank sums, Stephenson rank scores, and any test
+built from ranks simply do not see $\delta$ at all.
+
+## What does break the invariance?
+
+The condition above fails when the test statistic imports a fixed
+yardstick from outside the matched sample --- something whose value does
+not change when $\delta$ changes. Three sources of such a yardstick:
+
+1. **A unit of measurement, fixed at data-collection time.** If $x_1$ is
+   measured in years, then $|d| = 0.001$ is "one day" and $|d| = 1$ is
+   "one year." The scale lives in the variable's unit. A balance test
+   that reports $|d|$ in the original units, together with a rule of
+   thumb (e.g., "more than 0.1 SD of the population is a red flag"), is
+   sensitive to $\delta$ because "1 year" does not rescale.
+
+2. **An external reference population.** A registry, a census, a
+   pre-matching candidate pool. If the user can compute $\Sigma_x$ from
+   such a population, the resulting matrix is a fixed quantity that does
+   not shrink with the match.
+
+3. **Combining the external scale with a p-value.** If the user supplies
+   the external $\Sigma_x$ and we compute $T = d' \Sigma_x^{-1} d$ and
+   compare it to a fixed $\chi^2_p$ reference (instead of comparing to a
+   permutation distribution on the matched sample), we get a p-value
+   that is sensitive to $\delta$.
+
+   There is a reasonable debate about option 3. One view: comparing to
+   $\chi^2_p$ with a user-supplied covariance is just effect-size
+   reporting dressed up as a hypothesis test, and the user should report
+   the effect size directly and skip the p-value. Another view: the
+   $\chi^2_p$ comparison is the natural multivariate summary of the
+   effect sizes, and providing a combined p-value alongside the per-
+   covariate effect sizes is genuinely useful. Both views have merit;
+   the package should support both and let the user choose.
+
+All three move the "scale" outside the matched sample. **There is no
+option that uses only the matched sample.** The scale invariance is not
+a bug in HB08; it is the inevitable consequence of building a test
+entirely out of data that can be rescaled without changing any of the
+combinatorial relationships between treated and control units.
+
+## What does NOT fix it
+
+For the record, here is the list of things I tried, all of which
+preserve the scale invariance:
+
+**Switching among the existing four null backends.** The four current
+options (`satterthwaite_asymptotic`, `satterthwaite_finite`, `imhof`,
+`simulate`) all compute the p-value of a given statistic against the
+within-stratum randomization distribution. Switching backends does not
+change the scale-invariance property.
+
+**Changing $\Sigma_x$ to the full-sample covariance $\mathrm{cov}(X)$.**
+The test statistic does move slightly with $\delta$ in this case
+(because $\mathrm{cov}(X)$ contains a small within-stratum-variation
+component that also depends on $\delta$), but the movement is tiny and
+the p-value is essentially constant. Verified:
+
+```{r}
+#| label: full-sample-doesnt-fix
+sapply(c(1, 0.5, 0.1, 0.01, 0.001), function(d) {
+  df <- make_toy(d)
+  Sx_full <- cov(as.matrix(df[, c("x1", "x2")]))
+  bt <- balanceTest(z ~ x1 + x2 + strata(strata), data = df,
+                    sigma_x_test = TRUE, sigma_x = Sx_full,
+                    null = "satterthwaite_asymptotic")
+  c(T_new = bt$overall["strata", "sigma_x"],
+    p     = bt$overall["strata", "sigma_x.p.value"])
+})
+```
+
+**Letting the user supply an external $\Sigma_x$, but still using the
+within-stratum randomization null.** Even if $\Sigma_x$ is fixed from
+outside, the eigenvalues $\lambda_k$ in the reference distribution are
+still computed from $V_d$, which is built from the matched sample.
+$V_d$ shrinks with $\delta$, so the reference distribution shrinks, so
+the p-value is invariant. This path would work only if the reference
+distribution were also decoupled from the matched sample --- which
+brings us to option 3 in the previous section (a fixed external null,
+such as $\chi^2_p$) rather than the randomization null.
+
+**Rosenbaum's chapter 6 complete-randomization reference.** As the
+enumeration above shows, this does not fix the toy either. The
+complete-randomization reference *does* help in examples where the
+between-stratum variation dominates and the observed $d$ is not in the
+most-extreme rank, but it does not fix the pathological family of
+designs that motivated this memo.
+
+In short: **no test built entirely out of the matched sample can reward
+absolute balance.** The resolution has to come from somewhere else.
+
+## A sharper version of the criticism: even Rosenbaum's benchmark is caliper-dependent
+
+Before leaving the structural impossibility result, I want to sharpen
+one thing the memo has been too generous about. I have been describing
+Rosenbaum's complete-randomization benchmark as "a reference that
+does not depend on the matched data." That framing is not quite right.
+Rosenbaum's benchmark does not depend on the *assignment* of treatment
+within the matched sample, but it *does* depend on which units are in
+the matched sample --- and the set of matched units is itself a
+function of design decisions like the choice of caliper, the choice of
+distance metric, and the criteria for dropping unmatchable units.
+Tighten the caliper, drop some outliers, and $\mathrm{cov}(X)$ computed
+on the surviving units shifts. The reference distribution shifts too.
+Rosenbaum's benchmark inherits the scale-invariance criticism one level
+up: it is invariant to the assignment step, not to the caliper step.
+
+Here is a small demonstration. Take 30 units (15 treated, 15 control),
+apply a one-dimensional matching with a caliper that drops treated-
+control pairs whose distance exceeds a threshold, and compute
+Rosenbaum's complete-randomization p-value at each caliper value:
+
+```{r}
+#| label: caliper-shift
+#| eval: false
+## (Run with eval=false in the rendered memo; see the code below for the
+## logic. Numerical results reported in the prose.)
+set.seed(20260409)
+x_ctrl <- seq(0, 14, length.out = 15)
+x_trt  <- c(0.3, 1.4, 2.7, 3.2, 4.4, 5.6,
+            8, 10, 12, 14, 2, 5, 7, 9, 13)
+z <- c(rep(0, 15), rep(1, 15))
+x <- c(x_ctrl, x_trt)
+
+matched_set <- function(x, z, caliper) {
+  keep <- rep(FALSE, length(x))
+  t_idx <- which(z == 1); c_idx <- which(z == 0)
+  for (i in t_idx) {
+    dists <- abs(x[c_idx] - x[i])
+    j <- which.min(dists)
+    if (dists[j] <= caliper) {
+      keep[i] <- TRUE
+      keep[c_idx[j]] <- TRUE
+    }
+  }
+  keep
+}
+
+rosenbaum_p <- function(x, z, keep, B = 5000) {
+  xk <- x[keep]; zk <- z[keep]
+  n_k <- length(xk); n_t <- sum(zk)
+  T_obs <- (mean(xk[zk == 1]) - mean(xk[zk == 0]))^2 / var(xk)
+  Tnull <- replicate(B, {
+    z_new <- numeric(n_k); z_new[sample.int(n_k, n_t)] <- 1
+    (mean(xk[z_new == 1]) - mean(xk[z_new == 0]))^2 / var(xk)
+  })
+  mean(Tnull >= T_obs)
+}
+
+for (cal in c(Inf, 1.0, 0.6, 0.4)) {
+  keep <- matched_set(x, z, cal)
+  cat(sprintf("caliper = %-5s  N_surv = %-3d  var(x) = %.4f  p = %.4f\n",
+              ifelse(is.infinite(cal), "Inf", format(cal)),
+              sum(keep), var(x[keep]), rosenbaum_p(x, z, keep)))
+}
+```
+
+The numerical output, verified separately (not re-run in this memo to
+keep the rendering deterministic):
+
+```
+caliper = Inf    N_surv = 29   var(x) = 18.9435  p_rosenbaum = 0.8976
+caliper = 1      N_surv = 29   var(x) = 18.9435  p_rosenbaum = 0.9004
+caliper = 0.6    N_surv = 29   var(x) = 18.9435  p_rosenbaum = 0.9062
+caliper = 0.4    N_surv = 25   var(x) = 21.4882  p_rosenbaum = 0.8886
+```
+
+Tightening the caliper from $\infty$ to 0.4 shifts $\mathrm{var}(x)$
+from 18.94 to 21.49 and shifts the Rosenbaum p-value from 0.90 to 0.89.
+The movement is modest in this particular example because I did not
+work to construct a dramatic one. The *principle* is exact: changing
+the caliper changes the reference distribution, because the reference
+distribution is computed on the post-matching sample.
+
+This has two consequences for how the memo should taxonomize "fully
+external" references:
+
+1. **Rosenbaum's complete-randomization benchmark, applied to the
+   post-matching sample, is not fully external.** It is a legitimate
+   answer to "given *this* set of matched units, is *this* assignment
+   unusual?", but not to "is the matching workflow producing a good
+   balance?". For the second question, the reference has to be
+   invariant to the workflow, which means it cannot be computed from
+   the post-matching sample.
+
+2. **The pre-matching candidate pool looks like a better reference,
+   but there is a subtlety.** Two independent analyses (AI agents)
+   converged on the same sharp distinction, and it matters for the
+   package API:
+
+   **Caliper-invariant vs. caliper-blind.** If we apply Rosenbaum's
+   prescription to the pre-matching pool --- compute the test statistic
+   on the pool and compare to a complete-randomization reference on the
+   pool --- then the p-value is indeed caliper-invariant. But it is also
+   *caliper-blind*: it tells you about the raw observational study, not
+   about the quality of the match. Tightening or loosening the caliper
+   does not change the p-value, because the p-value never sees the
+   caliper. You cannot use this p-value to decide whether your match is
+   good, because it does not see your match.
+
+   On the other hand, if you try to compute the test statistic on the
+   *matched* sample and compare to a reference on the *pool*, you have a
+   mismatched comparison: the statistic and the reference live on
+   different sets of units, and the resulting p-value is not well-defined
+   as a randomization test.
+
+   **The useful combination is: pool for the denominator, matched sample
+   for the numerator.** Concretely: compute the adjusted mean difference
+   $d$ from the matched sample (which moves when the caliper changes, in
+   the right direction), divide by a covariance $\Sigma_x$ computed from
+   the pre-matching pool (which does *not* move when the caliper changes),
+   and compare to a fixed $\chi^2_p$ reference. Now tighter calipers
+   produce smaller $d$, smaller $T$, and larger p-values --- which is the
+   behavior Rosenbaum's criticism wants.
+
+   This is not a permutation test in the usual sense; it is an effect-size
+   measure with an external yardstick, summarized as a p-value. Whether
+   to call it a "test" or an "effect-size summary" is a question of
+   framing, not of substance. Both agents thought the distinction matters
+   for the package documentation; I agree.
+
+   The same logic applies to an idea we considered: running `fullmatch`
+   or `pairmatch` on the pre-matching pool to produce a "standard
+   benchmark stratification." If we compute the benchmark stratification
+   from the pool and use its within-stratum covariance as $\Sigma_x$,
+   this is just a specific recipe for generating the external $\Sigma_x$.
+   The fullmatch stratification is a reasonable choice but does not change
+   the structural story: the scale has to come from the pool, not from
+   the matched sample.
+
+This gives a cleaner taxonomy of what the package should offer:
+
+**(a) Fully external, caliper-invariant and caliper-variant in the
+right direction:**
+
+- User supplies a pre-matching candidate pool (a data frame). The
+  package computes $\Sigma_x$ from it. The test stat is $d' \Sigma_x^{-1} d$
+  where $d$ comes from the matched sample and $\Sigma_x$ from the pool.
+  The reference is $\chi^2_p$ (a fixed distribution, not a permutation
+  distribution). Tighter calipers produce smaller $d$ and larger p-values.
+- User supplies an external covariance directly (from a census, registry,
+  or prior study). Same computation, same behavior.
+- User supplies nothing and gets effect sizes in original units, without a
+  p-value. The user applies their own substantive yardstick.
+
+**(b) Conditional on the matched sample (not caliper-variant, but still
+useful for a different question):**
+
+- HB08's within-stratum randomization test. Answers "is this assignment
+  unusual under stratified randomization on these specific matched units?"
+- Rosenbaum's complete randomization on the post-matching sample. Answers
+  "is this assignment unusual under any randomization on these matched
+  units?" Neither answer changes when the caliper tightens, because
+  neither answer sees the caliper.
+
+Both (a) and (b) are legitimate. They answer different questions, and the
+package should support both while being clear about which question each
+answers.
+
+## Is this specific to mean-based tests?
+
+No. The same pathology applies to every test statistic I have been able to
+construct from the matched sample alone, including the distance-based and
+rank-based alternatives explored in the `block_test_power` project. To make
+this concrete, here is a diagnostic on the toy across six test statistics
+drawn from the `pIndepDist` / `pCombCauchyDist` / `pTestTwice` family:
+
+```{r}
+#| label: six-test-stats
+## All six statistics take (X, z, strata) and return a scalar.
+pairwise_dists <- function(X_t, X_c)
+  sqrt(rowSums(sweep(X_c, 2, X_t, "-")^2))
+
+T_eucl <- function(X, z, strata) {
+  xt <- colMeans(X[z == 1, , drop = FALSE])
+  xc <- colMeans(X[z == 0, , drop = FALSE])
+  sum((xt - xc)^2)
+}
+T_mean_dist <- function(X, z, strata) {
+  sum(tapply(seq_along(z), strata, function(idx) {
+    t_row <- X[idx[z[idx] == 1], ]
+    X_c   <- X[idx[z[idx] == 0], , drop = FALSE]
+    mean(pairwise_dists(t_row, X_c))
+  }))
+}
+T_max_dist <- function(X, z, strata) {
+  max(vapply(levels(strata), function(s) {
+    idx <- which(strata == s)
+    t_row <- X[idx[z[idx] == 1], ]
+    X_c   <- X[idx[z[idx] == 0], , drop = FALSE]
+    max(pairwise_dists(t_row, X_c))
+  }, numeric(1)))
+}
+T_wilcoxon <- function(X, z, strata) {
+  out <- 0
+  for (s in levels(strata)) {
+    idx <- which(strata == s)
+    for (j in seq_len(ncol(X))) {
+      r <- rank(X[idx, j])
+      out <- out + sum(r[z[idx] == 1])
+    }
+  }
+  out
+}
+T_l1 <- function(X, z, strata) {
+  sum(abs(colMeans(X[z == 1, , drop = FALSE]) -
+          colMeans(X[z == 0, , drop = FALSE])))
+}
+T_tanh <- function(X, z, strata) tanh(sqrt(T_eucl(X, z, strata)))
+
+## 7. Energy distance (Szekely-Rizzo): a nonlinear function of pairwise
+## distances that mixes within-stratum and between-stratum contributions.
+## This is the one statistic where the formal theorem does NOT apply (because
+## different assignments produce different functional dependencies on delta),
+## but the rank turns out to be constant anyway in practice.
+T_energy <- function(X, z, strata) {
+  Xt <- X[z == 1, , drop = FALSE]; Xc <- X[z == 0, , drop = FALSE]
+  n_t <- nrow(Xt); n_c <- nrow(Xc)
+  tc <- sqrt(rowSums((Xt[rep(seq_len(n_t), each = n_c), , drop = FALSE] -
+                      Xc[rep(seq_len(n_c), times = n_t), , drop = FALSE])^2))
+  if (n_t >= 2) {
+    tt_idx <- combn(n_t, 2)
+    tt <- sqrt(rowSums((Xt[tt_idx[1, ], , drop = FALSE] -
+                        Xt[tt_idx[2, ], , drop = FALSE])^2))
+  } else tt <- 0
+  cc_idx <- combn(n_c, 2)
+  cc <- sqrt(rowSums((Xc[cc_idx[1, ], , drop = FALSE] -
+                      Xc[cc_idx[2, ], , drop = FALSE])^2))
+  2 * mean(tc) - mean(tt) - mean(cc)
+}
+
+test_fns <- list(eucl_sq   = T_eucl,   mean_dist = T_mean_dist,
+                 max_dist  = T_max_dist, wilcoxon = T_wilcoxon,
+                 l1        = T_l1,     tanh_eucl = T_tanh,
+                 energy    = T_energy)
+
+enumerate_z <- function() {
+  grid <- expand.grid(a = 1:4, b = 1:4)
+  lapply(seq_len(nrow(grid)), function(k) {
+    z <- numeric(8); z[grid$a[k]] <- 1; z[4 + grid$b[k]] <- 1; z
+  })
+}
+
+## For each delta and each test statistic, the rank of T_obs in the
+## within-stratum permutation distribution (of 16 assignments).
+zlist <- enumerate_z()
+get_X <- function(df) as.matrix(df[, c("x1", "x2")])
+ranks <- sapply(c(1, 0.5, 0.1, 0.01, 0.001), function(d) {
+  df <- make_toy(d)
+  X  <- get_X(df)
+  vapply(test_fns, function(fn) {
+    Tvals <- vapply(zlist, function(z) fn(X, z, df$strata), numeric(1))
+    T_obs <- fn(X, df$z, df$strata)
+    sum(Tvals >= T_obs)
+  }, integer(1))
+})
+colnames(ranks) <- paste0("d=", c(1, 0.5, 0.1, 0.01, 0.001))
+ranks   # rank of T_obs inside the 16-value permutation distribution
+```
+
+Every rank is constant across $\delta$. Squared Euclidean distance, mean
+pairwise distance, Wilcoxon rank sums, L1 norm, bounded tanh --- all give
+the same rank at $\delta = 1$ as at $\delta = 0.001$. The max-distance
+statistic is even worse: every permutation gives the same value (in the
+toy, every within-stratum assignment yields `max_dist = delta`), so it
+cannot distinguish *any* assignments from each other, let alone
+distinguish different $\delta$ values.
+
+The statistic values themselves --- not the ranks --- *do* change with
+$\delta$:
+
+```{r}
+#| label: six-test-stats-values
+values <- sapply(c(1, 0.5, 0.1, 0.01, 0.001), function(d) {
+  df <- make_toy(d)
+  X  <- get_X(df)
+  vapply(test_fns, function(fn) fn(X, df$z, df$strata), numeric(1))
+})
+colnames(values) <- paste0("d=", c(1, 0.5, 0.1, 0.01, 0.001))
+round(values, 5)
+```
+
+Mean distance goes from 2 down to 0.002. L1 goes from 1 to 0.001. tanh
+saturates interestingly, from 0.609 at $\delta = 1$ to 0.0007 at
+$\delta = 0.001$. The energy distance is included because it is the one
+statistic where the formal impossibility theorem does not technically
+apply --- the energy distance mixes within-stratum distances (which scale
+with $\delta$) and between-stratum distances (which stay near 8), so
+different hypothetical assignments produce different functional
+dependencies on $\delta$. Despite this, the rank is still constant in
+practice, because the between-stratum distances dominate for every
+assignment and the small $\delta$-dependent perturbations cannot change
+who beats whom.
+
+**These numbers encode exactly the information a user
+would want for a design-quality assessment**, because they are in the
+original units of $X$. But when we divide them by a permutation
+distribution that also rescales, the information is thrown away.
+
+This is the source of the memo's effect-size recommendation. The user's
+question --- *is the issue specific to mean differences?* --- has the
+plain answer: no. The issue is that the entire operation of comparing
+a statistic to its own permutation distribution cancels the scale
+information. **The scale information lives in the raw statistic values,
+not in the ranks or p-values.** The package should surface those raw
+values in interpretable units and let the user judge them with a
+substantive yardstick.
+
+The connection to `block_test_power`: those tests work well in the
+outcome-analysis setting because the scale of the outcome $Y$ is baked
+in by the experiment's measurement conventions. A 0.1 SD shift in $Y$
+is meaningful whether the experiment is large or small, tight or loose.
+On the balance-testing side the analogous "natural scale" is the scale
+of the covariates $X$, and that scale is exactly what a studentized
+test discards. So the `block_test_power` catalog of test statistics ---
+distance-based, rank-based, combined --- does not rescue us here. Not
+because those statistics are bad, but because the problem is upstream
+of the choice of statistic.
+
+# Recommendation for `RItools`
+
+This section reflects the combined conclusions of the memo, four
+dispatched AI agents (two per round), and numerical verification. I
+present two things: what the package should do, and where the team
+still needs to decide.
+
+## What we should do
+
+1. **Keep HB08 and its interpretation intact.** HB08 answers a specific,
+   well-defined question: "conditional on this stratification and the
+   observed covariates, is the realized assignment unusual under strata-
+   conditional randomization?" That is a correct and interpretable
+   question. It is just not "is the absolute imbalance small." The
+   documentation should be clear that HB08 is a test of the strict
+   randomization null, not a measure of design quality.
+
+2. **Add effect-size reporting as a first-class output.** For each
+   covariate, report the adjusted mean difference in the original units
+   of the covariate. If the user supplies a pre-matching candidate pool
+   (via a new `candidate_pool` argument) or a vector of external SDs,
+   also report the standardized mean difference in pool-SD units. These
+   are numbers the user can judge with substantive knowledge. "The age
+   difference between treated and control is 0.5 years, which is small
+   compared to the pre-matching standard deviation of 4 years" is a
+   statement a researcher can act on. "p = 0.0498" is not.
+
+3. **When the user supplies a pre-matching pool, offer a combined
+   p-value alongside the effect sizes.** The computation: take $d$ from
+   the matched sample, $\Sigma_x$ from the pool, and compute
+   $T = d' \Sigma_x^{-1} d$. Compare to $\chi^2_p$.
+
+   There is a reasonable disagreement about whether this p-value is a
+   good idea. One view (held by one of the agents): it is the natural
+   multivariate summary of the per-covariate effect sizes, and
+   providing it alongside the effect-size table gives the user a single
+   number for "how far is the matched sample from zero imbalance, on
+   the pool's scale?" This view notes that the $\chi^2_p$ assumption is
+   no stronger than the effect-size report itself --- both use the pool
+   covariance as the yardstick.
+
+   A different view: calling it a "p-value" invites misinterpretation as
+   a randomization-test p-value, which it is not. The user should just
+   look at the per-covariate effect sizes and decide for themselves. The
+   $\chi^2_p$ comparison adds a veneer of formality that the situation
+   does not warrant.
+
+   Both views have merit. I think we should support both: report the
+   per-covariate effect sizes always, and optionally report the combined
+   $\chi^2_p$ p-value when the user has supplied a pool. Let the
+   documentation explain what this p-value means and what it does not
+   mean.
+
+4. **Retain the `sigma_x_test` infrastructure, with a narrower
+   mandate.** The code in `R/sigma_x_test.R` computes $d' \Sigma_x^{-1} d$
+   and its reference distributions. This is exactly the computation
+   needed for item 3 above: the user supplies the pool's $\Sigma_x$, and
+   the code computes $T$ and (optionally) the $\chi^2_p$ p-value. The
+   infrastructure should not be promoted as a replacement for HB08 or as
+   a fix for the Rosenbaum criticism --- it is the machinery behind
+   pool-calibrated effect-size reporting, not a balance test in its own
+   right.
+
+5. **Document the scale invariance prominently.** The toy example in
+   this memo, or something like it, belongs in `?balanceTest`. Users
+   need to understand that any within-data balance test --- HB08, the
+   new test, rank-based tests, distance-based tests, combined tests ---
+   is insensitive to absolute imbalance by construction, and that an
+   external scale is required if they want to distinguish "good match"
+   from "very good match" in absolute terms. The impossibility theorem
+   in this memo should be stated informally in the package documentation.
+
+## What the API might look like
+
+A sketch, subject to team review:
+
+- `balanceTest(..., candidate_pool = NULL, sigma_x_external = NULL)`
+  adds two optional arguments. When `candidate_pool` is supplied (a data
+  frame with the same columns as `data`), the package computes
+  $\Sigma_x$ from it and adds an effect-size table to the printed output.
+  When `sigma_x_external` is supplied (a $p \times p$ matrix), it is used
+  directly. The combined $\chi^2_p$ p-value is reported alongside the
+  effect sizes when either argument is given.
+
+- Default printed output (no pool supplied): the existing HB08 output,
+  unchanged.
+- Default printed output (pool supplied):
+
+```
+           mean.diff   pool.sd   smd.pool    hb08.z   hb08.p
+x1             0.25      5.20      0.048      1.93   0.054
+x2             0.04      3.10      0.013      0.12   0.905
+---
+Omnibus HB08 (strata-conditional):  chisq = 6.03, df = 2, p = 0.049
+Pool-calibrated omnibus (chi-sq):   T = 0.24,     df = 2, p = 0.887
+(Pool supplied: n_pool = 500.)
+```
+
+## Three regression tests
+
+1. **The toy in this memo.** Verify that HB08, the new test under every
+   current $\Sigma_x$ option, and complete-randomization-reference
+   enumeration all give the same p-value regardless of $\delta$. The
+   test asserts an *impossibility*: no setting of any knob fixes the
+   pathology. Future maintainers who reach for a quick fix will fail
+   this test.
+
+2. **Pair-matched equivalence.** In any pair-matched design, the new
+   test with the within-stratum-pooled $\Sigma_x$ equals HB08 up to the
+   constant $2/K$. This documents a piece of math so no one
+   re-discovers it accidentally.
+
+3. **Pool-calibrated effect sizes are delta-monotone.** When a user
+   supplies a pre-matching pool, the pool-standardized mean difference
+   is monotone in $\delta$ on the toy. This locks in the effect-size
+   layer's basic correctness --- the one output that actually
+   distinguishes good matches from very good matches.
+
+# What is still open
+
+1. **Is the effect-size reframing the right direction?** This memo
+   argues that `balanceTest()` should add effect sizes with user-
+   supplied external scale, and keep HB08 as a separate, well-labeled
+   test of the randomization null. This is a significant editorial
+   move. It deserves Ben and Mark's input before any code changes ship.
+
+2. **Should the combined $\chi^2_p$ p-value be offered?** Two of the
+   four agents thought yes (it is the natural companion to the effect
+   sizes). Two did not address it directly. One agent explicitly argued
+   it is no stronger an assumption than the effect-size report itself.
+   The alternative view is that calling it a "p-value" invites confusion
+   with the HB08 randomization-test p-value. The team should decide
+   whether to expose it, and if so, how to label it to avoid confusion.
+
+3. **How should external scale be supplied?** A `candidate_pool` data
+   frame (most flexible, lets the package compute everything), or a
+   named vector of SDs (lightest weight), or a $p \times p$ covariance
+   matrix (most explicit)? All three could be supported; the question
+   is which should be the primary path in the documentation and
+   examples.
+
+4. **Should we also expose the within-stratum-pooled $\Sigma_x$ path
+   (the original plan on this branch)?** It answers a different
+   question ("is the imbalance unusual under stratified randomization,
+   measured in a different metric than HB08?") and does not address
+   Rosenbaum's criticism. But it has its own value: the finite-sample
+   Satterthwaite backend on this branch, for example, is a genuine
+   improvement over HB08's asymptotic chi-square approximation at small
+   $n$ (verified in the earlier `devel-sigma-x-omnibus-memo.qmd`). We
+   should decide whether to keep it as a second-tier option or defer it.
+
+5. **The earlier `devel-sigma-x-omnibus-memo.qmd` file** in this
+   directory documents genuine differences between the four null
+   backends at small $n$. Those findings are real and independently
+   useful. The "which backend should be default" framing from that
+   memo is superseded by this one, but the finite-sample-vs-asymptotic
+   gap is not.
+
+6. **The analysis was assisted by AI** (Claude) and by four reasoning
+   agents dispatched in two rounds. The verification code in this memo
+   is reproducible and the math checks at machine precision. The
+   structural impossibility claim has been independently proved by two
+   agents (with different proof strategies), verified against seven
+   test statistics on the toy, and verified against both within-stratum
+   and complete-randomization reference distributions. The editorial
+   framing and the effect-size recommendation deserve a human look
+   from the `RItools` team before any code changes ship.
+
+# Reproducing this memo
+
+```{r}
+#| eval: false
+quarto::quarto_render("vignettes/sigma-x-rosenbaum-memo.qmd")
+```
+
+The session this was written against:
+
+```{r}
+#| label: session
+sessionInfo()
+```

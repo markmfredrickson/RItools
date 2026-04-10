@@ -1,5 +1,8 @@
 ^renv$
 ^renv\.lock$
+^CLAUDE\.md$
+^CLAUDE_CODING\.md$
+^\.claude$
 Makefile
 checkspelling.R
 lexicon.txt
