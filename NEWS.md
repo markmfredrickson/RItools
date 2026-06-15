@@ -1,4 +1,4 @@
-# RItools 0.3-5.9000 (devel branch: sigma_x omnibus)
+# RItools 0.3-5.9001 (devel branch: sigma_x omnibus)
 
 This is a development version on the `devel-sigma-x-omnibus` branch.  It is
 not intended to replace the released version on `main`.
@@ -29,6 +29,16 @@ not intended to replace the released version on `main`.
   within-stratum-pooled sample covariance.  Users may also supply their own
   `sigma_x` matrix via the new argument; the test stat and its null
   distribution are invariant under positive rescaling of `sigma_x`.
+* New optional omnibus in `balanceTest()`: with `cauchy.combination = TRUE`,
+  `$overall` gains a `cauchy_comb_p` column reporting the Cauchy combination
+  (ACAT; Liu and Xie 2020) of the per-covariate p-values.  Because it combines
+  the marginal tests instead of inverting their covariance, it stays
+  informative when the number of covariates reaches or exceeds the rank of the
+  d^2 covariance --- the high-dimensional regime in which the chi-square
+  omnibus degenerates (its statistic freezes at its rank and its p-value parks
+  near 0.46).  It combines the raw per-covariate p-values, missingness-
+  indicator comparisons included.  Off by default; the default `$overall`
+  table is unchanged.
 
 # RItools 0.3-5
 

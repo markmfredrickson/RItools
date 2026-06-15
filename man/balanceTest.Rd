@@ -16,6 +16,7 @@ balanceTest(
   post.alignment.transform = NULL,
   inferentials.calculator = HB08,
   p.adjust.method = "holm",
+  cauchy.combination = FALSE,
   sigma_x_test = FALSE,
   sigma_x = NULL,
   null = c("satterthwaite_finite", "satterthwaite_asymptotic", "imhof", "davies",
@@ -54,6 +55,15 @@ Should accept a vector of weights as its second argument.}
 \item{inferentials.calculator}{Function; calculates \sQuote{inferential} statistics. (Not currently intended for use by end-users.)}
 
 \item{p.adjust.method}{Method of p-value adjustment for the univariate tests. See the \code{\link{p.adjust}} function for available methods. By default the "holm" method is used.}
+
+\item{cauchy.combination}{If \code{TRUE}, report an additional omnibus
+p-value formed by the Cauchy combination (ACAT) of the per-covariate
+p-values, in a \code{cauchy_comb_p} column of the \code{overall} table.
+Because it combines the marginal tests rather than inverting their
+covariance, it stays informative when the number of covariates reaches or
+exceeds the rank of the \eqn{d^2} covariance (where the chi-square omnibus
+degenerates).  Missingness-indicator comparisons are combined alongside the
+covariates.  Off by default; the default \code{overall} table is unchanged.}
 
 \item{sigma_x_test}{Logical, default \code{FALSE}.  When \code{TRUE},
 the result table \code{$overall} is augmented with three columns

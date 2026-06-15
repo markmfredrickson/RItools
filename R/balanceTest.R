@@ -89,6 +89,14 @@
 ##'   to the number of rows in data; or a data frame of such
 ##'   factors. See below for examples.
 ##' @param p.adjust.method Method of p-value adjustment for the univariate tests. See the \code{\link{p.adjust}} function for available methods. By default the "holm" method is used.
+##' @param cauchy.combination If \code{TRUE}, report an additional omnibus
+##'   p-value formed by the Cauchy combination (ACAT) of the per-covariate
+##'   p-values, in a \code{cauchy_comb_p} column of the \code{overall} table.
+##'   Because it combines the marginal tests rather than inverting their
+##'   covariance, it stays informative when the number of covariates reaches or
+##'   exceeds the rank of the \eqn{d^2} covariance (where the chi-square omnibus
+##'   degenerates).  Missingness-indicator comparisons are combined alongside the
+##'   covariates.  Off by default; the default \code{overall} table is unchanged.
 ##' @param unit.weights Per-unit weight, or 0 if unit does not meet condition specified by subset argument. If there are clusters, the cluster weight is the sum of unit weights of elements within the cluster.  Within each stratum, unit weights will be normalized to sum to the number of clusters in the stratum.
 ##' @param stratum.weights Function returning non-negative weight for each stratum; see details.
 ##' @param subset Optional: condition or vector specifying a subset of observations to be permitted to have positive unit weights.
@@ -202,6 +210,7 @@ balanceTest <- function(fmla,
                         post.alignment.transform = NULL,
                         inferentials.calculator = HB08,
                         p.adjust.method = "holm",
+                        cauchy.combination = FALSE,
                         sigma_x_test = FALSE,
                         sigma_x = NULL,
                         null = c("satterthwaite_finite",
@@ -359,6 +368,22 @@ balanceTest <- function(fmla,
                  sigma_x.p.value = r$p.value)
     }))
     inferentials <- cbind(inferentials, sx_cols)
+  }
+
+  ## Cauchy combination (ACAT) omnibus (opt-in): combine the per-covariate
+  ## p-values into one omnibus p-value that, unlike the d^2 chisquare, never
+  ## inverts the covariate covariance -- so it stays informative when the number
+  ## of covariates reaches or exceeds the rank of that covariance.  We combine
+  ## the RAW per-covariate p-values: `descriptives` still holds them here (the
+  ## Holm adjustment below touches only `ans$results`), and ACAT must see raw
+  ## p-values because the adjustment introduces exact 1s that would dominate the
+  ## combination.  Every reported row is combined, missingness-indicator rows
+  ## included, because RItools balances missingness as another covariate.
+  if (cauchy.combination) {
+    cc_cols <- do.call(rbind, lapply(rownames(inferentials), function(strat_name) {
+      data.frame(cauchy_comb_p = acat_pvalue(descriptives[, "p", strat_name]))
+    }))
+    inferentials <- cbind(inferentials, cc_cols)
   }
 
   # the meat of our xbal object
