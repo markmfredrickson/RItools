@@ -48,14 +48,22 @@ design search; a fixed-scale randomization check; and plain interpretation. An
 independent agent tried to break each one against five failure modes, with its
 own simulations. Five of the six collapse, reduce to a bare magnitude, or quietly
 ignore the strata you built. Only the sixth survives, and only as interpretation,
-not as a new statistic. This is not a gap in our cleverness. It is a property of
-the question: you cannot compare a design to a block-randomized experiment on
-these same sets and have the comparison track the size of imbalance.
+not as a new statistic. A later, larger search repeated the result: nine
+independently designed calibrations, none survived refutation (see
+impossibility-pressure-test-memo.md).
+
+Two claims here need separating. The collapse itself is a theorem: the degree-zero
+homogeneity shown above proves that the same-strata comparison cannot track the
+size of imbalance. That NO comparison to a block-randomized standard on these same
+sets escapes the collapse is a strongly supported conjecture, not a proof --
+every candidate we built broke against it, but we have not shown that none can
+exist.
 
 ## What you can do: read the omnibus as size times precision
 
-The omnibus chi-square factors -- exactly with one covariate, approximately with
-several -- into two numbers that answer two different questions:
+The omnibus chi-square factors -- exactly with one covariate, and direction by
+direction with several, where there is no single scalar precision -- into two
+numbers that answer two different questions:
 
     omnibus chi-square  =  SIZE  x  PRECISION
 
@@ -116,30 +124,6 @@ denominator, whose medical lineage uses 0.1; see balance-threshold-provenance.md
 Every attempt to build the caliper INTO the randomized comparison failed: the
 collapse reappears in the covariate direction the caliper does not control.
 
-## A correction about Tukey: do not teach the platinum/gold framing as his
-
-Tukey's "platinum standard" ranks ANALYSES by how few unverifiable assumptions
-the inference needs. Platinum means the p-value rests only on the randomization
-the experimenter actually performed; gold, silver, and baser metals lean
-progressively more on assumed distribution shapes. His ladder does not rank
-DESIGNS by how well they remove confounding. Two consequences:
-
-- "Platinum = exact matching, gold = randomized experiment" is our internal
-  shorthand, not Tukey's. Do not attribute it to him.
-- By Tukey's own definition, an observational matched design cannot reach the
-  platinum standard, because it has no verifiable assignment mechanism -- its
-  inference rests on the unverifiable assumption that treatment is as-if-random
-  within strata. His distinction puts randomization ABOVE non-randomized
-  matching, not below it.
-
-What does survive translation, and is worth citing him for: exact balancing is a
-stricter balance TARGET than randomization, because matching forces zero
-imbalance while randomization only balances on average -- Tukey calls relying on
-randomization's average balance "an inadequate scientific method" (p. 270). And
-his motto, "balance what you can, randomize the rest, analyze by rerandomization"
-(p. 271), is the spirit of the omnibus. Cite him for those two points, and
-disclaim the metal-tier reading for designs.
-
 ## For the package
 
 Report the three numbers together: the standardized differences and M (size,
@@ -150,18 +134,20 @@ descriptions, not as a new calibration -- read as a calibration, M is just the
 magnitude and P just carries the collapse. The machine-tolerance fixes stand:
 drop covariates with no within-stratum variation, with a message rather than an
 error; and offer the Cauchy combination when there are more covariates than the
-within-strata degrees of freedom can support. For teaching, one plot earns its
-place: M against both the within-strata reference (whose percentile is flat across
+within-strata degrees of freedom can support. For teaching, one plot is worth
+including: M against both the within-strata reference (whose percentile is flat across
 imbalance size -- the collapse) and a complete-randomization reference (which
 tracks size but ignores your strata). The gap between the two curves is the
 impossibility, drawn.
 
 ## What we did not solve
 
-There is no non-collapsing comparison to a block-randomized experiment on these
-same sets. That is settled, not open. What remains open: whether to print M and P
-or keep them in teaching material; how to report the precision across several
-covariate directions rather than as one number; and how to define "pre-match
-pool" when units were dropped. Unobserved confounding stays out of scope here. It
-belongs to the sensitivity analysis, which is where the real threat to a causal
-claim lives once the observed covariates are handled.
+The collapse is settled -- it is a theorem. That no comparison to a
+block-randomized standard on these same sets escapes it we treat as a strongly
+supported conjecture: every candidate we built broke, and a nine-way adversarial
+search found no survivor, but we have no proof that none can exist. What remains
+open: whether to print M and P or keep them in teaching material; how to report
+the precision across several covariate directions rather than as one number; and
+how to define "pre-match pool" when units were dropped. Unobserved confounding
+stays out of scope here. It belongs to the sensitivity analysis, which is where
+the real threat to a causal claim sits once the observed covariates are handled.
