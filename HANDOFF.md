@@ -133,50 +133,45 @@ it is a race" was imprecise for the organize-fixed-units knob -- P fell there.)
 - impossibility-pressure-test.workflow.js -- the adversarial workflow (sec 3).
 - cand-N.R, eval-*.R -- workflow agent scratch (not canonical).
 
-## 6. DONE the night of 2026-06-17 (autonomous batch) and WHAT REMAINS
+## 6. DONE (through 2026-06-18) and WHAT REMAINS
 
-DONE and pushed to devel-sigma-x-omnibus (commits after 6824e08):
-- SCREEN + ACAT (R code, verified): relative within-stratum variance screen in
-  HB08/HB08_2016 reading a new VarFraction slot (computed in alignDesignsByStrata,
-  assignment-invariant); balanceTest() messages the dropped covariates, lowers df,
-  and ABSTAINS gracefully (df 0 / NA p) instead of erroring in the pseudoinverse.
-  check_for_degenerate() now points users to cauchy.combination = TRUE.
-  test.omnibus-degeneracy-screen.R (14) and test.acat-omnibus.R (5) GREEN; the
-  superseded test.balanceTest.R "Constant variables" updated to expect graceful
-  abstention. make document run. Full test_dir: ZERO new failures (the only red is
-  PRE-EXISTING: test.Design.R "scale() method wrapping" 4 fail + 1 error, and
-  test.tidiers.R "Date presentation" 1 error -- both fail without my changes too;
-  worth a look but not from this work).
-- ANSWER MEMO (comparing-design-...): the four edits done (Tukey section deleted,
-  theorem-vs-conjecture wording, direction-by-direction phrasing, cites the 9/0
-  pressure-test) + writing pass; ASCII-clean, banned patterns gone.
-- IMPOSSIBILITY MEMO: writing pass (dropped a "Note that"); clean.
-- SIM-RESULTS MEMO: a top orienting note (size x precision synthesis; screen/ACAT
-  now implemented; provenance moved out; restructure pending) + de-jargon
-  ("dilute" removed). PROSE ONLY -- executable chunks untouched.
+ALL the implementation is DONE and pushed to devel-sigma-x-omnibus. Version
+0.3-5.9002. Full testthat suite 3148 pass / 0 fail / 0 error (NOT_CRAN, Monte
+Carlo included); devtools::check() Status OK (0 errors, 0 warnings, 0 notes).
 
-REMAINS:
-1. SIM-RESULTS structural reframe (the big one, NOT done -- left for an interactive
-   pass because the chunks are interdependent and render-sensitive: the A4-figure
-   chunk also plots A2/A3, so cutting A4 means rewriting that figure). Drop A4
-   (p-vs-ESS), B5 (gaming), B6 (direction screen), the power study, the provenance
-   section; reframe Study 1/2 around size x precision; maybe add the 2D section.
-   Then re-render (slow; runs NREP=1000 sims): R_LIBS=.local quarto render
-   /Users/jwbowers/repos/RItools/vignettes/sim-results-memo.qmd --to pdf.
-2. MAGNITUDE REPORT (no tests-first contract yet, and the threshold philosophy is
-   unsettled -- see below): per-covariate SMD vs a SETTABLE reference + global
-   max|SMD|. Jake dislikes 0.25 as a universal rule; he leans toward a substantive
-   design-stage tolerance (e.g. "max age difference 5 years") OR a fixed-coarse
-   re-randomization reference (the structure-adjusted whole-pool CRE percentile
-   from the impossibility memo). DECIDE the form before coding.
-3. make check (R CMD check) -- NOT run tonight; it would fail on the pre-existing
-   test.Design.R / test.tidiers.R reds, so fix or triage those first.
-4. Jake's explicit yes on decision D (magnitude screen stays OUT of the omnibus;
-   never pre-filter -- B9 showed pre-filtering inflates omnibus size).
-5. Package questions: ship M and P or teaching-only? define the "pool" when units
-   are dropped? the magnitude-report form (item 2). Pursue the structure-adjusted
-   whole-pool CRE percentile (impossibility memo sec 4) as the calibrated companion
-   to the descriptive magnitude.
+DONE:
+- SCREEN + ACAT: relative within-stratum variance screen in HB08/HB08_2016 reading
+  a new VarFraction slot (computed in alignDesignsByStrata, assignment-invariant);
+  balanceTest() messages dropped covariates, lowers df, ABSTAINS gracefully (df 0 /
+  NA p) instead of erroring. check_for_degenerate() points to cauchy.combination.
+  Tests: test.omnibus-degeneracy-screen.R (14), test.acat-omnibus.R (5).
+- MAGNITUDE REPORT, both forms (R/magnitude.R, test.magnitude-report.R, 19 tests):
+  (a) balanceMagnitude() EXPORTED -- per-covariate std.diff vs a settable threshold
+  (default 0.25, documented as a convention) + global max|SMD|, print method, reads
+  $results only, never pre-filters the omnibus (decision D, CONFIRMED by Jake).
+  (b) poolCRE_adjusted_percentile() INTERNAL/EXPERIMENTAL -- structure-adjusted
+  whole-pool CRE percentile; k chosen data-driven by the gap statistic (k=NULL
+  default); centering = c("conservative","uniform").
+- BUG FIXES: scale.DesignOptions was unregistered (missing @export) -> base::scale
+  dispatched; fixed. tidy.xbal/glance.xbal registered via S3method(generics::tidy/
+  glance, xbal) (kept the function exports); broom/generics -> Suggests; Date test
+  skip_if_not_installed. HANDOFF.md -> .Rbuildignore (cleared the check NOTE).
+- MEMOS: answer memo (4 edits + writing pass); impossibility memo (writing pass);
+  sim-results memo RESTRUCTURED around size x precision (A4/B5/B6/provenance cut,
+  re-rendered clean).
+
+REMAINS -- design calls for Jake and Ben (not coding):
+1. The magnitude report's final USER-FACING form: keep poolCRE_adjusted_percentile
+   internal/experimental, or promote it? Wire balanceMagnitude into the default
+   print.xbal/summary, or keep it a standalone reader?
+2. Whether to print the SIZE (M) and PRECISION (P) numbers in balanceTest output or
+   keep them teaching-only; how to report P across several covariate directions.
+3. The 0.25-vs-substantive default and the denominator (pooled vs treated-group SD);
+   define the "pool" when units are dropped.
+4. Two sim-results judgment calls left as-is (commit e888af1): A1's tightest t=0.001
+   row now abstains (kept as a teaching point -- trim the sweep to 0.01 if you'd
+   rather show only the pure collapse); B3-B7/B9 still use the base-R prototype
+   screen from sim-helpers.R rather than exercising the shipped balanceTest screen.
 
 ## 7. REMOTE / TRAVEL (set up before leaving)
 
