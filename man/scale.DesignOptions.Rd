@@ -16,3 +16,4 @@
 \description{
 Scale DesignOptions
 }
+\keyword{internal}

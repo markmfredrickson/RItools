@@ -770,10 +770,13 @@ setClass("CovsAlignedToADesign",
          )
 # apply this & pass through en route to svd
 #' Scale DesignOptions
+#'
+#' @param x DesignOptions object
+#' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()}
+#' @param scale logical, whether to scale
 #' @method scale DesignOptions
-##' @param x DesignOptions object
-##' @param center logical, or a function acceptable as \code{post.alignment.transform} arg of \code{alignDesignsByStrata()}
-##' @param scale logical, whether to scale
+#' @keywords internal
+#' @export
 scale.DesignOptions  <- function(x, center=TRUE, scale=TRUE)
 {
     stopifnot(is(x, "DesignOptions"))
