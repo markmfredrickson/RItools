@@ -112,3 +112,51 @@ test_that("k-means structure recovery roughly matches the oracle group adjustmen
   p_oracle <- mean(Tnull <= Tobs - 1e-12)
   expect_lt(abs(p_km - p_oracle), 0.3)
 })
+
+## ---- form (b): data-driven k and selectable centering (Jake's decisions) --
+
+test_that(".choose_k_gap recovers ~the true number of coarse groups", {
+  skip_on_cran()
+  ## 4 well-separated coarse groups -> the gap statistic should pick about 4
+  d <- mk_matched(0.10, g = 0.6, seed = 3)
+  set.seed(9)
+  ksel <- RItools:::.choose_k_gap(d$X)
+  expect_true(ksel >= 3 && ksel <= 5)
+})
+
+test_that("data-driven k (k = NULL, the default) stays non-collapsing and magnitude-sensitive", {
+  skip_on_cran()
+  f <- RItools:::poolCRE_adjusted_percentile
+  d0 <- mk_matched(0.10, g = 0.0, seed = 7); d1 <- mk_matched(0.10, g = 1.0, seed = 7)
+  set.seed(2); p0 <- f(d0$X, d0$z, d0$set, k = NULL, B = 300)
+  set.seed(2); p1 <- f(d1$X, d1$z, d1$set, k = NULL, B = 300)
+  expect_gt(p1, p0 + 0.1)
+})
+
+test_that("centering = 'uniform' is a valid (uniform) percentile under complete randomization", {
+  skip_on_cran()
+  ## when the observed assignment is itself a complete-randomization draw and the
+  ## reference is complete randomization, the pool/pool percentile is ~Uniform
+  f <- RItools:::poolCRE_adjusted_percentile
+  d <- mk_matched(0.30, g = 0.0, seed = 20)            # null: no systematic gap
+  set.seed(5)
+  ps <- replicate(30, f(d$X, sample(d$z), d$set, k = 4, centering = "uniform", B = 200))
+  expect_equal(mean(ps), 0.5, tolerance = 0.12)
+})
+
+test_that("centering = 'conservative' is downward-biased relative to 'uniform'", {
+  skip_on_cran()
+  ## the matched-set-centered observed statistic is smaller than the pool-centered
+  ## reference, so under a complete-randomization observed assignment the
+  ## conservative percentile sits below the uniform one (paired on the same draw)
+  f <- RItools:::poolCRE_adjusted_percentile
+  d <- mk_matched(0.30, g = 0.0, seed = 22)
+  set.seed(7)
+  diffs <- replicate(20, {
+    zz <- sample(d$z)                                  # complete-randomization draw
+    pu <- f(d$X, zz, d$set, k = 4, centering = "uniform",      B = 200)
+    pc <- f(d$X, zz, d$set, k = 4, centering = "conservative", B = 200)
+    pu - pc
+  })
+  expect_gt(mean(diffs), 0)
+})

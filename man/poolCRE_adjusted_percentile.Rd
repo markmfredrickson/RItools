@@ -4,7 +4,15 @@
 \alias{poolCRE_adjusted_percentile}
 \title{Structure-adjusted whole-pool randomization percentile (EXPERIMENTAL)}
 \usage{
-poolCRE_adjusted_percentile(X, z, strata, k = 4L, B = 1000L)
+poolCRE_adjusted_percentile(
+  X,
+  z,
+  strata,
+  k = NULL,
+  centering = c("conservative", "uniform"),
+  B = 1000L,
+  B_gap = 15L
+)
 }
 \arguments{
 \item{X}{numeric matrix of covariates (units in rows)}
@@ -13,9 +21,15 @@ poolCRE_adjusted_percentile(X, z, strata, k = 4L, B = 1000L)
 
 \item{strata}{factor of matched-set membership}
 
-\item{k}{number of coarse groups to recover by k-means (placeholder default)}
+\item{k}{number of coarse groups to recover by k-means; \code{NULL} (default)
+chooses it data-driven via the gap statistic}
+
+\item{centering}{\code{"conservative"} (matched-set observed vs pool reference;
+default) or \code{"uniform"} (pool vs pool); see Details}
 
 \item{B}{number of complete-randomization draws}
+
+\item{B_gap}{number of uniform reference datasets for the gap statistic}
 }
 \value{
 upper-tail percentile in \code{[0,1]}
@@ -29,11 +43,18 @@ residualizing the covariates on a coarse structure recovered by k-means.  See
 \code{vignettes/impossibility-pressure-test-memo.md}.
 }
 \details{
-Defaults that need review before this is made user-facing (Jake/Ben): the
-number of recovered groups \code{k} (here a fixed placeholder), the pooled-SD
-denominator, and the number of complete-randomization draws \code{B}.  The
-observed statistic is matched-set centered while the reference is pool
-centered, so the percentile is conservative (downward biased) rather than an
-exactly uniform tail probability.
+The number of recovered groups \code{k} is chosen data-driven by default (the
+gap statistic of Tibshirani, Walther and Hastie, 2001); pass an integer to fix
+it.  \code{centering} selects the contender.  \code{"conservative"} (default)
+compares a matched-set-centered observed statistic to a pool-centered
+reference: a one-sided "better than a whole-pool coin flip" check that is
+downward biased, not an exactly uniform tail probability.  \code{"uniform"}
+centers both observed and reference on the pool, giving an exactly uniform
+percentile under complete randomization, at the cost of discarding the
+matched-set structure in the observed statistic.  The denominator is the
+pooled within-group SD.  Defaults that may still want Jake/Ben review: the
+gap-statistic range and reference-draw count, and the number of
+complete-randomization draws \code{B}.  See
+\code{vignettes/impossibility-pressure-test-memo.md}.
 }
 \keyword{internal}

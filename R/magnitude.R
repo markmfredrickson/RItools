@@ -120,6 +120,46 @@ print.balanceMagnitude <- function(x, digits = 3, ...) {
   apply(X, 2, function(col) col - ave(col, glab))
 }
 
+## within-cluster dispersion W_k for the gap statistic: the pooled within-cluster
+## sum of squares (kmeans tot.withinss); for k = 1 it is the total sum of squares.
+.cluster_dispersion <- function(Xs, k) {
+  if (k <= 1L) return(sum(scale(Xs, scale = FALSE)^2))
+  km <- tryCatch(stats::kmeans(Xs, centers = k, nstart = 5L, iter.max = 50L),
+                 error = function(e) NULL)
+  if (is.null(km)) return(NA_real_)
+  km$tot.withinss
+}
+
+## Data-driven number of coarse groups by the gap statistic (Tibshirani, Walther,
+## Hastie 2001).  We compare log W_k for the data to its expectation under a
+## uniform reference over the bounding box of the standardized covariates, and
+## take the smallest k whose gap is within one standard error of the next k's.
+## This recovers the coarse confounding structure the matching exploited without
+## us having to assert how many groups there are, which is why k is chosen here
+## rather than fixed.  B_gap is kept small because this sits inside an already
+## Monte-Carlo percentile.
+.choose_k_gap <- function(X, kmax = NULL, B_gap = 15L) {
+  Xs <- scale(as.matrix(X))
+  n <- nrow(Xs); p <- ncol(Xs)
+  if (is.null(kmax)) kmax <- max(2L, min(8L, floor(n / 10)))
+  ks <- 1:kmax
+  logWk <- vapply(ks, function(k) log(.cluster_dispersion(Xs, k)), numeric(1))
+  rng <- apply(Xs, 2, range)
+  logWref <- matrix(NA_real_, B_gap, length(ks))
+  for (b in seq_len(B_gap)) {
+    Xb <- vapply(seq_len(p),
+                 function(j) stats::runif(n, rng[1, j], rng[2, j]), numeric(n))
+    logWref[b, ] <- vapply(ks, function(k) log(.cluster_dispersion(Xb, k)), numeric(1))
+  }
+  gap <- colMeans(logWref) - logWk
+  s   <- apply(logWref, 2, stats::sd) * sqrt(1 + 1 / B_gap)
+  for (i in seq_len(length(ks) - 1L)) {
+    if (is.finite(gap[i]) && is.finite(gap[i + 1L]) &&
+        gap[i] >= gap[i + 1L] - s[i + 1L]) return(ks[i])
+  }
+  ks[length(ks)]
+}
+
 ## pooled within-group SD per covariate (the magnitude denominator)
 .magnitude_pooled_sd <- function(X, z) {
   X <- as.matrix(X)
@@ -153,26 +193,45 @@ print.balanceMagnitude <- function(x, digits = 3, ...) {
 ##' residualizing the covariates on a coarse structure recovered by k-means.  See
 ##' \code{vignettes/impossibility-pressure-test-memo.md}.
 ##'
-##' Defaults that need review before this is made user-facing (Jake/Ben): the
-##' number of recovered groups \code{k} (here a fixed placeholder), the pooled-SD
-##' denominator, and the number of complete-randomization draws \code{B}.  The
-##' observed statistic is matched-set centered while the reference is pool
-##' centered, so the percentile is conservative (downward biased) rather than an
-##' exactly uniform tail probability.
+##' The number of recovered groups \code{k} is chosen data-driven by default (the
+##' gap statistic of Tibshirani, Walther and Hastie, 2001); pass an integer to fix
+##' it.  \code{centering} selects the contender.  \code{"conservative"} (default)
+##' compares a matched-set-centered observed statistic to a pool-centered
+##' reference: a one-sided "better than a whole-pool coin flip" check that is
+##' downward biased, not an exactly uniform tail probability.  \code{"uniform"}
+##' centers both observed and reference on the pool, giving an exactly uniform
+##' percentile under complete randomization, at the cost of discarding the
+##' matched-set structure in the observed statistic.  The denominator is the
+##' pooled within-group SD.  Defaults that may still want Jake/Ben review: the
+##' gap-statistic range and reference-draw count, and the number of
+##' complete-randomization draws \code{B}.  See
+##' \code{vignettes/impossibility-pressure-test-memo.md}.
 ##'
 ##' @param X numeric matrix of covariates (units in rows)
 ##' @param z 0/1 treatment indicator
 ##' @param strata factor of matched-set membership
-##' @param k number of coarse groups to recover by k-means (placeholder default)
+##' @param k number of coarse groups to recover by k-means; \code{NULL} (default)
+##'   chooses it data-driven via the gap statistic
+##' @param centering \code{"conservative"} (matched-set observed vs pool reference;
+##'   default) or \code{"uniform"} (pool vs pool); see Details
 ##' @param B number of complete-randomization draws
+##' @param B_gap number of uniform reference datasets for the gap statistic
 ##' @return upper-tail percentile in \code{[0,1]}
 ##' @keywords internal
-poolCRE_adjusted_percentile <- function(X, z, strata, k = 4L, B = 1000L) {
+poolCRE_adjusted_percentile <- function(X, z, strata, k = NULL,
+                                        centering = c("conservative", "uniform"),
+                                        B = 1000L, B_gap = 15L) {
+  centering <- match.arg(centering)
   X <- as.matrix(X); z <- as.integer(z); strata <- factor(strata)
+  if (is.null(k)) k <- .choose_k_gap(X, B_gap = B_gap)
   Xr   <- .residualize_on_kmeans(X, k)
   sdp  <- .magnitude_pooled_sd(Xr, z)
-  Tobs <- .within_stratum_max_smd(Xr, strata, z, sdp)
   pool <- factor(rep(1L, length(z)))
+  ## conservative keeps the matched-set structure in the observed statistic
+  ## (smaller, downward biased); uniform centers the observed on the pool like the
+  ## reference, so the percentile is exactly uniform under complete randomization.
+  obs_strata <- if (centering == "conservative") strata else pool
+  Tobs  <- .within_stratum_max_smd(Xr, obs_strata, z, sdp)
   Tnull <- replicate(B, .within_stratum_max_smd(Xr, pool, sample(z), sdp))
   mean(Tnull <= Tobs - 1e-12)
 }
