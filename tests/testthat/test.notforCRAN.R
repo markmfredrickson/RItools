@@ -197,6 +197,32 @@ test_that("HB08 and HB08_2016 flag degenerate statistics", {
 
 })
 
+### ACAT omnibus end-to-end null calibration (Monte Carlo; slow) ###
+## test.cauchycomb.R checks that acat_pvalue() is uniform under the null at the
+## p-value level.  This complements it one level up: the cauchy_comb_p column
+## balanceTest() reports must itself be ~Uniform(0,1) under the within-stratum
+## null, since the per-covariate p-values feeding it are.  That validity is what
+## lets us report ACAT as the omnibus in the degenerate regime; it should already
+## hold (GREEN).
+test_that("balanceTest cauchy_comb_p is ~uniform under the within-stratum null", {
+  skip_on_cran()
+  set.seed(2026)
+  S <- 25
+  ps <- replicate(600, {
+    loc <- matrix(rnorm(S * 3), S, 3)
+    dif <- matrix(rnorm(S * 3), S, 3)               # no systematic tilt: null true
+    X <- matrix(0, 2 * S, 3)
+    X[seq(1, 2 * S, 2), ] <- loc + dif / 2          # treated rows
+    X[seq(2, 2 * S, 2), ] <- loc - dif / 2          # control rows
+    d <- data.frame(z = rep(c(1L, 0L), S), s = factor(rep(seq_len(S), each = 2)),
+                    x1 = X[, 1], x2 = X[, 2], x3 = X[, 3])
+    balanceTest(z ~ x1 + x2 + x3 + strata(s), data = d,
+                cauchy.combination = TRUE)$overall["s", "cauchy_comb_p"]
+  })
+  expect_equal(mean(ps < 0.05), 0.05, tolerance = 0.03)
+  expect_equal(mean(ps), 0.5, tolerance = 0.05)
+})
+
 ### Tests to write...
 ##test_that("alignDesigns properly tracks UnitWeights vs NotMissing",{})
 ##test_that("",{})

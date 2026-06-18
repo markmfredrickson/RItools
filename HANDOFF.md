@@ -1,255 +1,186 @@
-# HANDOFF.md
+# HANDOFF: the two-denominators result, the impossibility pressure-test, and the package plan
 
-Handoff from the 2026-04-09/10 session on the `devel-sigma-x-omnibus` branch.
-Nothing has been committed or pushed. Everything is in the working tree.
+Date: 2026-06-17. Branch: devel-sigma-x-omnibus. Audience: a fresh Claude
+(possibly a Remote Control session driven from Jake's iPad while traveling),
+plus Jake Bowers (PI; teaching with RItools soon) and Ben Hansen (co-author of
+the d^2 test).
 
-## 1. Key decisions made
+This supersedes the earlier handoffs. Their substance is preserved in the
+auto-memory notes (read those first): balance-calibration-trilemma,
+collapse-calibration-strengthened-impossibility, omnibus-acat-switch-and-screening,
+resolution-profile-invention, branson-2021-randchecks,
+balance-calibration-failure-mode-checklist, rct-vs-matched-balance-test,
+sigma-x-null-backend-default.
 
-### The original plan (implemented and working)
+Jake's writing rules in /Users/jwbowers/repos/ai_workflow/CLAUDE.md are mandatory
+for every memo: plain words over jargon; motivate before method; name the actor,
+the criterion, and the rejected alternative for any evaluative claim; no
+decorative structural/industrial/security metaphors; theorem-vs-conjecture
+honesty; ASCII only (no unicode anywhere). Every memo gets a writing-critic pass
+before it is "done."
 
-Ben Hansen proposed replacing HB08's omnibus chi-square statistic
-`T = d' Cov(d)^{-1} d` with `T = d' Sigma_x^{-1} d`, where Sigma_x is
-a covariance of the covariates rather than the permutation covariance.
-This was motivated by a criticism from Paul Rosenbaum (relayed by Ben):
-HB08 penalizes tight matches that have small residual imbalance, because
-the permutation covariance shrinks with the match.
+## 1. THE RESULT THIS SESSION SHARPENED -- it is the DENOMINATOR, not the omnibus
 
-The new test was implemented with four null-distribution backends:
-`satterthwaite_finite` (default), `satterthwaite_asymptotic`, `imhof`,
-`simulate`. The finite-sample Satterthwaite backend uses second-order
-moment formulas ported from the `i113-highermoments` branch (Mark
-Fredrickson). All four backends pass 1561+ tests (3036 total suite).
-`R CMD check` returns 0 errors, 0 warnings, 0 notes.
+The collapse: the d^2 omnibus (and any percentile against within-stratum
+re-randomization) is homogeneous of degree zero in the imbalance. As the match
+tightens, the within-stratum randomization variance V_d -> 0, so a FIXED
+substantive imbalance earns an arbitrarily small p. A well-matched design gets an
+alarming omnibus p. Verified repeatedly.
 
-### The discovery that changed the framing
+The new, clearer statement (the "two denominators"): imbalance is a fraction. The
+numerator is the gap dbar (treated-minus-control within sets), fixed in covariate
+units. The collapse lives entirely in what you divide by:
 
-After implementing the new test, we discovered through a diagnostic toy
-example that **no test built entirely from the matched sample --- neither
-HB08 nor the new sigma_x test nor any of seven other test statistics
-(Euclidean, L1, Wasserstein-type, Wilcoxon, tanh, max-distance, energy)
---- can distinguish a tight match from a loose match** when the
-within-stratum spread is the only thing that changes. The p-value is
-constant across all values of the tightness parameter delta, regardless
-of which standardizer or reference distribution is used.
+- FIXED denominator (covariate units, or a pooled pre-match SD): a 0.2-unit gap
+  is 0.2 units whether the strata are loose or tight. max|SMD| with a fixed
+  pooled-SD denominator uses this. It does NOT collapse. Its only weakness: it has
+  no built-in opinion about whether 0.2 is "a lot" -- you must supply that
+  (a substantive tolerance, e.g. "5 years of age").
+- RE-RANDOMIZATION denominator (the spread of the statistic under within-set
+  re-randomization, = sqrt(V_d)): tight sets give z almost no room, so this spread
+  -> 0 as the match tightens. The omnibus p uses this. So does "calibrate max|SMD|
+  against re-randomizations of the matched sets" -- it is the SAME arithmetic as
+  dividing the fixed gap by the vanishing sqrt(V_d). That is why Jake's
+  re-randomized-max|SMD| idea inherits the collapse.
 
-This is a structural property (scale invariance / studentization), not a
-bug. Two independent AI agents proved the impossibility theorem
-formally. A third and fourth agent verified it against seven statistics
-and confirmed the impossibility holds for complete-randomization
-references as well.
+The aggregation (one number over all covariates) is NOT the problem. The
+reference/denominator is. See vignettes/two-rulers-demo.R (and .rds): same fixed
+imbalance, the within-SET re-randomization 95th-percentile of max|SMD| collapses
+from 0.031 to 0.005 as the match tightens, so the observed percentile pins at 1.0
+and the omnibus p falls to 4e-11, while a FIXED coarse reference (within-GROUP
+re-randomization) gives a stable verdict near the 30th percentile.
 
-### The current recommendation (in the memo, awaiting team review)
+## 2. THE ESCAPE -- a FIXED reference (Jake's whole-pool CRE idea), and the catch
 
-1. **Keep HB08 intact** as a test of the strict randomization null.
-2. **Add effect-size reporting** as a first-class output: adjusted mean
-   differences in original units, plus standardized mean differences if
-   the user supplies a pre-matching candidate pool or external SDs.
-3. **Optionally offer a combined chi-square p-value** using
-   pool-derived Sigma_x as the standardizer and chi^2_p as the
-   reference. There is a reasonable disagreement among the agents about
-   whether this p-value is helpful or misleading; the memo presents
-   both views.
-4. **Retain the sigma_x_test infrastructure** as the computation
-   engine behind pool-calibrated effect-size reporting, not as a
-   replacement for HB08.
+A reference that does not shrink with the match does not collapse. Two forms,
+same idea:
+(a) Jake's substantive tolerances ("max age difference 5 years"): fixed, in real
+    units, set at design. Non-collapsing. Cost: per-covariate, not one omnibus
+    number.
+(b) Re-randomize against a FIXED, COARSER design (complete randomization on the
+    whole pool), not the tight matched sets.
 
-### Key subsidiary findings
+Validated comparison (vignettes/pressure-test-helpers.R; run reproduced this
+session):
+- design-internal (d^2; max|SMD| vs within-set): COLLAPSE (alarm 0.66 -> 1.000 as
+  the match tightens at fixed gap).
+- whole-pool CRE, raw max|SMD| or fixed-Sigma Mahalanobis: do NOT collapse, but
+  FLOOR-BLIND -- a full 1-SD residual gap barely registers (alarm ~0.16 / ~0.01),
+  because beating a coin-flip on the UNMATCHED pool is trivially easy. "Better
+  than complete randomization on the pool" is nearly always true and so tells you
+  little.
+- whole-pool CRE + COVARIANCE ADJUSTMENT (Jake's parenthetical): removes the
+  trivial between-group structure from the reference too, so the comparison is
+  about the residual you care about. Non-collapsing AND magnitude-sensitive
+  (alarm 0.002 -> 0.93 as the gap grows 0 -> 1). This is the contender worth
+  building. CAVEAT being tested by the running workflow: the working demo used the
+  ORACLE coarse-group membership; the real test is adjustment on OBSERVED
+  covariates (regression / estimated score), no oracle.
 
-- In any pair-matched design, the new test with default Sigma_x equals
-  HB08 exactly up to a constant 2/K. They are the same test.
-- Rosenbaum's chapter 6 "complete randomization" benchmark, applied to
-  the post-matching sample, is caliper-dependent: changing the caliper
-  changes which units survive, which changes the reference distribution.
-  Applied to the pre-matching pool, it is caliper-invariant but also
-  caliper-blind (it doesn't see the match).
-- The useful combination is: d from the matched sample (numerator),
-  Sigma_x from the pre-matching pool (denominator), chi^2_p as the
-  reference. This gives a p-value that tightens with better matching.
-- The `satterthwaite_finite` backend genuinely outperforms asymptotic
-  backends at small n (verified against exact enumeration on a 14-unit
-  example; the gap is 0.044 in p-value). This finding is independent
-  of the Rosenbaum criticism and is still useful.
+The three-way bind (the trilemma, in Jake's own terms): you can have at most two
+of {a single calibrated omnibus number, a reference INTERNAL to the design you
+actually built, no collapse}. The omnibus p takes the first two and pays with
+collapse. The 5-year tolerance takes the last two and pays the single-number
+convenience. The fixed-coarse-reference percentile takes the first and last and
+pays by comparing to a design you did not build.
 
-## 2. Files changed and why
+## 3. RUNNING NOW -- the impossibility pressure-test workflow
 
-### Modified files
+vignettes/impossibility-pressure-test.workflow.js (launched this session; may
+still be running, or its result may be in hand). It (1) sends 9 inventors to find
+a DESIGN-INTERNAL, single-number, non-collapsing, magnitude-sensitive calibration
+(each implements its candidate as vignettes/cand-N.R and runs the shared collapse
++ magnitude harness), with 3 adversarial breakers per self-claimed escape, and
+(2) compares the external references (raw whole-pool CRE, Mahalanobis, oracle and
+ORACLE-FREE covariance-adjusted CRE, fixed-tolerance baseline). Output: a memo
+(intended path vignettes/impossibility-pressure-test-memo.md) plus a return value
+with impossibility_supported (true if zero inventors survived), survivors, and
+the comparison table. The dimensional argument it tests: any design-internal
+calibration is a function of (dbar, V_d); a scale-free function depends on
+dbar/sqrt(V_d) and blows up as V_d -> 0 (collapse); the only V_d-bounded ones
+ignore V_d and are bare magnitudes -- so no single scalar is design-internal,
+magnitude-sensitive, AND non-collapsing at once. The collapse is a THEOREM;
+"no design-internal escape" is a STRONGLY SUPPORTED CONJECTURE, not a proof.
 
-| File | Change |
-|------|--------|
-| `DESCRIPTION` | Version 0.3-5 -> 0.3-5.9000. Title flagged as devel. CompQuadForm in Suggests. RoxygenNote bumped to 7.3.3. |
-| `NEWS.md` | New entry for 0.3-5.9000 describing the devel branch. |
-| `.Rbuildignore` | Added CLAUDE.md, CLAUDE_CODING.md, .claude/ |
-| `R/balanceTest.R` | Four new args (sigma_x_test, sigma_x, null, n_simulate). ~25 new lines for optional sigma_x integration after HB08. Full @param documentation. |
-| `R/print.xbal.R` | Header tweak: prints "---Overall Tests (chi-square and sigma_x)---" when sigma_x columns present. |
-| `R/utils.R` | subset.xbal forwards the new sigma_x_info attribute. |
-| `R/xbal_tidiers.R` | glance.xbal docstring updated to mention new sigma_x columns. |
-| `man/balanceTest.Rd` | Regenerated from roxygen. |
-| `man/tidy.xbal.Rd` | Regenerated from roxygen. |
+WHEN IT FINISHES: write its finalMemo to vignettes/impossibility-pressure-test-memo.md,
+read it, fold the verdict (esp. the oracle-free covariance-adjusted CRE result)
+into the recommendation, and commit it. The cand-N.R and eval-*.R files are agent
+scratch -- keep or delete after curating the memo; they are not canonical.
 
-### New files (implementation)
+## 4. A CORRECTION (do not lose)
 
-| File | Purpose |
-|------|---------|
-| `R/sigma_x_test.R` (~300 lines) | All internal functions: `sigma_x_pvalue`, `default_sigma_x`, `randomization_cov_d`, `sigma_x_T_moments`, `sigma_x_test`, `draw_within_stratum_z`, `simulate_T_under_null`, `sigma_x_inferentials`. Ported moment machinery from i113-highermoments. |
-| `man/sigma_x_pvalue.Rd` | Generated. Internal. |
-| `man/default_sigma_x.Rd` | Generated. Internal. |
-| `man/randomization_cov_d.Rd` | Generated. Internal. |
-| `man/sigma_x_T_moments.Rd` | Generated. Internal. |
-| `man/sigma_x_test.Rd` | Generated. Internal. |
-| `man/sigma_x_inferentials.Rd` | Generated. Internal. |
+Two different knobs, often conflated:
+- ORGANIZE fixed units into more strata (cut a score finer): BENIGN. The summary
+  precision drifts DOWN (sample-size/weighting effects), so p RISES as balance
+  improves; no collapse. The non-monotonicity Jake saw is partition jitter
+  (~8-11 sign reversals along the ladder; see vignettes/surface-regimes.R/.out).
+- TIGHTEN the match toward exact matching (units genuinely more similar within
+  sets, V_d -> 0): this is the collapse (vignettes/two-rulers-demo.R).
+So "fixed units, vary stratification" is the SAFER framing; the collapse is
+specifically the V_d -> 0 operation. (An earlier claim that "refining raises P,
+it is a race" was imprecise for the organize-fixed-units knob -- P fell there.)
 
-### New files (tests)
+## 5. FILES MADE THIS SESSION (vignettes/ is in .Rbuildignore, not shipped)
 
-| File | Purpose |
-|------|---------|
-| `tests/testthat/test.sigma_x_test.R` | 29 test_that blocks, 1561+ expectations. Covers: pvalue backends, closed-form V_d, default Sigma_x, test stat math (invariance, reduction to HB08, singular Sigma_x), finite-sample moment machinery (verified against exact enumeration), backend comparison (asymp-vs-finite gap, simulate-vs-enumeration, large-n agreement), end-to-end balanceTest integration, within-stratum permutation structural tests. |
-| `tests/testthat/helper-sigma_x_test.R` | Exact-enumeration helpers: `enumerate_strata_assignments`, `exact_randomization_dist`, `closed_form_V_d_helper`, `within_stratum_pooled_cov_helper`, two fixtures. |
+- two-rulers-demo.R (+ .rds) -- the denominator/collapse demonstration (sec 1).
+- surface-prototype.R (+ .png/.rds) -- first 2D-surface sweep (organize fixed
+  units; size x precision decomposition per rung).
+- surface-regimes.R (+ .png/.rds/.out) -- regimes (strong/weak/null proxy) x
+  ladders (non-nested cut vs nested) x 30 seeds; the correction in sec 4.
+- pressure-test-helpers.R -- the validated shared harness (DGP with fixed gap +
+  match-tightening; collapse_curve; magnitude_curve; named contenders). Base R,
+  self-contained (no package load).
+- impossibility-pressure-test.workflow.js -- the adversarial workflow (sec 3).
+- cand-N.R, eval-*.R -- workflow agent scratch (not canonical).
 
-### New files (memos and analysis)
+## 6. STILL OPEN from the prior plan (NOT done this session)
 
-| File | Purpose |
-|------|---------|
-| `vignettes/sigma-x-rosenbaum-memo.qmd` | **THE MAIN DOCUMENT.** ~900 lines. The complete analysis of Rosenbaum's criticism, the toy example, the impossibility theorem, the caliper-dependence finding, the seven-statistic diagnostic, and the recommendation. Ready for team review (user will edit first). |
-| `vignettes/devel-sigma-x-omnibus-memo.Rmd` | Earlier memo on the four backends (pre-studentization-discovery). Documents the asymp-vs-finite gap at small n. Partially superseded by the .qmd memo but the small-n findings are independently valid. |
-| `vignettes/agent-synthesis-final.md` | Synthesis of the four agent reports. Reference material. |
-| `vignettes/agent-synthesis-progress.md` | Earlier progress note. Superseded by the final synthesis. |
-| `CLAUDE.md` | Codebase guide (from /init). Not committed. |
+1. Four edits to comparing-design-to-randomized-standard-memo.md still pending:
+   (a) DELETE the "## A correction about Tukey" section (Tukey is a red herring;
+       drop platinum/gold language); (b) "not a gap in our cleverness" ->
+       theorem-vs-conjecture wording; (c) "settled, not open" -> same; (d) ensure
+       "direction by direction with several (no single scalar P)". Then a
+       writing-critic pass.
+2. Rewrite sim-results-memo.qmd around the size-x-precision answer (drop old
+   flag/dilute/directions/platinum/gold language). Still old framing.
+3. Implement (tests-first suites are RED and define the contract):
+   test.omnibus-degeneracy-screen.R -> relative within-stratum variance screen +
+   "too little variance" MESSAGE + graceful abstention (R/Design.R ~991, R/utils.R
+   ~381); test.acat-omnibus.R is mostly green (ACAT shipped in commit a53dc97) but
+   1 failure waits on the screen. Then the magnitude report (per-covariate SMD vs
+   a settable reference; global max|SMD|). Then make document + check.
+4. Get Jake's explicit yes on decision D (keep the magnitude screen OUT of the
+   omnibus; never pre-filter -- B9 showed pre-filtering inflates omnibus size).
+5. Package questions: ship M and P or teaching-only? define the "pool" when units
+   are dropped? 0.25 vs 0.1 plus the denominator choice? Jake dislikes 0.25 as a
+   universal rule -- prefers substantive tolerances at design, or a fixed-coarse
+   re-randomization reference (sec 2).
 
-### Temporary files (not in the repo)
+## 7. REMOTE / TRAVEL (set up before leaving)
 
-| File | Purpose |
-|------|---------|
-| `/tmp/rosenbaum-agent-prompt-v4.md` | The v4 agent prompt used for the final round. |
-| `/tmp/rosenbaum-agent-prompt-v3.md` | Earlier version. |
-| `/tmp/rosenbaum-agent-prompt-v2.md` | Earlier version. |
+Continue this work from an iPad/iPhone with NO SSH via Remote Control (Claude Code
+v2.1.181 installed; needs a subscription login, not an API key):
+- Keep the Mac awake: lid open, plugged in, `caffeinate -dimsu` in a spare terminal.
+- From the repo dir: `claude remote-control --name "RItools sigma-x omnibus"`.
+  It serves FRESH sessions in this directory with full LOCAL file access (sees all
+  uncommitted work and the running workflow's outputs). Connect from the iPad by
+  the URL/QR it prints, or find it by name at claude.ai/code, or scan into the
+  Claude mobile app.
+- A remote session does NOT inherit this conversation's in-memory context -- it
+  picks up from THIS file + the memory notes. So a fresh remote session should
+  start by reading HANDOFF.md and the memory.
+- Backup if the laptop drops off: the branch is pushed to GitHub, so fall back to
+  Claude Code on the web (cloud, GitHub-only, no local files) on
+  devel-sigma-x-omnibus.
 
-## 3. Current blockers and open questions
+## 8. GOTCHAS
 
-### Blockers
-
-- **Nothing is committed or pushed.** The user explicitly said no push
-  until the team reviews. The working tree is on the local-only branch
-  `devel-sigma-x-omnibus`.
-- **The memo needs human editing** before being shared with Ben and
-  Mark. The user will review the writing, especially the impossibility
-  theorem section and the recommendation.
-
-### Open questions for the team
-
-1. **Should balanceTest() offer a pool-calibrated chi^2_p p-value?**
-   Two views in tension (see memo Recommendation section). Both agents
-   think yes; the user is undecided.
-2. **Should the default Sigma_x be changed from pooled-within to
-   something else?** The current default is the within-stratum-pooled
-   cov, which inherits the Rosenbaum criticism. Changing it to
-   full-sample cov(X) doesn't fix the p-value (only the statistic).
-   The "real" fix is the pool-calibrated path, which requires the user
-   to supply a candidate_pool.
-3. **Should the within-stratum-pooled sigma_x path be retained at all?**
-   It is useful for the finite-sample Satterthwaite backend (which IS
-   a genuine improvement over HB08's asymptotic chi-square at small n)
-   but does not address the Rosenbaum criticism. It could be kept as a
-   second-tier option.
-4. **What should the API look like for candidate_pool?** A data frame
-   argument? A named vector of SDs? Both? See the recommendation
-   section of the memo for a sketch.
-5. **Should we add a fifth null backend for complete randomization?**
-   The memo argues it is caliper-blind when applied to the post-matching
-   sample, but it could still be useful for the specific question "is
-   this assignment unusual under any randomization of these units?"
-
-## 4. Important context to preserve
-
-### The toy example
-
-Eight units, two strata of four, two covariates. Controls at (10, 0)
-and (10, 8). Treated at (10+delta, 0) and (10, 8+delta). Parameter
-delta controls tightness. cov(X) is full rank at every positive delta.
-HB08 gives T = 6, p = 0.0498 at EVERY delta. Seven other statistics
-also give constant ranks in the permutation distribution across delta.
-This toy is the foundation of the impossibility argument.
-
-### The impossibility theorem
-
-Any test statistic that rescales by the same factor for every
-hypothetical assignment when within-stratum deviations are shrunk gives
-an invariant p-value. The proof is one line: multiplying every number in
-a list by the same positive constant preserves rankings.
-
-### The caliper-blind vs caliper-variant distinction
-
-The agents' key new finding: pre-matching-pool references are
-caliper-invariant only in a caliper-BLIND sense (they don't see the
-match). The useful combination is pool for Sigma_x + matched sample for
-d + chi^2_p as the reference. This gives a p-value that rewards better
-matching.
-
-### The pair-matched equivalence
-
-In any pair-matched design (n_s = 2 for all strata), the new test with
-default Sigma_x equals HB08 up to the constant 2/K. Verified at machine
-precision.
-
-### The finite-sample Satterthwaite finding
-
-At small n (e.g., 14 units), the asymptotic chi-square reference is
-off by 0.044 in p-value compared to the exact enumeration (0.338 vs
-0.382). The finite-sample Satterthwaite backend gets the moments right
-but the chi-square shape is still wrong at n = 14. Only simulate gives
-the exact answer. This finding is independent of the Rosenbaum criticism
-and is the main contribution of the sigma_x_test infrastructure at the
-implementation level.
-
-### The Rosenbaum chapter
-
-`~/REVIEWS/rosenbaum_2025_chap6.pdf`, 13 pages. Chapter 6 of
-*An Introduction to the Theory of Observational Studies* (2025).
-Advocates comparing balance statistics to their empirical distribution
-under repeated complete randomizations of the same units. The chapter's
-approach is caliper-dependent when applied to the post-matching sample
-(a finding from this session that does not appear to be acknowledged in
-the chapter).
-
-### Related work in block_test_power
-
-`~/repos/block_test_power/` has a working paper on power analysis for
-block-randomized tests. The test-statistic catalog there (six scores:
-raw, rank, mean_dist, mean_rank_dist, max_dist, tanh) was verified to
-also be scale-invariant on the toy. The connection: those tests work for
-outcome analysis because the outcome scale is baked in by the
-experiment's measurement conventions; on the balance-testing side the
-analogous scale is the covariate scale, which studentization discards.
-
-## 5. What's done vs. what remains
-
-### Done
-
-- [x] Implementation of sigma_x_test with four null backends
-- [x] Integration into balanceTest() (opt-in via sigma_x_test = TRUE)
-- [x] 29 test blocks, 1561+ expectations, all passing
-- [x] R CMD check: 0/0/0
-- [x] print, glance, subset methods all work with new columns
-- [x] man pages generated for all internal functions
-- [x] Discovery: the new test doesn't fix Rosenbaum's criticism
-- [x] Impossibility theorem (two independent proofs)
-- [x] Seven-statistic diagnostic (including energy stat)
-- [x] Caliper-dependence finding
-- [x] Caliper-blind vs caliper-variant distinction
-- [x] Main memo (sigma-x-rosenbaum-memo.qmd) incorporating all findings
-- [x] Agent synthesis (agent-synthesis-final.md)
-
-### Remains
-
-- [ ] User reviews memo prose before sending to team
-- [ ] Team (Ben, Mark, Josh) reviews the recommendation
-- [ ] Decision on chi^2_p p-value (offer it or not?)
-- [ ] Decision on candidate_pool API shape
-- [ ] Decision on whether to keep the pooled-within Sigma_x path
-- [ ] Implementation of candidate_pool argument and effect-size table
-- [ ] Implementation of pool-calibrated chi^2_p p-value (if approved)
-- [ ] Regression tests for the impossibility (toy gives constant p)
-- [ ] Regression test for pair-matched equivalence (T_HB / T_new = 2/K)
-- [ ] Regression test for pool-calibrated delta-monotonicity
-- [ ] Update CLAUDE.md to reflect the new code and findings
-- [ ] Commit and push (after team review)
-- [ ] Open GitHub issue for tracking
+- Use ABSOLUTE paths in Bash (CWD has drifted into vignettes/ before).
+- Do NOT attribute platinum/gold to Tukey; do NOT call a small omnibus p
+  "imbalance" when SMDs are small; do NOT teach P = 1/(1-eta^2) (wrong: omits the
+  sample-size factor).
+- The two reference points are real: exact-matching standard (M=0) and
+  block-randomized standard (the omnibus reference). Plain names only.
+- Comparability on observed X is NOT ignorability; unobserved confounding is a
+  separate sensitivity analysis (Rosenbaum Gamma) and the real next threat.
+- revdep/ and CRAN-SUBMISSION: leave alone unless preparing a release.
