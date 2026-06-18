@@ -2,6 +2,7 @@
 ^renv\.lock$
 ^CLAUDE\.md$
 ^CLAUDE_CODING\.md$
+^HANDOFF\.md$
 ^\.claude$
 Makefile
 checkspelling.R
