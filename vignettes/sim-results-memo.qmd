@@ -44,6 +44,41 @@ building, and for what reason.
 The reusable functions are in `vignettes/sim-helpers.R` (sourced above); every
 experiment's own code is shown in the chunk that produces its result.
 
+::: {.callout-note}
+## Framing update (2026-06-17) and status
+
+Two things have moved since the first draft, and the next revision will restructure
+this memo around them.
+
+First, the synthesis. The recommended reading of the omnibus is now SIZE x
+PRECISION: the chi-square is a fixed-scale magnitude (the standardized
+differences) times a precision that grows as the match tightens, so a small
+omnibus p with small standardized differences is the precision, not the
+imbalance. The full argument, and the result that no comparison to a
+block-randomized standard on these same strata can track the size of imbalance
+(a theorem for the collapse, a strongly supported conjecture for the no-escape
+claim, after a nine-way adversarial search), are written up in
+`comparing-design-to-randomized-standard-memo.md` and
+`impossibility-pressure-test-memo.md`. Read those for the current position; the
+simulations below are the supporting evidence.
+
+Second, the two proposed changes are now built into `balanceTest()`. The screen
+is a RELATIVE within-stratum-variance tolerance: a covariate that retains a
+negligible fraction of its variance within strata is dropped from the omnibus
+with a message naming it, and the omnibus abstains gracefully (df 0 / NA p)
+rather than erroring when every covariate is near-exactly matched. It is a
+numerical-tolerance and honest-abstention step, not a fix for the collapse. The
+Cauchy combination (ACAT) omnibus is available via `cauchy.combination = TRUE`.
+
+The provenance of the 0.25-SD rule has moved to its own file
+(`balance-threshold-provenance.md`); Jake's current view is to prefer a
+substantive, design-stage tolerance (for example, a maximum age difference in
+years) over a universal standardized cutoff. Several Study-1 / Study-2
+subsections below (the p-vs-ESS jaggedness, the gaming and direction-screen
+demonstrations, the power study, and the provenance) are slated to move out in
+the restructure; they are kept here for now as the record of what was checked.
+:::
+
 # The data-generating process and the knobs
 
 Every experiment uses matched **pairs** (one treated, one control per set),
@@ -281,7 +316,7 @@ main lesson:
   pooled-SD scale, so it does NOT collapse (B7); it is the constructive form of
   "lead with magnitude."
 
-## B1 -- near-degenerate covariates dilute d^2; the design screen sharpens it
+## B1 -- near-degenerate covariates cost d^2 power; the screen recovers it
 
 Five covariates: $x_1,x_2$ near-exactly matched (`sigma_c = 1e-4`, no tilt), a
 real confound on $x_3$, $x_4,x_5$ vary with no tilt. Detect $x_3$ three ways.
@@ -303,8 +338,8 @@ data.frame(
   mean_df = round(c(mean(b1$df_all), mean(b1$df_scr), NA), 2))
 ```
 
-The two dead covariates consume df and dilute the chi-square; screening them out
-raises d^2 power. ACAT trails here because it spreads weight over five marginal
+The two dead covariates consume df and spread the chi-square over directions with
+no signal; screening them out raises d^2 power. ACAT trails here because it spreads weight over five marginal
 p-values, two of them pure noise: when the signal is concentrated and the
 covariance is informative, the chi-square is the better omnibus.
 
