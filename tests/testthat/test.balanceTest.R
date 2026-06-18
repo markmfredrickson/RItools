@@ -410,16 +410,22 @@ test_that("Constant variables", {
                   s = as.factor(sample(letters[1:3], 100, replace = TRUE)),
                   z = rep(c(1,0), 50))
   
-  ## this should be ok, no error
+  ## this should be ok, no error: the constant xc is dropped from the omnibus,
+  ## the varying xv is tested as usual
   bt <- balanceTest(z ~ xv + xc, data = d)
-  
-  ## but this gives problems
-  expect_error(balanceTest(z ~ xc, data = d),
-               "Cannot calculate pseudoinverse")
-  
-  ## this too
-  expect_error(balanceTest(z ~ s + strata(s), data = d),
-               "Cannot calculate pseudoinverse")
+  expect_true(is.finite(bt$overall["--", "p.value"]))
+
+  ## a lone constant covariate has nothing testable.  balanceTest now abstains
+  ## gracefully (df 0 / NA p-value) rather than erroring in the pseudoinverse.
+  bt_c <- balanceTest(z ~ xc, data = d)
+  expect_true(is.na(bt_c$overall["--", "p.value"]) ||
+              unname(bt_c$overall["--", "df"]) == 0)
+
+  ## the strata factor used as its own covariate is constant within strata, so it
+  ## is screened and the omnibus abstains (with a message) rather than erroring.
+  expect_message(bt_s <- balanceTest(z ~ s + strata(s), data = d))
+  expect_true(is.na(bt_s$overall["s", "p.value"]) ||
+              unname(bt_s$overall["s", "df"]) == 0)
 })
 
 

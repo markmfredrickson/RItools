@@ -753,6 +753,7 @@ aggregateDesigns <- function(design) {
 #' @slot Z Logical indicating treatment assignment
 #' @slot StrataMatrix A sparse matrix with n rows and s columns, with 1 if the unit is in that stratification
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to \eqn{h_b}; but see Details.
+#' @slot VarFraction For each Covariates column, the fraction of its total variance that survives within strata (within-stratum residual sum of squares over total sum of squares); NA for columns with no total variation.  Near 0 flags a (near) exactly matched covariate, which the omnibus drops as numerically degenerate.  Computed from covariates and strata only, so it is invariant to the treatment assignment.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
 #' @keywords internal
@@ -760,8 +761,9 @@ setClass("CovsAlignedToADesign",
          slots =
              c(Covariates="matrix",
              Z                 = "logical",
-             StrataMatrix    = "matrix.csr", 
+             StrataMatrix    = "matrix.csr",
              StrataWeightRatio = "numeric",
+             VarFraction       = "numeric",
              OriginalVariables="integer",
              Cluster = "factor"
              )
@@ -887,17 +889,35 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
 
     ## Align (recenter) cluster totals around their means within strata.
     ## Do this for the not-missing indicators as well as for the manifest variables.
-    covars <- cbind(Covs_w_touchups, 0+NM[,NMcolperm])    
+    covars_pre <- cbind(Covs_w_touchups, 0+NM[,NMcolperm])
+    prew       <- covars_pre * non_null_record_wts
     covars <- suppressWarnings(
-        slm_fit_csr(S, covars*non_null_record_wts)$residuals
+        slm_fit_csr(S, prew)$residuals
     )
     colnames(covars) <- vars
+
+    ## Variance fraction surviving stratification, per covariate column: the
+    ## within-stratum residual sum of squares over the total (around the grand
+    ## mean) sum of squares, on the same weighted scale fed to the alignment.  A
+    ## value near 0 means the covariate is (near) exactly matched within strata
+    ## -- already balanced, with ~no within-stratum variation to test and a ~0
+    ## null variance whose inverse destabilizes the omnibus.  Columns with no
+    ## total variation (constant) get NA, so the relative screen ignores them
+    ## (the absolute zero-variance check still excludes them).  This uses only the
+    ## covariates and strata, so it is invariant to the treatment assignment.
+    grand_mean <- colMeans(prew)
+    total_ss   <- colSums(sweep(prew, 2L, grand_mean, "-")^2)
+    within_ss  <- colSums(covars^2)
+    var_fraction <- ifelse(total_ss <= .Machine$double.eps, NA_real_,
+                           within_ss / total_ss)
+    names(var_fraction) <- vars
 
       new("CovsAlignedToADesign",
           Covariates        = covars,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataWeightRatio = wtr, #as extracted from the design
+          VarFraction       = var_fraction,
           OriginalVariables = origvars,
           Cluster           = factor(design@Cluster[keep])
           )
@@ -910,7 +930,7 @@ check_for_degenerate <- function(mat, n, s) {
    mat_rank <- attr(mat, "r")
 
   if (mat_rank >= (n - s)) {
-    warning("Degrees of freedom exceeds units less number of strata, which can lead to a degenerate statistic. Try decreasing number of covariates tested.")
+    warning("Degrees of freedom exceeds units less number of strata, which can lead to a degenerate (rank-deficient) d^2 omnibus statistic whose p-value freezes near its rank. Try decreasing the number of covariates tested, or use the Cauchy combination (ACAT) omnibus via cauchy.combination = TRUE, which stays informative when the covariate covariance is rank-deficient.")
   }
 }
 
@@ -987,24 +1007,51 @@ HB08 <- function(alignedcovs) {
     tcov  <- apply(xt_c_s_scaled, 2:3, sum)
 
     ssvar <- diag(tcov)
+    cov_names <- colnames(Covs)
 
-    zero_variance  <- (ssvar <= .Machine$double.eps)
+    ## Numerical-stability screen.  A covariate with negligible WITHIN-stratum
+    ## variance relative to its total variance is already balanced by the
+    ## matching: there is nothing for the within-stratum permutation test to test
+    ## on it, and its ~0 null variance is what makes inverting tcov unstable.  We
+    ## drop such covariates from the omnibus (lowering its df).  The relative
+    ## screen reads var_fraction = within-stratum / total variance, computed from
+    ## the covariates and strata in alignDesignsByStrata, so it does not look at
+    ## the treatment assignment and cannot be gamed.  The absolute machine-epsilon
+    ## check is kept as well (and catches globally-constant columns, var_fraction
+    ## NA).
+    screen.tol <- .Machine$double.eps^(1/3)
+    vf <- alignedcovs@VarFraction
+    if (length(vf) != length(ssvar)) vf <- rep(NA_real_, length(ssvar))
+    rel_negligible <- !is.na(vf) & (vf <= screen.tol)
+    zero_variance  <- (ssvar <= .Machine$double.eps) | rel_negligible
+    ## report to the user only real covariates screened by the relative tolerance
+    ## (near-exactly matched), not constant columns (var_fraction NA).
+    screened <- cov_names[rel_negligible]
+
     zstat <- ifelse(zero_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
+    keep <- !zero_variance
+    if (!any(keep)) {
+        ## Graceful abstention: every covariate is (near) exactly matched, so the
+        ## omnibus has nothing to test.  Return df 0 / NA chi-square instead of
+        ## erroring inside the pseudoinverse.
+        csq <- NA_real_
+        DF  <- 0L
+    } else {
+        cov_minus_.5 <-
+            XtX_pseudoinv_sqrt(mat=tcov[keep, keep, drop=FALSE],
+                               mat.is.XtX = TRUE)
 
-    cov_minus_.5 <-
-        XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance, drop=FALSE],
-                           mat.is.XtX = TRUE)
+        check_for_degenerate(cov_minus_.5, n_, s_)
 
-    check_for_degenerate(cov_minus_.5, n_, s_)
-
-    mvz <- drop(crossprod(ssn[!zero_variance], cov_minus_.5))
-    csq <- drop(crossprod(mvz))
-    DF <- ncol(cov_minus_.5)
+        mvz <- drop(crossprod(ssn[keep], cov_minus_.5))
+        csq <- drop(crossprod(mvz))
+        DF <- ncol(cov_minus_.5)
+    }
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-         adj.diff.of.totals=ssn, tcov = tcov)
+         adj.diff.of.totals=ssn, tcov = tcov, screened = screened)
 }
 
 ##' @title Hansen & Bowers (2008) inferentials 2016 [81e3ecf] version
@@ -1048,24 +1095,36 @@ HB08_2016 <- function(alignedcovs) {
     tcov <- crossprod(scaled.x_tilde)
     ssvar <- diag(tcov)
 
-    zero_variance  <- (ssvar <= .Machine$double.eps)
+    ## Numerical-stability screen (see HB08): drop covariates with negligible
+    ## within-stratum variance relative to total (var_fraction), plus the absolute
+    ## machine-epsilon catch; abstain gracefully when nothing survives.
+    screen.tol <- .Machine$double.eps^(1/3)
+    vf <- alignedcovs@VarFraction
+    if (length(vf) != length(ssvar)) vf <- rep(NA_real_, length(ssvar))
+    rel_negligible <- !is.na(vf) & (vf <= screen.tol)
+    zero_variance  <- (ssvar <= .Machine$double.eps) | rel_negligible
+    screened <- colnames(Covs)[rel_negligible]
     zstat <- ifelse(zero_variance, NA_real_, ssn/sqrt(ssvar))
     p <- 2 * pnorm(abs(zstat), lower.tail = FALSE)
 
-    ## moving forward, we'll do without those sum statistics that have 0 null variation.
-    x_tilde <- x_tilde[,zero_variance, drop=FALSE]
-    scaled.x_tilde <- scaled.x_tilde[,ssvar > .Machine$double.eps, drop=FALSE]
-    ssn  <- ssn[ssvar > .Machine$double.eps]
+    ## moving forward, we'll do without those sum statistics that have ~0 null variation.
+    keep <- !zero_variance
+    scaled.x_tilde <- scaled.x_tilde[, keep, drop=FALSE]
+    ssn  <- ssn[keep]
 
-    cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde)
-    check_for_degenerate(cov_minus_.5, length(zz), ncol(S))
-    
-    mvz <- drop(crossprod(ssn, cov_minus_.5))
-    csq <- drop(crossprod(mvz))
-    DF <- ncol(cov_minus_.5)
+    if (!any(keep)) {
+        csq <- NA_real_
+        DF  <- 0L
+    } else {
+        cov_minus_.5 <- XtX_pseudoinv_sqrt(scaled.x_tilde)
+        check_for_degenerate(cov_minus_.5, length(zz), ncol(S))
+        mvz <- drop(crossprod(ssn, cov_minus_.5))
+        csq <- drop(crossprod(mvz))
+        DF <- ncol(cov_minus_.5)
+    }
 
     list(z = zstat, p = p, Msq = csq , DF = DF,
-       adj.diff.of.totals=ssn, tcov = tcov)
+       adj.diff.of.totals=ssn, tcov = tcov, screened = screened)
 }
 
 ##' Convert Matrix to vector

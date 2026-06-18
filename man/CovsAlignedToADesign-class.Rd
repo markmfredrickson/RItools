@@ -37,6 +37,8 @@ be the numeric vector 1, without names, meaning the intended weight ratio is alw
 
 \item{\code{StrataWeightRatio}}{For each unit, ratio of stratum weight to \eqn{h_b}; but see Details.}
 
+\item{\code{VarFraction}}{For each Covariates column, the fraction of its total variance that survives within strata (within-stratum residual sum of squares over total sum of squares); NA for columns with no total variation.  Near 0 flags a (near) exactly matched covariate, which the omnibus drops as numerically degenerate.  Computed from covariates and strata only, so it is invariant to the treatment assignment.}
+
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
 
 \item{\code{OriginalVariables}}{Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus}

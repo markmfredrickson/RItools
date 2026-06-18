@@ -6,9 +6,6 @@
 \usage{
 harmonic_times_mean_weight(data)
 }
-\arguments{
-\item{data}{}
-}
 \value{
 numeric vector of length \code{nlevels(data$stratum.code)}
 }

@@ -314,6 +314,32 @@ balanceTest <- function(fmla,
   tmp <- lapply(strataAligned, inferentials.calculator)
   names(tmp) <- colnames(aggDesign@StrataFrame)
 
+  ## Tell the user about covariates dropped from the omnibus by the
+  ## numerical-stability screen (the inferentials calculator flags them, per
+  ## stratification).  Message once over the union, and once for any
+  ## stratification that abstained entirely (no testable covariates).
+  screened_all <- unique(unlist(lapply(tmp, function(tt) tt$screened)))
+  if (length(screened_all)) {
+    one <- length(screened_all) == 1L
+    message("balanceTest: within strata there is too little variance in ",
+            paste(screened_all, collapse = ", "),
+            " for balance testing -- ",
+            if (one) "it is" else "they are",
+            " nearly perfectly balanced, so ",
+            if (one) "it was" else "they were",
+            " dropped from the omnibus.")
+  }
+  abstained <- vapply(tmp,
+                      function(tt) isTRUE(tt$DF == 0L) && length(tt$screened) > 0L,
+                      logical(1))
+  if (any(abstained)) {
+    message("balanceTest: for ",
+            if (sum(abstained) == 1L) "stratification " else "stratifications ",
+            paste(names(tmp)[abstained], collapse = ", "),
+            ", every covariate is nearly perfectly balanced within strata; ",
+            "the omnibus abstains (no testable covariates).")
+  }
+
   ans <- list()
 
   # append the z and p to the "descriptives" array (making it somewhat misnamed)
