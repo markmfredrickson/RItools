@@ -133,28 +133,50 @@ it is a race" was imprecise for the organize-fixed-units knob -- P fell there.)
 - impossibility-pressure-test.workflow.js -- the adversarial workflow (sec 3).
 - cand-N.R, eval-*.R -- workflow agent scratch (not canonical).
 
-## 6. STILL OPEN from the prior plan (NOT done this session)
+## 6. DONE the night of 2026-06-17 (autonomous batch) and WHAT REMAINS
 
-1. Four edits to comparing-design-to-randomized-standard-memo.md still pending:
-   (a) DELETE the "## A correction about Tukey" section (Tukey is a red herring;
-       drop platinum/gold language); (b) "not a gap in our cleverness" ->
-       theorem-vs-conjecture wording; (c) "settled, not open" -> same; (d) ensure
-       "direction by direction with several (no single scalar P)". Then a
-       writing-critic pass.
-2. Rewrite sim-results-memo.qmd around the size-x-precision answer (drop old
-   flag/dilute/directions/platinum/gold language). Still old framing.
-3. Implement (tests-first suites are RED and define the contract):
-   test.omnibus-degeneracy-screen.R -> relative within-stratum variance screen +
-   "too little variance" MESSAGE + graceful abstention (R/Design.R ~991, R/utils.R
-   ~381); test.acat-omnibus.R is mostly green (ACAT shipped in commit a53dc97) but
-   1 failure waits on the screen. Then the magnitude report (per-covariate SMD vs
-   a settable reference; global max|SMD|). Then make document + check.
-4. Get Jake's explicit yes on decision D (keep the magnitude screen OUT of the
-   omnibus; never pre-filter -- B9 showed pre-filtering inflates omnibus size).
+DONE and pushed to devel-sigma-x-omnibus (commits after 6824e08):
+- SCREEN + ACAT (R code, verified): relative within-stratum variance screen in
+  HB08/HB08_2016 reading a new VarFraction slot (computed in alignDesignsByStrata,
+  assignment-invariant); balanceTest() messages the dropped covariates, lowers df,
+  and ABSTAINS gracefully (df 0 / NA p) instead of erroring in the pseudoinverse.
+  check_for_degenerate() now points users to cauchy.combination = TRUE.
+  test.omnibus-degeneracy-screen.R (14) and test.acat-omnibus.R (5) GREEN; the
+  superseded test.balanceTest.R "Constant variables" updated to expect graceful
+  abstention. make document run. Full test_dir: ZERO new failures (the only red is
+  PRE-EXISTING: test.Design.R "scale() method wrapping" 4 fail + 1 error, and
+  test.tidiers.R "Date presentation" 1 error -- both fail without my changes too;
+  worth a look but not from this work).
+- ANSWER MEMO (comparing-design-...): the four edits done (Tukey section deleted,
+  theorem-vs-conjecture wording, direction-by-direction phrasing, cites the 9/0
+  pressure-test) + writing pass; ASCII-clean, banned patterns gone.
+- IMPOSSIBILITY MEMO: writing pass (dropped a "Note that"); clean.
+- SIM-RESULTS MEMO: a top orienting note (size x precision synthesis; screen/ACAT
+  now implemented; provenance moved out; restructure pending) + de-jargon
+  ("dilute" removed). PROSE ONLY -- executable chunks untouched.
+
+REMAINS:
+1. SIM-RESULTS structural reframe (the big one, NOT done -- left for an interactive
+   pass because the chunks are interdependent and render-sensitive: the A4-figure
+   chunk also plots A2/A3, so cutting A4 means rewriting that figure). Drop A4
+   (p-vs-ESS), B5 (gaming), B6 (direction screen), the power study, the provenance
+   section; reframe Study 1/2 around size x precision; maybe add the 2D section.
+   Then re-render (slow; runs NREP=1000 sims): R_LIBS=.local quarto render
+   /Users/jwbowers/repos/RItools/vignettes/sim-results-memo.qmd --to pdf.
+2. MAGNITUDE REPORT (no tests-first contract yet, and the threshold philosophy is
+   unsettled -- see below): per-covariate SMD vs a SETTABLE reference + global
+   max|SMD|. Jake dislikes 0.25 as a universal rule; he leans toward a substantive
+   design-stage tolerance (e.g. "max age difference 5 years") OR a fixed-coarse
+   re-randomization reference (the structure-adjusted whole-pool CRE percentile
+   from the impossibility memo). DECIDE the form before coding.
+3. make check (R CMD check) -- NOT run tonight; it would fail on the pre-existing
+   test.Design.R / test.tidiers.R reds, so fix or triage those first.
+4. Jake's explicit yes on decision D (magnitude screen stays OUT of the omnibus;
+   never pre-filter -- B9 showed pre-filtering inflates omnibus size).
 5. Package questions: ship M and P or teaching-only? define the "pool" when units
-   are dropped? 0.25 vs 0.1 plus the denominator choice? Jake dislikes 0.25 as a
-   universal rule -- prefers substantive tolerances at design, or a fixed-coarse
-   re-randomization reference (sec 2).
+   are dropped? the magnitude-report form (item 2). Pursue the structure-adjusted
+   whole-pool CRE percentile (impossibility memo sec 4) as the calibrated companion
+   to the descriptive magnitude.
 
 ## 7. REMOTE / TRAVEL (set up before leaving)
 
