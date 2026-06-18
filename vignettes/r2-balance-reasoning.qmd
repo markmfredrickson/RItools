@@ -1,0 +1,312 @@
+---
+title: "What an R^2 balance summary buys: baselines, distances, and the calibration trilemma"
+author: "Jake Bowers (with Claude)"
+date: "2026-06-16"
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: show
+    df-print: kable
+---
+
+```{=html}
+<!--
+This document reasons about whether an R^2-style balance summary, and "distances"
+from its natural baselines, give anything beyond the Hansen-Bowers d^2 omnibus.
+Every numeric claim below is produced by the code chunk above it; the helper code
+was checked with Rscript (2026-06-16). Branch: devel-sigma-x-omnibus. Companions:
+r2-and-unchosen-designs-memo.md, resolution-profile-memo.md,
+resolution-profile-threebenchmark.R, sigma-x-team-decision-memo.md.
+-->
+```
+
+## The question on the table
+
+Jake's idea: an R^2 of treatment on covariates is easier to read than a chi-square,
+and it carries its own "well balanced" baselines --- the chance level `K/(n-S)` and
+the perfect-stratification ideal `R^2 = 0`. Could the *distance* from one or both of
+those baselines be the balance measure, perhaps with its own randomization
+distribution?
+
+The short answers, established below with code: (1) `R^2` is the d^2 test on a [0,1]
+scale, so its randomization percentile is d^2's. (2) The distance from the chance
+floor, normalized, is *exactly* adjusted `R^2` --- a clean effect size. (3) A
+randomization distribution *of that distance* gives nothing new, because the
+baselines are constants and subtracting a constant cannot change a rank. (4) The
+distance becomes a live, non-collapsing object only by changing the metric (a fixed
+external scale: absolute magnitude) or by changing the question (equivalence within
+a tolerance). (5) All of this is one face of a trilemma that also governs the l*
+resolution profile.
+
+## Setup: the arithmetic, matched to the package
+
+These helpers reproduce `randomization_cov_d` / `balanceTestEngine` from scratch so
+the d^2 here is the released statistic. `d = sum_i c_i x_i` is the within-block-
+adjusted difference (contrast `c_i = z_i - pi_b`); `V_d` is its within-block
+permutation covariance; `Sx` is the within-block-centered covariate scatter (the
+regression metric behind `R^2`).
+
+```{r setup}
+center_contrast <- function(raw, blk) raw - ave(raw, blk, FUN = mean)
+adj_diff <- function(X, blk, cc) drop(crossprod(cc, as.matrix(X)))
+
+## within-block-centered covariate scatter (the regression metric for R^2)
+Sx_scatter <- function(X, blk) {
+  X <- as.matrix(X); S <- matrix(0, ncol(X), ncol(X))
+  for (idx in split(seq_len(nrow(X)), blk)) {
+    if (length(idx) < 2) next
+    Xc <- scale(X[idx, , drop = FALSE], scale = FALSE); S <- S + crossprod(Xc)
+  }
+  S
+}
+## d^2 randomization covariance V_d = sum_b ( sum_i c_i^2 / (n_b-1) ) Sx_b
+Vperm <- function(X, blk, cc) {
+  X <- as.matrix(X); V <- matrix(0, ncol(X), ncol(X))
+  for (idx in split(seq_len(nrow(X)), blk)) {
+    n <- length(idx); if (n < 2) next
+    sc <- sum(cc[idx]^2); if (sc <= 0) next
+    Xc <- scale(X[idx, , drop = FALSE], scale = FALSE); V <- V + (sc/(n-1)) * crossprod(Xc)
+  }
+  V
+}
+## q = d' M^+ d with HB08 eigen rank truncation; returns q and rank
+quad_pinv <- function(d, M, tol = sqrt(.Machine$double.eps)) {
+  M <- (M + t(M))/2; e <- eigen(M, symmetric = TRUE)
+  pos <- e$values > tol * max(e$values, 1)
+  if (!any(pos)) return(c(q = 0, rank = 0))
+  proj <- crossprod(e$vectors[, pos, drop = FALSE], d)
+  c(q = unname(sum(proj^2 / e$values[pos])), rank = sum(pos))
+}
+d2_val <- function(X, blk, z) { cc <- center_contrast(z, blk)
+  unname(quad_pinv(adj_diff(X, blk, cc), Vperm(X, blk, cc))["q"]) }
+r2_val <- function(X, blk, z) { cc <- center_contrast(z, blk)
+  unname(quad_pinv(adj_diff(X, blk, cc), Sx_scatter(X, blk))["q"]) / sum(cc^2) }
+
+## R^2 with its two baselines and adjusted R^2
+r2_stats <- function(X, blk, z) {
+  cc <- center_contrast(z, blk); d <- adj_diff(X, blk, cc)
+  n <- nrow(as.matrix(X)); S <- nlevels(factor(blk))
+  ess <- quad_pinv(d, Sx_scatter(X, blk)); Keff <- unname(ess["rank"])
+  R2 <- unname(ess["q"]) / sum(cc^2)
+  chance <- Keff / (n - S); adjR2 <- 1 - (1 - R2) * (n - S) / (n - S - Keff)
+  c(R2 = R2, chance = chance, adjR2 = adjR2, K = Keff)
+}
+
+## 4 groups x 4 matched sets x (2T+2C); persistent gap g, within-set noise = shrink
+make_data <- function(shrink, g = 0.2, K = 2, group_centers = c(0,10,20,30),
+                      sets_per_group = 4) {
+  Xl <- list(); ms <- integer(0); z <- integer(0); sid <- 0L
+  for (gc in group_centers) for (s in seq_len(sets_per_group)) {
+    sid <- sid + 1L; ctr <- gc + rnorm(K, sd = 1.5)
+    Xl[[sid]] <- rbind(ctr + g/2 + shrink*rnorm(K), ctr + g/2 + shrink*rnorm(K),
+                       ctr - g/2 + shrink*rnorm(K), ctr - g/2 + shrink*rnorm(K))
+    ms <- c(ms, rep(sid, 4)); z <- c(z, c(1, 1, 0, 0))
+  }
+  X <- do.call(rbind, Xl); colnames(X) <- paste0("x", seq_len(K))
+  list(X = X, set = factor(ms), z = z)
+}
+```
+
+## 1. R^2 is the d^2 test on a [0,1] scale
+
+`R^2` from regressing the within-stratum-centered treatment indicator on the
+within-stratum-centered covariates equals `T2 / (T2 + df)` for a Mahalanobis
+quadratic form `T2` in the same `d`. At a blocking whose blocks share a common
+size and treated:control ratio (the matched-set blocking here, all 2T:2C), `R^2`
+and d^2 are a strictly increasing relabeling of each other, so their within-block
+randomization percentiles are identical.
+
+```{r monotone}
+set.seed(303)
+d   <- make_data(shrink = 0.15)
+blk <- d$set                                   # matched sets, all 2T:2C (homogeneous)
+
+R2o <- r2_val(d$X, blk, d$z); d2o <- d2_val(d$X, blk, d$z)
+B <- 4000
+R2p <- d2p <- numeric(B)
+for (b in seq_len(B)) {
+  zp <- d$z; for (idx in split(seq_along(zp), blk)) zp[idx] <- sample(zp[idx])
+  R2p[b] <- r2_val(d$X, blk, zp); d2p[b] <- d2_val(d$X, blk, zp)
+}
+c(spearman_R2_d2 = cor(R2p, d2p, method = "spearman"),
+  perc_R2 = (1 + sum(R2p >= R2o - 1e-12)) / (B + 1),
+  perc_d2 = (1 + sum(d2p >= d2o - 1e-12)) / (B + 1))
+```
+
+The Spearman correlation is 1 and the two percentiles agree to the digit:
+`R^2`-against-its-randomization-distribution *is* the d^2 test, relabeled onto
+[0,1]. (For full matching with unequal block sizes the relabeling is monotone only
+to simulation precision; see r2-and-unchosen-designs-memo.md sec. 1.2.)
+
+## 2. The distance from the chance floor is adjusted R^2
+
+`R^2` carries two baselines. The ideal floor is `R^2 = 0`: if the covariates were
+constant within strata there is nothing for treatment to explain. The chance floor
+is `K/(n-S)`, which is approximately the *mean* of `R^2`'s own randomization
+distribution under within-block randomization --- with `K` covariates and `n-S`
+within-stratum residual degrees of freedom, chance fitting explains about `K/(n-S)`
+even when as-if-randomization holds. The natural "how far above well-balanced is my
+design" is the distance from that chance floor, normalized by the room above it,
+and that quantity is exactly adjusted `R^2`:
+
+$$
+\text{adjusted } R^2 \;=\; \frac{R^2 - K/(n-S)}{1 - K/(n-S)}.
+$$
+
+```{r adj-identity}
+st <- r2_stats(d$X, blk, d$z)
+c(R2 = st["R2"], chance = st["chance"], adjR2 = st["adjR2"],
+  normalized_distance = (st["R2"] - st["chance"]) / (1 - st["chance"]),
+  identity_gap = unname(st["adjR2"] - (st["R2"] - st["chance"]) / (1 - st["chance"])))
+```
+
+The identity gap is 0. So the statistic Jake is reaching for already has a name:
+adjusted `R^2` is the design's position above its chance baseline, and it is the
+cleanest one-number effect size the R^2 reframing produces. (The chance floor is the
+randomization *mean*; the percentile-1/2 crossing used for l* is the *median*, so
+adjusted-`R^2 = 0` and percentile `= 1/2` are close but not identical for a skewed
+distribution --- which is why the two l* readings in
+resolution-profile-threebenchmark.R came out at 10.4 and 11.5.)
+
+## 3. A randomization distribution of the distance adds nothing
+
+Here is the catch. Both baselines --- `K/(n-S)` and `0` --- are *constants*: they
+do not depend on the treatment assignment, so they do not move when treatment is
+re-randomized within blocks. Form the distance `D(z) = R^2(z) - baseline` and build
+its within-block randomization distribution: every value is just `R^2(z)` shifted by
+the same constant. Subtracting a constant preserves ranks, so the percentile of the
+observed distance equals the percentile of `R^2`, which (Section 1) equals d^2's.
+
+```{r constant-shift}
+c0 <- st["chance"]
+perc_R2   <- (1 + sum( R2p           >= R2o        - 1e-12)) / (B + 1)
+perc_dist <- (1 + sum((R2p - c0)      >= (R2o - c0) - 1e-12)) / (B + 1)
+perc_d2   <- (1 + sum( d2p           >= d2o        - 1e-12)) / (B + 1)
+c(perc_R2 = unname(perc_R2), perc_distance_from_chance = unname(perc_dist),
+  perc_d2 = unname(perc_d2))
+```
+
+All three percentiles are the same number. You cannot buy a new test by
+re-centering on a fixed point. The baselines are valuable --- they let you read
+`R^2` as an effect size *without simulating a reference* (that is the three-benchmark
+plot in resolution-profile-threebenchmark.R) --- but they are reference points, not
+the seed of a second test.
+
+## 4. Why calibrating the distance brings back the collapse
+
+To turn the distance into a *calibrated* statement ("is a distance this large
+surprising?") you need the *spread* of the null distribution, not just its center.
+The center you get for free (`K/(n-S)`). The spread of `R^2`'s within-block
+randomization distribution shrinks as the match tightens, so standardizing the
+distance by it returns d^2 and its collapse. The table below tightens the match
+(smaller `shrink`, fixed gap) and shows the within-pair percentile and the absolute
+(fixed-metric) magnitude moving in *opposite* directions.
+
+```{r magnitude-vs-calibration}
+set.seed(11); Sigma <- cov(make_data(0.6)$X)        # a fixed pre-match-pool metric
+within_perc <- function(X, blk, z, B = 2000) {
+  d2o <- d2_val(X, blk, z); cnt <- 1L
+  for (b in seq_len(B)) { zp <- z
+    for (idx in split(seq_along(zp), blk)) zp[idx] <- sample(zp[idx])
+    if (d2_val(X, blk, zp) >= d2o - 1e-12) cnt <- cnt + 1L }
+  cnt / (B + 1)
+}
+maha_fixed <- function(X, blk, z, Sig) { cc <- center_contrast(z, blk)
+  d <- adj_diff(X, blk, cc); drop(t(d) %*% solve(Sig) %*% d) }
+
+tab <- data.frame(shrink = c(0.6, 0.3, 0.1, 0.03), within_percentile = NA,
+                  withinR2 = NA, adjR2 = NA, fixed_magnitude = NA)
+for (i in seq_len(nrow(tab))) {
+  set.seed(303); dd <- make_data(tab$shrink[i]); b <- dd$set
+  tab$within_percentile[i] <- within_perc(dd$X, b, dd$z)
+  tab$withinR2[i] <- r2_val(dd$X, b, dd$z)
+  tab$adjR2[i] <- unname(r2_stats(dd$X, b, dd$z)["adjR2"])
+  tab$fixed_magnitude[i] <- maha_fixed(dd$X, b, dd$z, Sigma)
+}
+round(tab, 4)
+```
+
+As the match tightens, the within-pair percentile collapses toward 0 --- the design
+looks *worse* against the standard Jake trusts --- while the fixed-metric magnitude
+falls --- the design looks *better* in absolute units. The within-metric `R^2` and
+adjusted `R^2` rise with the collapsing percentile, because they are that standard's
+effect size, not an absolute one. This is the significance-versus-magnitude crux: a
+single number from the within-pair standard cannot say "the imbalance is small,"
+because that standard's calibration is about precision, not size.
+
+## 5. Two ways the distance becomes live
+
+The distance-from-baseline idea bites only when you change one of the two things the
+constant-shift argument holds fixed.
+
+**Change the metric: distance from 0 in a fixed external scale.** Everything in
+Sections 1--4 uses the within-pair-metric `R^2`, whose value is scale-invariant.
+Compute `R^2` (or its Mahalanobis numerator) in a *fixed* pre-match-pool metric and
+its distance from the ideal floor `0` genuinely shrinks as the match improves --- the
+`fixed_magnitude` column above. That is the sigma_x magnitude, and it is the one
+quantity that recognizes a trivial imbalance as trivial. If "distance from a
+balanced baseline" should mean "how far from perfect balance, in absolute units,"
+this is the version that works.
+
+**Change the question: equivalence against the ideal floor.** Instead of asking "is
+`R^2` surprisingly far above 0?" (which collapses), ask "is the absolute imbalance
+within a tolerance `delta` of 0?" --- is the design close enough to perfect. The
+fixed magnitude makes this concrete: pick a margin and read off when the design
+clears it.
+
+```{r equivalence-sketch}
+delta <- 0.10                                   # tolerance on the fixed-metric magnitude
+data.frame(shrink = tab$shrink, fixed_magnitude = round(tab$fixed_magnitude, 3),
+           within_tolerance = tab$fixed_magnitude < delta)
+```
+
+The conclusion behaves correctly: a tighter match clears the margin, where the
+within-pair p-value was collapsing in the opposite direction. The margin `delta` is
+where the "how big is too big" judgment lives --- explicit, on a scale you can read,
+instead of hidden in a comparison to a design you did not run. (This is a sketch, not
+a finished test: a design-respecting equivalence procedure needs a proper null for
+the fixed-metric magnitude, which is the sigma_x machinery the team already has on
+the branch.)
+
+## 6. The trilemma, and where this leaves the proposal
+
+Sections 3--4 are one face of a single constraint that also governs the l*
+resolution profile. Against the within-pair standard Jake trusts, *any* calibration
+collapses, because the reference distribution's spread vanishes with the match.
+So you cannot have all three of:
+
+1. the within-pair standard (re-randomize treatment within your realized sets),
+2. a calibration ("better than X% of randomized versions") that does not collapse,
+3. no comparison to designs you did not build.
+
+Pick two. The resolution profile keeps (2) by relaxing (1) --- coarser references
+are weaker versions of the same within-similar-units exchangeability assumption,
+which is the only honest way to read "as good as a 2:2 experiment." The
+distance-from-baseline work above keeps (1) and (3) and gives up (2): it reports a
+magnitude (adjusted `R^2`, or the fixed-metric distance), not a non-collapsing
+calibration. Equivalence-within-`delta` is the same corner with the magnitude
+judgment made explicit.
+
+Where this points the team proposal:
+
+- Make **adjusted `R^2`** (the normalized distance from the chance floor) the
+  headline interpretable effect size, beside the d^2 p-value and the per-covariate
+  standardized differences. It is descriptive, it is on [0,1], and it needs no
+  second simulation.
+- Do **not** sell a randomization distribution of the distance as a new test; it is
+  the d^2 percentile relabeled (Section 3).
+- For "is the absolute imbalance small," use the **fixed-metric magnitude** (the
+  sigma_x number) or an **equivalence test** against `delta`. These keep the
+  within-pair standard and never invoke a design you did not run.
+- Treat the **l\* resolution profile** as an optional sensitivity analysis on the
+  *resolution* of the exchangeability assumption --- and only if that relaxation is a
+  question you find useful. If it is not, report the within-pair comparison plus the
+  magnitude and stop.
+
+The open thread Jake flagged --- coarsening by combining each matched set with its
+*nearby* sets on the matching distance scale (a set's location summarized by, say,
+the average or median within-set distance) --- is exactly the geometry-respecting
+ladder in resolution-profile-threebenchmark.R, and whether that relaxation is worth
+making is the next thing to think through, not a settled point.
+```

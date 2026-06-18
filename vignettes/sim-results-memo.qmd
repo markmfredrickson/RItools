@@ -1,0 +1,742 @@
+---
+title: "Balance collapse, screening, and the d^2/ACAT switch"
+subtitle: "A simulation memo for the RItools team"
+author: "Jake Bowers (with Claude)"
+date: 2026-06-17
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    embed-resources: true
+    df-print: kable
+  pdf:
+    toc: true
+    toc-depth: 3
+    df-print: kable
+    geometry: margin=1in
+    code-overflow: wrap
+    fig-width: 6.5
+    fig-height: 5
+execute:
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(echo = TRUE, collapse = TRUE, comment = "#>",
+                      fig.width = 9, fig.height = 7, dpi = 130)
+options(keep.source = TRUE)
+## The reusable code -- data generator, screens, ESS, and the omnibus runners --
+## lives in sim-helpers.R and is sourced here.  The experiment code for each
+## result is shown inline below.
+source("sim-helpers.R")
+NREP <- 1000L
+```
+
+These simulations settle two practical questions about `balanceTest()`: (1) what
+does the d^2 omnibus actually respond to, so we know what to tell users it means;
+and (2) are the two proposed changes -- a screening step for near-exactly-matched
+covariates, and an automatic switch to the Cauchy (ACAT) omnibus -- worth
+building, and for what reason.
+
+The reusable functions are in `vignettes/sim-helpers.R` (sourced above); every
+experiment's own code is shown in the chunk that produces its result.
+
+# The data-generating process and the knobs
+
+Every experiment uses matched **pairs** (one treated, one control per set),
+because pairs make the algebra transparent and because the matched-pair case is
+where the collapse is sharpest. There are $k$ covariates, $x_1,\dots,x_k$, and
+they are **correlated** across columns. For each pair $s$ and covariate $j$:
+
+- a pair **location** $m_{sj}$ -- the BETWEEN-pair variation, the part of
+  covariate $j$ that stratification removes. It plays no role in any test below,
+  and it is drawn independently of the within-pair difference.
+- a treated-minus-control **difference** $D_{sj} = \text{noise}_{sj} + \mu_j$,
+  where $\text{noise}_{sj}$ is symmetric (random sign, pair to pair) with marginal
+  SD $\sigma_{c}[j]$, and $\mu_j$ is a constant added to every pair on covariate
+  $j$.
+- the treated unit's value is $m_{sj} + D_{sj}/2$, the control's is
+  $m_{sj} - D_{sj}/2$.
+
+`mu` and `sigma_c` are length-$k$ **vectors**: `mu[j]` is the systematic tilt on
+covariate $j$, `sigma_c[j]` is its within-pair noise SD. The covariates are not
+exactly standardized: each location has unit variance and each within-pair noise
+has marginal SD `sigma_c[j]` (= 1 everywhere except near-exactly-matched
+covariates, where it is ~0), so each covariate sits on a roughly unit scale and
+`mu[j]` is approximately in SD units. The quantity the test reads is
+$\mu_j/\sigma_c[j]$ (the "standardized bias"). Correlation is moderate
+equicorrelation (every pair of covariates 0.5), applied to both the locations and
+the within-pair differences, with column scaling that preserves each marginal SD;
+`rho` is one tunable argument (`rho = 0` recovers independent covariates).
+
+The data generator:
+
+```{r show-make-pairs}
+make_pairs
+```
+
+Two short helpers used inline below: `scale_within()` applies the size knob $t$
+(scale the whole within-pair difference by $t$, direction fixed), and `smd()` is
+the Love-plot standardized mean difference (mean difference over pooled SD).
+
+```{r inline-helpers}
+scale_within <- function(df, t) {
+  for (cn in covariate_names(df)) {
+    xt <- df[[cn]]; pm <- ave(xt, df$pair)
+    df[[cn]] <- pm + (xt - pm) * t          # scale within-pair part, keep pair mean
+  }
+  df
+}
+smd <- function(df, cn) {
+  x <- df[[cn]]; g1 <- df$z == 1; g0 <- df$z == 0
+  (mean(x[g1]) - mean(x[g0])) / sqrt((var(x[g1]) + var(x[g0])) / 2)   # pooled-SD SMD
+}
+```
+
+## What the test responds to
+
+The d^2 omnibus is $d^2 = \bar d' V_d^{-1} \bar d$, with $\bar d$ the average
+treated-minus-control difference and $V_d$ its covariance under within-pair
+re-randomization. With this DGP, $\bar d \approx \mu$ (the noise averages out) and
+$V_d \approx (1/S)\,(\text{within-pair covariance})$, so for a single covariate
+
+$$d^2 \;\approx\; S \,\Big(\tfrac{\mu}{\sigma_c}\Big)^2 .$$
+
+The omnibus responds to the systematic tilt **measured in units of the noise**
+($\mu/\sigma_c$) times the sample size $S$. Under the null it is central
+chi-square on $\mathrm{rank}(V_d)$ df; under a tilt, noncentral chi-square with
+$\lambda \approx S\,(\mu/\sigma_c)^2$. With correlated covariates the multivariate
+version is $\lambda = \mu' V_d^{-1}\mu$, and the alignment of $\mu$ with $V_d$'s
+eigenvectors matters -- which is what makes B4 flip.
+
+Three consequences (= A1, A2, A3): scale $\mu$ and $\sigma_c$ together and the
+ratio is unchanged, so d^2 does not move (A1, the collapse); shrink $\mu$ with
+$\sigma_c$ fixed and d^2 falls (A2); hold the ratio and grow $S$ and power rises
+(A3).
+
+## Two standardizations -- why this differs from a Love plot
+
+The Love-plot standardized mean difference divides by the **pooled SD**, which is
+dominated by between-pair variation that the size knob $t$ leaves alone -- so the
+SMD scales with $t$ and registers when groups get more or less different. d^2
+divides by the **within-pair null SD** (the $\sigma_c$ that $t$ shrinks), so the
+$t$ cancels. The Love plot sees the size of imbalance; d^2 does not. They agree
+only when $\sigma_c$ is held fixed (which is what A2 does).
+
+# Study 1: what the omnibus does and does not respond to
+
+## A1 -- the collapse: d^2 ignores the size of the imbalance
+
+One fixed data set with a tilt on $x_1$; increase or decrease the size of the
+whole within-pair imbalance by $t$ (direction fixed) over five orders of
+magnitude.
+
+```{r A1}
+set.seed(1)
+base_df <- make_pairs(S = 100, sigma_c = rep(1, 4), mu = c(0.5, 0, 0, 0))
+a1 <- do.call(rbind, lapply(c(100, 10, 1, 0.1, 0.01, 0.001), function(t) {
+  r <- run_omnibus(scale_within(base_df, t))
+  data.frame(t = t, chisq = round(r$chisq, 3), df = r$df,
+             p_d2 = signif(r$p_d2, 3), p_acat = signif(r$p_acat, 3))
+}))
+a1
+```
+
+A thousand-fold change in how different the treated and control units actually
+are produces no change in the statistic or its p-value. This is the collapse,
+exact: d^2 is homogeneous of degree zero in the imbalance (numerator scales by
+$t$, $V_d$ by $t^2$, $t\cdot t/t^2 = 1$). A Love plot would show balance improving
+as $t$ falls; d^2 does not.
+
+Two distinct limits show up, and only one is escapable. **ACAT is invariant too**
+(`p_acat` flat): it combines per-covariate p-values, each itself a size-blind
+within-pair test, so the combination is size-blind. Nothing on the within-pair
+reference sees the size of imbalance. The **other** limit, which ACAT does escape,
+is the cap on how many covariates d^2 can test: d^2 inverts $V_d$, whose rank
+cannot exceed the within-block residual df; past that d^2 freezes (p near 0.45).
+ACAT never inverts anything (shown in B4).
+
+## A2 -- the test IS informative about systematic confounding
+
+Hold the within-pair noise fixed (`sigma_c = 1`) and shrink only the systematic
+tilt `mu` on one covariate from 0.5 to 0.
+
+```{r A2}
+set.seed(20260617)
+mu_grid <- c(0.5, 0.3, 0.2, 0.1, 0.05, 0)
+a2 <- do.call(rbind, lapply(mu_grid, function(mu1) {
+  ps <- replicate(NREP, run_omnibus(make_pairs(100, rep(1, 3), c(mu1, 0, 0)))$p_d2)
+  data.frame(mu = mu1, rejection_rate = rejection_rate(ps),
+             median_p = round(median(ps, na.rm = TRUE), 4))
+}))
+a2
+```
+
+Unlike A1, the test moves, and correctly. A large tilt is detected almost always;
+as the tilt vanishes the rejection rate falls to the nominal 0.05 and the
+p-values become uniform (median ~0.5). So the omnibus is a sound test of the
+systematic, direction-carrying part of imbalance. A1 and A2 together: it reads
+$\mu/\sigma_c$. A1 moved both (ratio fixed -> no response); A2 moved $\mu$ alone
+(ratio falls -> response). "Collapse" is specific to the size dimension.
+
+## A3 -- more data detects a fixed bias more often
+
+Hold the standardized bias fixed at $\mu/\sigma_c = 0.15$ and grow the study from
+25 to 400 pairs (ESS = pairs).
+
+```{r A3}
+set.seed(20260617)
+a3 <- do.call(rbind, lapply(c(25, 50, 100, 200, 400), function(S) {
+  ps <- replicate(NREP, run_omnibus(make_pairs(S, rep(1, 3), c(0.15, 0, 0)))$p_d2)
+  data.frame(ESS = S, rejection_rate = rejection_rate(ps))
+}))
+a3
+```
+
+With the same real bias throughout, power climbs from ~0.10 to ~0.90: ordinary
+power, $\lambda \approx S\,(\mu/\sigma_c)^2$. The flip side is the warning: because
+power against any fixed nonzero bias keeps rising with ESS, a large enough matched
+sample rejects on a bias too small to matter. That "balance tests reject in large
+samples" problem is a second reason -- on top of the collapse -- to report a
+fixed-scale magnitude rather than read the design off the omnibus p.
+
+## A4 -- why a p-value-vs-ESS plot is jagged
+
+One fixed population of 200 confounded pairs (a modest tilt on $x_1$). Prune
+pairs worst-offenders-first (most aligned with the bias), recompute the omnibus
+at each step, and track the p-value and the statistic against ESS.
+
+```{r A4}
+set.seed(7)
+S0 <- 200
+df_full <- make_pairs(S = S0, sigma_c = rep(1, 4), mu = c(0.10, 0, 0, 0))
+align <- tapply(df_full$x1 * ifelse(df_full$z == 1, 1, -1), df_full$pair, sum)
+prune_order <- order(align, decreasing = TRUE)            # drop most-aligned first
+lvl <- levels(df_full$pair)
+path <- do.call(rbind, lapply(seq(S0, 30, by = -5), function(nkeep) {
+  keep <- prune_order[(S0 - nkeep + 1):S0]                # keep the least-aligned nkeep
+  sub  <- droplevels(df_full[df_full$pair %in% lvl[keep], ])
+  r <- run_omnibus(sub)
+  std_bias <- abs(mean(tapply(sub$x1 * ifelse(sub$z == 1, 1, -1), sub$pair, sum)))
+  data.frame(ess = effective_sample_size(sub), df = r$df, chisq = r$chisq,
+             p_d2 = r$p_d2, p_acat = r$p_acat, std_bias = std_bias)
+}))
+## representative rows
+path[path$ess %in% c(200, 195, 185, 180, 100, 30),
+     c("ess", "chisq", "p_d2", "p_acat", "std_bias")]
+```
+
+As ESS falls the p-value is non-monotone: it ticks up near the full sample (where
+pruning removes the targeted tilt) and then crashes. The honest driver is the
+**statistic itself** -- d^2 is a hump-shaped function of ESS (low at the full
+sample, peaking at intermediate ESS as pruning overshoots and induces imbalance,
+then falling as the sample shrinks). Since $p = \mathrm{pchisq}(d^2, \mathrm{df},
+\text{lower}=F)$, the p-value is the monotone transform of that hump.
+
+```{r A4-figure}
+#| fig-cap: "Study 1. A2: p tracks systematic bias. A3: power grows with ESS. A4: p vs ESS is non-monotone (the p-axis crushes it near 0); the de-compressed d^2 statistic shows the hump that drives it."
+op <- par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+plot(a2$mu, a2$rejection_rate, type = "b", pch = 19, ylim = c(0, 1),
+     xlab = "systematic bias mu (sigma_c = 1)", ylab = "rejection rate (alpha=.05)",
+     main = "A2: p tracks systematic bias")
+abline(h = 0.05, lty = 2, col = "grey50")
+plot(a3$ESS, a3$rejection_rate, type = "b", pch = 19, ylim = c(0, 1),
+     xlab = "effective sample size (= pairs)", ylab = "rejection rate (alpha=.05)",
+     main = "A3: ESS buys power")
+abline(h = 0.05, lty = 2, col = "grey50")
+plot(path$ess, path$p_d2, type = "b", pch = 19, ylim = c(0, 1),
+     xlab = "effective sample size", ylab = "omnibus p-value",
+     main = "A4: p vs ESS (non-monotone)")
+lines(path$ess, path$p_acat, type = "b", pch = 1, col = "red")
+legend("topleft", c("d^2", "ACAT"), pch = c(19, 1), col = c("black", "red"), bty = "n")
+plot(path$ess, path$chisq, type = "b", pch = 19, col = "blue",
+     xlab = "effective sample size", ylab = "omnibus d^2 statistic (df=4)",
+     main = "A4 driver: the d^2 statistic vs ESS")
+par(op)
+```
+
+The payoff: $d^2 \approx S\,(\text{standardized imbalance})^2$, and along a pruning
+path both factors move at once. You cannot read balance quality off a p-vs-ESS
+curve -- its shape reflects which pairs you dropped as much as how balanced the
+survivors are.
+
+# Study 2: screening, and the d^2/ACAT switch
+
+There are **two different kinds of screen**, and keeping them distinct is the
+main lesson:
+
+- A **design screen** asks "is this covariate (or direction) exactly matched?"
+  The prototype is $w_j = (\text{within-stratum var})/(\text{total var})$ per
+  covariate, which exact matching drives to ~0. It depends on covariate values
+  and strata only -- not the treatment vector -- so it is ungameable (B5). The
+  direction version (B6) generalizes it to linear combinations. It fixes the
+  degenerate-direction pathology but is blind to the size of imbalance (B3).
+- A **magnitude screen** asks "is the observed imbalance substantively large?"
+  The prototype is the Love-plot rule: flag covariates with $|\mathrm{SMD}| \ge
+  0.25$ (see "Provenance of the 0.25-SD rule" at the end of this section for the
+  citation, which is *not* Rosenbaum-Rubin 1985 as often claimed). It uses the
+  pooled-SD scale, so it does NOT collapse (B7); it is the constructive form of
+  "lead with magnitude."
+
+## B1 -- near-degenerate covariates dilute d^2; the design screen sharpens it
+
+Five covariates: $x_1,x_2$ near-exactly matched (`sigma_c = 1e-4`, no tilt), a
+real confound on $x_3$, $x_4,x_5$ vary with no tilt. Detect $x_3$ three ways.
+
+```{r B1}
+set.seed(20260618)
+b1 <- replicate(NREP, {
+  df <- make_pairs(100, c(1e-4, 1e-4, 1, 1, 1), c(0, 0, 0.30, 0, 0))
+  r_all <- run_omnibus(df)
+  r_scr <- run_omnibus(df, covs = screen_survivors(df, tau = 0.01))
+  c(p_all = r_all$p_d2, df_all = r_all$df,
+    p_scr = r_scr$p_d2, df_scr = r_scr$df, p_acat = r_all$p_acat)
+})
+b1 <- as.data.frame(t(b1))
+data.frame(
+  method  = c("d^2 (all 5)", "d^2 (design-screened)", "ACAT (all 5)"),
+  power   = round(c(rejection_rate(b1$p_all), rejection_rate(b1$p_scr),
+                    rejection_rate(b1$p_acat)), 3),
+  mean_df = round(c(mean(b1$df_all), mean(b1$df_scr), NA), 2))
+```
+
+The two dead covariates consume df and dilute the chi-square; screening them out
+raises d^2 power. ACAT trails here because it spreads weight over five marginal
+p-values, two of them pure noise: when the signal is concentrated and the
+covariance is informative, the chi-square is the better omnibus.
+
+## B1b -- graceful degradation when everything is (near-)exactly matched
+
+```{r B1b}
+set.seed(11)
+df_ax <- make_pairs(100, rep(1e-9, 4), rep(0, 4))
+r_all <- run_omnibus(df_ax)
+surv  <- screen_survivors(df_ax, tau = 0.01)
+cat(sprintf("d^2 (all): errored=%s, p=%s   <- hard stop() at R/utils.R:381\n",
+            r_all$errored, format(r_all$p_d2)))
+cat(sprintf("design screen: %d survivors -> %s\n", length(surv),
+            if (length(surv) == 0) "ABSTAIN, no error" else "test survivors"))
+cat(sprintf("ACAT: p=%s   <- NA, no error\n", format(r_all$p_acat)))
+```
+
+The current d^2 path throws when every covariate is degenerate. The screen turns
+this into an honest non-result; ACAT returns NA cleanly. The package fix is
+graceful degradation instead of erroring.
+
+## B2 -- screening does not distort the type-I error rate
+
+```{r B2}
+set.seed(20260618)
+b2 <- replicate(NREP, {
+  df <- make_pairs(100, c(1e-4, 1e-4, 1, 1, 1), rep(0, 5))
+  r_all <- run_omnibus(df)
+  r_scr <- run_omnibus(df, covs = screen_survivors(df, tau = 0.01))
+  c(p_all = r_all$p_d2, p_scr = r_scr$p_d2, p_acat = r_all$p_acat)
+})
+b2 <- as.data.frame(t(b2))
+data.frame(method = c("d^2 (all)", "d^2 (screened)", "ACAT"),
+           size_nominal_0.05 = round(c(rejection_rate(b2$p_all),
+                                       rejection_rate(b2$p_scr),
+                                       rejection_rate(b2$p_acat)), 3))
+```
+
+All three hold their size: the screen uses a design quantity, not the observed
+imbalance, so it does not inflate false positives.
+
+## B3 and B7 -- design vs magnitude screen, read against A1 on the SAME data
+
+A1, B3, and B7 use the **identical** data set (the A1 base, `seed 1`) and the
+**identical** $t$-sweep, so they read row for row. A1 is the omnibus with no
+screen; B3 adds the design screen ($w_j$, `tau = 0.01`); B7 adds the magnitude
+screen (flag $|\mathrm{SMD}| \ge 0.25$).
+
+```{r B3-B7}
+set.seed(1)
+ab_base <- make_pairs(100, rep(1, 4), c(0.5, 0, 0, 0))
+trio <- do.call(rbind, lapply(c(100, 10, 1, 0.5, 0.25, 0.1, 0.01), function(t) {
+  df_t <- scale_within(ab_base, t)
+  surv <- screen_survivors(df_t, tau = 0.01)          # design screen
+  r    <- run_omnibus(df_t, covs = surv)
+  smds <- vapply(covariate_names(df_t), function(cn) smd(df_t, cn), numeric(1))
+  data.frame(
+    t            = t,
+    A1_omnibus_p = signif(run_omnibus(df_t)$p_d2, 3),
+    B3_survivors = sprintf("%d/4", length(surv)),
+    B3_screen_p  = if (is.na(r$p_d2)) "ABSTAIN" else signif(r$p_d2, 3),
+    B7_SMD_x1    = round(smds[["x1"]], 3),
+    B7_flagged   = sprintf("%d/4", sum(abs(smds) >= 0.25)))
+}))
+trio
+```
+
+**B3 (design screen is NOT a way around the collapse).** Where the screen keeps
+covariates (large $t$), B3's p equals A1's collapsed value exactly. As $t$ shrinks
+the within-stratum variance fraction falls below `tau` and the screen ABSTAINS --
+it never returns a p that rewards the smaller imbalance.
+
+**B7 (the Love-plot screen IS the non-collapsing one).** `SMD(x1)` tracks the size
+of imbalance, crossing 0.25 between $t=1$ and $t=0.5$. At a well-matched design
+($t=0.1$) the three verdicts diverge sharply: A1 still rejects (the collapse), B3
+abstains, and B7 reports `SMD = 0.05 < 0.25` = balanced -- the substantively
+correct answer. It escapes the collapse because the SMD uses the fixed pooled-SD
+scale. Using the Love plot to screen is the constructive form of "lead with
+magnitude"; the 0.25 threshold is an equivalence margin.
+
+Two honest costs of the magnitude screen: (i) it is assignment-dependent (reads
+the observed imbalance), so not ungameable like $w_j$; and (ii) you cannot screen
+by observed SMD and then trust the within-pair omnibus p on the survivors --
+selecting imbalanced covariates inflates that test. Use it as a magnitude/
+equivalence **report**, not a pre-filter feeding the test.
+
+## B6 -- the design screen should work on DIRECTIONS, not covariates
+
+The per-covariate $w_j$ misses a degenerate **linear combination**. Here $x_1,x_2$
+each vary within pairs (so each $w_j$ is moderate) but share the same within-pair
+difference, so the $x_1 - x_2$ direction is near-exactly matched; a real confound
+sits on $x_3$. The direction screen (`sv_screen_project` in `sim-helpers.R`)
+generalizes $w_j$ to the generalized eigenvalues of within-vs-total covariance.
+
+```{r B6-illustrate}
+make_degen_combo <- function(S, eps = 5e-3) {
+  df <- make_pairs(S, rep(1, 4), c(0, 0, 0.30, 0), rho = 0.3)
+  dev1 <- df$x1 - ave(df$x1, df$pair)
+  df$x2 <- ave(df$x2, df$pair) + dev1 + rnorm(nrow(df), sd = eps)  # x2 shares x1's within-pair diff
+  df
+}
+set.seed(61)
+d6 <- make_degen_combo(120)
+round(within_var_fraction(d6), 4)                 # per-covariate w_j: all moderate
+round(sv_screen_project(d6, tau = 0.01)$lambda, 5) # direction eigenvalues: one ~0
+```
+
+The per-covariate $w_j$ are all moderate (so that screen drops nothing) while the
+direction screen finds one eigenvalue ~0 (the $x_1-x_2$ combination) and drops it.
+Power to detect $x_3$:
+
+```{r B6-power}
+set.seed(62)
+b6 <- replicate(NREP, {
+  df <- make_degen_combo(120)
+  c(p_all = run_omnibus(df)$p_d2,
+    p_pc  = run_omnibus(df, covs = screen_survivors(df, tau = 0.01))$p_d2,
+    p_sv  = run_sv_screen(df, tau = 0.01)$p_d2,
+    p_acat = run_omnibus(df)$p_acat)
+})
+b6 <- as.data.frame(t(b6))
+data.frame(method = c("unscreened d^2", "per-covariate screen",
+                      "direction screen", "ACAT"),
+           power  = round(c(rejection_rate(b6$p_all), rejection_rate(b6$p_pc),
+                            rejection_rate(b6$p_sv), rejection_rate(b6$p_acat)), 3))
+```
+
+The per-covariate screen misses the degenerate combination (drops nothing, same
+power as unscreened); the direction screen catches it and gives a sharper test.
+The production screen should work on the singular values of $V_d$.
+
+## B4 -- keep both omnibuses: under correlation ACAT is the more robust one
+
+Three alternatives. "dense" = small tilt on all 8 covariates; "sparse" = one
+strong tilt among 8; "highdim" = one strong tilt among 20 covariates with only 15
+pairs (so #covariates exceeds $\mathrm{rank}(V_d)$).
+
+```{r B4}
+set.seed(20260618)
+scen <- list(
+  dense   = list(S = 100, sigma_c = rep(1, 8),  mu = rep(0.12, 8)),
+  sparse  = list(S = 100, sigma_c = rep(1, 8),  mu = c(0.55, rep(0, 7))),
+  highdim = list(S = 15,  sigma_c = rep(1, 20), mu = c(0.9, rep(0, 19))))
+b4 <- do.call(rbind, lapply(names(scen), function(nm) {
+  s <- scen[[nm]]
+  out <- replicate(NREP, {
+    r <- run_omnibus(make_pairs(s$S, s$sigma_c, s$mu)); c(r$p_d2, r$p_acat) })
+  data.frame(scenario = nm, k = length(s$sigma_c), S = s$S,
+             power_d2 = round(rejection_rate(out[1, ]), 3),
+             power_acat = round(rejection_rate(out[2, ]), 3))
+}))
+b4
+```
+
+The **dense** case flips under correlation: with independent covariates d^2 won
+(0.602 vs 0.456), but with positively correlated covariates ACAT wins and d^2's
+power craters. This is correct: the dense tilt points in the all-covariates-equal
+direction, the high-variance direction of the correlated $V_d$, and $d^2 = \bar d'
+V_d^{-1}\bar d$ appropriately discounts imbalance there (it is less surprising).
+ACAT ignores the covariance and keeps power -- the classic Hotelling-$T^2$ vs
+marginal-combination tradeoff. The **sparse** case still slightly favors d^2; the
+**highdim** case is decisive: d^2 has ~zero power (frozen near $p=0.45$; the
+package warns "Degrees of freedom exceeds units less number of strata") while ACAT
+keeps power. Net: ACAT is the more robust omnibus across correlation and
+dimension.
+
+```{r B-figure}
+#| fig-width: 9
+#| fig-height: 4
+#| fig-cap: "Study 2. Left: d^2 vs ACAT power across dense/sparse/high-dim (under correlation, ACAT wins dense and is the only one with power in high dim). Right: detecting a real confound with two near-degenerate covariates present (design screening sharpens d^2)."
+op <- par(mfrow = c(1, 2), mar = c(5, 4, 3, 1))
+bp <- rbind(`d^2` = b4$power_d2, ACAT = b4$power_acat); colnames(bp) <- b4$scenario
+barplot(bp, beside = TRUE, ylim = c(0, 1), legend.text = TRUE,
+        args.legend = list(x = "topright", bty = "n"),
+        ylab = "power (alpha=.05)", main = "B4: d^2 vs ACAT power")
+b1bar <- c(`d^2 all` = rejection_rate(b1$p_all),
+           `d^2 screen` = rejection_rate(b1$p_scr), `ACAT` = rejection_rate(b1$p_acat))
+barplot(b1bar, ylim = c(0, 1), col = "grey80", ylab = "power to detect x3 (alpha=.05)",
+        main = "B1: detect a confound with 2\nnear-degenerate covariates")
+par(op)
+```
+
+## B5 -- the design screen cannot be gamed
+
+```{r B5}
+set.seed(5)
+df5 <- make_pairs(80, c(1e-4, 1, 1), c(0, 0.3, 0))
+w_obs <- within_var_fraction(df5)
+w_reps <- replicate(50, {
+  flip <- rep(rbinom(nlevels(df5$pair), 1, 0.5) == 1, each = 2)
+  within_var_fraction(within(df5, z <- ifelse(flip, 1L - z, z)))
+})
+round(w_obs, 6)
+cat(sprintf("max |w_j(re-randomized) - w_j(observed)| over 50 re-flips: %.2e\n",
+            max(abs(w_reps - w_obs))))
+```
+
+$w_j$ does not depend on the treatment vector, so an analyst cannot manipulate
+which covariates are screened by choosing an assignment. A screen based on the
+observed z-statistic would not have this property.
+
+## B8 -- how small can the magnitude-screen threshold be? (the floor)
+
+The Love-plot screen (B7) tracks balance, but its threshold cannot be made
+arbitrarily small. As $\tau \to 0$, the decision "balanced iff all
+$|\mathrm{SMD}| < \tau$" converges to "balanced iff $\mathrm{SMD} = 0$" -- testing
+the sharp null of exact balance, which is exactly where the collapse lives. So
+there is a floor. On a BALANCED design ($\mu = 0$) the observed SMD is pure
+sampling noise; the screen should rarely fire. The quantity that matters is
+$\max|\mathrm{SMD}|$ across the $k$ covariates -- a balanced design is "flagged"
+if any covariate trips the threshold (family-wise across $k$).
+
+```{r B8}
+maxabs_smd_balanced <- function(S, k, rho = 0.5) {
+  df <- make_pairs(S, rep(1, k), rep(0, k), rho = rho)   # balanced: mu = 0
+  max(abs(vapply(covariate_names(df), function(cn) smd(df, cn), numeric(1))))
+}
+set.seed(20260619)
+b8 <- do.call(rbind, lapply(c(25, 50, 100, 200, 400), function(S) {
+  m5  <- replicate(NREP, maxabs_smd_balanced(S, 5))
+  m20 <- replicate(NREP, maxabs_smd_balanced(S, 20))
+  data.frame(ESS = S,
+             floor_k5        = round(as.numeric(quantile(m5,  0.95)), 3),
+             flag_at_0.25_k5 = round(mean(m5  >= 0.25), 3),
+             floor_k20        = round(as.numeric(quantile(m20, 0.95)), 3),
+             flag_at_0.25_k20 = round(mean(m20 >= 0.25), 3))
+}))
+b8
+```
+
+`floor` is the threshold that yields a 5% false-flag rate (the 95th percentile of
+$\max|\mathrm{SMD}|$ under balance); `flag_at_0.25` is the chance a balanced design
+is flagged at $\tau = 0.25$.
+
+```{r B8-figure}
+#| fig-width: 7
+#| fig-height: 5
+#| fig-cap: "B8. Magnitude-screen false-flag rate on a BALANCED design vs the threshold tau (k=5). As tau -> 0 the screen flags balanced designs ever more often (its version of the collapse). The curve shifts left as ESS grows (floor ~ 1/sqrt(ESS)). The 0.25 rule of thumb (dashed) is safe at large ESS but not small."
+set.seed(20260619)
+taus <- seq(0, 0.6, by = 0.02)
+plot(NA, xlim = c(0, 0.6), ylim = c(0, 1),
+     xlab = "magnitude-screen threshold tau (SMD)",
+     ylab = "P(flag a balanced design)",
+     main = "B8: SMD-screen false-flag rate vs threshold (k=5)")
+cols <- c("25" = "red", "100" = "black", "400" = "blue")
+for (S in c(25, 100, 400)) {
+  m  <- replicate(NREP, maxabs_smd_balanced(S, 5))
+  ff <- vapply(taus, function(tt) mean(m >= tt), numeric(1))
+  lines(taus, ff, lwd = 2, col = cols[as.character(S)])
+}
+abline(v = 0.25, lty = 2, col = "grey40"); abline(h = 0.05, lty = 3, col = "grey60")
+legend("topright", c("ESS=25", "ESS=100", "ESS=400", "tau=0.25"),
+       col = c("red", "black", "blue", "grey40"),
+       lty = c(1, 1, 1, 2), lwd = c(2, 2, 2, 1), bty = "n")
+```
+
+What it means. The floor behaves as
+
+$$\tau_{\text{floor}} \;\approx\; \rho_{\text{match}}\,\frac{\sqrt{2\ln k}}{\sqrt{\text{ESS}}},
+\qquad \rho_{\text{match}} = \frac{\text{rms within-pair difference}}{\text{pooled SD}},$$
+
+so it (i) shrinks like $1/\sqrt{\text{ESS}}$ -- more data lets a smaller threshold
+still work; (ii) grows like $\sqrt{\ln k}$ with the number of covariates, through
+multiplicity (more covariates -> more chances for one to trip $\tau$ by noise);
+and (iii) shrinks with matching tightness ($\rho_{\text{match}}$). These are loose
+random pairs ($\rho_{\text{match}} \approx 0.9$, the worst case); a genuinely tight
+match lowers the floor and makes 0.25 safer still.
+
+The practical reading. The threshold has TWO determinants that should not be
+conflated. The SUBSTANTIVE margin (how much standardized imbalance you are willing
+to call "balanced") is an effect-size judgment, NOT a function of sample size --
+0.25 SD is the conventional margin in the matching literature (Rubin 2001 /
+Stuart 2010; see the provenance section below). The STATISTICAL floor above is a
+function of ESS, $k$, and matching
+tightness. Use the larger of the two. For typical designs (ESS in the hundreds,
+$k \sim 10$) the floor is ~0.05-0.15, comfortably below 0.25, so the substantive
+margin governs and a fixed 0.25 is fine. The floor only BINDS -- and 0.25 becomes
+unreliable -- in the small-ESS / many-covariate corner (e.g. ESS=25, $k=20$ above),
+where the data cannot certify balance at the 0.25 margin. This is the
+equivalence-testing answer: fix the substantive margin, and whether you can
+CONCLUDE balance at it depends on ESS (power) and $k$ (multiplicity)
+(Hartman & Hidalgo 2018). A sensible package default: flag at $|\mathrm{SMD}| \ge
+0.25$, and warn when the floor for the design's ESS and $k$ approaches 0.25 (the
+screen cannot then reliably distinguish 0.25-imbalance from noise).
+
+## B9 -- the size cost of pre-filtering (why decision D is "keep separate")
+
+The magnitude screen must be read-only: it must NOT choose which covariates the
+omnibus is computed on (decision D). This experiment shows the size cost of
+violating that. On NULL data (no systematic imbalance), select the covariates with
+$|\mathrm{SMD}| \ge \tau$ and run the omnibus on ONLY those; measure how often it
+rejects. 200 pairs, $k = 10$ and $20$ (so $\mathrm{rank}(V_d) = k$, far below the
+residual df of 200 -- no degeneracy). `cond.size` = rejection rate among the runs
+where at least one covariate was selected; `overall.size` counts no-selection as
+no-rejection.
+
+```{r B9}
+b9_nrep <- 2000L; b9_taus <- c(0.10, 0.15, 0.20, 0.25)
+set.seed(20260620)
+b9 <- do.call(rbind, lapply(c(10, 20), function(k) {
+  base <- numeric(b9_nrep)
+  psel <- matrix(NA_real_, b9_nrep, length(b9_taus))
+  for (r in seq_len(b9_nrep)) {
+    df <- make_pairs(200, rep(1, k), rep(0, k), rho = 0.5)   # NULL: mu = 0
+    cn <- covariate_names(df)
+    smds <- vapply(cn, function(c0) smd(df, c0), numeric(1))
+    base[r] <- run_omnibus(df)$p_d2
+    for (j in seq_along(b9_taus)) {
+      sel <- cn[abs(smds) >= b9_taus[j]]
+      if (length(sel)) psel[r, j] <- run_omnibus(df, covs = sel)$p_d2
+    }
+  }
+  data.frame(k = k, all_cov_size = round(mean(base <= 0.05), 3), tau = b9_taus,
+             P_select = round(colMeans(!is.na(psel)), 3),
+             cond_size = round(vapply(seq_along(b9_taus),
+                 function(j) mean(psel[!is.na(psel[, j]), j] <= 0.05), numeric(1)), 3),
+             overall_size = round(colSums(psel <= 0.05, na.rm = TRUE) / b9_nrep, 4))
+}))
+b9
+```
+
+What it means. The all-covariate omnibus holds its size (0.049 at $k=10$; 0.036 at
+$k=20$, slightly conservative). But CONDITIONAL on selection the pre-filtered
+omnibus rejects 0.98--1.00 of the time once $\tau \ge 0.15$ -- it essentially
+always rejects when it fires -- and 0.2--0.26 even at $\tau=0.10$ (4--5x nominal).
+The p-value reported on the selected covariates is invalid. The OVERALL rate is
+worst at lower thresholds ($\tau = 0.10$--$0.15$: ~0.12--0.19, several times
+nominal, because selection fires often) and looks "safe" at $\tau=0.25$ (~0.001)
+ONLY because selection rarely fires at 200 pairs -- not because the test is valid
+(its conditional size is 1.0). At high $\tau$ the `cond.size` cell rests on few
+firings (P(select) is tiny), so read it as "degenerate, always rejects," not as a
+precise number. Bottom line: pre-filtering the omnibus by observed imbalance is
+invalid; decision D = keep the magnitude screen out of the omnibus computation.
+(Note the medical-tradition 0.10 threshold inflates the overall rate the most --
+another reason the threshold choice matters; see Provenance below.)
+
+## Provenance of the 0.25-SD rule
+
+A literature check (2026-06-17) corrected a misattribution we had been repeating.
+We had called the 0.25 cutoff the "Rosenbaum-Rubin rule." That is wrong in two
+ways, and the threshold and denominator are not as settled as a single "0.25"
+suggests.
+
+- The "0.25" in **Rosenbaum & Rubin (1985, *The American Statistician* 39:33-38)**
+  is a CALIPER width on the linear propensity score (a matching tolerance), NOT a
+  balance threshold. Stuart (2010) quotes them: "Rosenbaum and Rubin (1985b)
+  generally suggest a caliper of 0.25 standard deviations of the linear propensity
+  score." Citing R&R 1985 for a balance cutoff is a misattribution.
+- The 0.25 BALANCE threshold comes from **Rubin (2001, *Health Services & Outcomes
+  Research Methodology* 2:169-188)** as restated by **Stuart (2010, *Statistical
+  Science* 25:1-21)**: "the absolute standardized differences of means should be
+  less than 0.25 ... (Rubin, 2001)." Rubin's own prose does not say 0.25 -- his
+  Condition 1 is "less than half a standard deviation," and for the PROPENSITY
+  SCORE mean difference, not individual covariates. So the flat "0.25" is Stuart's
+  compression.
+- TWO CAMPS ON THE NUMBER. Matching / political-methodology tradition (Rubin 2001;
+  Stuart 2010; Ho-Imai-King-Stuart 2007 / MatchIt) uses **0.25**. Pharmaco-
+  epidemiology / medical tradition (Normand et al. 2001, *J Clin Epi* 54:387-398;
+  Austin 2009, *Stat Med* 28:3083-3107; Austin 2011, *Multivar Behav Res*
+  46:399-424) uses **0.1** ("a standardized difference less than 0.1 ... indicates
+  a negligible difference," Austin 2011). Cohen's d "small" = 0.2 is a separate
+  lineage. The 0.1 vs 0.25 split is a real, deliberate disagreement.
+- TWO CAMPS ON THE DENOMINATOR. Stuart / MatchIt use the full TREATED-group SD
+  fixed at pre-matching; Austin / medical use the POOLED SD
+  $\sqrt{(s_t^2 + s_c^2)/2}$. **RItools' `std.diff` uses the pooled SD** -- the
+  Austin convention, which traditionally pairs with 0.1, not 0.25. So a 0.25 cutoff
+  on RItools' pooled-SD `std.diff` mixes conventions; the default value AND
+  denominator deserve an explicit, documented choice (the `covariate.scales`
+  argument can fix the denominator to pre-matching SDs if we want the Stuart
+  convention).
+- PRIOR ART FOR OUR CENTRAL STANCE. **Ho, Imai, King & Stuart (2007, *Political
+  Analysis* 15:199-236)** argue balance is an in-sample property and that
+  hypothesis tests / p-values should NOT be used as balance criteria, because
+  rejection depends on sample size (which matching changes). That is exactly the
+  large-sample point in A3, and it supports presenting the omnibus as a direction
+  test while leading with the magnitude (`std.diff`).
+
+Confidence: verbatim quotes were confirmed from the primary text of Rubin (2001),
+Stuart (2010), Austin (2009, 2011). The R&R (1985) caliper wording and Normand et
+al. (2001) are from reliable secondary quotation (originals paywalled); confirm
+those two primaries directly before citing them in a paper.
+
+# Conclusions / package implications
+
+1. **The collapse is real, exact, and unescapable** by any statistic on the
+   within-set permutation reference -- d^2 and ACAT alike (A1, B3), and robust to
+   correlation. The omnibus reads the systematic tilt relative to the within-pair
+   noise, scaled by sample size; it does not read the size of imbalance, and in
+   large samples rejects on trivial bias (A3). For users: report a fixed-scale
+   magnitude or equivalence result as the primary balance summary, and present the
+   omnibus as a test of systematic direction, not a balance-quality score.
+
+2. **Two screens, two jobs -- keep them separate.**
+   (a) *Design screen* (drop exactly-matched directions): build it for honest
+   abstention plus numerical safety (B1b), a modest power gain (B1), size-preserving
+   (B2), ungameable (B5) -- but NOT a collapse fix (B3). It must work on
+   **directions** (singular values of $V_d$), not raw covariates, because under
+   correlation the degenerate direction is a linear combination $w_j$ misses (B6).
+   Implementation: a relative tolerance at `R/Design.R:991` on the eigenvalues of
+   $V_d$ relative to the complete-randomization covariance, reported as a profile
+   over `tau`, with graceful degradation replacing the `stop()` at `R/utils.R:381`.
+   (b) *Magnitude screen* (the Love-plot / 0.25-SD rule): this is the one that
+   tracks balance and escapes the collapse (B7). It is the primary balance
+   **report**, not a test pre-filter (assignment-dependent; would inflate the
+   omnibus if fed to it). The package should present per-covariate SMDs against a
+   0.25 reference alongside, not inside, the omnibus.
+
+3. **Keep d^2 AND switch to ACAT when needed (B4)** -- stronger under correlation.
+   ACAT wins the dense case once covariates are correlated and is the only one with
+   power in high dimension (where d^2 freezes near 0.45). Concrete trigger: switch
+   when #covariates (after screening) $\ge \mathrm{rank}(V_d)$; consider preferring
+   ACAT or reporting both more broadly given the dense-case flip. Neither omnibus
+   escapes the collapse, so this is about power and numerical robustness, not about
+   seeing the size of imbalance.
+
+# Open items
+
+- Vary the correlation: sweep `rho` (and try AR(1)) to map how the B4 dense flip
+  and the d^2/ACAT crossover depend on correlation strength and structure.
+- Production direction screen: derive eigenvalues from the engine's `tcov` plus a
+  complete-randomization reference, not the base-R within-vs-total proxy.
+- Equivalence framing for the magnitude screen: choose the default margin (0.25 SD
+  in the matching tradition vs 0.1 in the medical tradition -- see provenance
+  section) and whether to report a formal equivalence test (Hartman & Hidalgo 2018)
+  or just SMDs vs the reference line. Also decide the denominator (RItools uses
+  pooled SD; the 0.25 lineage uses the treated-group SD).
+- If we proceed to package code: write the testthat tests FIRST (per
+  CLAUDE_CODING.md) -- these experiments are the statistical-principle tests --
+  then implement the screen, graceful degradation, and the ACAT switch, then
+  `devtools::check()`.
+
+```{r session}
+#| echo: false
+sessionInfo()
+```

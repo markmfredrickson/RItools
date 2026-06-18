@@ -1,0 +1,420 @@
+---
+title: "Development memo: the sigma_x balance test and its four null backends"
+author: "Jake Bowers, Ben Hansen, Mark Fredrickson, Josh Errickson (and Claude)"
+date: "Drafted on the `devel-sigma-x-omnibus` branch"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    embed-resources: true
+---
+
+This is a working memo on the development branch `devel-sigma-x-omnibus`. It is
+not a polished package vignette and is not built as part of the `RItools`
+package distribution (the `vignettes/` directory is in `.Rbuildignore`). Its
+purpose is to give the team --- and any readers we share the branch with ---
+a concrete sense of when the new omnibus statistic and its four
+null-distribution backends agree, when they disagree, and what each
+disagreement actually means.
+
+# 1. Background
+
+`balanceTest()` in `RItools` reports a multivariate omnibus test for the
+hypothesis of no covariate imbalance between treatment and control. The
+released version uses the Hansen-Bowers (2008) statistic
+
+$$T_{HB} \;=\; d'\,\mathrm{Cov}(d)^{-1}\,d,$$
+
+where $d$ is the (stratification- and weight-aware) vector of treatment-vs-
+control mean differences across the $p$ covariates and $\mathrm{Cov}(d)$ is
+the covariance of $d$ under the strata-conditional randomization
+distribution. Under that randomization null and an asymptotic-normal
+approximation for $d$, $T_{HB}$ is asymptotically chi-squared with degrees of
+freedom equal to the rank of $\mathrm{Cov}(d)$.
+
+This branch adds an alternative statistic
+
+$$T_{\Sigma_x} \;=\; d'\,\Sigma_x^{-1}\,d,$$
+
+where $\Sigma_x$ is *not* the permutation covariance but rather a covariance
+of the *covariates themselves*. By default $\Sigma_x$ is the within-stratum-
+pooled sample covariance $(N-K)^{-1}\sum_s\sum_{i\in s}(x_i - \bar x_s)(x_i -
+\bar x_s)'$; the user may also supply any positive semidefinite matrix
+(e.g. a covariance computed from a larger reference population not affected
+by the matching).
+
+Under the same randomization null, the exact distribution of $T_{\Sigma_x}$
+is no longer chi-squared. Asymptotically it is
+
+$$T_{\Sigma_x} \;\sim\; \sum_{k=1}^{r} \lambda_k \,\chi^2_{1,k},
+\qquad \lambda_k = \text{eigenvalues of }\Sigma_x^{-1/2}\,V_d\,\Sigma_x^{-1/2},$$
+
+a weighted mixture of independent $\chi^2_1$ random variables. At finite $n$
+the exact distribution differs from this mixture --- and the gap can matter
+in practice.
+
+The branch implements four ways of computing a p-value for $T_{\Sigma_x}$,
+selected via the `null` argument to `balanceTest()`:
+
+| Backend | Assumption | Cost | Honest at finite $n$? |
+|---|---|---|---|
+| `satterthwaite_asymptotic` | Gaussian $d$, moments via $E[T]=\sum\lambda_k$, $\mathrm{Var}[T]=2\sum\lambda_k^2$ | $O(p^3)$ | No (conservative when $T$ is in upper tail) |
+| `satterthwaite_finite` | Chi-square *shape*, moments via the *exact* within-stratum randomization distribution | $O(p^2 n)$ | Closer, but still wrong when shape itself fails |
+| `imhof` | Gaussian $d$, exact CDF inversion via `CompQuadForm` | $O(p)$ per evaluation | No (same Gaussian-$d$ assumption as `satterthwaite_asymptotic`, just no shape approximation) |
+| `simulate` | None (Monte Carlo over the within-stratum randomization distribution) | $O(B \cdot np)$ | **Yes**, given enough $B$ |
+
+The first three are the cheap analytic options. The fourth is slow but
+asymptotically (as $B \to \infty$) gives the exact randomization-null
+p-value.
+
+# 2. When do the backends agree?
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+devtools::load_all("..", quiet = TRUE)
+data(nuclearplants)
+```
+
+## A trivial cancellation: unstratified, default $\Sigma_x$
+
+In the unstratified case with the default $\Sigma_x = (n-1)^{-1}S_x$, the
+permutation covariance is $V_d = (n_1 n_0/(n(n-1))) S_x$, so
+
+$$\Sigma_x^{-1}\,V_d \;=\; \frac{n_1 n_0}{n}\,I_p$$
+
+and *every* eigenvalue equals $n_1 n_0 / n$. The mixture $\sum_k \lambda_k
+\chi^2_1$ collapses to $(n_1 n_0/n)\,\chi^2_p$, and $T_{\Sigma_x} =
+(n_1n_0/n)\cdot T_{HB}$. The *p*-value of $T_{\Sigma_x}$ under the asymptotic
+backends is exactly the chi-square p-value of $T_{HB}$.
+
+```{r}
+#| label: unstrat-collapse
+bt <- balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n,
+                  data = nuclearplants, sigma_x_test = TRUE,
+                  null = "satterthwaite_asymptotic")
+bt$overall["--", c("chisquare", "p.value", "sigma_x", "sigma_x.p.value")]
+## sigma_x.p.value should equal p.value to machine precision
+```
+
+The same cancellation does **not** happen with `satterthwaite_finite`,
+because the actual randomization variance $\mathrm{Var}[T]$ is smaller than
+the Gaussian-derived $2\sum\lambda_k^2$ at finite $n$. So even in this
+trivial-looking case the finite-sample backend reports a different (and
+slightly smaller) p-value.
+
+## With stratification: the four backends start disagreeing
+
+As soon as we stratify, $\Sigma_x \not\propto V_d$ (because the within-
+stratum-pooled covariance weights strata equally while the permutation
+covariance weights them by harmonic counts), and the asymptotic and finite-
+sample backends part company.
+
+```{r}
+#| label: strat-disagree
+bt <- balanceTest(pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt),
+                  data = nuclearplants, sigma_x_test = TRUE)
+## We have to call balanceTest() three more times to get the other backends
+fmla <- pr ~ date + t1 + t2 + cap + ne + ct + bw + cum.n + strata(pt)
+ps <- sapply(c("satterthwaite_finite", "satterthwaite_asymptotic",
+               "imhof", "simulate"),
+             function(nm) {
+               set.seed(20260411)
+               balanceTest(fmla, data = nuclearplants, sigma_x_test = TRUE,
+                           null = nm, n_simulate = 5000)$overall["pt",
+                                                                 "sigma_x.p.value"]
+             })
+ps
+```
+
+# 3. Engineered example A: small $n$ where the chi-square *shape* breaks
+
+This is the cleanest case for showing why even the finite-sample
+Satterthwaite backend can disagree with the exact randomization null. We use
+a small subset of the nuclearplants data --- only 14 plants, only 3 of them
+treated --- so that the full randomization distribution of $T$ has only
+$\binom{14}{3} = 364$ points and we can enumerate it exactly.
+
+```{r}
+#| label: small-n-setup
+small <- nuclearplants[1:14, ]
+fmla  <- pr ~ date + t1 + t2 + cap
+
+## The four analytic backends
+ps <- sapply(c("satterthwaite_finite", "satterthwaite_asymptotic", "imhof"),
+             function(nm)
+               balanceTest(fmla, data = small, sigma_x_test = TRUE,
+                           null = nm)$overall["--", "sigma_x.p.value"])
+
+## Simulate at increasing B with fresh seeds
+sim_ps <- sapply(c(2000, 5000, 20000, 100000), function(B) {
+  set.seed(20260411)
+  balanceTest(fmla, data = small, sigma_x_test = TRUE,
+              null = "simulate", n_simulate = B)$overall["--", "sigma_x.p.value"]
+})
+names(sim_ps) <- paste0("simulate B=", c(2000, 5000, 20000, 100000))
+
+## And exact enumeration --- the gold standard
+X      <- as.matrix(small[, c("date", "t1", "t2", "cap")])
+strata <- factor(rep("--", nrow(X)))
+Sx     <- default_sigma_x(X, strata)
+n      <- 14;  n1 <- sum(small$pr)
+T_obs  <- {
+  pi <- mean(small$pr)
+  d  <- drop((small$pr - pi) %*% X)
+  drop(d %*% solve(Sx) %*% d)
+}
+all_z   <- combn(n, n1)
+T_null  <- apply(all_z, 2, function(loc) {
+  z <- numeric(n);  z[loc] <- 1
+  d <- drop((z - mean(z)) %*% X)
+  drop(d %*% solve(Sx) %*% d)
+})
+exact_p <- mean(T_null >= T_obs)
+
+c(ps, sim_ps, exact = exact_p)
+```
+
+The numerical pattern (verified on the canonical run): all three analytic
+backends report ~0.338, simulate converges to ~0.383, and the exact
+enumeration returns 0.382. **The analytic backends are off by 0.044 in
+absolute terms** --- a real bias, not Monte Carlo noise.
+
+Why? Look at the moments:
+
+```{r}
+#| label: small-n-moments
+EM_exact   <- mean(T_null)
+VarM_exact <- mean((T_null - EM_exact)^2)
+mom        <- sigma_x_T_moments(X, strata,
+                                n1_per_stratum = n1, sigma_x = Sx)
+data.frame(quantity = c("E[T]", "Var[T]"),
+           exact_enumeration = c(EM_exact, VarM_exact),
+           sigma_x_T_moments = c(mom$EM, mom$VarM))
+```
+
+The finite-sample backend has both moments **exactly right** (down to
+machine precision). What it gets wrong is the *shape* --- it forces the
+distribution into a $a\cdot\chi^2_v$ template, but the exact distribution at
+$n=14$ is more skewed and longer-tailed than any chi-square can capture. At
+this sample size the chi-square *shape assumption* is the binding constraint,
+not the moment match.
+
+```{r}
+#| label: small-n-skew
+## Empirical higher moments of the exact null
+sk <- function(x) mean(((x - mean(x))/sd(x))^3)
+ku <- function(x) mean(((x - mean(x))/sd(x))^4) - 3
+v  <- 2 * EM_exact^2 / VarM_exact      # finite-sample df
+data.frame(
+  quantity                    = c("skewness", "excess kurtosis"),
+  exact_null                  = c(sk(T_null),     ku(T_null)),
+  matched_chi_square_v_6.7    = c(sqrt(8 / v),    12 / v)
+)
+```
+
+The chi-square at the matched $df = 6.7$ predicts skewness $\approx 1.09$
+and excess kurtosis $\approx 1.78$. The exact null distribution has very
+different higher moments. Two-moment matching is not enough at this $n$.
+
+**Lesson:** at small $n$, even the finite-sample Satterthwaite backend is
+biased. Use `simulate` (or, when feasible, exact enumeration) when the
+effective sample size is small. The cost of `simulate` is linear in $B$ and
+the per-draw cost is small, so $B = 50,000$ on a 14-unit example is essentially
+instant.
+
+# 4. Engineered example B: tight matching with persistent imbalance (Rosenbaum's criticism)
+
+This example targets Paul Rosenbaum's concern (relayed by Ben Hansen):
+
+> "If your pairing vastly reduced variation in $x$, but at the same time
+> left a meaningful treatment-control imbalance on $x$, we would tend to
+> reject it for that reason. His feeling was that this wouldn't be a good
+> reason to reject that setup."
+
+The key dynamic: under tight matching, the within-stratum residual scale
+$\varepsilon$ shrinks. The numerator of $T_{HB}$ (i.e. $d$) does *not*
+necessarily shrink with $\varepsilon$, because the treatment-control
+difference can persist. The denominator $\mathrm{Cov}(d)$ scales as
+$\varepsilon^2$. So the ratio $T_{HB} = d'\mathrm{Cov}(d)^{-1}d$ scales as
+$\varepsilon^{-2}$ if $d$ is held fixed --- it explodes as the matching gets
+tighter, regardless of whether the absolute imbalance is meaningful in
+covariate-natural units.
+
+Critically, the **default** $\Sigma_x$ in the new test inherits the same
+problem: the within-stratum-pooled covariance also scales as $\varepsilon^2$.
+$T_{\Sigma_x}$ with the default $\Sigma_x$ also explodes. The choice of
+*null backend* does not save us --- the issue is in the *statistic*, not in
+how we compute its reference distribution.
+
+What addresses the criticism is a **design-independent** $\Sigma_x$: a
+matrix of natural-scale covariate variances that is *not* recomputed from
+the matched sample. The cleanest example is a covariance from a reference
+population. The `sigma_x` argument lets the user supply such a matrix.
+
+```{r}
+#| label: rosenbaum-fixture
+## Construct a 4-stratum design where matching has tightened within-stratum
+## variance dramatically, but a small persistent treatment-control imbalance
+## remains. We work with two covariates for clarity.
+set.seed(20260413)
+n_per_s <- 4L
+K       <- 4L
+n       <- n_per_s * K
+strata  <- factor(rep(seq_len(K), each = n_per_s))
+shrink  <- 0.05                                # within-stratum scale
+gap     <- 0.5                                 # T-vs-C mean diff in raw units
+
+## Stratum centers (these are the "true" covariate values, untouched by matching)
+centers <- matrix(rnorm(K * 2, sd = 3), K, 2)
+
+## Within each stratum: 2 treated, 2 control, with a persistent gap.
+## Within-stratum noise scaled by `shrink`.
+X <- matrix(NA_real_, n, 2)
+z <- integer(n)
+for (s in seq_len(K)) {
+  idx <- which(as.integer(strata) == s)
+  X[idx, ] <- matrix(centers[s, ], 4, 2, byrow = TRUE) +
+              shrink * matrix(rnorm(8), 4, 2)
+  z[idx[1:2]] <- 1
+  ## Add the gap to treated rows in dim 1 only
+  X[idx[1:2], 1] <- X[idx[1:2], 1] + gap
+}
+colnames(X) <- c("x1", "x2")
+df <- data.frame(z = z, X, strata = strata)
+
+## Population covariance: what x1 and x2 look like in the full population,
+## not affected by the matching
+pop_cov <- diag(c(9, 9))   # var = 9 each (matching the centers' spread)
+
+## Run the four backends with the DEFAULT sigma_x
+default_ps <- sapply(c("satterthwaite_finite", "satterthwaite_asymptotic",
+                       "imhof", "simulate"),
+                     function(nm) {
+                       set.seed(20260413)
+                       balanceTest(z ~ x1 + x2 + strata(strata), data = df,
+                                   sigma_x_test = TRUE, null = nm,
+                                   n_simulate = 10000)$overall["strata",
+                                                                "sigma_x.p.value"]
+                     })
+
+## And the same with the EXTERNAL population sigma_x
+external_ps <- sapply(c("satterthwaite_finite", "satterthwaite_asymptotic",
+                        "imhof", "simulate"),
+                      function(nm) {
+                        set.seed(20260413)
+                        balanceTest(z ~ x1 + x2 + strata(strata), data = df,
+                                    sigma_x_test = TRUE, null = nm,
+                                    n_simulate = 10000,
+                                    sigma_x = pop_cov)$overall["strata",
+                                                                "sigma_x.p.value"]
+                      })
+
+bt_hb <- balanceTest(z ~ x1 + x2 + strata(strata), data = df)
+data.frame(
+  backend                = c("HB08 chi-square", names(default_ps)),
+  default_sigma_x_pval   = c(bt_hb$overall["strata", "p.value"], default_ps),
+  external_sigma_x_pval  = c(NA, external_ps)
+)
+```
+
+The pattern to look for in the table above:
+
+* The HB08 chi-square test and the new test with the *default* $\Sigma_x$
+  should both give a small p-value --- both are computed with covariance
+  matrices that have been shrunk by the matching, so a modest absolute
+  imbalance produces a large standardized statistic.
+* The new test with the *external* $\Sigma_x$ (the population covariance,
+  which is independent of how tight the matching is) should give a larger
+  p-value, because the absolute size of $d$ is small relative to the natural
+  scale of the covariates.
+
+If you make `shrink` smaller and smaller (tighter matching) while keeping
+`gap` fixed, the gap between the two columns above gets larger and larger.
+This is a clean numerical illustration of Rosenbaum's criticism --- and of
+the fact that the *statistic*, not the *null backend*, is what determines
+whether the criticism applies.
+
+# 5. Engineered example C: clusters where simulate is the only honest option
+
+`ym_long` is a clustered design (`cluster(practice)`); after cluster
+aggregation the effective $n$ at the cluster level is much smaller than
+the individual-level row count would suggest. This is the regime where the
+asymptotic backends are conservative or anti-conservative depending on
+where the test stat falls in the chi-square body.
+
+```{r}
+#| label: ym-long-cluster
+data(ym_long)
+fmla <- trt ~ assessed + hypo + lipid + aspirin +
+              strata(assess_strata) + cluster(practice)
+ps <- sapply(c("satterthwaite_finite", "satterthwaite_asymptotic",
+               "imhof", "simulate"),
+             function(nm) {
+               set.seed(20260411)
+               balanceTest(fmla, data = ym_long, sigma_x_test = TRUE,
+                           null = nm,
+                           n_simulate = 5000)$overall["assess_strata",
+                                                      "sigma_x.p.value"]
+             })
+ps
+```
+
+# 6. Recommendations from this memo (subject to team review)
+
+1. **Default null backend.** `satterthwaite_finite` is the right cheap
+   default. It gets the moments right even when the asymptotic-Gaussian
+   identities fail, and it collapses to the asymptotic backends in the
+   large-$n$ limit. Document the limitation that even it can be biased at
+   very small $n$ because of the chi-square *shape* assumption.
+
+2. **When to switch to `simulate`.** Whenever the effective sample size
+   (post-aggregation, post-stratification) is small enough that the
+   randomization distribution of $T$ has visibly non-Gaussian higher
+   moments. As a rough rule of thumb: prefer `simulate` when the total
+   number of distinct randomizations is small enough to enumerate, *or*
+   when the cluster-level effective $n$ is below ~50. Cost of `simulate`
+   at $B = 5000$ is on the order of seconds for typical designs.
+
+3. **Default $\Sigma_x$.** This memo does **not** resolve whether the
+   default should remain the within-stratum-pooled sample covariance.
+   Rosenbaum's criticism (Section 4) suggests it should not. The two
+   alternative defaults to consider:
+   * The *full-sample* (pre-stratification) sample covariance of the
+     covariates, which is design-independent in the sense that it does not
+     shrink with tighter matching.
+   * Force the user to supply $\Sigma_x$ explicitly --- no default. This
+     would surface the choice as a deliberate methodological decision.
+
+   We are dispatching two independent mathematical-statistics analyses to
+   sharpen the recommendation.
+
+4. **Vignette / doc warnings.** Whatever default we pick, the documentation
+   for `balanceTest()` should explicitly warn that the test stat is sensitive
+   to the choice of $\Sigma_x$ and that, in particular, the default pooled
+   covariance can give misleading p-values when matching is tight.
+
+5. **Tests we should add (after the team has decided):** an explicit
+   regression test reproducing the small-$n$ chi-square-shape failure on a
+   tiny enumerable example, anchored to the gold-standard exact-enumeration
+   p-value. We have helpers for this in
+   `tests/testthat/helper-sigma_x_test.R`.
+
+# 7. Open questions for the team
+
+1. Should the default `null` argument stay at `satterthwaite_finite`, or
+   should we promote `simulate` to the default for safety at the cost of
+   speed?
+2. Should the default `sigma_x` be changed (see Section 6 item 3)?
+3. Should we expose a "compare to complete randomization" backend in the
+   spirit of Rosenbaum's 2025 chapter --- i.e., a simulate variant that
+   draws z's from complete randomization on $N$ units rather than from
+   within-stratum SRSWOR? This is methodologically distinct from what
+   `null = "simulate"` currently does.
+4. Should we expose an `exact` backend that enumerates the randomization
+   distribution when the number of randomizations is small enough to make
+   it feasible (say, < 10,000)?
+5. Anything else the team wants to test on the way to deciding on a final
+   API.

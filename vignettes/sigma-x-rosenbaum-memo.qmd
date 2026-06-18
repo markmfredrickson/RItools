@@ -33,6 +33,7 @@ the hood, and proposes a fix.
 
 # Setup
 
+
 ```{r}
 #| label: setup
 #| message: false

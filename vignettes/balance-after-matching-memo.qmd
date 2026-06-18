@@ -1,0 +1,916 @@
+---
+title: "Covariate balance after matching"
+subtitle: "Why within-set balance tests collapse, and what to report instead"
+author: "Jake Bowers (with Claude)"
+date: today
+format:
+  pdf:
+    toc: true
+    toc-depth: 3
+    number-sections: false
+    fontsize: 12pt
+    geometry:
+      - left=1.25in
+      - right=1.25in
+      - top=1in
+      - bottom=1in
+    fig-width: 6.5
+    fig-height: 4
+---
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+#| echo: false
+#| include: false
+devtools::load_all(here::here(), quiet = TRUE)
+options(scipen=8,digits=4)
+```
+
+This memo is about a problem in the Hansen-Bowers (2008) balance test, and about
+what to report in its place. The problem: as a matched design is made tighter, the
+within-set balance test from `balanceTest()` gives the design *worse* p-values,
+even when the imbalance that remains is substantively trivial. A design that matched
+better looks worse.
+
+The memo is organized around the problem rather than around any one fix. It first
+shows the collapse plainly --- in one dimension, where the arithmetic is a single
+fraction, and then in many. It then argues that no change of statistic escapes the
+collapse, and states the choice this forces as a trilemma. It recommends what to
+report instead: an imbalance *magnitude* on a scale fixed before matching, together
+with the per-covariate, substantive judgment a matcher already makes. It relates the
+approach to Branson (2021), the closest prior work. Finally it discusses --- but does
+not propose as the primary tool --- a resolution-profile summary, $l^*$, and a
+separate high-dimensional pathology of the omnibus.
+
+Where a claim is proved, shown only by simulation, or argued heuristically, I say so.
+
+---
+
+## The problem we are solving
+
+We have a matched design. Units are grouped into sets. Each set holds treated and
+control units (or, in a dose study, higher- and lower-dose units) that are
+similar on the measured covariates. We want to argue that this design supports
+the assumption behind the analysis: that within sets, treatment is as good as
+randomly assigned. The evidence we have is the set of covariate differences
+between treated and control units, summed across sets with some weights. We want a single summary
+of those differences across all covariates at once, and we want to read that
+summary against a standard --- what a randomized experiment would produce.
+
+A randomized experiment is the right standard because it is the design we trust.
+The question is which randomized experiment. Complete randomization of the whole
+sample is one candidate, but it is the wrong one here: matching reorganizes the
+sample into similar sets rather than discarding units, so the experiment it
+imitates is one that randomizes treatment within blocks, not one that randomizes
+the whole sample at once. Comparing instead against complete randomization asks
+how much the matching improved on no matching at all --- the question behind
+matching-as-pruning, where units are dropped until the groups balance and the
+result is analyzed as if completely randomized. That is a different workflow from
+the one here, where the matched sets are built and then held fixed, and we do not
+take it as our standard.
+
+---
+
+## Why within-set balance tests collapse
+
+The $d^2$ test compares the covariate imbalance we observe to the natural,
+randomization-based, imbalance we would see if treatment were re-randomized
+within the realized matched sets. As the match gets tighter a small, real,
+persistent difference between treated and control units gets driven toward a
+$p$-value of zero, so a design that matched better looks worse.
+
+I don't think that this problem can be fixed by changing the statistic. Any statistic
+computed from the matched sample, compared to a reference distribution built from
+that same sample, returns the same verdict whether the within-set differences are
+large or tiny --- as the worked alternatives at the end of this section show, and as
+the appendix on metric-invariance argues formally.
+
+Here is the mechanism in one line of algebra. Write $d$ for the vector of
+treated-minus-control covariate differences summed across sets, and $V$ for the
+covariance of $d$ under re-randomization within the matched sets. The $d^2$ statistic
+is
+
+$$ T = d' V^{+} d , $$
+
+where $V^{+}$ is the Moore-Penrose pseudoinverse. It equals the ordinary inverse
+$V^{-1}$ only when $V$ is full rank; $V$ is often rank-deficient here (more
+covariate directions than the within-set re-randomization can move), which is why
+`balanceTest()` forms $V^{+}$ by a truncated SVD and reports degrees of freedom
+equal to the rank of $V$ rather than to the number of covariates. For the scaling
+argument that follows the distinction does not matter --- the same cancellation
+holds for $V^{+}$ --- but it is the entire story behind the separate
+high-dimensional degeneracy of this test, discussed in its own section below, where
+the rank of $V$ falls short of the covariate count and the omnibus loses its ability
+to discriminate.
+
+Now imagine shrinking every within-set distance by a factor $\delta$ (a tighter
+match). The differences d shrink in proportion to $\delta$. The covariance $V$ is
+built from within-set sums of squares, so it shrinks in proportion to $\delta^2$.
+The ratio $T = d' V^{+} d$ then has $\delta$ in the numerator and $\delta^2$ in the
+denominator, twice over, so the two cancel and $T$ does not change at all. The test
+literally cannot tell a match with $\delta = 1$ from a match with $\delta = 0.001$.
+
+This is not special to $d^2$, and it is not special to quadratic forms. Three
+standard alternatives mark the range. Regress treatment on the covariates and read
+off the joint F-test; compare nested logistic regressions of treatment on the
+covariates by a likelihood-ratio test; or, refusing the quadratic form altogether,
+take the largest of the per-covariate standardized within-stratum differences and read
+its p-value off a permutation reference --- the Westfall-Young max-$T$ omnibus, here
+through `coin::independence_test`. The first two are the quadratic form's
+least-squares and likelihood relatives; the third is a different construction --- a
+maximum of marginals, not a sum of squares. All of them standardize each covariate's
+difference by the same within-stratum spread that matching shrinks, so all of them
+collapse. On one small design, as the within-set noise shrinks while a fixed gap on
+$x_1$ stays put:
+
+```{r}
+#| label: competition
+#| warning: false
+## a matched design with a fixed gap on x1 and a tunable within-set noise scale
+make_sets <- function(shrink, nsets = 6, K = 5, gap = 0.4, seed = 99) {
+  set.seed(seed); rows <- list(); z <- blk <- numeric(0)
+  for (s in seq_len(nsets)) {
+    cen <- rnorm(K, sd = 5); g <- c(gap, rep(0, K - 1))
+    rows[[s]] <- rbind(cen + g/2 + shrink * rnorm(K), cen + g/2 + shrink * rnorm(K),
+                       cen - g/2 + shrink * rnorm(K), cen - g/2 + shrink * rnorm(K))
+    z <- c(z, 1, 1, 0, 0); blk <- c(blk, rep(s, 4))
+  }
+  X <- do.call(rbind, rows); colnames(X) <- paste0("x", seq_len(K))
+  data.frame(X, z = z, mset = factor(blk))
+}
+
+compete <- sapply(c(0.5, 0.2, 0.05, 0.01), function(sh) {
+  d <- make_sets(sh)
+  ## (1) HB08 d^2, within-stratum permutation covariance
+  p_d2 <- balanceTest(z ~ x1 + x2 + x3 + x4 + x5 + strata(mset), data = d)$overall["mset", "p.value"]
+  ## (2) F-test: treatment on covariates with stratum fixed effects, joint F
+  p_F  <- anova(lm(z ~ mset, data = d),
+                lm(z ~ x1 + x2 + x3 + x4 + x5 + mset, data = d))[["Pr(>F)"]][2]
+  ## (3) logistic-regression likelihood-ratio test of the covariates
+  gr <- glm(z ~ mset, family = binomial, data = d)
+  gf <- glm(z ~ x1 + x2 + x3 + x4 + x5 + mset, family = binomial, data = d)
+  p_LR <- anova(gr, gf, test = "LRT")[["Pr(>Chi)"]][2]
+  p_coin_maxT <- coin::pvalue(coin:::independence_test(x1 + x2 + x3 + x4 + x5~z|factor(mset),data=d,teststat="maximum",distribution="asymptotic"))
+  c(shrink = sh, d2_p = p_d2, Ftest_p = p_F, logitLR_p = p_LR, coin_maxT=p_coin_maxT)
+})
+signif(t(compete), 3)
+```
+
+At the loose match the omnibus tests do not reject --- the $d^2$, F, and max-$T$
+p-values all sit near $0.2$ --- yet as the match tightens all four fall toward zero,
+though the imbalance on $x_1$ never changed. The $d^2$ test flattens near $0.003$: its
+within-stratum reference is discrete and finitely supported, and no observed
+assignment can be more extreme than the most extreme reshuffle, which puts a floor
+under its p-value. The F and max-$T$ tests keep descending, their continuous
+large-sample references imposing no such floor; the likelihood-ratio p-value collapses
+as well, flattening only because the fitted logistic regression separates.
+
+The max-$T$ result is the one to dwell on. It is not a quadratic form, so it escapes
+the separate high-dimensional degeneracy discussed later --- the rank ceiling that
+freezes $d^2$ once the covariates outnumber the within-block residual degrees of
+freedom. It is in fact the same kind of marginal-combination omnibus that the
+high-dimensional section turns to for that case (the Cauchy combination there is its
+close relative). And it collapses here exactly as the quadratic forms do. Escaping
+the rank ceiling does not escape the collapse, because the collapse lives in the
+reference, not in how the per-covariate signals are pooled: each marginal
+standardized difference is itself measured against the within-set spread, so each is
+driven toward rejection as the match tightens. The appendix on metric-invariance
+gives the formal reason no fixed change of statistic --- quadratic, likelihood, or
+maximum --- can help under the within-set reference.
+
+## A worked example in one dimension
+
+With one covariate the covariance $V$ is a scalar. The $d^2$ statistic reduces to a plain fraction,
+
+$$
+T = \frac{d^2}{V},
+$$
+
+which is just the square of the familiar standardized difference $d/\sqrt{V}$
+that `balanceTest()` already prints for each covariate. Everything in the collapse
+argument above is visible in that one fraction.
+
+Write the pieces out for a single covariate $x$, a binary treatment $z$, and
+matched sets $b$. Let $n_b$, $n_{1b}$, $n_{0b}$ be the set's total, treated, and
+control counts, and let $\bar x_{1b}, \bar x_{0b}$ be the treated and control
+means within the set. Then the summed adjusted difference and its
+within-set re-randomization variance are
+
+$$
+d = \sum_b \frac{n_{1b}\,n_{0b}}{n_b}\,(\bar x_{1b} - \bar x_{0b}),
+\qquad
+V = \sum_b \frac{n_{1b}\,n_{0b}}{n_b\,(n_b-1)}\;
+        \sum_{i \in b} (x_i - \bar x_b)^2 .
+$$
+The first quantity, $d$, is the imbalance the design shows: the treated-minus-
+control difference on $x$, summed across sets. The second is its yardstick. The
+inner sum $\sum_{i \in b}(x_i - \bar x_b)^2$ is the spread of $x$ within set $b$
+--- the sum of squared distances of the set's units from their own mean --- and
+the leading factor $n_{1b}\,n_{0b} / \{n_b(n_b-1)\}$ turns that spread into the
+variance of $d$ produced by reshuffling which units in each set are treated. So
+$V$ is not itself an imbalance; it is how much $d$ would wobble under within-set
+re-randomization, and $T = d^2/V$ weighs the observed imbalance against that
+wobble. The two helpers below compute exactly $d$ and $V$ --- the one-covariate
+special case of `randomization_cov_d` in `balanceTestEngine`.
+
+```{r}
+#| label: oned-helpers
+## d = sum_i (z_i - pi_b) x_i, with pi_b the within-set treated fraction
+adj_diff <- function(x, blk, z) sum((z - ave(z, blk, FUN = mean)) * x)
+
+## V = within-set re-randomization variance of d (scalar, one covariate)
+perm_var <- function(x, blk, z) {
+  v <- 0
+  for (idx in split(seq_along(x), blk)) {
+    n <- length(idx); n1 <- sum(z[idx]); n0 <- n - n1
+    if (n1 == 0 || n0 == 0 || n < 2) next
+    v <- v + (n1 * n0 / (n * (n - 1))) * sum((x[idx] - mean(x[idx]))^2)
+  }
+  v
+}
+
+## $d^2$ statistic for one covariate: a plain ratio, no matrix inverse
+d2_1d <- function(x, blk, z) adj_diff(x, blk, z)^2 / perm_var(x, blk, z)
+```
+
+Now a small design to compute on: six matched sets, each with two treated and
+two control units. Treated units sit a fixed gap above their controls on $x$;
+the parameter `shrink` scales the within-set noise, so a smaller `shrink` is a
+tighter match.
+
+```{r}
+#| label: oned-data
+make_1d <- function(shrink, gap = 0.5, nsets = 6) {
+  set.seed(5)
+  x <- z <- blk <- numeric(0)
+  for (s in seq_len(nsets)) {
+    ctr <- 10 * s
+    x   <- c(x, ctr + gap / 2 + shrink * rnorm(2),   # two treated
+                ctr - gap / 2 + shrink * rnorm(2))   # two controls
+    z   <- c(z, 1, 1, 0, 0)
+    blk <- c(blk, rep(s, 4))
+  }
+  data.frame(x = x, z = z, mset = factor(blk))
+}
+head(make_1d(shrink = 0.3), 8)
+```
+
+The hand-computed ratio is exactly what `balanceTest()` reports as the omnibus
+chi-square for this one-covariate design. There is no covariance to worry about,
+so the two agree to machine precision.
+
+```{r}
+#| label: oned-byhand
+d0 <- make_1d(shrink = 0.3)
+dval <- adj_diff(d0$x, d0$mset, d0$z)
+Vval <- perm_var(d0$x, d0$mset, d0$z)
+bt   <- balanceTest(z ~ x + strata(mset), data = d0)
+round(c(d = dval, V = Vval,
+        T_byhand      = dval^2 / Vval,
+        T_balanceTest = bt$overall["mset", "chisquare"]), 5)
+```
+
+### Reading 1: the test is blind to the scale of the match
+
+The claim above is that shrinking every within-set distance by a factor
+$\delta$ leaves $T$ unchanged, because $d$ scales like $\delta$ and $V$ scales
+like $\delta^2$. Take the design above, hold its shape fixed, and scale every
+unit's deviation from its set center by $\delta$. The imbalance $d$ and the
+variance $V$ both shrink --- but at different rates, and the ratio does not move.
+
+```{r}
+#| label: oned-invariance
+base <- make_1d(shrink = 0.3)
+ctr  <- ave(base$x, base$mset)   # set centers
+dev  <- base$x - ctr             # within-set deviations
+invariance <- sapply(c(1, 0.1, 0.01, 0.001), function(delta) {
+  x <- ctr + delta * dev
+  c(delta = delta,
+    d = adj_diff(x, base$mset, base$z),
+    V = perm_var(x, base$mset, base$z),
+    T = d2_1d(x, base$mset, base$z))
+})
+round(t(invariance), 6)
+```
+
+The `d` column falls tenfold at each step, the `V` column a hundredfold, and the
+`T` column does not move. A match a thousand times tighter gets the identical
+statistic. The reason is that $T = d^2/V$ is a ratio --- the imbalance measured in
+units of the within-set spread --- so scaling the whole configuration by $\delta$
+shrinks the imbalance and the spread together and leaves the ratio fixed. The test
+therefore reads only the imbalance relative to the spread of the very covariates
+the matching compressed; it never sees the imbalance on its own, natural scale. A
+design with a half-unit imbalance against a unit of spread and a design with a
+thousandth-unit imbalance against a thousandth of spread look identical to it, even
+though the second is matched a thousand times more tightly.
+
+### Reading 2: a fixed residual makes a better match look worse
+
+The scaling above moved the gap and the noise together. The situation an analyst
+actually faces is different: matching shrinks the within-set noise but leaves a
+small, persistent gap it could not remove. Hold the gap fixed and shrink only the
+noise. Now $d$ stays put while $V$ falls toward the variance the gap alone
+implies, so $T$ rises and the p-value falls --- the design that matched its noise
+away more tightly is flagged harder.
+
+```{r}
+#| label: oned-collapse
+collapse <- sapply(c(0.5, 0.2, 0.05, 0.01), function(sh) {
+  d0 <- make_1d(shrink = sh)
+  Tn <- d2_1d(d0$x, d0$mset, d0$z)
+  c(shrink = sh, T = Tn, p = pchisq(Tn, df = 1, lower.tail = FALSE))
+})
+round(t(collapse), 5)
+```
+
+The p-value drops from about 0.02 to about 0.00002 as the match tightens, even
+though the real treated-minus-control gap never changed. It plateaus near a
+chi-square of 18 rather than running all the way to zero, because here the fixed
+gap also contributes to the within-set scatter and so puts a floor under $V$;
+with more covariates and coarser within-set noise the descent is steeper, as the
+next example shows. Either way the direction is the wrong one: tightening the
+match worsens the verdict.
+
+### From one covariate to many: the same collapse through `balanceTest()`
+
+The one-covariate case made the arithmetic transparent. Nothing about the
+collapse depended on having a single covariate, though. Here is the omnibus test
+through `balanceTest()` on a more realistic design: forty matched sets of four,
+$N = 160$, five covariates, with a fixed treated-minus-control gap on the first
+covariate and the rest balanced in expectation.
+
+```{r}
+#| label: mv-data
+make_mv <- function(shrink, nsets = 40, K = 5, gap = 0.4, seed = 99) {
+  set.seed(seed)
+  rows <- list(); zz <- bb <- numeric(0)
+  for (s in seq_len(nsets)) {
+    cen <- rnorm(K, sd = 5) + 0.1 * s     # set center drifts across sets
+    g   <- c(gap, rep(0, K - 1))          # persistent gap on x1 only
+    rows[[s]] <- rbind(cen + g / 2 + shrink * rnorm(K),
+                       cen + g / 2 + shrink * rnorm(K),
+                       cen - g / 2 + shrink * rnorm(K),
+                       cen - g / 2 + shrink * rnorm(K))
+    zz <- c(zz, 1, 1, 0, 0); bb <- c(bb, rep(s, 4))
+  }
+  X <- do.call(rbind, rows); colnames(X) <- paste0("x", seq_len(K))
+  data.frame(X, z = zz, mset = factor(bb))
+}
+
+mv <- sapply(c(0.8, 0.3, 0.1, 0.03), function(sh) {
+  bt <- balanceTest(z ~ x1 + x2 + x3 + x4 + x5 + strata(mset),
+                    data = make_mv(sh))
+  o  <- bt$overall["mset", ]   # one row of the omnibus table
+  c(shrink = sh, chisquare = o[["chisquare"]],
+    df = o[["df"]], p.value = o[["p.value"]])
+})
+signif(t(mv), 4)   # signif, not round, so the tiny p-values survive
+```
+
+The omnibus chi-square climbs from about 20 to about 118 and the p-value falls
+from roughly $10^{-3}$ to roughly $10^{-23}$ as the match tightens, on five
+degrees of freedom throughout. The persistent gap on $x_1$ never changed. The
+same fraction is at work as in one dimension: the residual stays while the
+within-set noise that anchors $V$ disappears, so the test reads a tighter,
+better match as stronger evidence against the design.
+
+---
+
+## What the collapse means: a trilemma
+
+The collapse is not a defect of $d^2$ in particular. The competing-statistics
+table and the appendix on metric-invariance say that any statistic built from the
+matched sample, compared to a reference drawn from that same sample, collapses the
+same way. This is worth stating as a constraint, because it explains why the
+problem cannot be fixed cheaply and what the real choices are.
+
+The standard a matched analysis actually assumes is re-randomization of treatment
+*within the realized matched sets* --- the design the matching was built to imitate.
+Against that standard, any calibration we compute (a p-value, a percentile, "more
+balanced than X% of randomized versions of this design") collapses as the match
+tightens, because the reference distribution's spread is built from the within-set
+covariate spread, and tightening the match is the act of shrinking that spread. The
+observed imbalance then sits in an ever-narrower reference, and the verdict turns
+against the design regardless of which statistic or which fixed metric we choose.
+
+So one cannot have all three of these at once:
+
+1. the within-set standard (re-randomize treatment within the realized sets);
+2. a calibration --- "better than X% of randomized versions" --- that does not
+   collapse as the match tightens;
+3. no comparison to designs the analyst did not build.
+
+Pick two. Reading the imbalance as a *magnitude* on a fixed external scale, rather
+than as a calibration, keeps (1) and (3) and gives up (2): it reports how large the
+imbalance is, not how surprising it is under a shrinking reference. Comparing the
+design against coarser reference blockings keeps (2) and gives up part of (3): it
+buys a non-collapsing calibration by relaxing the within-set standard to a looser
+one. The resolution-profile section below is that second corner; the recommendation
+that follows is the first.
+
+One point the collapse settles, and that matters for reading the within-set
+p-value at all: a small p-value there is often *correct detection*. A persistent,
+same-sign covariate gap across sets genuinely is not what within-set randomization
+produces, and the test is right to flag it. What the p-value cannot do is say
+whether the gap it flags is substantively large or trivially small --- because its
+verdict reflects the precision of the match, not the size of the imbalance. That
+gap between significance and magnitude is what the next section addresses.
+
+---
+
+## What to report instead
+
+The recommendation is to report the imbalance as a magnitude on a scale fixed
+before matching, and to keep the per-covariate, substantive judgment a matcher
+already makes, rather than to read a single collapsing p-value as a measure of
+design quality.
+
+**A magnitude on a fixed scale.** Replace the within-set covariance $V$, which
+shrinks with the match, by a covariance fixed before matching --- the covariance of
+the covariates in the pre-match pool, $\Sigma_{\text{pool}}$ --- and report the
+Mahalanobis imbalance $d'\,\Sigma_{\text{pool}}^{-1}\,d$ as a number, not as a
+p-value. Because the denominator no longer moves with the match, this magnitude
+falls as the match improves: it sees the imbalance on a scale the matching did not
+compress. The appendix on metric-invariance shows the contrast directly --- the
+within-set *p-value* is the same whatever fixed metric is used, but the *magnitude*
+the fixed metric produces is precision-invariant and shrinks as the noise shrinks.
+This omnibus magnitude is the same statistic Branson (2021) uses (the next section),
+read as a magnitude rather than as a design-selection p-value.
+
+**Per-covariate differences and substantive judgment.** The omnibus magnitude
+summarizes; the matcher's actual craft is per-covariate. For the covariates that
+matter, report the treated-minus-control differences within sets and their
+distribution across sets --- on a scale fixed before matching --- and exercise
+judgment on them with collaborators: "half the sets show no age difference, but two
+sets differ by more than ten years; is that acceptable here?" `balanceTest()`
+already prints per-covariate standardized differences; the within-set-difference
+percentiles across sets are the part worth adding. This is not a softening of the
+analysis. It is the recognition that whether a residual imbalance matters is a
+substantive question about the covariate and the outcome, not one a single number
+can settle.
+
+**An equivalence test, if a calibrated statement is wanted.** A matcher who wants a
+yes/no calibration that does not collapse can test equivalence rather than
+difference: instead of testing "is there any imbalance," test "is the imbalance
+smaller than a stated tolerance $\delta$." This keeps the within-set standard,
+invokes no other design, and behaves correctly as the match tightens --- a tighter
+match makes equivalence easier to conclude. The cost is that the tolerance $\delta$
+must be named, which is the same "how large is too large" judgment as above, now
+made explicit on the covariate scale. A design-respecting equivalence procedure
+needs a proper null for the fixed-metric magnitude; that is the `sigma_x`
+machinery on the development branch, and it is the natural next implementation step
+if the team wants the calibrated form.
+
+---
+
+## Relation to Branson (2021)
+
+Consider what an analyst actually does. She has a pool of treated and control units,
+she matches them into sets that are similar on the measured covariates, and she
+builds those sets to approximate a block-randomized experiment --- in the simplest
+case, a paired experiment in which one unit of each pair would have been assigned to
+treatment by the flip of a coin. She then holds that matched design fixed and
+analyzes the outcomes as the design she built, conditioning on the sets she formed.
+The covariate balance she reports is evidence for the assumption her analysis rests
+on: that within sets, treatment is as good as randomly assigned. She has already
+specified the experiment her matching imitates, so her question is not which
+experiment her data resemble, but whether the match she built supports that
+specification well enough on the covariates she can see.
+
+The work we build on here is Branson (2021), who formalized the test of whether a
+matched dataset is consistent with a specified design's randomization. Testing
+balance against a design-induced reference is already what Hansen and Bowers (2008)
+do, conditioning on the within-block design; Branson's sharpening is to make the
+design an explicit, swappable null. His $H_0$ is that treatment was drawn from
+$P^*(W \mid X)$ for a particular $P^*$, and he re-runs the same test under each
+candidate $P^*$ in turn: complete randomization, block or paired randomization, and
+constrained (rerandomized) assignment. For an omnibus summary he recommends a
+Mahalanobis distance, $M = (\bar x_T - \bar x_C)' [\text{cov}(\bar x_T - \bar
+x_C)]^{-1} (\bar x_T - \bar x_C)$, in which $\bar x_T - \bar x_C$ is the overall,
+unblocked treated-minus-control mean difference and $\text{cov}(\bar x_T - \bar x_C)
+= (N / N_T N_C)\,\text{cov}(X)$ is the full pre-match pool covariance of the
+covariates, computed once and held fixed across every design. Because the metric is
+fixed, the reference distributions of the several designs can be drawn on one scale
+and overlaid, with a single line at the observed $M$; Branson reads which design a
+dataset approximates by where that one value falls in each density --- preferring
+the design under which it is most central, flagging a dataset as too well balanced
+for one design (evidence for a more constrained one) or too imbalanced to be
+plausible under another. He calls his test a generalization of Hansen and Bowers
+(2008), with their permutation test a special case in which draws from $P^*$ are
+permutations of the observed assignment. Making the design an explicit, swappable
+null and putting several designs on one fixed scale are Branson's contributions, and
+we use both.
+
+One construction choice separates his test from the Hansen-Bowers $d^2$, and it is
+two-fold. Branson's input is the unblocked overall mean difference and his
+denominator is the fixed pool covariance; the Hansen-Bowers omnibus is
+$T = d'\,V_d^{+}\,d$, where $d$ is the within-block-adjusted treated-minus-control
+difference vector and $V_d$ is the covariance of $d$ under within-block permutation
+--- a quantity that depends on the design and on the realized match, and that shrinks
+as the matched sets tighten. So Branson holds one metric fixed and slides the design
+into the reference, while the Hansen-Bowers test studentizes a within-block-adjusted
+difference by a denominator that moves with the match. That moving denominator is
+exactly what produces the collapse above, which Branson's fixed-metric,
+single-resolution comparison does not exhibit. His $M$ is outside the collapse for
+two reasons worth keeping separate: his statistic is the unblocked overall
+difference, not a within-stratum-deviation quantity, and he compares designs at a
+single blocking rather than refining it. His fixed metric is not what protects him;
+an unblocked input and a single resolution are.
+
+This is why our recommendation reports Branson's statistic as a magnitude. The
+quantity $d'\,\Sigma_{\text{pool}}^{-1}\,d$ we report uses his pool covariance
+(his footnote 3, p. 9, notes that `randChecks` computes $\text{cov}(X)$ on the full
+unmatched pool by default), applied to the within-block-adjusted difference our
+blocked design produces, and read as a magnitude rather than a design-selection
+p-value. We decline the design-menu calibration, and one end of it in particular:
+reading a paired design against complete randomization is the matching-as-pruning
+question of the opening section, which we do not adopt. Branson's own caution is
+consistent with holding the built design fixed: he warns (p. 19) that "it may be
+harmful to assume a precise experimental design or even any design if there are
+substantial biases that remain after matching."
+
+*Citation to verify before circulating:* Zach Branson, "Randomization Tests to
+Assess Covariate Balance When Designing and Analyzing Matched Datasets,"
+Observational Studies 7(2), 2021, pp. 44-80 (page headers; the Project MUSE cover
+says pp. 1-36). DOI 10.1353/obs.2021.0031; arXiv:1804.08760. `randChecks` on CRAN.
+The quotes above come from a read of the PDF; spot-check them and the page numbers
+before publication.
+
+---
+
+## An optional sensitivity analysis: the resolution profile
+
+This section records an idea the team developed and then chose not to recommend as
+the primary tool. It is the second corner of the trilemma --- buy a non-collapsing
+calibration by relaxing the within-set standard to a coarser one --- and it is
+included as an optional sensitivity analysis, not as the memo's proposal. A matcher
+who holds the design fixed and reports a magnitude (the recommendation above) does
+not need it.
+
+The idea. Re-randomizing treatment within the realized matched sets is the finest
+of a family of block-randomized references; coarser members merge nearby matched
+sets into larger blocks, up to one block holding everyone (complete randomization).
+At any blocking $B$, compute the design's percentile in the within-block
+re-randomization distribution of the same $d^2$ statistic: the fraction of
+within-block-shuffled assignments whose imbalance is at least as large as the one
+the design shows. Sweep the percentile across the family and plot it; this is the
+**resolution profile**. Its finest end reproduces the $d^2$ test, which collapses;
+its coarsest end reproduces the complete-randomization comparison --- the
+matching-as-pruning question we do not adopt as a standard, present here only as the
+endpoint. The single summary is the crossing:
+
+    l* = the finest reference blocking at which the design's percentile first
+         reaches 1/2 --- the finest block-randomized experiment the design
+         balances the measured covariates as well as.
+
+The honest reading of $l^*$ is not "as good as a design you did not build" but a
+sensitivity analysis on the *resolution* of the within-set exchangeability
+assumption: a coarser block of nearby units is a weaker form of the same assumption
+(exchangeable among roughly-similar units, not nearly-identical ones), and $l^*$
+locates the strongest version of that assumption the data do not contradict. Its
+coarse, complete-randomization end is the pruning question and is kept distinct from
+its block-randomized middle.
+
+### Why coarsening the reference rescues the calibration
+
+The collapse came from the within-set covariance $V$ shrinking as fast as the
+differences $d$. A coarser reference breaks that link. When the reference blocks are
+coarser than the matched sets, each block contains units from several matched sets,
+so the covariate spread within a block includes the differences between set centers.
+Those between-set differences are fixed by where the sets sit; they do not shrink
+when you tighten the match. The coarse reference's covariance stays bounded away from
+zero as $\delta \to 0$, while the imbalance it measures shrinks toward the residual
+the matching could not remove. The numerator shrinks, the denominator does not, and
+the percentile rises as the match improves --- the right direction. Status: the
+collapse at the finest reference is established; the immunity of coarser references
+is a scaling argument plus simulation, not a general proof.
+
+### Building the ladder, and two findings
+
+The ladder must be pre-specified and geometry-respecting. A block in a real
+block-randomized experiment holds units that resemble each other, so the only honest
+coarsening merges the matched sets that are *nearest* on the matching score the
+design was built from (a set located by, say, the average or median score of its
+units), declared before balance is examined. This is not a free parameter:
+merging far-apart sets instead flatters the design by a full rung. On one fixed
+design, the geometry-respecting and interleaved ladders give $l^*$ of about 11.5 and
+6.4 units per block --- larger than the bin-offset wiggle the stability study
+reports, and always in the design-flattering direction. Pre-specifying the
+nearest-set-merge rule closes this degree of freedom.
+
+A second finding cuts the other way and answers the standard objection that balance
+is about the covariate distributions, not about who is paired with whom. $l^*$ is
+invariant to the pairing: holding the same units and the same treated and control
+covariate distributions, three different valid pairings of the same units give
+resolution profiles that agree to about 0.001. Above the finest rung the percentile
+depends on the matched-set means and on which units sit in each resolution band, not
+on who is paired with whom inside a set. Only the single finest rung uses the
+pairing, and that is the rung that collapses.
+
+The simulation behind these claims is in `vignettes/resolution-profile-demo.R`
+(the collapse and the discrete ladder), `resolution-profile-stability.R` (the
+continuous caliper, the $l^*$-vs-gap responsiveness, and the robustness study), and
+`resolution-profile-threebenchmark.R` (the geometry-respecting ladder, the
+pairing-invariance check, and a simulation-free rendering against a chance floor).
+In brief: the collapse is confined to the single finest reference; $l^*$ rises
+monotonically with the persistent gap; the analytic chi-square percentile matches a
+within-block permutation except at the finest rung, which sits below $l^*$.
+
+### How to read the uncertainty
+
+The inference model is the assignment mechanism: conditional on the units, their
+covariates, and the blocks, the only randomness is which units are treated. The
+percentile is an exact, finite-sample position of the observed design in the
+within-block re-randomization distribution, computed by enumeration when the support
+is small or estimated by drawing assignments. There is no superpopulation and no
+resampling, so there is no bootstrap. For one design the curve is the whole answer
+and $l^*$ is one reading of it. The 30-to-40 percent spread of $l^*$ reported in the
+stability study is the variation of $l^*$ across many designs of the same nominal
+quality, not an uncertainty band for one analyst's one design.
+
+### What is established, and what is not
+
+Established: the $d^2$ collapse at the matched-set reference, and that no statistic
+from the matched sample compared to a same-sample reference escapes it. Shown by
+simulation and a scaling argument, not proved: that coarser references do not
+collapse; that $l^*$ rises monotonically with the residual gap; that $l^*$ is
+invariant to the pairing and stable once the ladder is geometry-respecting. Open: a
+formal proof that coarser references escape the collapse; a unit for $l^*$ that is
+comparable across set structures; and a prototype of the continuous caliper in
+`balanceTest()`.
+
+It speaks to the measured covariates only. A small $l^*$ says the design balances the
+measured covariates as well as a finely blocked experiment would; it says nothing
+about unmeasured confounders, and "as well as experiment $l^*$" is a statement of
+consistency, not a certificate. Report it next to a sensitivity analysis for
+unmeasured confounding, not in place of one.
+
+---
+
+## A second pathology: high dimensionality
+
+The collapse is one way the omnibus fails. There is a second, unrelated one, and the
+resolution profile addresses it only by accident and only halfway, so it is worth
+keeping separate.
+
+When the covariate count $p$ reaches or passes the within-block residual degrees
+of freedom --- the total number of units $N$ minus the number of blocks $B$ ---
+the statistic $T = d' V^{+} d$ stops responding to the covariates altogether. It
+freezes at its own degrees of freedom, and the chi-square p-value freezes near
+$0.46$.
+
+The mechanism is exact, not asymptotic. Write the within-block-centered treatment
+contrast $c_i = z_i - \pi_{b(i)}$ and let $X_c$ be the within-block-centered
+covariate matrix, so that $d = X_c' c$ and $V = X_c'\,\mathrm{Cov}(c)\,X_c$, with
+$\mathrm{Cov}(c)$ the within-block randomization covariance of the contrast. Then
+
+$$
+T = c'\,X_c \,\bigl(X_c'\,\mathrm{Cov}(c)\,X_c\bigr)^{+}\, X_c'\, c .
+$$
+
+When the centered covariates span the entire within-block residual space --- which
+is exactly what $p \ge N - B$ buys --- the map $c \mapsto X_c' c$ is injective on
+the contrast space and $T$ reduces to $c'\,\mathrm{Cov}(c)^{+} c$, the Mahalanobis
+length of the contrast under its own covariance. That length is identical for every
+assignment: all within-block assignments are permutations of one another and
+$\mathrm{Cov}(c)$ is exchangeable, so the quadratic form is assignment-invariant and
+equals its mean, the rank $N - B$. The covariates have cancelled out of the
+statistic. $T = N - B$ is a constant, and the test reports
+$P(\chi^2_{N-B} > N-B)$, which for any moderate rank sits near $0.46$.
+
+```{r}
+#| label: highdim-sweep
+#| warning: false
+## K strata of n_s units (n1 treated), p PURE-NOISE covariates (the null is true).
+make_noise <- function(K, n_s, n1, p, seed = 2024) {
+  set.seed(seed)
+  z <- blk <- numeric(0); Xl <- list()
+  for (s in seq_len(K)) {
+    Xl[[s]] <- matrix(rnorm(n_s * p), n_s, p)
+    zz <- rep(0, n_s); zz[sample(n_s, n1)] <- 1
+    z <- c(z, zz); blk <- c(blk, rep(s, n_s))
+  }
+  X <- do.call(rbind, Xl); colnames(X) <- paste0("x", seq_len(p))
+  data.frame(X, z = z, mset = factor(blk))
+}
+
+## fix the design (10 strata of 4, so residual df = N - B = 40 - 10 = 30); raise p
+sweep_p <- sapply(c(2, 10, 20, 30, 50, 100), function(p) {
+  d <- make_noise(K = 10, n_s = 4, n1 = 1, p = p)
+  f <- reformulate(c(paste0("x", seq_len(p)), "strata(mset)"), response = "z")
+  o <- balanceTest(f, data = d)$overall["mset", ]
+  c(p = p, resid_df = 30, chisq = round(o[["chisquare"]], 1),
+    used_df = o[["df"]], chisq_over_df = round(o[["chisquare"]] / o[["df"]], 3),
+    p.value = round(o[["p.value"]], 3))
+})
+t(sweep_p)
+```
+
+Past $p = 30$ the statistic is pinned at $30$ and twenty more covariates change
+nothing: the chi-square equals its degrees of freedom and the p-value sits at
+$P(\chi^2_{30} > 30) = 0.466$. That pairing --- an omnibus p-value parked near
+$0.45$ together with a chi-square almost exactly equal to its degrees of freedom
+--- is the diagnostic to watch for. `balanceTest()` already warns when it happens
+("Degrees of freedom exceeds units less number of strata...").
+
+Does the resolution profile help? Coarsening the reference raises the residual
+degrees of freedom $N - B$, so it can lift the design out of the saturated regime.
+Below, $p = 30$ noise covariates with $N = 40$ units: the test is frozen at the
+fine blockings and comes back to life once $N - B$ passes $30$.
+
+```{r}
+#| label: highdim-coarsen
+#| warning: false
+set.seed(13)
+X <- matrix(rnorm(40 * 30), 40, 30); colnames(X) <- paste0("x", 1:30)
+z <- rep(c(1, 0), 20)
+coarsen <- sapply(c(20, 10, 5, 2, 1), function(B) {
+  blk <- factor(rep(seq_len(B), each = 40 / B))
+  f   <- reformulate(c(paste0("x", 1:30), "strata(mset)"), response = "z")
+  o   <- balanceTest(f, data = data.frame(X, z = z, mset = blk))$overall["mset", ]
+  c(blocks = B, resid_df = 40 - B, used_df = o[["df"]],
+    chisq_over_df = round(o[["chisquare"]] / o[["df"]], 3),
+    p.value = round(o[["p.value"]], 3))
+})
+t(coarsen)
+```
+
+The rescue is real but partial and impure. It works only when $p < N$: once
+$p \ge N$ even complete randomization (rank $N-1$) is saturated, and no coarsening
+can manufacture rank the sample does not hold. And the rescue arrives on the same
+coarsening that loosens the reference, so it comes mixed with the leniency of the
+resolution-profile section rather than as a clean correction.
+
+The clean correction is a different statistic, not a different reference. The
+pathology is that the quadratic form inverts a $p \times p$ covariance whose rank
+is capped by the design. A test that never inverts that covariance --- one that
+combines the per-covariate marginal tests, each of which is perfectly well behaved
+--- has no rank ceiling and stays valid when $p$ exceeds $N$. The Cauchy
+combination (ACAT) test of Liu and Xie (2020) is the natural choice: it combines
+the per-covariate p-values `balanceTest()` already reports, is analytically robust
+to dependence among the covariates, and is aimed exactly at the case where each
+covariate admits a sensible one-dimensional statistic but the joint omnibus does
+not. It senses sparse, marginal departures rather than the coordinated
+multivariate shift the $d^2$ quadratic is tuned for, so the two are complements:
+report ACAT beside $d^2$, not in place of it.
+
+### The combination p-value, done correctly
+
+The ACAT combination is one line of arithmetic. Given per-covariate p-values
+$p_1, \dots, p_d$ (each uniform under the null) and weights $w_k$ summing to one,
+form $T = \sum_k w_k \tan\{(0.5 - p_k)\pi\}$ and read off
+$p_{\mathrm{ACAT}} = 0.5 - \arctan(T)/\pi$, the upper tail of a standard Cauchy.
+The transform sends a small $p_k$ to a large positive term and a large $p_k$ to a
+large negative one, and the Cauchy distribution's stability under averaging is what
+makes the combination valid even when the covariates --- and hence their p-values
+--- are dependent (Liu and Xie 2020).
+
+```{r}
+#| label: acat-corrected
+acat_pvalue <- function(p, weights = NULL) {
+  p <- p[!is.na(p)]
+  d <- length(p)
+  if (d == 0L) return(NA_real_)
+  if (is.null(weights)) weights <- rep(1 / d, d) else weights <- weights / sum(weights)
+  p <- pmin(p, 1 - .Machine$double.eps)        # tan -> -Inf exactly at p = 1
+  small <- p < 1e-16                            # tan((0.5-p)pi) ~ 1/(p pi) for tiny p
+  stat <- if (any(small)) {
+    sum((weights[small] / p[small]) / pi) +
+      sum(weights[!small] * tan((0.5 - p[!small]) * pi))
+  } else {
+    sum(weights * tan((0.5 - p) * pi))
+  }
+  0.5 - atan(stat) / pi
+}
+```
+
+The test of a combination rule is its calibration: under the global null the
+per-covariate p-values are uniform, so the combined p-value must be uniform too.
+
+```{r}
+#| label: acat-calibration
+set.seed(2024)
+B <- 4000; K <- 6
+null_p <- replicate(B, acat_pvalue(runif(K)))  # K independent covariates, null true
+round(c(mean = mean(null_p),                    # uniform -> 0.5
+        type_I_at_0.05 = mean(null_p < 0.05),   #         -> 0.05
+        type_I_at_0.10 = mean(null_p < 0.10)),  #         -> 0.10
+      3)
+```
+
+The mean sits at $0.5$ and the rejection rates track their nominal levels. This is
+worth stating because the prototype on the `cauchycomb` branch does not pass it:
+that version halves each p-value before the transform and then doubles a minimum at
+the end, two steps that are not in the published method and that break the Cauchy
+calibration (its null mean is about $0.31$ and its rejection rate at $0.10$ is about
+$0.14$). The function above --- feed the uniform p-values straight in, take the
+standard Cauchy tail --- is the published rule, and it is the correction the branch
+needs.
+
+---
+
+## Appendix A. The collapse does not depend on the statistic
+
+The collapse section claims that comparing any statistic from the matched sample to a
+reference built from that same sample returns the same verdict however tightly the
+design matched. Here is why, and a check.
+
+Under within-set re-randomization the covariates are fixed and only treatment is
+permuted, so the within-set variance $V$ --- built from the covariate spread and
+the fixed treated/control counts, neither of which moves when you reshuffle
+treatment --- is the *same* for every permutation. Dividing the observed value and
+every permuted value of $d^2$ by that same constant cannot change a rank, so the
+percentile of $d^2/V$ is just the percentile of the bare imbalance $d^2$. Replacing
+$V$ with any other fixed standardization --- a fixed pool variance, the full-sample
+$\mathrm{cov}(x)$ --- divides by a different constant and changes nothing: every
+fixed metric returns the percentile of the bare imbalance, which is what collapses.
+
+```{r}
+#| label: appendix-metric-cancels
+## A fixed pool reference variance (a loose, un-compressed match), held fixed.
+pool   <- make_1d(shrink = 1)
+Sigma0 <- perm_var(pool$x, pool$mset, pool$z)
+
+## within-set re-randomization distribution of d^2 / (fixed metric). A shared
+## inner seed makes both metrics see the SAME permutations, so any difference in
+## the resulting p-value would be real, not Monte Carlo noise.
+within_ref <- function(x, blk, metric, B = 4000, seed = 1) {
+  set.seed(seed); idxs <- split(seq_along(x), blk)
+  replicate(B, {
+    zp <- numeric(length(x)); for (idx in idxs) zp[sample(idx, 2)] <- 1
+    adj_diff(x, blk, zp)^2 / metric
+  })
+}
+
+appendix <- sapply(c(0.5, 0.05, 0.01), function(sh) {
+  d        <- make_1d(shrink = sh)
+  Vreal    <- perm_var(d$x, d$mset, d$z)
+  obs_real <- adj_diff(d$x, d$mset, d$z)^2 / Vreal     # observed, released metric
+  obs_pool <- adj_diff(d$x, d$mset, d$z)^2 / Sigma0    # observed, fixed metric
+  c(shrink      = sh,
+    p_realizedV = mean(within_ref(d$x, d$mset, Vreal)  >= obs_real),
+    p_fixedPool = mean(within_ref(d$x, d$mset, Sigma0) >= obs_pool),
+    magnitude_M = obs_pool)
+})
+round(t(appendix), 4)
+```
+
+The two p-value columns fall together as the match tightens and agree to the last
+digit: the metric has cancelled. What the fixed metric *does* change is the size of
+the statistic, not its percentile --- the `magnitude_M` column stays put while the
+imbalance is held fixed and the noise shrinks, which is why a fixed pool variance
+makes a useful precision-invariant *magnitude* to report beside the test, but not a
+different test. This is the magnitude the recommendation section reports.
+
+The multivariate case is not an exact cancellation --- a matrix metric can rank
+permutations differently --- but the collapse survives it: as the match tightens
+the imbalance concentrates in the residual-gap direction and the observed
+assignment maximizes that component, so the observed sits at the extreme of the
+within-set reference under any metric with weight on that direction.
+`vignettes/rescaling-prototype.R` confirms this for the omnibus and extends it to
+two proposed rescues --- empirical-Bayes (Stein) pooling of each set's scatter
+toward the pool, and a covariance-shrinkage dial. Each keeps the *statistic*
+bounded as the match tightens, but leaves the within-set *p-value* collapsing. The
+only reference that does not collapse is a coarser one --- the resolution profile of
+the optional section above. The competing-statistics table shows the same collapse
+in the standard F-test and logistic-regression LR balance tests, the quadratic
+form's relatives, and in the Westfall-Young max-$T$ permutation omnibus, which is
+not a quadratic form at all --- the sharpest form of the claim here, that the verdict
+is a property of the reference, not of the shape of the statistic.
+
+---
+
+## Appendix B. The R-squared relabeling, and why distances from its baselines add no test
+
+An R-squared from regressing the (within-stratum-centered) treatment indicator on
+the (within-stratum-centered) covariates is the $d^2$ test on an interpretable
+$[0,1]$ scale, not a new test. The exact relation is $R^2 = T^2 / (T^2 + \text{df})$
+for a Hotelling/Mahalanobis quadratic form $T^2$ in the same $d$, so $R^2$, the F
+statistic, and $d^2$ are monotone transforms of one another. The monotone
+equivalence is exact for $K = 1$ or for designs with a constant per-block weight
+(pure pair matching, equal-size and equal-ratio designs), and equal to simulation
+precision otherwise. Reading $R^2$ against its within-block re-randomization
+distribution therefore gives the same percentile as $d^2$, and collapses the same
+way.
+
+The interpretable content is the two baselines. The ideal floor is $R^2 = 0$
+(covariates constant within strata; treatment can explain nothing). The chance floor
+is $K/(n - S)$ with $S$ strata --- approximately the mean of $R^2$ under the
+within-block null, since $K$ covariates explain about $K$ of the $n - S$
+within-stratum residual degrees of freedom by chance. The natural "how far above
+well-balanced" is the distance from the chance floor, normalized, and that is
+*exactly* adjusted $R^2$: $\text{adjusted } R^2 = (R^2 - K/(n-S)) / (1 - K/(n-S))$,
+an identity.
+
+A randomization distribution *of that distance* adds no test. The baselines are
+constants --- they do not depend on the assignment --- and subtracting a constant
+preserves ranks, so the within-block percentile of $(R^2 - \text{baseline})$ equals
+the percentile of $R^2$, which equals the $d^2$ percentile. The distance is a useful
+effect size, not a second, independent check. The distance becomes a live,
+non-collapsing object only by changing the metric (a fixed pool metric, giving the
+absolute magnitude of the recommendation) or by changing the question (equivalence
+within a tolerance). The runnable version of this argument, with the constant-shift
+demonstration and the magnitude-versus-calibration contrast, is in
+`vignettes/r2-balance-reasoning.qmd`.
