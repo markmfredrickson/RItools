@@ -40,7 +40,8 @@
 #'         was called with `sigma_x_test = TRUE`, [RItools::glance.xbal()] will also include the
 #'         columns `sigma_x` (the alternative omnibus statistic), `sigma_x.df` (its effective degrees
 #'         of freedom under the chosen null backend), and `sigma_x.p.value`.
-#' @export
+#' @rawNamespace export(tidy.xbal)
+#' @rawNamespace S3method(generics::tidy, xbal)
 #' @md
 tidy.xbal <- function(x,
                       strata = dimnames(x[['results']])[['strata']][1],
@@ -82,7 +83,8 @@ tidy.xbal <- function(x,
     ans
 }
 #' @rdname tidy.xbal
-#' @export
+#' @rawNamespace export(glance.xbal)
+#' @rawNamespace S3method(generics::glance, xbal)
 glance.xbal <- function(x, strata=dimnames(x[['results']])[['strata']][1], ...)
 {
     ans <- x[['overall']][strata,,drop=FALSE]

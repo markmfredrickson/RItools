@@ -2,6 +2,8 @@
 
 S3method(as.matrix,ModelMatrixPlus)
 S3method(formula,xbal)
+S3method(generics::glance, xbal)
+S3method(generics::tidy, xbal)
 S3method(plot,balancetest)
 S3method(plot,xbal)
 S3method(print,balanceMagnitude)

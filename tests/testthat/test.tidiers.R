@@ -101,6 +101,9 @@ test_that("tidy.xbal w/ special formatting for original units vars",{
           
 
 test_that("Date presentation", {
+    ## exercises broom-generic dispatch (tidy(bt)), which needs the
+    ## S3method(generics::tidy, xbal) registration; broom is Suggests-only
+    skip_if_not_installed("broom")
     set.seed(39483293)
 
     n <- 100

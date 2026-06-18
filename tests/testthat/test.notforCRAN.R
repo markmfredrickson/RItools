@@ -191,8 +191,12 @@ test_that("HB08 and HB08_2016 flag degenerate statistics", {
   expect_warning(balanceTest(z ~ . + strata(b), data = df_bad, inferentials.calculator = RItools:::HB08_2016), "degenerate")
 
   skip_on_cran()
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08))
-  expect_silent(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016))
+  ## `.` includes b as a covariate, and b is constant within its own strata, so
+  ## the numerical-stability screen now (correctly) drops it with a message.  The
+  ## point of this test is that a NON-degenerate design raises no DEGENERATE
+  ## warning, so assert the absence of a warning (the screen message is expected).
+  expect_warning(suppressMessages(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08)), regexp = NA)
+  expect_warning(suppressMessages(balanceTest(z ~ . + strata(b), data = df_good, inferentials.calculator = RItools:::HB08_2016)), regexp = NA)
 
 
 })

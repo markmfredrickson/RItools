@@ -29,7 +29,9 @@ Suggests:
     testthat,
     roxygen2,
     MASS,
-    CompQuadForm
+    CompQuadForm,
+    broom,
+    generics
 Enhances: optmatch
 URL: https://cran.r-project.org/package=RItools
 Encoding: UTF-8
