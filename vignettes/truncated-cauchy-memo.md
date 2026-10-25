@@ -108,24 +108,30 @@ check that a single p-value combines to itself, that the rejection rate at
 `tests/testthat/test.notforCRAN.R` expected a mean of 0.5. It now requires a
 mean between 0.5 and 0.7, and the mean in that test was 0.615.
 
-## A note for riposte
+## riposte's level test
 
-riposte's test of the truncated combination's level uses 1,000
-re-randomizations. It accepts any rejection rate below
+riposte has a test that its truncated combination rejects a true null
+hypothesis at no more than the nominal rate. That test used 1,000
+re-randomizations and accepted any rejection rate below
 0.05 + 3 x 0.0069 = 0.071, where 0.0069 = sqrt(0.05 x 0.95 / 1000) is the
 standard error of a rejection rate near 0.05 from 1,000 draws. A rate of 0.06,
-about what the table shows with t = 0.9, would pass that test.
+about what the table shows with t = 0.9, would have passed it.
 
-So we ran riposte's own design with many more draws. With Wallsten and
-Nteta's 36 outcomes held fixed and treatment reassigned 100,000 times, the
-truncated Cauchy combination rejected at 0.0487 at the 0.05 level and the
-hybrid at 0.0471. Over 50,000 fresh data sets with no effect (36 units, a
-5-point outcome), the rates were 0.0507 and 0.0495. riposte's six
-representations of one outcome are strongly dependent, and in these designs
-the truncated combination kept its level. The script is
-`dev/level-truncated-cauchy.R` in riposte. riposte's level test now uses
-10,000 reassignments, and its test of the permutation hybrid uses 5,000 data
-sets instead of 300.
+So we ran riposte's own designs with many more draws, for its truncated Cauchy
+combination and for its hybrid, which adds the p-value of riposte's quadratic
+test to the Cauchy combination. With Wallsten and Nteta's 36 outcomes held
+fixed and treatment reassigned 100,000 times, the rejection rate at the 0.05
+level was 0.0487 for the Cauchy combination and 0.0471 for the hybrid. Over
+50,000 fresh data sets with no effect (36 units, a 5-point outcome), the rates
+were 0.0507 and 0.0495. So in these designs the truncated combination kept its
+level. riposte combines six p-values computed from transformations of one
+outcome, and those p-values are strongly dependent. We think that dependence
+is why riposte's rates differ from the independent rows of the table above,
+but we did not test it.
+
+The script is `dev/level-truncated-cauchy.R` in riposte. riposte's level test
+now uses 10,000 reassignments, and the hybrid's test with re-randomization
+p-values uses 5,000 data sets instead of 300.
 
 ## Code
 
