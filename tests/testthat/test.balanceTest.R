@@ -159,12 +159,13 @@ test_that("balT returns covariance of tests", {
 
   expect_equal(length(tcov), 2)
 
-  ## Developer note: to strip out entries corresponding to intercept -- which has var 0,
-  ## except when there's variation in unit weights and/or cluster sizes --
-  ## have to filter out rows and cols named "(Intercept)", separately for each
-  ## entry in list tcov.  (Recording while updating test that follows, `c(4,4)` --> `c(5,5)`)
-  expect_equal(dim(tcov[[1]]), c(5,5))
-})
+  ## The intercept is removed as it has permutational var 0 in this case.
+  ## That variance can be positive when there's variation in unit weights
+  ##  and/or cluster sizes; if then tcov would have another row and columm.
+  expect_equal(dim(tcov[[1]]), c(4,4))
+  expect_equivalent(dimnames(tcov[[1]])[[1]], dimnames(res$results)[[1]])
+  expect_equivalent(dimnames(tcov[[2]])[[1]], dimnames(res$results)[[1]])
+    })
 })
 
 test_that("Passing post.alignment.transform, #26", {
@@ -410,16 +411,22 @@ test_that("Constant variables", {
                   s = as.factor(sample(letters[1:3], 100, replace = TRUE)),
                   z = rep(c(1,0), 50))
   
-  ## this should be ok, no error
-  bt <- balanceTest(z ~ xv + xc, data = d)
-  
+  exp_na_results <- c("z", "p") 
+  ## this should be ok, no warnings
+  expect_silent(bt <- balanceTest(z ~ xv + xc, data = d))
+  expect_false(any(is.na(bt$results[1,exp_na_results,1])))
+
   ## but this gives problems
-  expect_error(balanceTest(z ~ xc, data = d),
-               "Cannot calculate pseudoinverse")
-  
-  ## this too
-  expect_error(balanceTest(z ~ s + strata(s), data = d),
-               "Cannot calculate pseudoinverse")
+  expect_message(bt2 <- balanceTest(z ~ xc, data = d),
+               "perhaps all covariates are constant")
+  expect_true(all(is.na(bt2$results[1,exp_na_results,1])))
+  expect_true(is.na(bt2$overall[1,"p.value"]))
+
+  ## issues here too
+  expect_message(bt3 <- balanceTest(z ~ s + strata(s), data = d),
+               "perhaps all covariates are constant")
+  expect_true(all(is.na(bt3$results[,exp_na_results,"s"])))
+  expect_true(is.na(bt3$overall["s","p.value"]))
 })
 
 
@@ -437,6 +444,35 @@ test_that("Characters and factors", {
   btc <- balanceTest(z ~ char, data = d)
   btf <- balanceTest(z ~ fact, data = d)
   
-  expect_equal(dim(btc$results), dim(btf$results))
+  ## removing expected difference before comparing...
+  attr(btc$results, "term.labels") <-
+    attr(btf$results, "term.labels")
+  expect_equal(unname(btc$results), unname(btf$results))
+  expect_equal(unname(attr(btc$overall, "tcov")[["--"]]),
+               unname(attr(btf$overall, "tcov")[["--"]]))
+  ## removing another expected difference...
+  attr(btc$overall, "tcov")[["--"]] <-
+    attr(btf$overall, "tcov")[["--"]]
   expect_equal(btc$overall, btf$overall)
+})
+
+test_that("Return variable/fmla term association", {
+    set.seed(393911)
+  tmp <- sample(letters[1:3], 100, replace = TRUE)
+  d <- data.frame(categorical = tmp,
+                  scalar1 = rnorm(100),
+                  scalar2 = rnorm(100),
+                  z = rep(c(1,0), 50),
+                  stringsAsFactors = FALSE)
+  bt <- balanceTest(z ~ categorical + scalar1 + 
+          poly(scalar2, degree=2), data = d)
+  originals_ <- attr(bt$results, "originals")
+  term.labels_ <- attr(bt$results, "term.labels")
+  expect_equal(term.labels_[originals_], 
+               c(rep("categorical", length(unique(tmp))), 
+                 "scalar1", 
+                 rep("poly(scalar2, degree = 2)",2)
+                )
+  )
+
 })
