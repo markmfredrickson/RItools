@@ -19,7 +19,8 @@ vignettes/impossibility-pressure-test-memo.md.
 
 ### Decisions Jake made this session
 
-1. Merge main into this branch. Ben Hansen's pull request #143 on main fixed
+1. Jake chose to merge main into this branch. Ben Hansen's pull request #143
+   on main fixed
    the svg margin of the base-graphics plot, trimmed the `tcov` attribute to
    the rows of `$results` and gave it dimnames, and made `balanceTest()`
    message rather than stop when every covariate is constant. Commit cfe6fc7
@@ -54,13 +55,15 @@ vignettes/impossibility-pressure-test-memo.md.
      (0.0497 to 0.0626 with 40 independent covariates); at 0.01 it stays
      within 0.003 of 0.01. The memo records the reasoning: for a balance
      check, missing real imbalance is the worse error.
-   - Tests changed with his approval: Liu and Xie's idempotence and
-     uniformity tests now run with `truncation = 1`; results may equal 1;
-     the end-to-end null test in `test.notforCRAN.R` now requires the mean of
+   - Jake approved three test changes. Liu and Xie's idempotence and
+     uniformity tests now run with `truncation = 1`. The checks that results
+     lie in (0, 1) now allow 1, because min(1, ...) can return exactly 1. The
+     end-to-end null test in `test.notforCRAN.R` now requires the mean of
      `cauchy_comb_p` to lie between 0.5 and 0.7 (it was 0.615) instead of
-     equal 0.5. Jake chose that bound over dropping the check.
-3. riposte's level tests were strengthened, at Jake's request ("Strengthen.
-   More sims."). Branch `stronger-level-tests` in ~/repos/riposte, commit
+     equal 0.5; Jake chose that bound over dropping the check.
+3. At Jake's request ("Strengthen. More sims."), I strengthened riposte's
+   tests that its combinations reject a true null hypothesis at no more than
+   the nominal rate. Branch `stronger-level-tests` in ~/repos/riposte, commit
    ee1780c, pushed; no pull request opened yet. The large-sample test now
    reassigns treatment 10,000 times (it was 1,000) and also checks 0.01. The
    test of the hybrid (the Cauchy combination with the p-value of riposte's
@@ -70,7 +73,8 @@ vignettes/impossibility-pressure-test-memo.md.
    0.0471 (hybrid) at 0.05 over 100,000 reassignments of the 36 Wallsten and
    Nteta outcomes, and 0.0507 and 0.0495 over 50,000 fresh data sets.
    `dev/level-truncated-cauchy.R` in riposte reruns these.
-4. How to write to Jake. He found a 1,500-word reply too long. A new
+4. Jake set rules for how to write to him, after he found a 1,500-word reply
+   too long. A new
    subsection, "Replies that need a decision from me", is in
    ~/repos/ai_workflow/CLAUDE.md, uncommitted in that repository: open with
    the one decision and a recommendation, put evidence in a memo, ask one
@@ -90,11 +94,12 @@ vignettes/impossibility-pressure-test-memo.md.
   `test.notforCRAN.R`, `test.balanceTest.R` (Ben's version from main).
 - `vignettes/truncated-cauchy-memo.md`: the evidence and the decision.
 
-Pushed: `devel-sigma-x-omnibus` moved from 431401a to 5d5f8de on
-github.com/markmfredrickson/RItools. After commit 3f80d9d, `devtools::test()`
+The branch `devel-sigma-x-omnibus` was pushed to
+github.com/markmfredrickson/RItools, moving from 431401a to the commit that
+adds this section. After commit 3f80d9d, `devtools::test()`
 checked 3205 expectations with 0 failures and `devtools::check()` gave 0
-errors, 0 warnings, 0 notes. The later commits change only the memo and
-NEWS.md.
+errors, 0 warnings, 0 notes. The later commits change only the memo,
+NEWS.md, and this file.
 
 ### Open questions and loose ends
 
@@ -122,6 +127,8 @@ NEWS.md.
   DESCRIPTION. That churn was reverted this session; only Rd changes were kept.
 - `devtools::document()` warns at `R/harmonic.R:13` that a `@param` lacks a
   description. The warning predates this session.
+
+## The June 2026 handoff (sections 1 to 8)
 
 Date: 2026-06-17. Branch: devel-sigma-x-omnibus. Audience: a fresh Claude
 (possibly a Remote Control session driven from Jake's iPad while traveling),
