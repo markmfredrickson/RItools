@@ -116,6 +116,17 @@ re-randomizations. It accepts any rejection rate below
 standard error of a rejection rate near 0.05 from 1,000 draws. A rate of 0.06,
 about what the table shows with t = 0.9, would pass that test.
 
+So we ran riposte's own design with many more draws. With Wallsten and
+Nteta's 36 outcomes held fixed and treatment reassigned 100,000 times, the
+truncated Cauchy combination rejected at 0.0487 at the 0.05 level and the
+hybrid at 0.0471. Over 50,000 fresh data sets with no effect (36 units, a
+5-point outcome), the rates were 0.0507 and 0.0495. riposte's six
+representations of one outcome are strongly dependent, and in these designs
+the truncated combination kept its level. The script is
+`dev/level-truncated-cauchy.R` in riposte. riposte's level test now uses
+10,000 reassignments, and its test of the permutation hybrid uses 5,000 data
+sets instead of 300.
+
 ## Code
 
 ```r
