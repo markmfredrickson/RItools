@@ -20,6 +20,18 @@
 ## uniform under the null and on the Cauchy's stability under averaging (which is
 ## what makes it robust to dependence among the covariates).
 ##
+## That conversion sends p_k = 1 to minus infinity, so one covariate whose
+## adjusted difference is exactly 0 (p_k = 1) sets p_ACAT to 1 whatever the other
+## covariates say.  acat_pvalue() therefore uses, by default, the truncated
+## conversion of Gui, Jiang, and Wang (2025, Biometrika 112(4), asaf038), as
+## riposte does: with truncation share t (0.9 by default) each p_k becomes
+## tan((0.5 - t p_k) pi), so p_k = 1 becomes tan(-0.4 pi) = -3.08, and with n
+## converted values summing to S the combined p-value is min(1, n P(C > S) / t)
+## for a standard Cauchy C.  truncation = 1 gives Liu and Xie's version.  The
+## cost, measured in vignettes/truncated-cauchy-memo.md: at the 0.05 level the
+## truncated version rejects a true null somewhat more often (0.057 with 6
+## independent covariates); at 0.01 it stays near 0.01.
+##
 ## These tests encode the statistical principles, not just "runs without error":
 ## the published formula (idempotence), null calibration (uniformity), and the
 ## design point (sensitivity to a single strong signal; no high-dimensional
@@ -37,10 +49,23 @@ context("cauchy combination (ACAT) omnibus")
 ## transform and the final survival step; the buggy branch version (which halves
 ## p and then doubles a min) fails it.
 
-test_that("acat_pvalue reproduces an identical p-value (idempotence)", {
-  expect_equal(RItools:::acat_pvalue(rep(0.30, 5)), 0.30, tolerance = 1e-8)
-  expect_equal(RItools:::acat_pvalue(rep(0.73, 3)), 0.73, tolerance = 1e-8)
-  expect_equal(RItools:::acat_pvalue(rep(0.05, 8)), 0.05, tolerance = 1e-8)
+test_that("Liu and Xie's combination reproduces an identical p-value (idempotence)", {
+  acat_lx <- function(p) RItools:::acat_pvalue(p, truncation = 1)
+  expect_equal(acat_lx(rep(0.30, 5)), 0.30, tolerance = 1e-8)
+  expect_equal(acat_lx(rep(0.73, 3)), 0.73, tolerance = 1e-8)
+  expect_equal(acat_lx(rep(0.05, 8)), 0.05, tolerance = 1e-8)
+})
+
+## The truncated combination is idempotent only for a single p-value: with
+## n = 1, P(C > tan((0.5 - t p) pi)) = t p, so the combined p-value is
+## t p / t = p for any truncation share t.  (Five copies of 0.3 combine to
+## 0.394, not 0.3; see vignettes/truncated-cauchy-memo.md.)
+
+test_that("the truncated combination returns a single p-value unchanged", {
+  for (p in c(1e-200, 0.003, 0.2, 0.7, 1)) {
+    expect_equal(RItools:::acat_pvalue(p), p, tolerance = 1e-12)
+    expect_equal(RItools:::acat_pvalue(p, truncation = 0.5), p, tolerance = 1e-12)
+  }
 })
 
 ## --- 2.  Null calibration: a combined p-value must be uniform --------------
@@ -50,15 +75,32 @@ test_that("acat_pvalue reproduces an identical p-value (idempotence)", {
 ## their nominal levels.  This is the property that justifies using the number as
 ## a p-value at all, so it is the most important test here.
 
-test_that("acat_pvalue is calibrated under the global null", {
+test_that("Liu and Xie's combination is calibrated under the global null", {
   skip_on_cran()                       # Monte Carlo; deterministic via the seed
   set.seed(2024)
   B <- 4000; K <- 6
-  null_p <- replicate(B, RItools:::acat_pvalue(runif(K)))
+  null_p <- replicate(B, RItools:::acat_pvalue(runif(K), truncation = 1))
   expect_equal(mean(null_p), 0.5, tolerance = 0.02)
   expect_equal(mean(null_p < 0.05), 0.05, tolerance = 0.015)
   expect_equal(mean(null_p < 0.10), 0.10, tolerance = 0.02)
   expect_gt(suppressWarnings(ks.test(null_p, "punif")$p.value), 0.01)
+})
+
+## The truncated combination is not uniform under the null: min(1, ...) puts
+## mass at 1, and the heavy-tail approximation behind n P(C > S) / t is
+## accurate only for small p-values.  What it must deliver is the level at small
+## alpha.  With 20,000 draws the standard error of a rejection rate near 0.01 is
+## sqrt(0.01 * 0.99 / 20000) = 0.0007, so we accept 0.01 +/- 0.003.  At 0.05 the
+## memo measured 0.057 with K = 6 independent covariates; the bound 0.0625
+## records that accepted inflation and would catch a larger one.
+
+test_that("the truncated combination keeps its level at 0.01 under the global null", {
+  skip_on_cran()                       # Monte Carlo; deterministic via the seed
+  set.seed(2025)
+  B <- 20000; K <- 6
+  null_p <- replicate(B, RItools:::acat_pvalue(runif(K)))
+  expect_equal(mean(null_p < 0.01), 0.01, tolerance = 0.003)
+  expect_lt(mean(null_p < 0.05), 0.0625)
 })
 
 ## --- 3.  Sensitivity: one strong signal drives the combination ------------
@@ -81,19 +123,46 @@ test_that("a single tiny p-value drives the combination toward significance", {
 ## within-block variation) must be dropped, not poison the whole combination.
 ## The result must always be a valid probability.
 
-test_that("acat_pvalue handles boundaries, NAs, and stays in (0,1)", {
+test_that("acat_pvalue handles boundaries, NAs, and stays in (0,1]", {
   expect_true(is.finite(RItools:::acat_pvalue(c(0, 0.5, 1))))
-  expect_equal(RItools:::acat_pvalue(c(0.3, NA, 0.3)), 0.30, tolerance = 1e-8)
+  ## NAs are dropped: the one remaining p-value combines to itself
+  expect_equal(RItools:::acat_pvalue(c(0.3, NA)), 0.30, tolerance = 1e-8)
+  expect_equal(RItools:::acat_pvalue(c(0.3, NA, 0.3), truncation = 1), 0.30,
+               tolerance = 1e-8)
   expect_true(is.na(RItools:::acat_pvalue(c(NA, NA))))
   set.seed(7)
+  ## the truncated combination can return exactly 1 (from its min(1, ...))
   for (i in 1:50) {
     val <- RItools:::acat_pvalue(runif(sample(2:8, 1)))
-    expect_true(val > 0 && val < 1)
+    expect_true(val > 0 && val <= 1)
   }
-  ## default (equal) weights agree with explicitly equal weights
-  expect_equal(RItools:::acat_pvalue(c(0.1, 0.5, 0.9)),
-               RItools:::acat_pvalue(c(0.1, 0.5, 0.9), weights = rep(1, 3)),
-               tolerance = 1e-10)
+  expect_error(RItools:::acat_pvalue(0.5, truncation = 0), "truncation")
+  expect_error(RItools:::acat_pvalue(0.5, truncation = 1.1), "truncation")
+})
+
+## --- 4b.  The truncation: a p-value of 1 no longer decides the result -----
+##
+## Four covariates with p = 0.01 and one with p = 1.  Liu and Xie's conversion
+## sends the 1 to minus infinity (capped at about -1.4e15), so the combination
+## is about 1.  The truncated conversion sends it to tan(-0.4 pi) = -3.08, and
+## the combined p-value follows the formula min(1, n P(C > S) / t).
+
+test_that("one p-value of 1 does not set the truncated combination to 1", {
+  p <- c(0.01, 0.01, 0.01, 0.01, 1)
+  expect_gt(RItools:::acat_pvalue(p, truncation = 1), 0.999)
+  S <- 4 * tan((0.5 - 0.9 * 0.01) * pi) + tan(-0.4 * pi)
+  expect_equal(RItools:::acat_pvalue(p), 5 * pcauchy(S, lower.tail = FALSE) / 0.9)
+  expect_lt(RItools:::acat_pvalue(p), 0.05)
+})
+
+## A p-value too small for tan() to convert (1e-300 converts to about
+## 1/(0.9e-300 pi), which overflows) must still give a representable result:
+## one tiny p-value among n gives about n times that p-value.
+
+test_that("a tiny p-value neither overflows nor is lost", {
+  res <- RItools:::acat_pvalue(c(1e-300, 0.5, 0.5))
+  expect_gt(res, 0)
+  expect_equal(res / 3e-300, 1, tolerance = 1e-6)
 })
 
 ## --- 5.  Integration: opt-in, and off by default --------------------------
@@ -112,7 +181,7 @@ test_that("cauchy.combination is opt-in and leaves default output unchanged", {
   expect_false("cauchy_comb_p" %in% colnames(bt_default$overall))
   expect_true("cauchy_comb_p" %in% colnames(bt_acat$overall))
   cc <- bt_acat$overall[, "cauchy_comb_p"]
-  expect_true(all(cc > 0 & cc < 1))
+  expect_true(all(cc > 0 & cc <= 1))   # the truncated version can return exactly 1
 })
 
 ## --- 6.  The payoff: ACAT survives where d^2 is rank-degenerate -----------
@@ -201,4 +270,23 @@ test_that("cauchy_comb_p does not depend on p.adjust.method", {
   ## and the combination equals ACAT applied to the unadjusted p-values
   expect_equal(unname(bt_none$overall["s", "cauchy_comb_p"]),
                RItools:::acat_pvalue(bt_none$results[, "p", "s"]))
+})
+
+## --- 10.  Integration: an exactly balanced covariate does not hide imbalance
+##
+## xb is binary with the same treated and control share (3/5) in every block,
+## so its adjusted difference is exactly 0 and its p-value is exactly 1.  x1 is
+## imbalanced (p = 1.5e-05).  Under Liu and Xie's conversion cauchy_comb_p was
+## 0.99999999999999933; the truncated conversion gives 4.6e-05.
+
+test_that("an exactly balanced covariate does not hide an imbalanced one", {
+  set.seed(2); n <- 40
+  d2 <- data.frame(z = rep(c(1, 0), n / 2), s = factor(rep(1:4, each = n / 4)))
+  d2$xb <- rep(c(1, 1, 0, 0), n / 4)
+  d2$x1 <- ifelse(d2$z == 1, rnorm(n, 1), rnorm(n, -1))
+  d2$x2 <- rnorm(n)
+  bt <- balanceTest(z ~ xb + x1 + x2 + strata(s), data = d2,
+                    cauchy.combination = TRUE)
+  expect_equal(unname(bt$results["xb", "p", "s"]), 1)
+  expect_lt(bt$overall["s", "cauchy_comb_p"], 1e-3)
 })

@@ -202,13 +202,16 @@ test_that("HB08 and HB08_2016 flag degenerate statistics", {
 })
 
 ### ACAT omnibus end-to-end null calibration (Monte Carlo; slow) ###
-## test.cauchycomb.R checks that acat_pvalue() is uniform under the null at the
-## p-value level.  This complements it one level up: the cauchy_comb_p column
-## balanceTest() reports must itself be ~Uniform(0,1) under the within-stratum
-## null, since the per-covariate p-values feeding it are.  That validity is what
-## lets us report ACAT as the omnibus in the degenerate regime; it should already
-## hold (GREEN).
-test_that("balanceTest cauchy_comb_p is ~uniform under the within-stratum null", {
+## test.cauchycomb.R checks acat_pvalue()'s level under the null at the p-value
+## level.  This complements it one level up: the cauchy_comb_p column
+## balanceTest() reports must reject at about its nominal rate under the
+## within-stratum null.  That validity is what lets us report ACAT as the
+## omnibus in the degenerate regime.  The truncated conversion (Gui, Jiang, and
+## Wang 2025) is not uniform under the null: its min(1, ...) puts mass at 1, so
+## its mean is above 0.5 (about 0.6 in vignettes/truncated-cauchy-memo.md).  We
+## bound the mean between 0.5 and 0.7 so that a change in how far it departs
+## from uniform would show.
+test_that("balanceTest cauchy_comb_p keeps its level under the within-stratum null", {
   skip_on_cran()
   set.seed(2026)
   S <- 25
@@ -224,7 +227,8 @@ test_that("balanceTest cauchy_comb_p is ~uniform under the within-stratum null",
                 cauchy.combination = TRUE)$overall["s", "cauchy_comb_p"]
   })
   expect_equal(mean(ps < 0.05), 0.05, tolerance = 0.03)
-  expect_equal(mean(ps), 0.5, tolerance = 0.05)
+  expect_gt(mean(ps), 0.5)
+  expect_lt(mean(ps), 0.7)
 })
 
 ### Tests to write...

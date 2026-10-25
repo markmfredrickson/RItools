@@ -63,7 +63,11 @@ Because it combines the marginal tests rather than inverting their
 covariance, it stays informative when the number of covariates reaches or
 exceeds the rank of the \eqn{d^2} covariance (where the chi-square omnibus
 degenerates).  Missingness-indicator comparisons are combined alongside the
-covariates.  Off by default; the default \code{overall} table is unchanged.}
+covariates.  Each p-value is converted with the truncated conversion of
+Gui, Jiang, and Wang (2025, \emph{Biometrika} 112(4)), so that a covariate
+with p-value exactly 1 (adjusted difference exactly 0) does not force the
+combined p-value to 1.  Off by default; the default \code{overall} table is
+unchanged.}
 
 \item{sigma_x_test}{Logical, default \code{FALSE}.  When \code{TRUE},
 the result table \code{$overall} is augmented with three columns
