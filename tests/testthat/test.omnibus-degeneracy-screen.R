@@ -127,3 +127,22 @@ test_that("a non-degenerate omnibus is left intact (df = number of covariates)",
   expect_true(bt$overall["s", "p.value"] > 0 && bt$overall["s", "p.value"] < 1)
   expect_length(screened_vars(bt), 0)
 })
+
+## --- 5. one message when a stratification has nothing left to test ----------
+## When every covariate is screened, the omnibus has df 0.  The user should get
+## one message for that stratification, not one naming the screened covariates
+## followed by a second saying the omnibus is empty.  The message carries the
+## phrase main's XtX_pseudoinv_sqrt() uses for the same situation, which Ben's
+## "Constant variables" test in test.balanceTest.R looks for.
+test_that("a stratification with no covariate left to test gets exactly one message", {
+  d <- make_pairs_df(S = 30, within_sd = rep(1e-5, 3))
+  msgs <- character(0)
+  bt <- withCallingHandlers(balanceTest(bt_form(3), data = d),
+                            message = function(m) {
+                              msgs <<- c(msgs, conditionMessage(m))
+                              invokeRestart("muffleMessage")
+                            })
+  expect_length(msgs, 1)
+  expect_match(msgs, "perhaps all covariates are constant")
+  expect_equal(unname(bt$overall["s", "df"]), 0)
+})

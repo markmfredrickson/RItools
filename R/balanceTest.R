@@ -295,6 +295,9 @@ balanceTest <- function(fmla,
   ## we wanted to allow departures from the ETT default.
   ## Something like `design@Sweights <- DesignWeights(aggDesign, <...>)`.)
   descriptives    <- designToDescriptives(design, covariate.scales)
+  ## The notmissing indicators can't themselves be missing, so no role for
+  ## another notmissing indicator to record where its missingness pattern.
+  ## Instead we just record a blank for them:
   NMpatterns <- c(NMpatterns, rep("", dim(descriptives)[1]-length(NMpatterns)))
 
   # these weights govern inferential but not descriptive calculations
@@ -316,9 +319,13 @@ balanceTest <- function(fmla,
 
   ## Tell the user about covariates dropped from the omnibus by the
   ## numerical-stability screen (the inferentials calculator flags them, per
-  ## stratification).  Message once over the union, and once for any
-  ## stratification that abstained entirely (no testable covariates).
-  screened_all <- unique(unlist(lapply(tmp, function(tt) tt$screened)))
+  ## stratification).  A stratification left with df 0 -- every covariate
+  ## constant overall or within strata -- gets one message of its own, worded
+  ## as in XtX_pseudoinv_sqrt(), and its screened covariates are not also
+  ## named in the screen message.  The other stratifications' screened
+  ## covariates get one message over their union.
+  abstained <- vapply(tmp, function(tt) isTRUE(tt$DF == 0L), logical(1))
+  screened_all <- unique(unlist(lapply(tmp[!abstained], function(tt) tt$screened)))
   if (length(screened_all)) {
     one <- length(screened_all) == 1L
     message("balanceTest: within strata there is too little variance in ",
@@ -329,15 +336,12 @@ balanceTest <- function(fmla,
             if (one) "it was" else "they were",
             " dropped from the omnibus.")
   }
-  abstained <- vapply(tmp,
-                      function(tt) isTRUE(tt$DF == 0L) && length(tt$screened) > 0L,
-                      logical(1))
   if (any(abstained)) {
     message("balanceTest: for ",
             if (sum(abstained) == 1L) "stratification " else "stratifications ",
             paste(names(tmp)[abstained], collapse = ", "),
-            ", every covariate is nearly perfectly balanced within strata; ",
-            "the omnibus abstains (no testable covariates).")
+            ", no covariate has variance left to test, so the omnibus is NA ",
+            "(df 0): perhaps all covariates are constant (within strata)?")
   }
 
   ans <- list()
@@ -351,7 +355,19 @@ balanceTest <- function(fmla,
 
   dimnames(descriptives)[[2]][nstats.previous + 1:2] <- c("z", "p")
 
-  # strip out summaries of not-missing indicators that only ever take the value T
+  inferentials <- do.call(rbind, lapply(tmp, function(s) {
+    data.frame(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
+  }))
+  colnames(inferentials) <- c("chisquare", "df", "p.value")
+
+  tcovs <- lapply(tmp, function(r) {
+    tcov <- r$tcov
+    dimnames(tcov) <-
+      rep(list(dimnames(descriptives)[["vars"]]),2)
+    tcov
+  })
+
+  # Deal with summaries of not-missing indicators that only ever take the value T
   nmvars <- identify_NM_vars(dimnames(descriptives)[["vars"]])
   # next line assumes every "stat" not in the given list is a mean
   # over a group assigned to some treatment condition.
@@ -364,17 +380,21 @@ balanceTest <- function(fmla,
 	  toremove <- match(nmvars[bad], dimnames(descriptives)[["vars"]])
 	  if(length(toremove)>0){ ## if toremove=integer(0) then it drops all vars from descriptives
 		  descriptives <- descriptives[-toremove,,,drop=FALSE]
-		  origvars <- origvars[-toremove]
-                  strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
-                  NMpatterns <- NMpatterns[-toremove]  # names of vars that
-                  NMpatterns[ NMpatterns%in% strings_to_remove] <- ""
+	    tcovs <- lapply(tcovs,
+        function(mat){mat[-toremove, -toremove, drop=FALSE]}
+        )
+      origvars <- origvars[-toremove]
+
+      ## also trim covars to NM patterns lookup table:
+      NMpatterns <- NMpatterns[-toremove]
+      ## If the NM pattern var that a covar got mapped to
+      ## was removed, we take the covar to have no missings
+      ## anywhere, and report "" as the name of its nonmissing
+      ## indicator variable:
+      strings_to_remove <- dimnames(descriptives)[["vars"]][toremove]
+      NMpatterns[ NMpatterns%in% strings_to_remove] <- ""
 	  }
   }
-
-  inferentials <- do.call(rbind, lapply(tmp, function(s) {
-    data.frame(s$Msq, s$DF, pchisq(s$Msq, df = s$DF, lower.tail = FALSE))
-  }))
-  colnames(inferentials) <- c("chisquare", "df", "p.value")
 
   ## sigma_x test (alternative omnibus): for each stratification, run the new
   ## test stat T = d' Sigma_x^{-1} d on the cluster-aggregated raw covariates,
@@ -400,8 +420,8 @@ balanceTest <- function(fmla,
   ## p-values into one omnibus p-value that, unlike the d^2 chisquare, never
   ## inverts the covariate covariance -- so it stays informative when the number
   ## of covariates reaches or exceeds the rank of that covariance.  We combine
-  ## the RAW per-covariate p-values: `descriptives` still holds them here (the
-  ## Holm adjustment below touches only `ans$results`), and ACAT must see raw
+  ## the RAW per-covariate p-values: this block must stay ABOVE the p.adjust()
+  ## loop below, which overwrites descriptives[, "p", ], and ACAT must see raw
   ## p-values because the adjustment introduces exact 1s that would dominate the
   ## combination.  Every reported row is combined, missingness-indicator rows
   ## included, because RItools balances missingness as another covariate.
@@ -412,26 +432,26 @@ balanceTest <- function(fmla,
     inferentials <- cbind(inferentials, cc_cols)
   }
 
-  # the meat of our xbal object
+  for (s in 1L:dim(descriptives)[3]) {
+  descriptives[, "p", s] <- 
+    p.adjust(descriptives[, "p", s], method = p.adjust.method)
+  }
+  attr(descriptives, "NMpatterns") <- NMpatterns
+  attr(descriptives, "originals") <- origvars
+  attr(descriptives, "term.labels") <- design@TermLabels
+# Now `attr(d, "term.labels")[attr(d, "originals")]`
+# associates variables to terms of fmla
+  attr(descriptives, "include.NA.flags") <- 
+    include.NA.flags # hint to print and plot methods
+
+# the meat of our xbal object
   ans$overall <- inferentials
-  ans$results <- descriptives
-
-  ## do p.value adjustment
-  for (s in 1L:dim(descriptives)[3])
-  ans$results[, "p", s] <- p.adjust(ans$results[, "p", s], method = p.adjust.method)
-##  ans$overall[, "p.value"] <- p.adjust(ans$overall[, "p.value"], method = p.adjust.method)
-
-  attr(ans$results, "NMpatterns") <- NMpatterns
-  attr(ans$results, "originals") <- origvars
-  attr(ans$results, "term.labels") <- design@TermLabels
-  attr(ans$results, "include.NA.flags") <- include.NA.flags # hinting for print and plot methods
-
-  attr(ans$overall, "tcov") <- lapply(tmp, function(r) {
-    r$tcov
-  })
+  attr(ans$overall, "tcov") <- tcovs
   if (sigma_x_test) {
     attr(ans$overall, "sigma_x_info") <- sigma_x_results
   }
+  ans$results <- descriptives
+
   attr(ans, "fmla") <- formula(fmla)
   attr(ans, "report") <- report # hinting to our summary method later
   class(ans) <- c("balancetest", "xbal", "list")

@@ -1,7 +1,18 @@
-# RItools 0.3-5.9001 (devel branch: sigma_x omnibus)
+# RItools {NEXTVERSION}
+
+* Bug fix (base R plot method svg export)
+* More graceful handling in balanceTest() of the edge case of balance testing for all-constant variables, with messages not errors and p-values of NA not 1
+
+# RItools 0.3-5.9004 (devel branch: sigma_x omnibus)
 
 This is a development version on the `devel-sigma-x-omnibus` branch.  It is
 not intended to replace the released version on `main`.
+
+* Merged `main` (pull request #143).  When a stratification has no covariate
+  left to test (every covariate constant overall or within strata, so the
+  omnibus has df 0), `balanceTest()` prints one message, containing main's
+  phrase "perhaps all covariates are constant (within strata)?", instead of
+  the branch's two earlier messages.
 
 * New optional alternative omnibus test in `balanceTest()`: when called with
   `sigma_x_test = TRUE`, the result table `$overall` is augmented with three

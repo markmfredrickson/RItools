@@ -177,3 +177,28 @@ test_that("differential missingness is detected (missingness as covariate)", {
   expect_true("(x2)" %in% rownames(bt$results))          # missingness row exists
   expect_lt(bt$overall["s", "cauchy_comb_p"], 0.01)      # and is combined in
 })
+
+## --- 9.  ACAT combines raw p-values, whatever p.adjust.method is ----------
+##
+## The per-covariate p-values reported in $results are multiplicity-adjusted
+## (Holm by default).  ACAT must combine the unadjusted ones: Holm sets many
+## p-values to exactly 1, and each 1 drives the Cauchy sum toward minus
+## infinity.  If the combination read the adjusted column, changing
+## p.adjust.method would change cauchy_comb_p.  This guards the ordering of
+## the ACAT block relative to the p.adjust() loop in balanceTest().
+
+test_that("cauchy_comb_p does not depend on p.adjust.method", {
+  set.seed(5); n <- 40
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n),
+                    z = rep(c(1, 0), n / 2), s = factor(rep(1:4, each = n / 4)))
+  dat$x3 <- ifelse(dat$z == 1, rnorm(n, 1), rnorm(n, -1))
+  bt_holm <- balanceTest(z ~ x1 + x2 + x3 + strata(s), data = dat,
+                         cauchy.combination = TRUE, p.adjust.method = "holm")
+  bt_none <- balanceTest(z ~ x1 + x2 + x3 + strata(s), data = dat,
+                         cauchy.combination = TRUE, p.adjust.method = "none")
+  expect_equal(bt_holm$overall[, "cauchy_comb_p"],
+               bt_none$overall[, "cauchy_comb_p"])
+  ## and the combination equals ACAT applied to the unadjusted p-values
+  expect_equal(unname(bt_none$overall["s", "cauchy_comb_p"]),
+               RItools:::acat_pvalue(bt_none$results[, "p", "s"]))
+})
