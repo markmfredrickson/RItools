@@ -8,22 +8,23 @@
 This is a development version on the `devel-sigma-x-omnibus` branch.  It is
 not intended to replace the released version on `main`.
 
-* Merged `main` (pull request #143).  When a stratification has no covariate
+* This version merges `main` (pull request #143).  When a stratification has no covariate
   left to test (every covariate constant overall or within strata, so the
   omnibus has df 0), `balanceTest()` prints one message, containing main's
   phrase "perhaps all covariates are constant (within strata)?", instead of
   the branch's two earlier messages.
-* The Cauchy combination (`cauchy.combination = TRUE`) now converts each
-  per-covariate p-value p to tan((0.5 - 0.9 p) pi), the truncated conversion
-  of Gui, Jiang, and Wang (2025, Biometrika 112(4), asaf038) that the riposte
-  package adopted in 0.0.0.9008, and with n p-values whose converted values
-  sum to S reports min(1, n P(C > S) / 0.9) for a standard Cauchy C.  Liu and
-  Xie's conversion tan((0.5 - p) pi) sent p = 1 to minus infinity, so one
-  covariate with an adjusted difference of exactly 0 set `cauchy_comb_p` to
-  about 1; in a 40-unit example it gave 0.99999999999999933 where the
-  truncated version gives 4.6e-05.  Under a true null the truncated version
-  rejects somewhat more often at the 0.05 level (0.057 with 6 independent
-  covariates, 0.063 with 40) and stays near 0.01 at the 0.01 level; see
+* The Cauchy combination (`cauchy.combination = TRUE`) now uses the truncated
+  conversion of Gui, Jiang, and Wang (2025, Biometrika 112(4), asaf038), which
+  the riposte package adopted in 0.0.0.9008.  Each per-covariate p-value p
+  becomes tan((0.5 - 0.9 p) pi).  With n p-values whose converted values sum
+  to S, `cauchy_comb_p` is min(1, n P(C > S) / 0.9) for a standard Cauchy
+  variable C.  Liu and Xie's conversion, tan((0.5 - p) pi), sends p = 1 to
+  minus infinity.  So when one covariate's adjusted difference was exactly 0,
+  `cauchy_comb_p` was about 1: 0.99999999999999933 in a 40-unit example where
+  the truncated version gives 4.6e-05.  When the null hypothesis is true, the
+  truncated version gives a p-value below 0.05 more than 5 percent of the
+  time (5.7 percent with 6 independent covariates, 6.3 percent with 40).
+  Below 0.01 it stays near 1 percent.  See
   `vignettes/truncated-cauchy-memo.md`.
 
 * New optional alternative omnibus test in `balanceTest()`: when called with
