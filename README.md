@@ -11,12 +11,13 @@ methodology of:
       stratified and clustered comparative studies. Statistical Science.
       23(2):219--236.
 
-See the online documentation for `xBalance` for more details.
+See the online documentation for `balanceTest` for more details (`xBalance`
+is the older interface, kept for back-compatibility).
 
-The package also provides outcome analysis of simple or block randomized
-trials (or matched observational studies) based on user defined models and
-test statistics. See the online documentation of
-`parameterizedRandomizationDistribution` for more details.
+Outcome analysis of simple or block randomized trials (or matched
+observational studies) based on user defined models and test statistics is
+experimental work on the `randomization-distribution` branch (see below); it is
+not part of the released package.
 
 `RItools` is available on [CRAN](https://CRAN.R-project.org):
 
@@ -27,10 +28,10 @@ test statistics. See the online documentation of
 ##  Using a development version of RItools
 
 These directions will install development version in a way that will not
-overwrite an existing installation of `RItools` from CRAN. You will will need to
+overwrite an existing installation of `RItools` from CRAN. You will need to
 know the name of the branch you wish to install.
 
-1. `master`: The current released version of `RItools` and a holding place for
+1. `main`: The current released version of `RItools` and a holding place for
    small bug changes.
 2. `randomization-distribution`: Experimental work on outcome analysis using
    user defined models of effects and test statistics. This branch contains the
@@ -60,7 +61,7 @@ Activate `dev_mode`:
 
 Note that the prompt changes from `>` to `d>` to let you know you're in
 `dev_mode`. Now choose the development branch you want to use. To install
-`master`:
+`main`:
 
     d> install_github("markmfredrickson/RItools")
 
