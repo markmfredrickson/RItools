@@ -40,6 +40,8 @@ be the numeric vector 1, without names, meaning the intended weight ratio is alw
 \item{\code{Cluster}}{Factor indicating who's in the same cluster with who}
 
 \item{\code{OriginalVariables}}{Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus}
+
+\item{\code{NotMissing}}{Matrix of the same shape as Covariates: for each covariate column, the unit's not-missing indicator (a fraction, for aggregated clusters); 1 throughout for the not-missing columns themselves}
 }}
 
 \keyword{internal}

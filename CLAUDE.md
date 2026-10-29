@@ -44,6 +44,12 @@ Use `devtools::test()`, not `load_all()` plus `test_dir()`: the latter skips
 S4 method registration and reports spurious failures in `test.Design.R` and
 `test.tidiers.R`.
 
+A quirk of the formula method, present before the generic: `unit.weights`
+and `subset` go through `model.frame()` without the formula, so an
+expression there is evaluated against the data frame and then the global
+environment, not the caller's frame. Inside a function or a test, pass a
+column of the data frame, not an expression built from local objects.
+
 The `Makefile` targets (`make test`, `make check`, `make document`) wrap the
 same devtools calls but assume a local `.local` library; they do not work on
 this machine without the image.
@@ -54,7 +60,35 @@ keeps `test.notforCRAN.R` and `test.tidiers.R` out of the CRAN build.
 
 ## Architecture
 
-The `balanceTest()` pipeline (`R/balanceTest.R`):
+`balanceTest()` is an S3 generic (`R/balanceTest.R`) with two methods that
+share one internal body, `.balanceTestFromFrame()`, which runs steps 2 to 8
+below from a formula and a model frame carrying a `(weights)` column:
+
+- `balanceTest.formula`: the original interface, with its first formal still
+  named `fmla` so calls by name keep working. Step 1 below is its own. Both
+  methods stop on an argument they do not recognize (`.stopOnUnusedArguments`).
+- `balanceTest.balanceSpec` (`R/balanceSpec.R`): a `balanceSpec()` object
+  carries treatment, strata, optional cluster and unit weights, the variables
+  to test, and a supplied covariance matrix of the expanded covariates, whose
+  pseudo-inverse square root is computed once in the constructor. The method
+  builds the formula, sets `covariate.scales` from the positive entries of
+  the matrix's diagonal, and runs the shared body with `HB08_fixed(spec)` as
+  the inferentials calculator: the null covariance of the adjusted
+  differences is the supplied matrix times a design scalar (sum over strata
+  of the squared stratum weight ratio over `1/n_t + 1/n_c`), so the inverse
+  is reused. Where values were imputed, each entry is instead scaled stratum
+  by stratum by the share of units observed on both variables (read from the
+  new `NotMissing` slot of `CovsAlignedToADesign`), and the inverse is
+  recomputed. Expanded covariate columns missing from the matrix are an
+  error; matrix columns the data do not produce are set aside with one
+  message and the inverse for the remaining block is cached in the closure.
+- `expandCovariates(fmla, data)` (exported, `R/Design.R`) returns the
+  expanded covariate columns exactly as `makeDesigns()` makes them (one
+  indicator per factor level, character columns as factors, NAs kept), via
+  the shared internal `.expandModelFrame()`. It is what a caller computing a
+  covariance elsewhere should use so the columns line up.
+
+The `balanceTest()` pipeline:
 
 1. `model.frame` on the formula with `unit.weights` mapped to `(weights)` and
    `subset` smuggled through the `offset` slot (hence no `...` in the formula).
@@ -115,6 +149,8 @@ reach MEERKT directly.
   there for user-visible changes.
 - Commit subjects in this repo often carry a prefix (`BUG`, `ENH`, `DOC`,
   `TST`, `STY`).
+- Do not name an internal function `balanceTest.<something>`: with
+  `balanceTest` a generic, R CMD check reads it as an unregistered method.
 - Open issues of note: #142 (Cauchy combination to side-step degeneracy, on
   branch `cauchycomb`), #25 (flagging degenerate chi-square distributions),
   #113 (higher moments, branch `i113-highermoments`), #90 (broom tidiers),
