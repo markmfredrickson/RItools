@@ -40,8 +40,12 @@ for treatment, strata, cluster or weights.}
 TRUE)} returns it, with its \code{r} attribute (the rank). Computed here
 when not supplied.}
 
-\item{tol}{Relative tolerance below which singular values of the
-covariance count as zero, for the pseudo-inverse.}
+\item{tol}{Relative tolerance for the pseudo-inverse: singular values of
+the covariance below \code{tol} times the largest count as zero. (This
+is applied to the covariance itself, not to the square roots of its
+singular values as \code{XtX_pseudoinv_sqrt()}'s own \code{tol} is,
+so the rank of a singular matrix, such as one over a factor's full set
+of indicator columns, does not depend on rounding at machine precision.)}
 }
 \value{
 An object of class \code{balanceSpec}.
@@ -79,6 +83,12 @@ reused. Unit weights other than 1 and clusters are passed through to the
 design, but the design scalar does not account for them: in that case the
 supplied covariance has to describe the weighted (or cluster-aggregated)
 rows.
+
+The not-missing indicator rows that \code{include.NA.flags} adds are
+reported descriptively but not tested, and do not enter the omnibus
+statistic: the supplied covariance has no entries for them. A unit with
+zero weight counts as unobserved on every variable, which is what its
+zero row amounts to in \code{HB08}'s sum of products.
 
 \code{subset} and \code{unit.weights} are not arguments of this method:
 subset the data frame beforehand, and give unit weights in the

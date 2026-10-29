@@ -8,15 +8,17 @@ make_data <- function(n = 240, seed = 20261029) {
   set.seed(seed)
   x1 <- rnorm(n)
   x2 <- 0.6 * x1 + rnorm(n)
+  x3 <- rnorm(n)
   g <- factor(sample(c("a", "b", "c"), n, replace = TRUE))
   s <- factor(rep(1:4, length.out = n))
   z <- rbinom(n, 1, 0.5)
-  data.frame(z = z, x1 = x1, x2 = x2, g = g, s = s,
+  data.frame(z = z, x1 = x1, x2 = x2, x3 = x3, g = g, s = s,
              stringsAsFactors = FALSE)
 }
 
 dat <- make_data()
-Sigma <- cov(expandCovariates(~ x1 + x2 + g, dat))
+Sigma <- cov(expandCovariates(~ x1 + x2 + g, dat))          # singular: ga + gb + gc = 1
+SigmaN <- cov(expandCovariates(~ x1 + x2 + x3, dat))        # full rank
 
 test_that("expandCovariates gives the columns balanceTest tests", {
   x <- expandCovariates(~ x1 + x2 + g, dat)
@@ -75,6 +77,13 @@ test_that("balanceSpec validates its covariance", {
   m <- Sigma; m["x1", "x2"] <- m["x2", "x1"] <- 5 * sqrt(m["x1", "x1"] * m["x2", "x2"])
   expect_error(balanceSpec("z", covariance = m), "positive semi-definite")
   expect_error(balanceSpec("z", covariance = Sigma, inverse_sqrt = Sigma), "'r' attribute")
+  inv <- XtX_pseudoinv_sqrt(Sigma, mat.is.XtX = TRUE)
+  wrong <- inv[rev(seq_len(nrow(inv))), , drop = FALSE]
+  rownames(wrong) <- rev(colnames(Sigma))
+  attr(wrong, "r") <- attr(inv, "r")
+  expect_error(balanceSpec("z", covariance = Sigma, inverse_sqrt = wrong), "order")
+  expect_error(balanceTest(balanceSpec("z", Sigma), data = dat, unstratified = FALSE),
+               "needs strata")
   spec <- balanceSpec("z", covariance = Sigma)
   expect_s3_class(spec, "balanceSpec")
   expect_equal(attr(spec$inverse_sqrt, "r"), 4L) # three indicator columns sum to one
@@ -82,22 +91,39 @@ test_that("balanceSpec validates its covariance", {
 })
 
 test_that("with the sample covariance, the unstratified test reproduces HB08 exactly", {
-  spec <- balanceSpec(treatment = "z", covariance = Sigma,
-                      variables = c("x1", "x2", "g"))
+  ## full-rank covariates: the omnibus statistic and its df must agree exactly
+  spec <- balanceSpec(treatment = "z", covariance = SigmaN,
+                      variables = c("x1", "x2", "x3"))
   bs <- balanceTest(spec, data = dat)
-  bt <- balanceTest(z ~ x1 + x2 + g, data = dat)
+  bt <- balanceTest(z ~ x1 + x2 + x3, data = dat)
   expect_s3_class(bs, "balancetest")
   expect_equal(attr(bs, "covariance"), "supplied")
   expect_equal(dimnames(bs$results)[["strata"]], "--")
   expect_equal(bs$overall["--", ], bt$overall["--", ])
+  expect_equal(bs$overall["--", "df"], 3)
   expect_equal(attr(bs$overall, "tcov")[["--"]], attr(bt$overall, "tcov")[["--"]])
   for (stat in c("adj.diff", "z", "p", "Treatment", "Control")) {
     expect_equal(bs$results[, stat, "--"], bt$results[, stat, "--"], info = stat)
   }
   ## standard differences are scaled by the supplied covariance's diagonal
-  expect_equal(bs$results[c("x1", "x2"), "pooled.sd", "--"], sqrt(diag(Sigma))[c("x1", "x2")])
+  expect_equal(bs$results[c("x1", "x2"), "pooled.sd", "--"], sqrt(diag(SigmaN))[c("x1", "x2")])
   expect_equal(bs$results["x1", "std.diff", "--"],
-               bs$results["x1", "adj.diff", "--"] / sqrt(Sigma["x1", "x1"]))
+               bs$results["x1", "adj.diff", "--"] / sqrt(SigmaN["x1", "x1"]))
+
+  ## with a factor the covariance is singular (its indicators sum to one). The
+  ## univariate statistics still agree exactly; the omnibus df is the rank, 4,
+  ## which the supplied-covariance path fixes on the matrix's own scale (HB08's
+  ## cut sits at machine precision and can differ by platform, so it is not
+  ## compared here)
+  spec <- balanceSpec(treatment = "z", covariance = Sigma, variables = c("x1", "x2", "g"))
+  bs <- balanceTest(spec, data = dat)
+  bt <- balanceTest(z ~ x1 + x2 + g, data = dat)
+  expect_equal(attr(bs$overall, "tcov")[["--"]], attr(bt$overall, "tcov")[["--"]])
+  for (stat in c("adj.diff", "z", "p")) {
+    expect_equal(bs$results[, stat, "--"], bt$results[, stat, "--"], info = stat)
+  }
+  expect_equal(bs$overall["--", "df"], 4)
+  expect_equal(attr(spec$inverse_sqrt, "r"), 4L)
 })
 
 test_that("stratified: exact agreement with HB08 when every stratum has the same covariance", {
@@ -155,13 +181,16 @@ test_that("with the true covariance, the stratified test is close to HB08 on a l
 })
 
 test_that("variables default to every column not otherwise used", {
+  d <- dat[, setdiff(names(dat), "x3")]
   spec <- balanceSpec("z", covariance = Sigma, strata = "s")
-  bs <- balanceTest(spec, data = dat)
+  bs <- balanceTest(spec, data = d)
   vars <- dimnames(bs$results)[["vars"]]
   expect_equal(vars[!startsWith(vars, "(")], colnames(Sigma))
   ## and a one-sided formula works
   spec_f <- balanceSpec("z", covariance = Sigma, strata = "s", variables = ~ x1 + x2 + g)
-  expect_equal(balanceTest(spec_f, data = dat)$overall, bs$overall)
+  expect_equal(balanceTest(spec_f, data = d)$overall, bs$overall)
+  ## a column the covariance lacks is an error, not silently untested
+  expect_error(balanceTest(spec, data = dat), "x3")
 })
 
 test_that("an expanded covariate column missing from the covariance is an error", {
@@ -240,6 +269,12 @@ test_that("missing covariate values reduce the null variance as in the formula m
   expect_true(any(startsWith(vars, "(")))
   expect_true(all(is.na(bs$results[startsWith(vars, "("), "z", "--"])))
   expect_true(is.finite(bs$overall["--", "chisquare"]))
+
+  ## a small sample with as many tested columns as units warns, as HB08 does
+  tiny <- dat[1:5, ]          # rank 4 against 5 units less one stratum
+  tiny$z <- c(1, 0, 1, 0, 1)
+  expect_warning(balanceTest(balanceSpec("z", Sigma, variables = c("x1", "x2", "g")), data = tiny),
+                 "degenerate")
 
   ## with 30% of x1 missing at random on a large sample, the supplied-covariance
   ## null variance of x1 tracks HB08's, and is about 0.7 of the complete-data one

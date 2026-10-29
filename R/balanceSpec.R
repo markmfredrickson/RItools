@@ -32,6 +32,12 @@
 ##' supplied covariance has to describe the weighted (or cluster-aggregated)
 ##' rows.
 ##'
+##' The not-missing indicator rows that \code{include.NA.flags} adds are
+##' reported descriptively but not tested, and do not enter the omnibus
+##' statistic: the supplied covariance has no entries for them. A unit with
+##' zero weight counts as unobserved on every variable, which is what its
+##' zero row amounts to in \code{HB08}'s sum of products.
+##'
 ##' \code{subset} and \code{unit.weights} are not arguments of this method:
 ##' subset the data frame beforehand, and give unit weights in the
 ##' specification.
@@ -53,8 +59,12 @@
 ##'   \code{covariance}, as \code{XtX_pseudoinv_sqrt(covariance, mat.is.XtX =
 ##'   TRUE)} returns it, with its \code{r} attribute (the rank). Computed here
 ##'   when not supplied.
-##' @param tol Relative tolerance below which singular values of the
-##'   covariance count as zero, for the pseudo-inverse.
+##' @param tol Relative tolerance for the pseudo-inverse: singular values of
+##'   the covariance below \code{tol} times the largest count as zero. (This
+##'   is applied to the covariance itself, not to the square roots of its
+##'   singular values as \code{XtX_pseudoinv_sqrt()}'s own \code{tol} is,
+##'   so the rank of a singular matrix, such as one over a factor's full set
+##'   of indicator columns, does not depend on rounding at machine precision.)
 ##' @return An object of class \code{balanceSpec}.
 ##' @seealso \code{\link{balanceTest}}, \code{\link{expandCovariates}}
 ##' @export
@@ -84,22 +94,23 @@ balanceSpec <- function(treatment, covariance, strata = NULL, variables = NULL,
   if (!isTRUE(all.equal(covariance, t(covariance), check.attributes = FALSE))) {
     stop("covariance must be symmetric")
   }
-  ev <- eigen(covariance, symmetric = TRUE, only.values = TRUE)$values
-  if (length(ev) && min(ev) < -tol * max(abs(ev), 1)) {
-    stop("covariance must be positive semi-definite (smallest eigenvalue ",
-         format(min(ev)), ")")
-  }
   if (!is.null(variables) && !is.character(variables) && !inherits(variables, "formula")) {
     stop("variables must be a character vector, a one-sided formula, or NULL")
   }
   if (is.null(inverse_sqrt)) {
-    inverse_sqrt <- XtX_pseudoinv_sqrt(covariance, mat.is.XtX = TRUE, tol = tol)
+    inverse_sqrt <- .covarianceInverseSqrt(covariance, tol)
   } else {
+    r <- attr(inverse_sqrt, "r")
     if (!is.matrix(inverse_sqrt) || nrow(inverse_sqrt) != ncol(covariance) ||
-        is.null(attr(inverse_sqrt, "r"))) {
-      stop("inverse_sqrt must have one row per column of covariance and an 'r' attribute, ",
-           "as XtX_pseudoinv_sqrt() returns it")
+        is.null(r) || ncol(inverse_sqrt) != r) {
+      stop("inverse_sqrt must have one row per column of covariance and as many ",
+           "columns as its 'r' attribute, as XtX_pseudoinv_sqrt() returns it")
     }
+    if (!is.null(rownames(inverse_sqrt)) &&
+        !identical(rownames(inverse_sqrt), colnames(covariance))) {
+      stop("inverse_sqrt rows are not in the order of the covariance's columns")
+    }
+    .covarianceInverseSqrt(covariance, tol, check.only = TRUE)
   }
   structure(list(treatment = treatment,
                  strata = strata,
@@ -110,6 +121,41 @@ balanceSpec <- function(treatment, covariance, strata = NULL, variables = NULL,
                  inverse_sqrt = inverse_sqrt,
                  tol = tol),
             class = "balanceSpec")
+}
+
+##' Pseudo-inverse square root of a covariance, from its eigendecomposition
+##'
+##' One symmetric eigendecomposition serves both the positive semi-definite
+##' check and the inverse. Eigenvalues below \code{tol} times the largest
+##' count as zero, a cut on the matrix's own scale; the square roots that
+##' \code{XtX_pseudoinv_sqrt(mat, mat.is.XtX = TRUE)} compares against its
+##' tolerance would put that cut at machine precision and let the rank of a
+##' singular matrix vary with the BLAS.
+##'
+##' @param covariance A symmetric matrix.
+##' @param tol Relative tolerance on the eigenvalues of \code{covariance}.
+##' @param check.only Only check positive semi-definiteness, invisibly
+##'   returning \code{NULL}?
+##' @return A matrix \code{V} with as many rows as \code{covariance} and one
+##'   column per positive eigenvalue, such that \code{V \%*\% t(V)} is the
+##'   pseudo-inverse, with the rank as its \code{r} attribute, in the form
+##'   \code{XtX_pseudoinv_sqrt()} returns.
+##' @keywords internal
+.covarianceInverseSqrt <- function(covariance, tol, check.only = FALSE) {
+  e <- eigen(covariance, symmetric = TRUE, only.values = check.only)
+  lambda <- e$values
+  top <- if (length(lambda)) max(abs(lambda), 0) else 0
+  if (length(lambda) && min(lambda) < -tol * max(top, 1)) {
+    stop("covariance must be positive semi-definite (smallest eigenvalue ",
+         format(min(lambda)), ")")
+  }
+  if (check.only) return(invisible(NULL))
+  positive <- lambda > tol * top
+  positive[is.na(positive)] <- FALSE
+  ans <- e$vectors[, positive, drop = FALSE] *
+    rep(1 / sqrt(lambda[positive]), each = nrow(covariance))
+  attr(ans, "r") <- sum(positive)
+  ans
 }
 
 ##' @method print balanceSpec
@@ -164,7 +210,7 @@ balanceTest.balanceSpec <- function(fmla, data,
   ## vector to be added as a column.
   resolve <- function(value, what, newname) {
     if (is.null(value)) return(character(0))
-    if (is.character(value) && all(value %in% colnames(data))) return(value)
+    if (is.character(value) && length(value) < n && all(value %in% colnames(data))) return(value)
     if (length(value) != n) {
       stop(sprintf(paste("%s is neither column name(s) of data (%s)",
                          "nor a vector with one entry per row (%d rows)"),
@@ -181,6 +227,9 @@ balanceTest.balanceSpec <- function(fmla, data,
   wname <- resolve(spec$unit.weights, "unit.weights", ".unit.weights")
   if (length(wname) > 1L) stop("unit.weights must name one column or be one vector")
 
+  if (!unstratified && !length(snames)) {
+    stop("unstratified = FALSE needs strata in the specification")
+  }
   structural <- c(zname, snames, cname, wname)
   rhs <- if (is.null(spec$variables)) {
     vars <- setdiff(colnames(data), structural)
@@ -199,7 +248,8 @@ balanceTest.balanceSpec <- function(fmla, data,
     "`", zname, "` ~ ", rhs,
     if (length(snames)) paste0(" + strata(`", snames, "`)", collapse = "") else "",
     if (length(cname)) paste0(" + cluster(`", cname, "`)") else "",
-    if (unstratified) "" else " - 1"))
+    if (unstratified) "" else " - 1"),
+    env = parent.frame())
 
   w <- if (length(wname)) data[[wname]] else rep(1, n)
   if (!is.numeric(w)) w <- as.numeric(w)
@@ -326,16 +376,16 @@ HB08_fixed <- function(spec) {
       inv <- cache$inv
       divisor <- sqrt(cc)
     } else if (complete) {
-      inv <- XtX_pseudoinv_sqrt(Sigma[tested, tested, drop = FALSE],
-                                mat.is.XtX = TRUE, tol = tol)
+      inv <- .covarianceInverseSqrt(Sigma[tested, tested, drop = FALSE], tol)
       cache$tested <<- tested
       cache$inv <<- inv
       divisor <- sqrt(cc)
     } else {
-      inv <- XtX_pseudoinv_sqrt(tcov[tested, tested, drop = FALSE],
-                                mat.is.XtX = TRUE, tol = tol)
+      inv <- .covarianceInverseSqrt(tcov[tested, tested, drop = FALSE], tol)
       divisor <- 1
     }
+
+    check_for_degenerate(inv, n_, ncol(S))
 
     DF <- attr(inv, "r")
     csq <- if (cc > 0 && DF > 0) {

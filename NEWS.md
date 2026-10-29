@@ -5,8 +5,8 @@
   sets, an optional cluster and unit weights, and a supplied covariance matrix
   of the covariates; `balanceTest()` on it tests against that matrix, with the
   inverse computed once per specification, instead of the covariance it would
-  calculate from the data (#144). Both methods now stop on an argument they
-  do not recognize, where a misspelled argument used to be dropped silently.
+  calculate from the data (#144). Both methods stop on an argument they do
+  not recognize, so the generic's `...` cannot absorb a misspelled one.
 * New `expandCovariates()` returns the expanded covariate columns that
   `balanceTest()` tests, for computing a covariance elsewhere that lines up
   with them (#144).
