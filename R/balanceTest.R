@@ -78,9 +78,17 @@
 ##' its missingness information may be labeled with the name of the other variable in the output.
 ##'
 ##'
+##' \code{balanceTest} is a generic function. The formula method is described
+##' here; a \code{\link{balanceSpec}} method tests against a supplied
+##' covariance matrix in place of the one calculated from the data.
+##'
 ##' @title Standardized Differences for Stratified Comparisons
+##' @order 1
 ##' @param fmla A formula containing an indicator of treatment
-##'   assignment on the left hand side and covariates at right.
+##'   assignment on the left hand side and covariates at right; or a
+##'   \code{\link{balanceSpec}}.
+##' @param ... Not used by either method, which stop on any argument they do
+##'   not recognize; present so that methods can add arguments.
 ##' @param data A data frame in which \code{fmla} and \code{strata}
 ##'   are to be evaluated.
 ##' @param strata A list of right-hand-side-only formulas containing
@@ -114,7 +122,7 @@
 ##'   this type performed separately in each stratum. Significance
 ##'   assessments are based on large-sample approximations
 ##'   to these reference distributions.
-##' @seealso \code{\link{HB08}}
+##' @seealso \code{\link{HB08}}, \code{\link{balanceSpec}}, \code{\link{expandCovariates}}
 ##' @export
 ##' @references Hansen, B.B. and Bowers, J. (2008), ``Covariate
 ##'   Balance in Simple, Stratified and Clustered Comparative
@@ -167,17 +175,27 @@
 ##'             aspirin+strata(assess_strata)+cluster(practice),
 ##'             data=ym_long)
 
-balanceTest <- function(fmla,
-                        data,
-                        strata = NULL,
-                        unit.weights,
-                        stratum.weights = harmonic_times_mean_weight,
-                        subset,
-                        include.NA.flags = TRUE,
-                        covariate.scales = setNames(numeric(0), character(0)),
-                        post.alignment.transform = NULL,
-                        inferentials.calculator = HB08,
-                        p.adjust.method = "holm") {
+balanceTest <- function(fmla, data, ...) {
+  UseMethod("balanceTest")
+}
+
+##' @rdname balanceTest
+##' @order 2
+##' @method balanceTest formula
+##' @export
+balanceTest.formula <- function(fmla,
+                                data,
+                                strata = NULL,
+                                unit.weights,
+                                stratum.weights = harmonic_times_mean_weight,
+                                subset,
+                                include.NA.flags = TRUE,
+                                covariate.scales = setNames(numeric(0), character(0)),
+                                post.alignment.transform = NULL,
+                                inferentials.calculator = HB08,
+                                p.adjust.method = "holm",
+                                ...) {
+  .stopOnUnusedArguments(match.call(expand.dots = FALSE)$...)
 ### API Assumptions:
 ### - no ... in the xBal formula
 ### (if this assumption ceases to be met then we have to add an explicit check that
@@ -188,14 +206,10 @@ balanceTest <- function(fmla,
     stop("The strata argument has been deprecated. Use 'z ~ x1 + x2 + strata(s)' instead. See ?balanceTest, examples.")
   }
 
-  if (is.null(p.adjust.method)) {
-    p.adjust.method <- "none"
-  }
-
   stopifnot(is.null(post.alignment.transform) || is.function(post.alignment.transform))
 
   if (missing(data))
-     data <- environment(formula)
+     data <- environment(fmla)
   mf <- match.call(expand.dots = FALSE)
   m <- match(c("formula", "data", "subset", "unit.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
@@ -226,15 +240,41 @@ balanceTest <- function(fmla,
           data$'(offset)' <- NULL
       }
 
-    if (any(NAwts <- is.na(data$'(weights)')))
-    {
-        data[NAwts, '(weights)'] <- 0
-        warning("NA unit.weights detected; treating as 0s")
-        }
+  .balanceTestFromFrame(fmla, data,
+                        stratum.weights = stratum.weights,
+                        include.NA.flags = include.NA.flags,
+                        covariate.scales = covariate.scales,
+                        post.alignment.transform = post.alignment.transform,
+                        inferentials.calculator = inferentials.calculator,
+                        p.adjust.method = p.adjust.method)
+}
 
-  # Using charmatch instead of pmatch to distinguish between no match and ambiguous match. It reports
-  # -1 for no match, and 0 for ambiguous (multiple) matches.
+##' The shared body of the balanceTest methods
+##'
+##' Runs the pipeline from a formula and a model frame that already carries a
+##' \code{(weights)} column: design, descriptives, stratum weights, alignment,
+##' inferentials, multiplicity adjustment, and assembly of the result.
+##'
+##' @inheritParams balanceTest.formula
+##' @param fmla The formula, with any \code{strata()} and \code{cluster()} terms.
+##' @param data A model frame with a \code{(weights)} column.
+##' @return An object of class \code{c("balancetest", "xbal", "list")}.
+##' @keywords internal
+.balanceTestFromFrame <- function(fmla, data,
+                                  stratum.weights = harmonic_times_mean_weight,
+                                  include.NA.flags = TRUE,
+                                  covariate.scales = setNames(numeric(0), character(0)),
+                                  post.alignment.transform = NULL,
+                                  inferentials.calculator = HB08,
+                                  p.adjust.method = "holm") {
+  if (is.null(p.adjust.method)) {
+    p.adjust.method <- "none"
+  }
 
+  if (any(NAwts <- is.na(data$'(weights)'))) {
+    data[NAwts, '(weights)'] <- 0
+    warning("NA unit.weights detected; treating as 0s")
+  }
 
   ## we used to allow select report options, not any more.
   report <- c("adj.means","adj.mean.diffs","chisquare.test", "std.diffs","z.scores","p.values")
@@ -345,4 +385,18 @@ balanceTest <- function(fmla,
   attr(ans, "report") <- report # hinting to our summary method later
   class(ans) <- c("balancetest", "xbal", "list")
   ans
+}
+
+##' Stop on arguments a balanceTest method does not recognize
+##'
+##' @param dots The \code{...} entry of \code{match.call(expand.dots = FALSE)}.
+##' @keywords internal
+.stopOnUnusedArguments <- function(dots) {
+  if (length(dots)) {
+    nms <- names(dots)
+    if (is.null(nms)) nms <- rep("", length(dots))
+    nms[nms == ""] <- "<unnamed>"
+    stop("unused argument(s): ", paste(nms, collapse = ", "))
+  }
+  invisible(NULL)
 }

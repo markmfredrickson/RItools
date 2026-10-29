@@ -314,34 +314,11 @@ makeDesigns <- function(fmla, data) {
 
   ## OK! data looks good. Let's proceed to make the design object with covariate data
 
-  data.fmla <- update(ts, paste("~", paste0(collapse = " - ", c(".", str.vnames))))
+  data.fmla <- .covariateFormula(ts)
   data.data <- model.frame(data.fmla, data, na.action = na.pass) #
   data.data$'(weights)' <- data$'(weights)'
   
-  # Convert remaining character columns to factors so make behavior consistent (issue #127)
-  chrs <- colnames(data.data)[sapply(data.data, is.character)]
-  for (f in chrs) {
-    data.data[, f] <- as.factor(data.data[, f])
-  }
-  
-  # knock out any levels that are not used
-  fcts <- colnames(data.data)[sapply(data.data, is.factor)]
-  for (f in fcts) {
-    data.data[, f] <- factor(data.data[, f])
-  }
-
-  # we want our own contrast function for the factors that expands each level to its own dummy
-  clist <- lapply(data.data, function(x) {
-    if (is.factor(x)) {
-      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
-    } else {
-      NULL
-    }
-})
-    names(clist) <- colnames(data.data)
-    clist <- clist[!sapply(clist, is.null)]
-
-    desm <- model_matrix(terms(data.data), data.data, remove.intercept=TRUE, contrasts.arg = clist)
+  desm <- .expandModelFrame(data.data)
 
   if (length(clusterCol) > 0) {
     Cluster <- str.data[, clusterCol]
@@ -367,6 +344,93 @@ makeDesigns <- function(fmla, data) {
                   NM.Covariates=desm@NM.Covariates,
              NM.terms=desm@NM.terms)
          )
+}
+
+##' The covariate part of a balance formula
+##'
+##' Drops the \code{strata()} and \code{cluster()} terms from a terms object
+##' made with those specials, keeping any response.
+##'
+##' @param ts A terms object made with \code{specials = c("cluster", "strata")}.
+##' @return A formula.
+##' @keywords internal
+.covariateFormula <- function(ts) {
+  vnames <- rownames(attr(ts, "factors"))
+  str.vnames <- vnames[c(attr(ts, "specials")$cluster, attr(ts, "specials")$strata)]
+  update(ts, paste("~", paste(c(".", str.vnames), collapse = " - ")))
+}
+
+##' Expand a model frame of covariates into the columns balanceTest tests
+##'
+##' Character columns become factors, unused factor levels are dropped, and
+##' every factor is expanded with one indicator column per level (no reference
+##' level is omitted). Numeric columns pass through. The model frame must carry
+##' a \code{(weights)} column.
+##'
+##' @param data.data A model frame of the covariates, with a \code{(weights)} column.
+##' @return A ModelMatrixPlus object.
+##' @keywords internal
+.expandModelFrame <- function(data.data) {
+  # Convert remaining character columns to factors so make behavior consistent (issue #127)
+  chrs <- colnames(data.data)[sapply(data.data, is.character)]
+  for (f in chrs) {
+    data.data[, f] <- as.factor(data.data[, f])
+  }
+
+  # knock out any levels that are not used
+  fcts <- colnames(data.data)[sapply(data.data, is.factor)]
+  for (f in fcts) {
+    data.data[, f] <- factor(data.data[, f])
+  }
+
+  # we want our own contrast function for the factors that expands each level to its own dummy
+  clist <- lapply(data.data, function(x) {
+    if (is.factor(x)) {
+      structure(diag(nlevels(x)), dimnames = list(levels(x), levels(x)))
+    } else {
+      NULL
+    }
+  })
+  names(clist) <- colnames(data.data)
+  clist <- clist[!sapply(clist, is.null)]
+
+  model_matrix(terms(data.data), data.data, remove.intercept = TRUE, contrasts.arg = clist)
+}
+
+##' The covariate columns that balanceTest would test, as a numeric matrix
+##'
+##' \code{balanceTest()} does not test the variables of its formula as given:
+##' character variables become factors, and each factor is expanded to one
+##' indicator column per level (no level is left out as a reference). This
+##' function performs that expansion on its own, so that a covariance matrix
+##' computed elsewhere, for instance on a whole cohort, lines up column for
+##' column with what \code{\link{balanceTest}} tests when given a
+##' \code{\link{balanceSpec}}.
+##'
+##' Missing covariate values are kept as \code{NA}. Any \code{strata()} or
+##' \code{cluster()} terms in the formula, and any response, are ignored.
+##'
+##' @param fmla A formula naming the covariates on its right hand side; a
+##'   left hand side is permitted and ignored.
+##' @param data A data frame in which to evaluate it.
+##' @return A numeric matrix with one row per row of \code{data} and one
+##'   column per expanded covariate, with an \code{originals} attribute
+##'   giving, for each column, the index of the formula term it came from.
+##' @export
+##' @examples
+##' data(nuclearplants)
+##' x <- expandCovariates(~ date + pt + ne, nuclearplants)
+##' colnames(x)
+##' Sigma <- cov(x)
+expandCovariates <- function(fmla, data) {
+  ts <- terms(fmla, data = data, specials = c("cluster", "strata"))
+  data.fmla <- formula(delete.response(terms(.covariateFormula(ts), data = data)))
+  data.data <- model.frame(data.fmla, data, na.action = na.pass)
+  data.data$'(weights)' <- 1
+  desm <- .expandModelFrame(data.data)
+  ans <- desm@Covariates
+  attr(ans, "originals") <- desm@OriginalVariables
+  ans
 }
 
 # Add stratum weights to a design
@@ -755,6 +819,7 @@ aggregateDesigns <- function(design) {
 #' @slot StrataWeightRatio For each unit, ratio of stratum weight to \eqn{h_b}; but see Details.
 #' @slot Cluster Factor indicating who's in the same cluster with who
 #' @slot OriginalVariables Look up table associating Covariates cols to terms in the calling formula, as in ModelMatrixPlus
+#' @slot NotMissing Matrix of the same shape as Covariates: for each covariate column, the unit's not-missing indicator (a fraction, for aggregated clusters); 1 throughout for the not-missing columns themselves
 #' @keywords internal
 setClass("CovsAlignedToADesign",
          slots =
@@ -763,7 +828,8 @@ setClass("CovsAlignedToADesign",
              StrataMatrix    = "matrix.csr", 
              StrataWeightRatio = "numeric",
              OriginalVariables="integer",
-             Cluster = "factor"
+             Cluster = "factor",
+             NotMissing = "matrix"
              )
          )
 # apply this & pass through en route to svd
@@ -893,13 +959,19 @@ alignDesignsByStrata <- function(a_stratification, design, post.align.transform 
     )
     colnames(covars) <- vars
 
+    ## not-missing indicators aligned with the columns of covars, for
+    ## inferentials calculators that need to know where values were imputed
+    NMcov <- cbind(NM[, nmcols_Covs, drop = FALSE], matrix(1, nrow(NM), k.NM))
+    colnames(NMcov) <- vars
+
       new("CovsAlignedToADesign",
           Covariates        = covars,
           Z=as.logical(design@Z[keep]),
           StrataMatrix=S,
           StrataWeightRatio = wtr, #as extracted from the design
           OriginalVariables = origvars,
-          Cluster           = factor(design@Cluster[keep])
+          Cluster           = factor(design@Cluster[keep]),
+          NotMissing        = NMcov
           )
 }
 

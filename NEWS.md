@@ -1,5 +1,15 @@
 # RItools {NEXTVERSION}
 
+* `balanceTest()` is now a generic. The formula method is the function as
+  before. A new `balanceSpec()` object carries a treatment assignment, matched
+  sets, an optional cluster and unit weights, and a supplied covariance matrix
+  of the covariates; `balanceTest()` on it tests against that matrix, with the
+  inverse computed once per specification, instead of the covariance it would
+  calculate from the data (#144). Both methods stop on an argument they do
+  not recognize, so the generic's `...` cannot absorb a misspelled one.
+* New `expandCovariates()` returns the expanded covariate columns that
+  `balanceTest()` tests, for computing a covariance elsewhere that lines up
+  with them (#144).
 * Bug fix (base R plot method svg export)
 * More graceful handling in balanceTest() of the edge case of balance testing for all-constant variables, with messages not errors and p-values of NA not 1
 

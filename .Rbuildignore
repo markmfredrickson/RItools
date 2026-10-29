@@ -29,3 +29,4 @@ nonbuild
 vignettes
 .vscode
 
+^CLAUDE\.md$
