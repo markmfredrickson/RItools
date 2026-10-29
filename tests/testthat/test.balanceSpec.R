@@ -228,14 +228,17 @@ test_that("a zero entry on the covariance diagonal leaves that scale to the samp
 })
 
 test_that("a precomputed inverse square root is used as given", {
-  inv <- XtX_pseudoinv_sqrt(Sigma, mat.is.XtX = TRUE)
-  spec <- balanceSpec("z", covariance = Sigma, variables = c("x1", "x2", "g"), inverse_sqrt = inv)
-  spec0 <- balanceSpec("z", covariance = Sigma, variables = c("x1", "x2", "g"))
+  ## (full-rank matrix: XtX_pseudoinv_sqrt()'s own rank cut sits at machine
+  ## precision and need not agree with balanceSpec()'s on a singular one)
+  inv <- XtX_pseudoinv_sqrt(SigmaN, mat.is.XtX = TRUE)
+  vars <- c("x1", "x2", "x3")
+  spec <- balanceSpec("z", covariance = SigmaN, variables = vars, inverse_sqrt = inv)
+  spec0 <- balanceSpec("z", covariance = SigmaN, variables = vars)
   expect_equal(balanceTest(spec, data = dat), balanceTest(spec0, data = dat))
   ## a wrong inverse changes the omnibus statistic but nothing else
   bad <- inv * 2
   attr(bad, "r") <- attr(inv, "r")
-  bs_bad <- balanceTest(balanceSpec("z", covariance = Sigma, variables = c("x1", "x2", "g"),
+  bs_bad <- balanceTest(balanceSpec("z", covariance = SigmaN, variables = vars,
                                     inverse_sqrt = bad), data = dat)
   bs <- balanceTest(spec0, data = dat)
   expect_equal(bs_bad$overall["--", "chisquare"], 4 * bs$overall["--", "chisquare"])
