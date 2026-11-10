@@ -60,11 +60,8 @@
 ##'   TRUE)} returns it, with its \code{r} attribute (the rank). Computed here
 ##'   when not supplied.
 ##' @param tol Relative tolerance for the pseudo-inverse: singular values of
-##'   the covariance below \code{tol} times the largest count as zero. (This
-##'   is applied to the covariance itself, not to the square roots of its
-##'   singular values as \code{XtX_pseudoinv_sqrt()}'s own \code{tol} is,
-##'   so the rank of a singular matrix, such as one over a factor's full set
-##'   of indicator columns, does not depend on rounding at machine precision.)
+##'   the covariance's correlation matrix below \code{tol} times the largest
+##'   count as zero, so the rank does not depend on the variables' units.
 ##' @return An object of class \code{balanceSpec}.
 ##' @seealso \code{\link{balanceTest}}, \code{\link{expandCovariates}}
 ##' @export
@@ -97,8 +94,9 @@ balanceSpec <- function(treatment, covariance, strata = NULL, variables = NULL,
   if (!is.null(variables) && !is.character(variables) && !inherits(variables, "formula")) {
     stop("variables must be a character vector, a one-sided formula, or NULL")
   }
+  .stopUnlessPSD(covariance, tol)
   if (is.null(inverse_sqrt)) {
-    inverse_sqrt <- .covarianceInverseSqrt(covariance, tol)
+    inverse_sqrt <- .pseudoinvSqrtOfCovariance(covariance, tol)
   } else {
     r <- attr(inverse_sqrt, "r")
     if (!is.matrix(inverse_sqrt) || nrow(inverse_sqrt) != ncol(covariance) ||
@@ -110,7 +108,6 @@ balanceSpec <- function(treatment, covariance, strata = NULL, variables = NULL,
         !identical(rownames(inverse_sqrt), colnames(covariance))) {
       stop("inverse_sqrt rows are not in the order of the covariance's columns")
     }
-    .covarianceInverseSqrt(covariance, tol, check.only = TRUE)
   }
   structure(list(treatment = treatment,
                  strata = strata,
@@ -123,39 +120,66 @@ balanceSpec <- function(treatment, covariance, strata = NULL, variables = NULL,
             class = "balanceSpec")
 }
 
-##' Pseudo-inverse square root of a covariance, from its eigendecomposition
+##' Pseudo-inverse square root of a covariance, with the rank cut on the correlation scale
 ##'
-##' One symmetric eigendecomposition serves both the positive semi-definite
-##' check and the inverse. Eigenvalues below \code{tol} times the largest
-##' count as zero, a cut on the matrix's own scale; the square roots that
-##' \code{XtX_pseudoinv_sqrt(mat, mat.is.XtX = TRUE)} compares against its
-##' tolerance would put that cut at machine precision and let the rank of a
-##' singular matrix vary with the BLAS.
+##' A wrapper for \code{XtX_pseudoinv_sqrt(mat, mat.is.XtX = TRUE)} that
+##' differs from calling it directly in two ways, both about which singular
+##' values count as zero (#146).
+##'
+##' First, the matrix is put on the correlation scale before the cut and the
+##' result scaled back, so the rank does not depend on the units of the
+##' variables: a count in the hundreds beside a proportion would otherwise
+##' have a variance ratio that a relative cut reads as a null direction.
+##'
+##' Second, \code{XtX_pseudoinv_sqrt()} compares square roots of singular
+##' values against its \code{tol}, so it is given the square root of
+##' \code{tol}; singular values of the correlation matrix below \code{tol}
+##' times the largest then count as zero. With its default the cut sits at
+##' machine precision, where the rank of a singular covariance, such as one
+##' over a factor's full set of indicator columns, varies with the BLAS.
+##'
+##' The result \code{V} satisfies \code{V \%*\% t(V)} = a generalized
+##' inverse of \code{mat}, which gives the same quadratic form as the
+##' Moore-Penrose inverse for any vector in the column space of \code{mat}.
+##' Variables with zero variance get zero rows.
+##'
+##' @param mat A symmetric positive semi-definite matrix.
+##' @param tol Relative tolerance on the singular values of the correlation
+##'   matrix.
+##' @return As \code{XtX_pseudoinv_sqrt()}: a matrix with one row per column
+##'   of \code{mat} and its rank as the \code{r} attribute.
+##' @keywords internal
+.pseudoinvSqrtOfCovariance <- function(mat, tol = .Machine$double.eps^0.5) {
+  if (!nrow(mat)) return(XtX_pseudoinv_sqrt(mat, mat.is.XtX = TRUE))
+  sds <- sqrt(pmax(diag(mat), 0))
+  ok <- sds > 0
+  inv_sd <- ifelse(ok, 1 / sds, 0)
+  ans <- XtX_pseudoinv_sqrt(mat * tcrossprod(inv_sd), mat.is.XtX = TRUE, tol = sqrt(tol))
+  r <- attr(ans, "r")
+  ans <- ans * inv_sd
+  attr(ans, "r") <- r
+  ans
+}
+
+##' Stop unless a symmetric matrix is positive semi-definite
+##'
+##' The check is made on the correlation scale, so that it does not depend
+##' on the units of the variables.
 ##'
 ##' @param covariance A symmetric matrix.
-##' @param tol Relative tolerance on the eigenvalues of \code{covariance}.
-##' @param check.only Only check positive semi-definiteness, invisibly
-##'   returning \code{NULL}?
-##' @return A matrix \code{V} with as many rows as \code{covariance} and one
-##'   column per positive eigenvalue, such that \code{V \%*\% t(V)} is the
-##'   pseudo-inverse, with the rank as its \code{r} attribute, in the form
-##'   \code{XtX_pseudoinv_sqrt()} returns.
+##' @param tol Relative tolerance for a negative eigenvalue.
 ##' @keywords internal
-.covarianceInverseSqrt <- function(covariance, tol, check.only = FALSE) {
-  e <- eigen(covariance, symmetric = TRUE, only.values = check.only)
-  lambda <- e$values
-  top <- if (length(lambda)) max(abs(lambda), 0) else 0
-  if (length(lambda) && min(lambda) < -tol * max(top, 1)) {
-    stop("covariance must be positive semi-definite (smallest eigenvalue ",
-         format(min(lambda)), ")")
+.stopUnlessPSD <- function(covariance, tol) {
+  if (!nrow(covariance)) return(invisible(NULL))
+  if (any(diag(covariance) < 0)) stop("covariance has a negative variance on its diagonal")
+  sds <- sqrt(diag(covariance))
+  inv_sd <- ifelse(sds > 0, 1 / sds, 0)
+  lambda <- eigen(covariance * tcrossprod(inv_sd), symmetric = TRUE, only.values = TRUE)$values
+  if (min(lambda) < -tol * max(abs(lambda), 1)) {
+    stop("covariance must be positive semi-definite (smallest eigenvalue of its ",
+         "correlation matrix ", format(min(lambda)), ")")
   }
-  if (check.only) return(invisible(NULL))
-  positive <- lambda > tol * top
-  positive[is.na(positive)] <- FALSE
-  ans <- e$vectors[, positive, drop = FALSE] *
-    rep(1 / sqrt(lambda[positive]), each = nrow(covariance))
-  attr(ans, "r") <- sum(positive)
-  ans
+  invisible(NULL)
 }
 
 ##' @method print balanceSpec
@@ -376,12 +400,12 @@ HB08_fixed <- function(spec) {
       inv <- cache$inv
       divisor <- sqrt(cc)
     } else if (complete) {
-      inv <- .covarianceInverseSqrt(Sigma[tested, tested, drop = FALSE], tol)
+      inv <- .pseudoinvSqrtOfCovariance(Sigma[tested, tested, drop = FALSE], tol)
       cache$tested <<- tested
       cache$inv <<- inv
       divisor <- sqrt(cc)
     } else {
-      inv <- .covarianceInverseSqrt(tcov[tested, tested, drop = FALSE], tol)
+      inv <- .pseudoinvSqrtOfCovariance(tcov[tested, tested, drop = FALSE], tol)
       divisor <- 1
     }
 

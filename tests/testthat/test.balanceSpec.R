@@ -111,10 +111,9 @@ test_that("with the sample covariance, the unstratified test reproduces HB08 exa
                bs$results["x1", "adj.diff", "--"] / sqrt(SigmaN["x1", "x1"]))
 
   ## with a factor the covariance is singular (its indicators sum to one). The
-  ## univariate statistics still agree exactly; the omnibus df is the rank, 4,
-  ## which the supplied-covariance path fixes on the matrix's own scale (HB08's
-  ## cut sits at machine precision and can differ by platform, so it is not
-  ## compared here)
+  ## univariate statistics agree exactly, and the omnibus df is the rank, 4,
+  ## on both paths: each gives XtX_pseudoinv_sqrt() a tolerance that cuts on
+  ## the matrix's own scale, not at machine precision (#146)
   spec <- balanceSpec(treatment = "z", covariance = Sigma, variables = c("x1", "x2", "g"))
   bs <- balanceTest(spec, data = dat)
   bt <- balanceTest(z ~ x1 + x2 + g, data = dat)
@@ -123,7 +122,89 @@ test_that("with the sample covariance, the unstratified test reproduces HB08 exa
     expect_equal(bs$results[, stat, "--"], bt$results[, stat, "--"], info = stat)
   }
   expect_equal(bs$overall["--", "df"], 4)
+  expect_equal(bt$overall["--", "df"], 4)
+  expect_equal(bs$overall["--", "chisquare"], bt$overall["--", "chisquare"])
   expect_equal(attr(spec$inverse_sqrt, "r"), 4L)
+})
+
+test_that("the rank cut depends on neither rounding nor the variables' units (#146)", {
+  ## rounding-level noise on a singular covariance does not raise its rank
+  noisy <- Sigma + 1e-13 * tcrossprod(rep(1, nrow(Sigma)))
+  expect_equal(attr(RItools:::.pseudoinvSqrtOfCovariance(noisy), "r"), 4)
+  ## the formula method's omnibus df with a factor is the rank on both rows
+  bt <- balanceTest(z ~ x1 + x2 + g + strata(s), data = dat)
+  expect_equal(bt$overall[, "df"], c(4, 4))
+
+  ## a count in the thousands beside a proportion: both directions are kept
+  ## and the statistic does not depend on the units
+  set.seed(146)
+  d <- dat
+  d$enroll <- round(1000 + 800 * d$x1 + 300 * rnorm(nrow(d)))
+  d$prop <- plogis(d$x2) / 20
+  bt <- balanceTest(z ~ enroll + prop, data = d)
+  expect_equal(bt$overall["--", "df"], 2)
+  d$enroll_k <- d$enroll / 1e6
+  bt_k <- balanceTest(z ~ enroll_k + prop, data = d)
+  expect_equal(bt_k$overall["--", "chisquare"], bt$overall["--", "chisquare"])
+  S <- cov(expandCovariates(~ enroll + prop, d))
+  expect_gt(S["enroll", "enroll"] / S["prop", "prop"], 1e8)
+  spec <- balanceSpec("z", S, variables = c("enroll", "prop"))
+  expect_equal(attr(spec$inverse_sqrt, "r"), 2)
+  bs <- balanceTest(spec, data = d)
+  expect_equal(bs$overall["--", "df"], 2)
+  expect_equal(bs$overall["--", "chisquare"], bt$overall["--", "chisquare"])
+  ## the wrapper returns a generalized inverse: V V' S V V' = V V'
+  V <- RItools:::.pseudoinvSqrtOfCovariance(Sigma)
+  G <- tcrossprod(V)
+  expect_equal(Sigma %*% G %*% Sigma, Sigma, check.attributes = FALSE)
+  ## a slightly negative eigenvalue from rounding is not counted as a direction
+  e <- eigen(cov2cor(SigmaN)); lam <- e$values; lam[3] <- -1e-10
+  nearly <- e$vectors %*% (lam * t(e$vectors))
+  dimnames(nearly) <- dimnames(SigmaN)
+  expect_equal(attr(balanceSpec("z", nearly)$inverse_sqrt, "r"), 2)
+  bad <- SigmaN; bad[1, 1] <- -1
+  expect_error(balanceSpec("z", bad), "negative variance")
+})
+
+test_that("the formula method's model frame holds the formula's columns (#146)", {
+  ## unit.weights and subset expressions built from the caller's variables
+  ## work inside a function, where they used to be looked up in the global
+  ## environment only
+  f <- function(d) {
+    w <- rep(2, nrow(d))
+    keep <- d$x1 > -10
+    list(balanceTest(z ~ x1 + x2 + strata(s), data = d, unit.weights = w),
+         balanceTest(z ~ x1 + x2 + strata(s), data = d, subset = keep),
+         balanceTest(z ~ x1 + x2 + strata(s), data = d, unit.weights = rep(1, nrow(d))))
+  }
+  res <- f(dat)
+  ref <- balanceTest(z ~ x1 + x2 + strata(s), data = dat)
+  for (r in res) {
+    expect_equal(r$overall[, "chisquare"], ref$overall[, "chisquare"])
+    expect_equal(r$results[, "adj.diff", ], ref$results[, "adj.diff", ])
+  }
+  ## a subset given by a local vector takes effect
+  g <- function(d) { keep <- d$g != "c"; balanceTest(z ~ x1 + x2, data = d, subset = keep) }
+  expect_equal(g(dat)$results[, "adj.diff", "--"],
+               balanceTest(z ~ x1 + x2, data = dat[dat$g != "c", ])$results[, "adj.diff", "--"])
+  ## a term that uses an object that is not a column, of another length
+  brks <- c(-Inf, 0, Inf)
+  bt <- balanceTest(z ~ cut(x1, brks) + x2, data = dat)
+  expect_equal(sum(grepl("^cut", dimnames(bt$results)[["vars"]])), 2)
+  ## `.` still means every column, and a column the formula does not name
+  ## does not matter
+  d2 <- dat[, c("z", "x1", "x2")]
+  expect_equal(balanceTest(z ~ ., data = d2)$overall, balanceTest(z ~ x1 + x2, data = d2)$overall)
+  d3 <- dat; d3$junk <- list(1)[rep(1, nrow(d3))]
+  expect_equal(balanceTest(z ~ x1 + x2, data = d3)$overall, balanceTest(z ~ x1 + x2, data = dat)$overall)
+  ## a column whose name is not a syntactic name
+  d4 <- dat; d4$`x 3` <- d4$x3; d4$"a`b" <- d4$x2
+  expect_equal(unname(balanceTest(z ~ `x 3`, data = d4)$results[1, "adj.diff", "--"]),
+               unname(balanceTest(z ~ x3, data = dat)$results[1, "adj.diff", "--"]))
+  expect_s3_class(balanceTest(z ~ ., data = d4[, c("z", "x1", "a`b")]), "balancetest")
+  ## a formula with no environment still works
+  fm <- z ~ x1 + x2; environment(fm) <- NULL
+  expect_equal(balanceTest(fm, data = dat)$overall, balanceTest(z ~ x1 + x2, data = dat)$overall)
 })
 
 test_that("stratified: exact agreement with HB08 when every stratum has the same covariance", {

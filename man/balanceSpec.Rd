@@ -41,11 +41,8 @@ TRUE)} returns it, with its \code{r} attribute (the rank). Computed here
 when not supplied.}
 
 \item{tol}{Relative tolerance for the pseudo-inverse: singular values of
-the covariance below \code{tol} times the largest count as zero. (This
-is applied to the covariance itself, not to the square roots of its
-singular values as \code{XtX_pseudoinv_sqrt()}'s own \code{tol} is,
-so the rank of a singular matrix, such as one over a factor's full set
-of indicator columns, does not depend on rounding at machine precision.)}
+the covariance's correlation matrix below \code{tol} times the largest
+count as zero, so the rank does not depend on the variables' units.}
 }
 \value{
 An object of class \code{balanceSpec}.

@@ -1066,8 +1066,7 @@ HB08 <- function(alignedcovs) {
 
 
     cov_minus_.5 <-
-        XtX_pseudoinv_sqrt(mat=tcov[!zero_variance, !zero_variance, drop=FALSE],
-                           mat.is.XtX = TRUE)
+        .pseudoinvSqrtOfCovariance(tcov[!zero_variance, !zero_variance, drop=FALSE])
 
     check_for_degenerate(cov_minus_.5, n_, s_)
 

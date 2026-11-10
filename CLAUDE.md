@@ -44,11 +44,11 @@ Use `devtools::test()`, not `load_all()` plus `test_dir()`: the latter skips
 S4 method registration and reports spurious failures in `test.Design.R` and
 `test.tidiers.R`.
 
-A quirk of the formula method, present before the generic: `unit.weights`
-and `subset` go through `model.frame()` without the formula, so an
-expression there is evaluated against the data frame and then the global
-environment, not the caller's frame. Inside a function or a test, pass a
-column of the data frame, not an expression built from local objects.
+The formula method builds its model frame from the columns of `data` the
+formula names, and as in `lm()` evaluates `unit.weights` and `subset` in
+`data` and then in the formula's environment (#146). Objects a term uses that
+are not columns, such as breaks for `cut()`, are left for `makeDesigns()` to
+find in the formula's environment.
 
 The `Makefile` targets (`make test`, `make check`, `make document`) wrap the
 same devtools calls but assume a local `.local` library; they do not work on
@@ -70,7 +70,11 @@ below from a formula and a model frame carrying a `(weights)` column:
 - `balanceTest.balanceSpec` (`R/balanceSpec.R`): a `balanceSpec()` object
   carries treatment, strata, optional cluster and unit weights, the variables
   to test, and a supplied covariance matrix of the expanded covariates, whose
-  pseudo-inverse square root is computed once in the constructor. The method
+  pseudo-inverse square root is computed once in the constructor by
+  `.pseudoinvSqrtOfCovariance()`: `XtX_pseudoinv_sqrt()` on the correlation
+  scale with a tolerance that cuts on the matrix's own scale, so the rank
+  depends on neither the BLAS nor the variables' units. `HB08()` uses the
+  same function (#146). The method
   builds the formula, sets `covariate.scales` from the positive entries of
   the matrix's diagonal, and runs the shared body with `HB08_fixed(spec)` as
   the inferentials calculator: the null covariance of the adjusted

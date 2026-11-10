@@ -211,8 +211,27 @@ balanceTest.formula <- function(fmla,
   if (missing(data))
      data <- environment(fmla)
   mf <- match.call(expand.dots = FALSE)
-  m <- match(c("formula", "data", "subset", "unit.weights"), names(mf), 0L)
+  m <- match(c("data", "subset", "unit.weights"), names(mf), 0L)
   mf <- mf[c(1L, m)]
+  ## The model frame is to hold the columns of `data` that the formula
+  ## names, untransformed, so that makeDesigns() can evaluate the formula's
+  ## terms, strata() and cluster() included, against it. Passing
+  ## model.frame() a formula of just those columns does that. As in lm(),
+  ## `unit.weights` and `subset` expressions are then evaluated in `data`
+  ## and after that in the formula's environment (#146). Without a formula
+  ## model.frame() fell back on one made from every column of `data`, whose
+  ## environment reaches only the global one. (A column the formula reaches
+  ## without naming it, as through get(), is not carried.)
+  needed <- NULL
+  if (is.data.frame(data)) {
+    needed <- intersect(all.vars(terms(fmla, data = data)), names(data))
+    if (length(needed)) {
+      rhs <- Reduce(function(a, b) call("+", a, b), lapply(needed, as.name))
+      env <- environment(fmla)
+      if (is.null(env)) env <- parent.frame()
+      mf$formula <- as.formula(call("~", rhs), env = env)
+    }
+  }
   if (cwpos <- match("unit.weights", names(mf), nomatch=0L))
       names(mf)[cwpos] <- "weights"
   ## Here's where we rely on assumption of no ... in the xBal formula
@@ -223,6 +242,10 @@ balanceTest.formula <- function(fmla,
   mf[[1L]] <- quote(stats::model.frame)
   mf$na.action <- quote(stats::na.pass)
   data <- eval(mf, parent.frame())
+  if (length(needed)) {
+    stopifnot(ncol(data) >= length(needed))
+    names(data)[seq_along(needed)] <- needed # undo deparsing of odd names
+  }
   if (!cwpos)
       data$'(weights)' <- 1
   if (cwpos && !is.numeric(data$'(weights)'))
