@@ -202,6 +202,19 @@ test_that("the formula method's model frame holds the formula's columns (#146)",
   expect_equal(unname(balanceTest(z ~ `x 3`, data = d4)$results[1, "adj.diff", "--"]),
                unname(balanceTest(z ~ x3, data = dat)$results[1, "adj.diff", "--"]))
   expect_s3_class(balanceTest(z ~ ., data = d4[, c("z", "x1", "a`b")]), "balancetest")
+  ## the comparison issue #74 once left commented out: `subset` against
+  ## subsetting the data beforehand. The descriptives agree. The inferentials
+  ## are not expected to, since `subset` sets weights to zero and those units
+  ## still count (see #74); the model frame was not the reason it failed.
+  data(nuclearplants)
+  xb4 <- balanceTest(pr ~ . - pt, data = nuclearplants, subset = pt == 0)
+  xb5 <- balanceTest(pr ~ . - pt, data = subset(nuclearplants, pt == 0))
+  for (stat in c("Treatment", "Control", "adj.diff", "std.diff")) {
+    expect_equal(xb4$results[, stat, "--"], xb5$results[, stat, "--"], info = stat)
+  }
+  ## and `subset` may name a column the formula does not use
+  expect_equal(balanceTest(pr ~ date + cap, data = nuclearplants, subset = pt == 0)$results[, "adj.diff", "--"],
+               balanceTest(pr ~ date + cap, data = subset(nuclearplants, pt == 0))$results[, "adj.diff", "--"])
   ## a formula with no environment still works
   fm <- z ~ x1 + x2; environment(fm) <- NULL
   expect_equal(balanceTest(fm, data = dat)$overall, balanceTest(z ~ x1 + x2, data = dat)$overall)
